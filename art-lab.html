@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Art lab — The Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600;700&family=Spectral:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/card.css">
+<style>
+  body { margin: 0; background: #13100d; color: #efe6d2; font: 14px -apple-system, Segoe UI, sans-serif; padding: 20px; }
+  h1 { font: 600 18px 'EB Garamond', serif; letter-spacing: .2em; color: #d6b46a; margin: 0 0 14px; }
+  .item { display: grid; grid-template-columns: minmax(0, 640px) 240px; gap: 20px; align-items: start; margin-bottom: 26px; }
+  .big { position: relative; aspect-ratio: 300 / 210; border-radius: 6px; overflow: hidden; background: #000; }
+  .lab-label { grid-column: 1 / -1; color: #a99d89; margin-bottom: -12px; }
+  .card { --cw: 240px; }
+  .card.sheet { --cw: min(240px, calc((100vw - 130px) / 5)); }
+  .controls { margin-bottom: 16px; }
+  @media (max-width: 700px) { .item { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<h1>ART LAB</h1>
+<div class="controls"><label><input type="checkbox" id="anim" checked> animate</label> · <span id="count"></span></div>
+<div id="out"></div>
+<script type="module">
+  import { SCENES } from './js/art/scenes.js';
+  import { artSVG } from './js/art/index.js';
+  import { BY_ID } from './js/cards.js';
+  import { cardHTML } from './js/render.js';
+  const q = new URLSearchParams(location.search);
+  const only = q.get('only');
+  const ids = Object.keys(SCENES).filter((id) => !only || only.split(',').includes(id));
+  document.getElementById('count').textContent = `${ids.length} drawn`;
+  if (q.has('sheet')) {
+    // contact sheet: full cards only, in a row
+    document.querySelector('.controls').remove();
+    document.getElementById('out').style.cssText = 'display:flex;flex-wrap:wrap;gap:18px;justify-content:center';
+    document.getElementById('out').innerHTML = ids.map((id) => cardHTML(BY_ID[id], { cls: 'sheet' })).join('');
+  } else document.getElementById('out').innerHTML = ids.map((id) => `
+    <div class="item">
+      <div class="lab-label">${id}</div>
+      <div class="big anim">${artSVG(id)}</div>
+      ${cardHTML(BY_ID[id], { cls: 'anim' })}
+    </div>`).join('');
+  const animBox = document.getElementById('anim');
+  if (animBox) animBox.onchange = (e) =>
+    document.querySelectorAll('.big, .card').forEach((el) => el.classList.toggle('anim', e.target.checked));
+</script>
+</body>
+</html>

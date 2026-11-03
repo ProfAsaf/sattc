@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Collective">
+<meta name="theme-color" content="#13100d">
+<title>The Collective</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<!-- importmap -->
+<script type="importmap">{
+ "imports": {
+  "./js/ai.js": "./js/ai.js?v=0e163290",
+  "./js/app.js": "./js/app.js?v=10d44818",
+  "./js/art-manifest.js": "./js/art-manifest.js?v=03d54451",
+  "./js/art/index.js": "./js/art/index.js?v=3ace4a99",
+  "./js/art/kit.js": "./js/art/kit.js?v=5ee5c989",
+  "./js/art/scenes.js": "./js/art/scenes.js?v=4820ef7b",
+  "./js/art/scenes/ember.js": "./js/art/scenes/ember.js?v=8bfa96c6",
+  "./js/art/scenes/multi.js": "./js/art/scenes/multi.js?v=33ae218d",
+  "./js/art/scenes/radiant.js": "./js/art/scenes/radiant.js?v=53e5f5dd",
+  "./js/art/scenes/shared.js": "./js/art/scenes/shared.js?v=4ebfcf74",
+  "./js/art/scenes/tide.js": "./js/art/scenes/tide.js?v=881c5fcd",
+  "./js/art/scenes/umbral.js": "./js/art/scenes/umbral.js?v=06d90d92",
+  "./js/art/scenes/verdant.js": "./js/art/scenes/verdant.js?v=7116f3e5",
+  "./js/cards.js": "./js/cards.js?v=3c383ee9",
+  "./js/decks.js": "./js/decks.js?v=048754d5",
+  "./js/engine.js": "./js/engine.js?v=de317768",
+  "./js/firebase-config.js": "./js/firebase-config.js?v=e04da886",
+  "./js/game-ui.js": "./js/game-ui.js?v=aa4f4378",
+  "./js/net.js": "./js/net.js?v=a6c90e2a",
+  "./js/render.js": "./js/render.js?v=63d1ecfb"
+ }
+}</script>
+<!-- /importmap -->
+<link rel="stylesheet" href="css/card.css?v=a025b92f">
+<link rel="stylesheet" href="css/app.css?v=84d37cc9">
+<link rel="stylesheet" href="css/game.css?v=a3cb030d">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#/">THE COLLECTIVE</a>
+  <span class="week-tag">Week One · The Awakening</span>
+</header>
+
+<main id="view"></main>
+
+<nav class="tabbar" aria-label="Sections">
+  <a href="#/" data-tab="home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11 12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg>
+    Home</a>
+  <a href="#/cards" data-tab="cards">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="7" y="3" width="12" height="16" rx="1.6"/><path d="M5 6.5v12.2A1.8 1.8 0 0 0 6.8 20.5H15"/></svg>
+    Cards</a>
+  <a href="#/decks" data-tab="decks">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 3.5 7.5 12 12l8.5-4.5z"/><path d="m3.5 12 8.5 4.5 8.5-4.5"/><path d="m3.5 16.5 8.5 4.5 8.5-4.5"/></svg>
+    Decks</a>
+  <a href="#/rules" data-tab="rules">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M8.5 8h7M8.5 11.5h5"/></svg>
+    Rules</a>
+  <a href="#/play" data-tab="play">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6M16 16l4 4M19 21l2-2"/><path d="M9.5 6.5 14 2h3v3l-4.5 4.5"/><path d="m5 14 4 4M7 17l-3 3M3 19l2 2"/></svg>
+    Play</a>
+</nav>
+
+<script type="module" src="js/app.js?v=10d44818"></script>
+</body>
+</html>

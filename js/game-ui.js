@@ -137,7 +137,7 @@ async function onlineAct(act, el, choices) {
       }
     }
     if (act === 'start') { await Net.setDeck(L.code, Decks.encode(deckOf('room-deck').counts)); await Net.startGame(L.code); }
-    if (act === 'leave-room') { await Net.leaveLobby(L.code); exitRoom(); }
+    if (act === 'leave-room') { const code = L.code; exitRoom(); await Net.leaveLobby(code); } // stop watching first, so leaving isn't reported as the game vanishing
     if (act === 'rejoin-table') { const seat = L.info.players.findIndex((p) => p.id === Net.clientId()); beginOnline(L.info, seat); }
     if (act === 'copy-link') { try { await navigator.clipboard.writeText(el.dataset.link); flash('Invite link copied.'); } catch { flash(el.dataset.link); } }
   } catch (e) { flash(e.message || String(e)); }

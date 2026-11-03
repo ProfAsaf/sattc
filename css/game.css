@@ -126,7 +126,10 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 @keyframes hit { 0% { filter: brightness(2) saturate(2); transform: translateX(-3px); } 40% { transform: translateX(3px); } 100% { filter: none; transform: none; } }
 
 /* ── middle: banner and ticker ───────────────────────────────────── */
-.g-mid { flex: 1; min-height: 44px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; padding: 0 12px; }
+.g-mid { flex: 1; min-height: 44px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 12px; }
+/* centred when there is room, scrollable from the top when there is not */
+.g-mid > :first-child { margin-top: auto; }
+.g-mid > :last-child { margin-bottom: auto; }
 .ticker { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.35; max-width: 34em; }
 .ticker div:last-child { color: var(--ink); }
 .banner {

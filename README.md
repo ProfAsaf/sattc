@@ -13,7 +13,8 @@ A card game for friends: everyone gets the same 90 cards each week (Week One:
 | `js/app.js` | Router and views: home, gallery, decks, builder, rules |
 | `js/engine.js` | Rules engine: deterministic, event-sourced (`newGame` + `apply(state, action)`); every card's effect |
 | `js/ai.js` | Practice bot: greedy one-step lookahead over `legalActions` |
-| `js/game-ui.js` | The table (practice and online), the Play page and the online lobby |
+| `js/game-ui.js` | The table (practice, lesson and online), the Play page, the online lobby, the hint line and the ? help |
+| `js/tutorial.js` | The guided lesson: stacked decks, the coach's 25 steps, the bot's scripted first turns |
 | `js/net.js` | Online play over Firebase Realtime Database: rooms, seats, the shared move list |
 | `js/firebase-config.js` | Paste the Firebase web config here to switch online play on |
 | `js/art/` | Card art drawn in code: `kit.js` (drawing tools), `scenes.js` (style rules), `scenes/*.js` (one file per faction) |

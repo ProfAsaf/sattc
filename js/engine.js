@@ -48,7 +48,9 @@ function mk(s, cid, owner, zone) {
 }
 
 // setup: { seed, players: [{ name, deck: [cardId × 30] }] }
-export function newGame({ seed = 1, players }) {
+// The tutorial adds `stacked: true` (decks keep their order, top card first)
+// and `first` (who goes first), so every step of the lesson is predictable.
+export function newGame({ seed = 1, players, stacked = false, first = null }) {
   const s = {
     v: 1, rng: seed | 0, mode: players.length > 2 ? 'ffa' : 'duel',
     turn: 0, active: 0, first: 0, phase: 'mulligan', winner: null,
@@ -63,9 +65,9 @@ export function newGame({ seed = 1, players }) {
     s.players.push(P);
     s.diedOwn.push(0);
     for (const cid of pl.deck) P.deck.push(mk(s, cid, i, 'deck').uid);
-    shuffle(s, P.deck);
+    if (!stacked) shuffle(s, P.deck);
   });
-  s.first = Math.floor(rnd(s) * players.length);
+  s.first = first ?? Math.floor(rnd(s) * players.length);
   s.active = s.first;
   for (const P of s.players) {
     const n = RULES.openingHand + (P.i !== s.first ? RULES.laterPlayerExtraCards : 0);

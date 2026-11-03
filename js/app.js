@@ -4,7 +4,7 @@
 import { BY_ID, CARDS, FACTIONS, FACTION_ORDER, KEYWORDS, RULES, SET, STARTERS, TOKENS } from './cards.js';
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
 import * as Decks from './decks.js';
-import { autoRejoin, demo, playPage } from './game-ui.js';
+import { autoRejoin, demo, playPage, startTutorial } from './game-ui.js';
 
 const view = document.getElementById('view');
 
@@ -134,16 +134,17 @@ function home() {
     </section>
     <div class="fan">${fan}</div>
     <div class="home-actions">
-      <a class="btn primary" href="#/cards">See all 90 cards</a>
+      <button class="btn primary" data-act="tutorial">New? Learn in a 5-minute guided game</button>
+      <a class="btn" href="#/cards">See all 90 cards</a>
       <a class="btn" href="#/decks">Build a deck</a>
-      <a class="btn" href="#/rules">How to play</a>
     </div>
-    <div class="notice"><div>⚔</div><div><b>Practice now</b> against the bot on the Play tab. Online games with friends (1v1 or three-way) arrive on Thursday.</div></div>
+    <div class="notice"><div>⚔</div><div>Then <b>practice</b> against the bot, or <b>play your friends</b> online (1v1 or three-way), on the Play tab.</div></div>
     <div class="sect-title"><h3>Five factions</h3></div>
     <div class="factions-list">${FACTION_ORDER.map((f) => `
       <div class="faction-item">${factionCoin(f)}<div><b>${FACTIONS[f].name}</b><div>${esc(FACTIONS[f].blurb)}</div></div></div>`).join('')}
     </div>`;
   view.onclick = (e) => {
+    if (e.target.closest('[data-act="tutorial"]')) { startTutorial(); return; }
     const c = e.target.closest('.card[data-id]');
     if (c) openZoom(c.dataset.id);
   };
@@ -328,6 +329,7 @@ function builder(id) {
 // ── rules ───────────────────────────────────────────────────────────
 function rules() {
   view.innerHTML = `<article class="rules-page">
+    <div class="notice" style="margin-bottom:8px"><div>▶</div><div>Rather learn by doing? <button class="btn small primary" data-act="tutorial" style="margin-left:6px">Play the guided lesson</button></div></div>
     <h2>The idea</h2>
     <p>Every player gets the <b>same 90 cards</b>: 45 different cards, two copies of each. Before you play, you build a deck of exactly <b>30</b>. Everyone is solving the same puzzle. The fun is finding combinations nobody else spotted, and guessing what your friends will bring.</p>
 
@@ -392,6 +394,7 @@ function rules() {
     </details>
   </article>`;
   view.onclick = (e) => {
+    if (e.target.closest('[data-act="tutorial"]')) { startTutorial(); return; }
     const c = e.target.closest('.card[data-id]');
     if (c) openZoom(c.dataset.id);
   };

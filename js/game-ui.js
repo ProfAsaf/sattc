@@ -5,10 +5,10 @@
 import { BY_ID, KEYWORDS, RULES, STARTERS } from './cards.js';
 import { apply, attackTargets, canAttack, costOf, needs, newGame, opponents, phoenixReady, power, replay, vitality } from './engine.js';
 import { chooseAction } from './ai.js';
-import { cardHTML, esc, factionCoin, factionVars, glyph } from './render.js';
-import { artTag } from './render.js';
+import { artTag, cardHTML, esc, factionCoin, factionVars, glyph } from './render.js';
 import * as Decks from './decks.js';
 import * as Net from './net.js';
+import { TUTORIAL, botAction, matches } from './tutorial.js';
 
 const SAVE = 'collective.practice.v1';
 const store = {
@@ -154,6 +154,11 @@ export function playPage(view) {
     ${saved && !saved.over ? `<div class="notice"><div>⏸</div><div>A practice game is in progress.
       <div class="btn-row" style="margin-top:8px"><button class="btn small primary" data-act="resume">Resume</button>
       <button class="btn small ghost" data-act="forget">Throw it away</button></div></div></div>` : ''}
+    <div class="panel learn" style="margin-top:12px">
+      <h3>${tutorialDone() ? 'Want a refresher?' : 'New to the game? Start here'}</h3>
+      <p class="muted small" style="margin:6px 0 0">A guided game teaches you everything, one step at a time. It takes about 5 minutes.</p>
+      <button class="btn${tutorialDone() ? '' : ' primary'}" data-act="tutorial" style="width:100%;margin-top:12px">${tutorialDone() ? 'Replay the guided lesson' : 'Start the guided lesson'}</button>
+    </div>
     <div class="panel" style="margin-top:12px">
       <h3>Practice against the bot</h3>
       <p class="muted small" style="margin:6px 0 0">Learn the cards before Friday. You can take moves back.</p>
@@ -177,6 +182,7 @@ export function playPage(view) {
     const act = el?.dataset.act;
     if (['create', 'join', 'rejoin', 'start', 'leave-room', 'rejoin-table', 'copy-link'].includes(act)) { onlineAct(act, el, choices); return; }
     if (act === 'resume') resume();
+    if (act === 'tutorial') startTutorial();
     if (act === 'forget') { store.clear(); playPage(view); }
     if (act === 'practice') {
       const mine = choices.find((d) => d.id === document.getElementById('my-deck').value);
@@ -194,6 +200,50 @@ function startPractice(mine, bots) {
     ...bots.map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
   const setup = { seed: (Math.random() * 2 ** 31) | 0, players };
   begin({ mode: 'practice', setup, actions: [], me: 0, bots: bots.map((_, i) => i + 1) });
+}
+
+// ── the guided first game ───────────────────────────────────────────
+// Both opening hands are kept automatically; the coach takes it from there.
+export function startTutorial() {
+  begin({
+    mode: 'tutorial', setup: TUTORIAL.setup, me: 0, bots: [1], tut: { i: 0, done: false },
+    actions: [{ t: 'mulligan', p: 0, redraw: false }, { t: 'mulligan', p: 1, redraw: false }],
+  });
+}
+
+const tutDoneKey = 'collective.tutorialDone';
+export const tutorialDone = () => { try { return !!localStorage.getItem(tutDoneKey); } catch { return false; } };
+
+// The current lesson step, or null outside the lesson.
+const tutStep = () => (G && G.mode === 'tutorial' && G.tut && !G.tut.done ? TUTORIAL.steps[G.tut.i] : null);
+
+function tutAdvance() {
+  G.tut.i++;
+  if (G.tut.i >= TUTORIAL.steps.length) {
+    G.tut.done = true;
+    try { localStorage.setItem(tutDoneKey, '1'); } catch { /* fine */ }
+  }
+  render();
+  schedule();
+}
+
+// The bot's scripted lesson moves, one at a time so they can be followed.
+function runBotScript(st, k) {
+  if (!G || tutStep() !== st) return;
+  if (k >= st.bot.length) { tutAdvance(); return; }
+  const events = commit(botAction(G.state, 1, st.bot[k]));
+  render(events || []);
+  G.timer = setTimeout(() => runBotScript(st, k + 1), 1200);
+}
+
+function coachHTML(st) {
+  const n = G.tut.i + 1, total = TUTORIAL.steps.length;
+  return `<div class="coach${st.bot ? ' coach-wait' : ''}">
+    <div class="coach-text">${esc(st.say)}</div>
+    <div class="coach-row"><span class="coach-n">Lesson ${n} of ${total}</span>
+      ${st.next ? `<button class="btn small primary" data-act="coach-next">${st.final ? 'Let’s play!' : 'Next'}</button>` : ''}
+      ${st.final || st.bot ? '' : '<button class="btn small ghost" data-act="coach-skip">Skip lesson</button>'}</div>
+  </div>`;
 }
 
 // ?demo=<seed>&moves=<n>&bots=<1|2>: bots play every seat for n moves, then
@@ -295,29 +345,50 @@ function dispatch(a) {
     Net.sendAction(G.code, G.round, a).catch((e) => flash(`Not sent: ${e.message}`));
     return true;
   }
+  // In the lesson, your moves must be the one the coach is asking for.
+  const st = tutStep();
+  let lessonMove = false;
+  if (st && a.p === G.me && a.t !== 'concede' && a.t !== 'fix') {
+    if (!st.expect) { flash(st.next ? 'Read the box first, then tap Next.' : 'Wait for the bot to finish.'); return false; }
+    if (!matches(G.state, a, st.expect)) { flash(`Not quite. ${st.say}`); G.attacker = null; render(); return false; }
+    lessonMove = true;
+  }
+  const events = commit(a);
+  if (!events) return false;
+  if (lessonMove) { render(events); tutAdvance(); return true; }
+  render(events);
+  schedule();
+  return true;
+}
+
+// Apply a move locally and remember it. Returns its events, or null.
+function commit(a) {
   const r = apply(G.state, a);
-  if (r.error) { flash(r.error); return false; }
+  if (r.error) { flash(r.error); return null; }
   G.actions.push(a);
   G.state = r.state;
   G.attacker = null;
   save();
-  render(r.state.events);
-  schedule();
-  return true;
+  return r.state.events;
 }
 
 function schedule() {
   clearTimeout(G.timer);
   const s = G.state;
   if (s.phase === 'over') return;
+  const st = tutStep();
+  if (st?.bot) { G.timer = setTimeout(() => runBotScript(st, 0), 1000); return; }
+  if (st) return; // the lesson is waiting for you
   const bot = s.phase === 'mulligan'
     ? s.players.find((P) => !P.mull && G.bots.has(P.i))?.i
     : (G.bots.has(s.active) ? s.active : undefined);
   if (bot == null) return;
+  // after the lesson the bot plays for real, but gently
+  const noise = G.mode === 'tutorial' ? 3 : 0.4;
   G.timer = setTimeout(() => {
     if (!G) return;
-    dispatch(chooseAction(G.state, bot));
-  }, s.phase === 'mulligan' ? 250 : 800);
+    dispatch(chooseAction(G.state, bot, { noise }));
+  }, s.phase === 'mulligan' ? 250 : 900);
 }
 
 function undo() {
@@ -446,7 +517,7 @@ function tokHTML(c, hl) {
   const badges = (d.keywords.includes('guard') ? `<span title="Guard">${ICON.shield}</span>` : '') +
     (c.sacEnd ? `<span title="Leaves at the end of the turn">${ICON.hourglass}</span>` : '') +
     (d.keywords.includes('lastBreath') ? '<span title="Last Breath">✦</span>' : '');
-  return `<div class="${cls.join(' ')}" data-uid="${c.uid}" style="${factionVars(d)}">
+  return `<div class="${cls.join(' ')}" data-uid="${c.uid}" data-cid="${c.cid}" style="${factionVars(d)}">
     <div class="tok-art">${artTag(c.cid) || glyph(d.factions[0] || 'neutral')}</div>
     <div class="tok-name">${esc(d.name)}</div>
     <div class="tok-p${p > d.power ? ' up' : p < d.power ? ' down' : ''}">${p}</div>
@@ -465,7 +536,7 @@ function handHTML(P) {
     const c = s.cards[u], d = BY_ID[c.cid];
     const cost = costOf(s, G.me, c);
     const can = !playable(u);
-    return `<div class="hc${d.factions.length > 1 ? ' multi' : ''}${can ? ' can' : ''}" data-uid="${u}" style="${factionVars(d)}">
+    return `<div class="hc${d.factions.length > 1 ? ' multi' : ''}${can ? ' can' : ''}" data-uid="${u}" data-cid="${c.cid}" style="${factionVars(d)}">
       <div class="hc-art">${artTag(c.cid) || glyph(d.factions[0] || 'neutral')}</div>
       <div class="hc-cost${cost < d.cost ? ' cheaper' : ''}">${cost}</div>
       ${d.type === 'creature' ? `<div class="hc-pv">${d.power}/${d.vitality}</div>` : `<div class="hc-tag">${d.subtype === 'Trap' ? 'Trap' : 'Spell'}</div>`}
@@ -497,8 +568,25 @@ function midHTML() {
       <button class="btn small" data-act="info" data-uid="${G.attacker}">Card</button>
       <button class="btn small ghost" data-act="cancel">Cancel</button></div>`;
   }
+  const lesson = tutStep();
+  if (lesson && !lesson.bot) return ''; // the coach is all there is to read
   const lines = S().log.slice(-2).map((l) => `<div>${esc(speak(l.text))}</div>`).join('');
-  return `<div class="ticker">${lines}</div>`;
+  const hint = lesson ? '' : hintText();
+  return `<div class="ticker">${lines}</div>${hint ? `<div class="hint">${hint}</div>` : ''}`;
+}
+
+// What can I do right now? Shown under the ticker in every game.
+function hintText() {
+  const s = S();
+  if (s.phase !== 'main') return '';
+  if (!myTurn()) return G.bots.has(s.active) ? 'The bot is playing. Watch the line above to see what it does.' : '';
+  const P = s.players[G.me];
+  const canPlay = P.hand.some((u) => !playable(u));
+  const canHit = P.board.some((u) => canAttack(s, G.me, s.cards[u]));
+  if (canPlay && canHit) return 'Your move: tap a <b>glowing card</b> to play it, or a <b>glowing creature</b> to attack.';
+  if (canPlay) return 'Your move: tap a <b>glowing card</b> to play it.';
+  if (canHit) return 'Your move: tap a <b>glowing creature</b>, then what it should attack.';
+  return 'Nothing else you can do this turn: tap <b>End turn</b>.';
 }
 
 function anythingToDo() {
@@ -519,14 +607,16 @@ function render(events = []) {
   for (let k = 1; k < s.players.length; k++) others.push(s.players[(G.me + k) % s.players.length]);
   const phoenix = phoenixReady(s, G.me);
   root.className = s.players.length === 2 ? 'g-duel' : 'g-ffa';
+  const st = tutStep();
   root.innerHTML = `
     <div class="g-top">
       <button class="g-icon" data-act="menu" aria-label="Menu">☰</button>
+      <button class="g-icon" data-act="help" aria-label="How the table works">?</button>
       <div class="g-status">${statusHTML()}</div>
       ${G.mode === 'practice' ? '<button class="g-icon" data-act="undo" aria-label="Take back">↶</button>' : '<span style="width:36px"></span>'}
     </div>
     ${others.map((P) => `<section class="g-side opp${s.active === P.i ? ' active' : ''}${P.out ? ' out' : ''}">${pbarHTML(P, hl)}${rowHTML(P, hl)}</section>`).join('')}
-    <div class="g-mid">${midHTML()}</div>
+    <div class="g-mid">${st ? coachHTML(st) : ''}${midHTML()}</div>
     <section class="g-side me${s.active === G.me ? ' active' : ''}">${rowHTML(me, hl)}${pbarHTML(me, hl)}</section>
     <div class="g-actions">
       ${phoenix.length && myTurn() ? `<button class="btn small" data-act="phoenix" data-uid="${phoenix[0]}">Return Phoenix (2)</button>` : ''}
@@ -540,6 +630,8 @@ function render(events = []) {
     if (e.k === 'dmg') root.querySelector(`.tok[data-uid="${e.uid}"]`)?.classList.add('hit');
     if (e.k === 'life' && e.n < 0) root.querySelector(`.pbar[data-p="${e.p}"]`)?.classList.add('hit');
   }
+  // ring whatever the lesson is talking about
+  if (st?.show && !G.sheet) for (const sel of st.show) root.querySelectorAll(sel).forEach((el) => el.classList.add('coach-on'));
 }
 
 function mulliganHTML() {
@@ -565,7 +657,9 @@ function overHTML() {
     <div class="btn-row">
       ${G.mode === 'online'
         ? '<button class="btn primary" data-act="lobby">Back to the lobby (swap cards, play again)</button>'
-        : `<button class="btn primary" data-act="rematch">Play again</button>${!win ? '<button class="btn" data-act="undo">Take back a move</button>' : ''}`}
+        : G.mode === 'tutorial'
+          ? '<button class="btn primary" data-act="leave">Try a real practice game</button><button class="btn" data-act="tutorial">Replay the lesson</button>'
+          : `<button class="btn primary" data-act="rematch">Play again</button>${!win ? '<button class="btn" data-act="undo">Take back a move</button>' : ''}`}
       <button class="btn ghost" data-act="leave">Leave</button>
     </div></div></div>`;
 }
@@ -583,10 +677,18 @@ function cardSheet(uid, { from = 'hand' } = {}) {
   const opts = onBoard ? { power: power(s, c), vitality: vitality(s, c) - (c.dmg || 0), cls: 'anim' } : { cost: c.owner === G.me ? costOf(s, G.me, c, from) : d.cost, cls: 'anim' };
   let actions = '', note = '';
   if (c.owner === G.me && (from === 'hand' || (from === 'discard' && d.echo))) {
-    const why = playable(uid, from);
+    let why = playable(uid, from);
     const cost = costOf(s, G.me, c, from);
+    // in the lesson, only the card the coach is asking for can be played
+    const st = tutStep();
+    let advice = '';
+    if (st && !why) {
+      if (st.expect?.t === 'play' && st.expect.cid === c.cid) advice = st.sheet || '';
+      else why = st.expect?.t === 'play' ? `For now, play ${BY_ID[st.expect.cid].name} (it's glowing on the table).` : 'Not yet: follow the box on the table first.';
+    }
     actions = `<button class="btn primary" data-act="${from === 'discard' ? 'echo' : 'play'}" data-uid="${uid}" ${why ? 'disabled' : ''}>${from === 'discard' ? 'Play with Echo' : 'Play'} · ${cost} Energy</button>`;
     if (why) note = `<div class="why">${esc(why)}</div>`;
+    if (advice) note = `<div class="coach coach-sheet"><div class="coach-text">${esc(advice)}</div></div>`;
   }
   if (onBoard) {
     const bits = [];
@@ -658,6 +760,23 @@ function menuSheet() {
     <button class="btn danger" data-act="concede">Concede</button>
     <button class="btn ghost" data-act="leave">Leave (${G.mode === 'practice' ? 'you can resume later' : 'the game continues'})</button>
     <button class="btn ghost" data-act="close">Back to the game</button></div>`;
+}
+
+function helpSheet() {
+  return `<h3>How the table works</h3>
+    <div class="help-list">
+      <div><b>Top: your opponent.</b> Their name, Life ❤, Energy (gold hexagons), and how many cards they have in hand, in their deck, and in their discard pile (tap that number to look through it).</div>
+      <div><b>Creatures</b> sit in the middle: theirs above, yours below. The left number is <b>Power</b> (damage it deals), the right number is <b>Vitality</b> (damage it can take, red when it's hurt).</div>
+      <div><b>Glowing gold means ready.</b> A glowing card in your hand can be played now. A glowing creature can attack now.</div>
+      <div><b>To attack:</b> tap your glowing creature, then tap the opponent's name bar (to hit them) or one of their creatures. Creatures hit each other back; players don't.</div>
+      <div><b>Badges on creatures:</b> shield = Guard (must be attacked first), ✦ = Last Breath (does something when it dies), hourglass = leaves at the end of the turn.</div>
+      <div><b>Bottom: your hand.</b> Tap a card to read it, then Play. The hexagon is its Energy cost.</div>
+      <div><b>End turn</b> when you're done. Next turn your Energy refills and goes up by one.</div>
+      <div>Tap any card, anywhere, to read it. Keywords are explained under the card.</div>
+    </div>
+    <div class="btn-col">
+      ${G.mode === 'online' ? '' : '<button class="btn" data-act="tutorial">Play the guided lesson</button>'}
+      <button class="btn ghost" data-act="close">Back to the game</button></div>`;
 }
 
 function logSheet() {
@@ -810,6 +929,10 @@ function onAct(act, el) {
     case 'fix-life': dispatch({ t: 'fix', by: G.me, op: 'life', p: Number(el.dataset.p), n: Number(el.dataset.n) }); G.sheet = fixSheet(); render(); break;
     case 'fix-energy': dispatch({ t: 'fix', by: G.me, op: 'energy', p: G.me, n: Number(el.dataset.n) }); G.sheet = fixSheet(); render(); break;
     case 'undo': G.sheet = null; if (G.mode === 'practice') undo(); break;
+    case 'coach-next': tutAdvance(); break;
+    case 'coach-skip': G.tut.done = true; flash('Lesson skipped. The hint line and the ? button are still there.'); render(); schedule(); break;
+    case 'help': G.sheet = helpSheet(); render(); break;
+    case 'tutorial': startTutorial(); break;
     case 'concede': G.sheet = null; dispatch({ t: 'concede', p: G.me }); break;
     case 'rules': leave('#/rules'); break;
     case 'leave': leave(); break;

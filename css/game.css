@@ -212,3 +212,49 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 
 /* drawn art shown as a cached image on the table */
 .tok-art .art-img, .hc-art .art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* ── the guided lesson ───────────────────────────────────────────── */
+.coach {
+  width: min(100%, 380px);
+  padding: 12px 14px 10px;
+  border-radius: 14px;
+  background: var(--grain), linear-gradient(180deg, #f6eedb, #e9dcc0);
+  color: #1c1611;
+  box-shadow: 0 0 0 1.5px #d9b764, 0 10px 28px rgba(0, 0, 0, .55);
+  font-size: 15px;
+  line-height: 1.42;
+  text-align: left;
+  animation: coachIn .25s ease-out;
+}
+.coach-text { font-family: 'Spectral', Georgia, serif; }
+.coach-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.coach-n { flex: 1; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #7a6a52; }
+.coach .btn.small { min-height: 34px; }
+.coach .btn.ghost { color: #6b5b44; border-color: rgba(60, 45, 30, .25); }
+.coach-wait .coach-text::after { content: ' ⏳'; }
+.coach-sheet { width: 100%; margin: 12px 0 0; }
+@keyframes coachIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* whatever the coach is talking about gets a pulsing gold ring */
+.coach-on { position: relative; z-index: 2; border-radius: 10px; animation: coachRing 1.3s ease-in-out infinite; }
+@keyframes coachRing {
+  0%, 100% { box-shadow: 0 0 0 2px #ffd76a, 0 0 0 6px rgba(255, 215, 106, .25); }
+  50% { box-shadow: 0 0 0 3px #fff0b8, 0 0 0 12px rgba(255, 215, 106, .12); }
+}
+.hc.coach-on, .tok.coach-on { transform: translateY(-4px); }
+
+/* the "what can I do" line */
+.hint {
+  font-size: 13px;
+  color: #f1e3bf;
+  text-align: center;
+  background: rgba(214, 180, 106, .1);
+  border: 1px solid rgba(214, 180, 106, .25);
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+.hint b { color: var(--gold); }
+
+.help-list { display: grid; gap: 10px; font-size: 14px; line-height: 1.5; }
+.help-list b { color: var(--gold); }
+.panel.learn { border-color: rgba(214, 180, 106, .45); background: linear-gradient(180deg, rgba(214, 180, 106, .1), var(--bg-2)); }

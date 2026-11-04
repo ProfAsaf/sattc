@@ -43,6 +43,8 @@ let G = null; // the game being shown
 if (typeof window !== 'undefined') window.collectiveDebug = { redraw: () => redraw(), get G() { return G; } };
 
 // ── play page ───────────────────────────────────────────────────────
+// Friends first (a new game for 2 or 3 players, or join one by its code),
+// then Bots (1 or 2, or draft a deck against them). Few words, one screen.
 function deckChoices() {
   const mine = Decks.loadDecks().filter((d) => Decks.validate(d.counts).ok).map((d) => ({ id: d.id, name: d.name, counts: d.counts }));
   return [...mine, ...STARTERS.map((d) => ({ id: d.id, name: `${d.name} (starter)`, counts: d.counts }))];
@@ -51,15 +53,16 @@ function deckChoices() {
 // ── online lobby ────────────────────────────────────────────────────
 let L = null; // { code, info, unsub } while in a room
 let playView = null;
+// The Play page's switches and its "Decks" list, kept while the page redraws.
+const PF = { draftNight: false, botDraft: false, decksOpen: false };
+const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 
 function deckSelect(id, choices, chosen) {
   return `<select id="${id}" class="select">${choices.map((d) => `<option value="${esc(d.id)}"${d.id === chosen ? ' selected' : ''}>${esc(d.name)}</option>`).join('')}</select>`;
 }
 
 function onlinePanelHTML(choices, chosen) {
-  if (!Net.isConfigured()) {
-    return `<h3>Play your friends</h3><p class="muted small" style="margin:6px 0 0">Online games, 1v1 or three-way, switch on once the game's database is connected.</p>`;
-  }
+  if (!Net.isConfigured()) return '<div class="pp-in"><h3>Friends</h3><p class="muted small" style="margin:0">Online play is not set up yet.</p></div>';
   if (L && L.info) {
     if (L.info.draft) return Draft.roomPanelHTML(L.code, L.info); // Draft night has its own lobby
     const info = L.info;
@@ -77,33 +80,64 @@ function onlinePanelHTML(choices, chosen) {
     const link = `${location.origin}${location.pathname}?room=${L.code}`;
     const myDeck = info.players?.[meSeat]?.deck;
     const current = choices.find((d) => Decks.encode(d.counts) === myDeck)?.id || chosen;
-    return `<h3>Game ${esc(L.code)}</h3>
-      <p class="muted small" style="margin:6px 0 10px">Friends join with the code <b style="color:var(--gold);letter-spacing:.1em">${esc(L.code)}</b>, or this link.</p>
-      <div class="btn-row"><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
-      <div class="deck-cards" style="margin-top:12px">${seats}</div>
+    const hostName = (info.players || []).find((p) => p && p.id === info.host)?.name || 'The host';
+    const next = info.status === 'playing' ? '<button class="btn primary" data-act="rejoin-table">Back to the table</button>'
+      : host ? `<button class="btn primary" data-act="start" ${full ? '' : 'disabled'}>${full ? `Start game ${(info.round || 0) + 1}` : 'Waiting for everyone to join'}</button>`
+        : `<p class="muted small pp-wait">${esc(hostName)} starts the game.</p>`;
+    return `<div class="pp-in">
+      <div class="pp-title"><h3>Game <b>${esc(L.code)}</b></h3><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
+      <div class="deck-cards">${seats}</div>
       ${host && info.status === 'lobby' ? Draft.modeSwitchHTML(false) : ''}
-      <label class="field">Your deck for the next game ${deckSelect('room-deck', choices, current)}</label>
-      <div class="btn-col" style="display:grid;gap:8px;margin-top:12px">
-        ${host ? `<button class="btn primary" data-act="start" ${full ? '' : 'disabled'}>${full ? `Start game ${(info.round || 0) + 1}` : 'Waiting for everyone to join'}</button>` : `<p class="muted small" style="margin:0">The host starts the game when everyone is in.</p>`}
-        ${info.status === 'playing' ? '<button class="btn" data-act="rejoin-table">Back to the table</button>' : ''}
-        <button class="btn ghost" data-act="leave-room">Leave this game</button>
-      </div>`;
+      <div class="pp-group"><label class="pp-row"><span>Deck</span>${deckSelect('room-deck', choices, current)}</label></div>
+      ${next}
+      <button class="btn ghost" data-act="leave-room">Leave this game</button>
+    </div>`;
   }
   const code = Net.cleanCode(new URLSearchParams(location.search).get('room')) || '';
   const last = Net.lastRoom();
-  return `<h3>Play your friends</h3>
-    <label class="field">Your name <input id="my-name" class="name-input" style="font-size:18px;min-height:44px" maxlength="16" value="${esc(Net.myName())}" placeholder="Name" autocomplete="off"></label>
-    <label class="field">Your deck ${deckSelect('net-deck', choices, chosen)}</label>
-    ${Draft.createSwitchHTML()}
-    <div class="btn-row" style="margin-top:12px">
-      <button class="btn primary" style="flex:1" data-act="create" data-seats="3">New three-way game</button>
-      <button class="btn" style="flex:1" data-act="create" data-seats="2">New 1v1 game</button>
+  const btn = (lead) => `btn${lead ? ' primary' : ''}`; // opened from an invite link, Join leads
+  return `<div class="pp-in">
+    <h3>Friends</h3>
+    <div class="pp-group">
+      <label class="pp-row"><span>Name</span><input id="my-name" maxlength="16" value="${esc(Net.myName())}" placeholder="Your name" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done"></label>
+      ${Draft.createSwitchHTML(PF.draftNight)}
+      <label class="pp-row" id="net-deck-row"${PF.draftNight ? ' hidden' : ''}><span>Deck</span>${deckSelect('net-deck', choices, chosen)}</label>
     </div>
-    <div class="btn-row" style="margin-top:12px">
-      <input id="join-code" class="name-input" style="flex:1;min-width:0;font-size:20px;letter-spacing:.2em;text-transform:uppercase" maxlength="4" placeholder="CODE" value="${esc(code)}" autocomplete="off" autocapitalize="characters">
-      <button class="btn" data-act="join">Join</button>
+    <div class="pp-label">New game</div>
+    <div class="pp-two">
+      <button class="${btn(!code)}" data-act="create" data-seats="2">2 players</button>
+      <button class="${btn(!code)}" data-act="create" data-seats="3">3 players</button>
     </div>
-    ${last && !code ? `<p class="small" style="margin:10px 0 0"><button class="btn small ghost" data-act="rejoin" data-code="${esc(last)}">Rejoin game ${esc(last)}</button></p>` : ''}`;
+    <div class="pp-two">
+      <input id="join-code" class="pp-code" maxlength="4" placeholder="CODE" value="${esc(code)}" aria-label="Game code" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go">
+      <button class="${btn(code)}" data-act="join">Join</button>
+    </div>
+    ${last && !code ? `<button class="btn small ghost pp-rejoin" data-act="rejoin" data-code="${esc(last)}">Rejoin game ${esc(last)}</button>` : ''}
+  </div>`;
+}
+
+function botsPanelHTML(choices, chosen) {
+  const saved = store.get();
+  const draft = Draft.savedPractice();
+  const x = (act) => `<button class="btn ghost pp-x" data-act="${act}" aria-label="Throw it away">✕</button>`;
+  return `<div class="pp-in">
+    <h3>Bots</h3>
+    ${saved && !saved.over ? `<div class="pp-resume"><button class="btn primary" data-act="resume">Resume your game</button>${x('forget')}</div>` : ''}
+    ${draft ? `<div class="pp-resume"><button class="btn primary" data-act="draft-resume">${draft.done ? 'Your drafted deck' : `Resume your draft · ${draft.picks}/${draft.of}`}</button>${x('draft-forget')}</div>` : ''}
+    <div class="pp-two">
+      <button class="btn" data-act="bots" data-n="1">1 bot</button>
+      <button class="btn" data-act="bots" data-n="2">2 bots</button>
+    </div>
+    <div class="pp-opts">
+      <label class="dr-switch mini"><input type="checkbox" id="bot-draft"${PF.botDraft ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>Draft my deck</b></span></label>
+      <button class="pp-more" data-act="decks" aria-expanded="${PF.decksOpen}" aria-controls="bot-decks"${PF.botDraft ? ' hidden' : ''}>Decks<i>${PF.decksOpen ? '▴' : '▾'}</i></button>
+    </div>
+    <div class="pp-group" id="bot-decks"${PF.decksOpen && !PF.botDraft ? '' : ' hidden'}>
+      <label class="pp-row"><span>You</span>${deckSelect('my-deck', choices, chosen)}</label>
+      <label class="pp-row"><span>Bots</span><select id="bot-deck" class="select"><option value="random">Random starter decks</option>
+        ${STARTERS.map((d) => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label>
+    </div>
+  </div>`;
 }
 
 async function enterRoom(code) {
@@ -141,7 +175,7 @@ async function onlineAct(act, el, choices) {
   try {
     if (act === 'create' || act === 'join' || act === 'rejoin') {
       const name = (document.getElementById('my-name')?.value || '').trim() || Net.myName();
-      if (!name) { flash('Type your name first.'); return; }
+      if (!name) { flash('Type your name first.'); document.getElementById('my-name')?.focus(); return; }
       Net.setMyName(name);
       const deck = deckOf('net-deck');
       const dcode = Decks.encode(deck.counts);
@@ -169,50 +203,52 @@ export function playPage(view) {
   const choices = deckChoices();
   const active = Decks.getActiveId();
   const chosen = choices.find((d) => d.id === active) ? active : choices[0].id;
-  const saved = store.get();
   view.innerHTML = `
-    <div class="sect-title"><h2>Play</h2></div>
-    ${saved && !saved.over ? `<div class="notice"><div>⏸</div><div>A practice game is in progress.
-      <div class="btn-row" style="margin-top:8px"><button class="btn small primary" data-act="resume">Resume</button>
-      <button class="btn small ghost" data-act="forget">Throw it away</button></div></div></div>` : ''}
-    <div class="panel learn" style="margin-top:12px">
-      <h3>${tutorialDone() ? 'Want a refresher?' : 'New to the game? Start here'}</h3>
-      <p class="muted small" style="margin:6px 0 0">A guided game teaches attacking, blocking and Tricks, one step at a time. About 5 minutes.</p>
-      <button class="btn${tutorialDone() ? '' : ' primary'}" data-act="tutorial" style="width:100%;margin-top:12px">${tutorialDone() ? 'Replay the guided lesson' : 'Start the guided lesson'}</button>
-    </div>
-    <div class="panel" style="margin-top:12px">
-      <h3>Practice against bots</h3>
-      <p class="muted small" style="margin:6px 0 0">Learn the cards before Friday. You can take moves back.</p>
-      <label class="field">Your deck
-        <select id="my-deck" class="select">${choices.map((d) => `<option value="${esc(d.id)}"${d.id === chosen ? ' selected' : ''}>${esc(d.name)}</option>`).join('')}</select></label>
-      <label class="field">The bots play
-        <select id="bot-deck" class="select"><option value="random">Random starter decks</option>
-        ${STARTERS.map((d) => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label>
-      <div style="display:grid;gap:8px;margin-top:14px">
-        <button class="btn primary" data-act="practice" data-n="1">You against one bot</button>
-        <button class="btn primary" data-act="practice" data-n="2">Three-way: you against two bots</button>
-      </div>
-    </div>
-    ${Draft.practicePanelHTML()}
-    <div class="panel" style="margin-top:12px">${onlinePanelHTML(choices, chosen)}</div>`;
+    <header class="pagehead"><a class="back" href="#/" aria-label="Home">${BACK}</a><h2>Play</h2></header>
+    <section class="panel pp">${onlinePanelHTML(choices, chosen)}</section>
+    <section class="panel pp">${botsPanelHTML(choices, chosen)}</section>`;
+  // "Draft my deck" brings no deck, so it hides the deck choice
+  const showDecks = () => {
+    const more = view.querySelector('[data-act="decks"]');
+    more.hidden = PF.botDraft;
+    more.setAttribute('aria-expanded', String(PF.decksOpen));
+    more.querySelector('i').textContent = PF.decksOpen ? '▴' : '▾';
+    document.getElementById('bot-decks').hidden = PF.botDraft || !PF.decksOpen;
+  };
   view.onchange = (e) => {
-    if (e.target.id !== 'room-deck' || !L) return;
-    const d = choices.find((x) => x.id === e.target.value);
+    const t = e.target;
+    if (t.id === 'draft-new') { PF.draftNight = t.checked; document.getElementById('net-deck-row').hidden = t.checked; return; }
+    if (t.id === 'bot-draft') { PF.botDraft = t.checked; showDecks(); return; }
+    if (t.id !== 'room-deck' || !L) return;
+    const d = choices.find((x) => x.id === t.value);
     Net.setDeck(L.code, Decks.encode(d.counts)).then(() => flash(`${d.name.replace(/ \(starter\)$/, '')} is your deck for the next game.`), (err) => flash(err.message));
+  };
+  view.onkeydown = (e) => {
+    if (e.key === 'Enter' && e.target.id === 'join-code') { e.preventDefault(); onlineAct('join', e.target, choices); }
   };
   view.onclick = (e) => {
     const el = e.target.closest('[data-act]');
     const act = el?.dataset.act;
-    if (['create', 'join', 'rejoin', 'start', 'leave-room', 'rejoin-table', 'copy-link'].includes(act)) { onlineAct(act, el, choices); return; }
-    if (act?.startsWith('draft-')) { Draft.onPlayAct(act, el, { play: startPractice, refresh: () => playPage(view), code: L?.code }); return; }
-    if (act === 'resume') resume();
-    if (act === 'tutorial') startTutorial();
-    if (act === 'forget') { store.clear(); playPage(view); }
-    if (act === 'practice') {
-      const mine = choices.find((d) => d.id === document.getElementById('my-deck').value);
-      const which = document.getElementById('bot-deck').value;
-      startPractice(mine, pickBots(Number(el.dataset.n), which, mine));
+    if (!act) return;
+    // ✕ beside a saved game or draft: the second tap throws it away
+    if ((act === 'forget' || act === 'draft-forget') && !el.classList.contains('armed')) {
+      el.classList.add('armed');
+      el.textContent = 'Throw away?';
+      setTimeout(() => { if (el.isConnected) { el.classList.remove('armed'); el.textContent = '✕'; } }, 3000);
+      return;
     }
+    if (['create', 'join', 'rejoin', 'start', 'leave-room', 'rejoin-table', 'copy-link'].includes(act)) { onlineAct(act, el, choices); return; }
+    const ctx = { play: startPractice, refresh: () => playPage(view), code: L?.code };
+    if (act === 'bots') {
+      if (PF.botDraft) { Draft.onPlayAct('draft-practice', el, ctx); return; } // data-n is the number of bots
+      const mine = choices.find((d) => d.id === document.getElementById('my-deck').value);
+      startPractice(mine, pickBots(Number(el.dataset.n), document.getElementById('bot-deck').value, mine));
+      return;
+    }
+    if (act === 'decks') { PF.decksOpen = !PF.decksOpen; showDecks(); return; }
+    if (act.startsWith('draft-')) { Draft.onPlayAct(act, el, ctx); return; }
+    if (act === 'resume') resume();
+    if (act === 'forget') { store.clear(); playPage(view); }
   };
 }
 
@@ -228,13 +264,6 @@ function startPractice(mine, bots) {
     ...bots.map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
   const setup = { seed: (Math.random() * 2 ** 31) | 0, players };
   begin({ mode: 'practice', setup, actions: [], me: 0, bots: bots.map((_, i) => i + 1) });
-}
-
-// One tap from the home page: you (with your deck in use) against two bots.
-export function startThreeWay() {
-  const choices = deckChoices();
-  const mine = choices.find((d) => d.id === Decks.getActiveId()) || choices.find((d) => d.id === STARTERS[1].id) || choices[0];
-  startPractice(mine, pickBots(2, 'random', mine));
 }
 
 // ── the guided first game ───────────────────────────────────────────

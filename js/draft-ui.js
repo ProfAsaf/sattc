@@ -1,6 +1,6 @@
 // Draft night, on screen: the draft itself (online, or against bots for
-// practice), the lobby panel of a draft room, and the Play page's "Draft
-// against bots" panel. The rules, the replay and the bots are in draft.js.
+// practice) and the lobby panel of a draft room. The rules, the replay and
+// the bots are in draft.js.
 //
 // The draft screen is a full-screen layer (#draft) above the app, like the
 // game table: the round and its kind of card, the picking order with whose
@@ -9,8 +9,9 @@
 // it turns into your deck, with Start game / Ready / Play.
 //
 // game-ui.js calls in from the Play page and the online lobby:
-//   practicePanelHTML(), roomPanelHTML(code, info), modeSwitchHTML(on), createSwitchHTML()
-//   onPlayAct(act, el, ctx)          the Play page's draft-* buttons
+//   savedPractice()                  a practice draft to resume, or null
+//   roomPanelHTML(code, info), modeSwitchHTML(on), createSwitchHTML(on)
+//   onPlayAct(act, el, ctx)          the Play page's draft-* buttons (draft-practice: el.dataset.n bots)
 //   onRoomInfo(code, info, refresh)  each lobby update of the room this phone is in
 //   beforeStart(code, info)          the host's Start game in a draft room
 //   leaveRoom()                      this phone leaves the room
@@ -650,31 +651,19 @@ export function onPlayAct(act, el, ctx = {}) {
   }
 }
 
-export function practicePanelHTML() {
+// A practice draft against bots to come back to: how far it got, or null.
+export function savedPractice() {
   const s = loadPractice();
-  let saved = '';
-  if (s) {
-    const n = replay(s, s.picks).pools[0].length;
-    saved = `<div class="notice" style="margin-top:12px"><div>⏸</div><div>${n >= PICKS ? 'Your drafted deck is waiting.' : `A draft against ${s.n === 2 ? 'one bot' : 'two bots'} is in progress: ${n} of ${PICKS} picks.`}
-      <div class="btn-row" style="margin-top:8px"><button class="btn small primary" data-act="draft-resume">${n >= PICKS ? 'See the deck' : 'Resume the draft'}</button>
-      <button class="btn small ghost" data-act="draft-forget">Throw it away</button></div></div></div>`;
-  }
-  return `<div class="panel dr-panel" style="margin-top:12px">
-      <h3>Draft against bots</h3>
-      <p class="muted small" style="margin:6px 0 0">Practice for draft night: each round a few cards of one kind go on the table, and you take turns picking one. Your 30 picks are your deck, any factions.</p>
-      ${saved}
-      <div style="display:grid;gap:8px;margin-top:14px">
-        <button class="btn" data-act="draft-practice" data-n="1">Draft: you and one bot</button>
-        <button class="btn" data-act="draft-practice" data-n="2">Draft: you and two bots</button>
-      </div>
-    </div>`;
+  if (!s) return null;
+  const picks = replay(s, s.picks).pools[0].length;
+  return { picks, of: PICKS, done: picks >= PICKS };
 }
 
 // The "Draft night" switch: in the new-game form (read when the game is
 // created) and, for the host, in the lobby until the draft starts.
-export function createSwitchHTML() {
-  return `<label class="dr-switch"><input type="checkbox" id="draft-new"><span class="dr-knob" aria-hidden="true"></span>
-      <span class="dr-switch-text"><b>Draft night</b><small>Everyone drafts a deck in the game instead of bringing one.</small></span></label>`;
+export function createSwitchHTML(on = false) {
+  return `<label class="dr-switch"><input type="checkbox" id="draft-new"${on ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span>
+      <span class="dr-switch-text"><b>Draft night</b></span></label>`;
 }
 
 export function modeSwitchHTML(on) {

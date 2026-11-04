@@ -4,11 +4,16 @@
 import { BY_ID, CARDS, FACTIONS, FACTION_ORDER, KEYWORDS, RULES, SET, STARTERS, TOKENS, isTrick } from './cards.js';
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
 import * as Decks from './decks.js';
-import { autoRejoin, demo, playPage, startTutorial, startThreeWay } from './game-ui.js';
+import { autoRejoin, demo, playPage, startTutorial } from './game-ui.js';
 
 const view = document.getElementById('view');
 
 // ── small helpers ───────────────────────────────────────────────────
+// The pages below Home start with a back chevron and their title.
+const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+const backLink = (href = '#/', label = 'Home') => `<a class="back" href="${href}" aria-label="${label}">${BACK}</a>`;
+const pageHead = (title, extra = '') => `<header class="pagehead">${backLink()}<h2>${title}</h2>${extra}</header>`;
+
 let toastTimer;
 function toast(msg) {
   document.querySelector('.toast')?.remove();
@@ -122,33 +127,55 @@ function openZoom(id, deckCtx = null) {
   document.body.appendChild(zoomEl);
 }
 
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeZoom(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeZoom(); homeMenu(false); } });
 
 // ── home ────────────────────────────────────────────────────────────
+// One screen: the title, three cards, and two buttons within thumb reach.
+// Cards, Decks and Rules sit behind the quiet ☰ in the corner.
+const ICONS = {
+  menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  cards: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="7" y="3" width="12" height="16" rx="1.6"/><path d="M5 6.5v12.2A1.8 1.8 0 0 0 6.8 20.5H15"/></svg>',
+  decks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 3.5 7.5 12 12l8.5-4.5z"/><path d="m3.5 12 8.5 4.5 8.5-4.5"/><path d="m3.5 16.5 8.5 4.5 8.5-4.5"/></svg>',
+  rules: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M8.5 8h7M8.5 11.5h5"/></svg>',
+};
+
+function homeMenu(open) {
+  const menu = document.getElementById('home-menu');
+  if (!menu) return;
+  menu.hidden = !open;
+  document.querySelector('.menu-btn')?.setAttribute('aria-expanded', String(open));
+}
+
 function home() {
   const fan = ['ashmaw', 'seraphine', 'the-barrow-queen'].map((id) => cardHTML(BY_ID[id], { cls: 'anim' })).join('');
   view.innerHTML = `
-    <section class="hero">
-      <div class="kicker">${esc(SET.week)}</div>
-      <h1>THE COLLECTIVE</h1>
-      <div class="sub">${esc(SET.title)}</div>
-      <p class="pitch">Everyone gets the same 90 cards. Build the best 30, then find out who read the cards best.</p>
-    </section>
-    <div class="fan">${fan}</div>
-    <div class="home-actions">
-      <button class="btn primary" data-act="tutorial">New? Learn in a 5-minute guided game</button>
-      <a class="btn" href="#/cards">See all 90 cards</a>
-      <a class="btn" href="#/decks">Build a deck</a>
+    <button class="menu-btn" data-act="menu" aria-label="Menu" aria-expanded="false" aria-controls="home-menu">${ICONS.menu}</button>
+    <div class="home">
+      <div class="home-show">
+        <section class="hero">
+          <div class="kicker">${esc(SET.week)}</div>
+          <h1>THE COLLECTIVE</h1>
+          <div class="sub">${esc(SET.title)}</div>
+        </section>
+        <div class="fan">${fan}</div>
+      </div>
+      <div class="home-actions">
+        <button class="btn primary" data-act="tutorial">Learn to play</button>
+        <a class="btn" href="#/play">Play</a>
+      </div>
     </div>
-    <div class="notice"><div>⚔</div><div>Then <b>practice</b> against the bot, or <b>play your friends</b> online (1v1 or three-way), on the Play tab.
-      <div class="btn-row" style="margin-top:8px"><button class="btn small" data-act="threeway">Try a three-way game against two bots</button></div></div></div>
-    <div class="sect-title"><h3>Five factions</h3></div>
-    <div class="factions-list">${FACTION_ORDER.map((f) => `
-      <div class="faction-item">${factionCoin(f)}<div><b>${FACTIONS[f].name}</b><div>${esc(FACTIONS[f].blurb)}</div></div></div>`).join('')}
+    <div class="menu" id="home-menu" hidden>
+      <nav class="menu-in" aria-label="More">
+        <a href="#/cards">${ICONS.cards}All 90 cards</a>
+        <a href="#/decks">${ICONS.decks}Decks</a>
+        <a href="#/rules">${ICONS.rules}Rules</a>
+      </nav>
     </div>`;
   view.onclick = (e) => {
-    if (e.target.closest('[data-act="tutorial"]')) { startTutorial(); return; }
-    if (e.target.closest('[data-act="threeway"]')) { startThreeWay(); return; }
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'menu') { homeMenu(document.getElementById('home-menu').hidden); return; }
+    if (e.target.closest('#home-menu')) { if (!e.target.closest('a')) homeMenu(false); return; } // a tap beside the menu closes it
+    if (act === 'tutorial') { startTutorial(); return; }
     const c = e.target.closest('.card[data-id]');
     if (c) openZoom(c.dataset.id);
   };
@@ -160,6 +187,7 @@ function gallery() {
   const render = () => {
     const list = CARDS.filter((c) => matches(c, galleryState));
     view.innerHTML = `
+      ${pageHead('Cards')}
       ${chipsHTML(galleryState)}
       <p class="count-line">${list.length} card${list.length === 1 ? '' : 's'} · everyone owns one of each</p>
       <div class="grid">${list.map((c) => cardHTML(c)).join('')}</div>`;
@@ -196,7 +224,7 @@ function deckList() {
   const mine = Decks.loadDecks();
   const active = Decks.getActiveId();
   view.innerHTML = `
-    <div class="sect-title"><h2>Your decks</h2><button class="btn small primary" data-act="new">New deck</button></div>
+    ${pageHead('Your decks', '<button class="btn small primary" data-act="new">New deck</button>')}
     ${mine.length ? `<div class="deck-cards">${mine.map((d) => deckCardHTML(d, active)).join('')}</div>`
       : '<p class="muted">No decks yet. Start from scratch, or open a starter deck and change it.</p>'}
     <div class="sect-title"><h2>Starter decks</h2></div>
@@ -282,8 +310,10 @@ function builder(id) {
     }
     view.innerHTML = `
       <div class="builder-head">
-        ${deck.starter ? `<div class="deck-name" style="font-size:22px">${esc(deck.name)}</div><div class="muted small">Starter deck · changes save your own copy</div>`
-          : `<input class="name-input" id="deck-name" value="${esc(deck.name)}" maxlength="40" aria-label="Deck name">`}
+        <div class="bh-top">${backLink('#/decks', 'Decks')}
+          ${deck.starter ? `<div class="bh-name"><div class="deck-name" style="font-size:22px">${esc(deck.name)}</div><div class="muted small">Starter deck · changes save your own copy</div></div>`
+            : `<input class="name-input" id="deck-name" value="${esc(deck.name)}" maxlength="40" aria-label="Deck name">`}
+        </div>
         <div class="stats-line">
           <div class="big-count${n === RULES.deckSize ? ' full' : ''}">${n}<small>/${RULES.deckSize}</small></div>
           <div class="fac-slots" title="Factions used (max ${RULES.maxFactions})">${factionSlots(fs)}</div>
@@ -332,7 +362,7 @@ function builder(id) {
 
 // ── rules ───────────────────────────────────────────────────────────
 function rules() {
-  view.innerHTML = `<article class="rules-page">
+  view.innerHTML = `${pageHead('Rules')}<article class="rules-page">
     <div class="notice" style="margin-bottom:8px"><div>▶</div><div>Rather learn by doing? <button class="btn small primary" data-act="tutorial" style="margin-left:6px">Play the guided lesson</button></div></div>
     <h2>The idea</h2>
     <p>Every player owns the <b>same 90 cards</b>, one of each. Before you play, you build a deck of exactly <b>30</b>. Everyone is solving the same puzzle. The fun is finding combinations nobody else spotted, and guessing what your friends will bring.</p>
@@ -440,13 +470,15 @@ const ROUTES = { '': home, cards: gallery, decks: deckList, deck: builder, rules
 function route() {
   const [path = '', arg] = location.hash.replace(/^#\/?/, '').split('/');
   closeZoom();
+  document.body.dataset.page = path && ROUTES[path] ? path : 'home';
   (ROUTES[path] || home)(arg ? decodeURIComponent(arg) : undefined);
-  const tab = path === 'deck' ? 'decks' : (ROUTES[path] ? path : '') || 'home';
-  document.querySelectorAll('.tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
   window.scrollTo(0, 0);
+  document.body.classList.remove('scrolled');
 }
 
 window.addEventListener('hashchange', route);
+// A page's title bar gets its backdrop once the page scrolls under it.
+window.addEventListener('scroll', () => document.body.classList.toggle('scrolled', window.scrollY > 4), { passive: true });
 route();
 const params = new URLSearchParams(location.search);
 if (params.has('demo')) demo(params);

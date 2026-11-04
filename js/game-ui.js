@@ -13,6 +13,7 @@ import * as FX from './fx.js';
 import * as Decks from './decks.js';
 import * as Net from './net.js';
 import * as Draft from './draft-ui.js';
+import { keepAwake } from './awake.js';
 import { TUTORIAL, botAction, matches } from './tutorial.js';
 
 const SAVE = 'collective.practice.v2';
@@ -81,12 +82,15 @@ function onlinePanelHTML(choices, chosen) {
     const myDeck = info.players?.[meSeat]?.deck;
     const current = choices.find((d) => Decks.encode(d.counts) === myDeck)?.id || chosen;
     const hostName = (info.players || []).find((p) => p && p.id === info.host)?.name || 'The host';
+    const odd = Net.otherVersions(info);
     const next = info.status === 'playing' ? '<button class="btn primary" data-act="rejoin-table">Back to the table</button>'
-      : host ? `<button class="btn primary" data-act="start" ${full ? '' : 'disabled'}>${full ? `Start game ${(info.round || 0) + 1}` : 'Waiting for everyone to join'}</button>`
-        : `<p class="muted small pp-wait">${esc(hostName)} starts the game.</p>`;
+      : host && odd.length ? '<button class="btn primary" disabled>Reload every phone first</button>'
+        : host ? `<button class="btn primary" data-act="start" ${full ? '' : 'disabled'}>${full ? `Start game ${(info.round || 0) + 1}` : 'Waiting for everyone to join'}</button>`
+          : `<p class="muted small pp-wait">${esc(hostName)} starts the game.</p>`;
     return `<div class="pp-in">
       <div class="pp-title"><h3>Game <b>${esc(L.code)}</b></h3><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
       <div class="deck-cards">${seats}</div>
+      ${Draft.versionNoteHTML(info)}
       ${host && info.status === 'lobby' ? Draft.modeSwitchHTML(false) : ''}
       <div class="pp-group"><label class="pp-row"><span>Deck</span>${deckSelect('room-deck', choices, current)}</label></div>
       ${next}
@@ -143,9 +147,13 @@ function botsPanelHTML(choices, chosen) {
 async function enterRoom(code) {
   if (L?.unsub) L.unsub();
   L = { code, info: null, unsub: null };
+  keepAwake('room', true);
   L.unsub = await Net.watchRoom(code, (info) => {
     if (!L || L.code !== code) return;
     L.info = info;
+    // my seat says which version this phone runs now (it may have reloaded onto a newer one)
+    const mine = info?.players?.find((p) => p && p.id === Net.clientId());
+    if (mine && mine.v !== Net.version() && !L.marking) { L.marking = true; Net.markVersion(code).catch(() => {}).finally(() => { if (L) L.marking = false; }); }
     Draft.onRoomInfo(code, info, () => { if (playView && location.hash === '#/play' && !G) playPage(playView); });
     if (!info) { flash('That game no longer exists.'); Net.setLastRoom(''); exitRoom(); return; }
     const seat = (info.players || []).findIndex((p) => p && p.id === Net.clientId());
@@ -167,6 +175,7 @@ export async function autoRejoin() {
 function exitRoom() {
   if (L?.unsub) L.unsub();
   L = null;
+  keepAwake('room', false);
   if (playView && location.hash === '#/play' && !G) playPage(playView);
 }
 
@@ -371,6 +380,7 @@ function mount() {
     });
   }
   document.body.classList.add('in-game');
+  keepAwake('game', true);
   return root;
 }
 
@@ -394,6 +404,8 @@ function beginOnline(info, seat) {
   const state = newGame(setup);
   state.events = [];
   G = { mode: 'online', code: L.code, round, setup, actions: [], me: seat, bots: new Set(), state, view: state, lastShown: state, flow: null, atk: null, blk: null, sheet: null, timer: null, busy: false, chain: Promise.resolve(), sched: 0 };
+  // a game remembers the version it started with: on another one this phone would not see the same game
+  G.stale = !!info.v && info.v !== Net.version();
   mount();
   redraw();
   Net.watchActions(L.code, round, (actions, atEnd) => {
@@ -416,6 +428,7 @@ function leave(goTo = '#/play') {
   G?.unsubActions?.();
   if (G && G.mode === 'practice' && G.state.phase === 'over') store.clear();
   G = null;
+  keepAwake('game', false);
   document.getElementById('game')?.remove();
   document.getElementById('fx-layer')?.replaceChildren();
   document.body.classList.remove('in-game');
@@ -1333,8 +1346,13 @@ function tableHTML() {
     <div class="tc-hand g-hand${myMove() ? '' : ' wait'}${me.out ? ' out' : ''}">${handHTML(s)}</div>
     <svg class="g-lines" aria-hidden="true"></svg>
     ${s.phase === 'over' ? overHTML() : ''}
+    ${G.stale ? STALE_GAME : ''}
     ${G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div>${G.viewer || G.flow ? '' : GRAB}</div>` : ''}`;
 }
+
+const STALE_GAME = `<div class="g-stale" data-key="stale"><div><b>This phone has a different version of the game from the others.</b>
+  Reload the page. If this note is still here, reload every phone and start a new game from the lobby.</div>
+  <button class="btn primary" data-act="reload">Reload</button><button class="btn ghost" data-act="leave">Back to the lobby</button></div>`;
 
 // ── updating the page in place ──────────────────────────────────────
 // Rebuilding the whole table on every move made phones re-lay-out and
@@ -1430,7 +1448,7 @@ function draw(root) {
   syncBlocks();
   if (s.phase === 'mulligan' && !me.mull) {
     root.className = 'g-mull';
-    morphChildren(root, mulliganHTML() + (G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div>${GRAB}</div>` : ''));
+    morphChildren(root, mulliganHTML() + (G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div>${GRAB}</div>` : '') + (G.stale ? STALE_GAME : ''));
     return;
   }
   const cls = (s.players.length === 2 ? 'g-duel' : 'g-ffa') + (G.busy ? ' busy' : '') + (s.combat || G.atk ? ' fighting' : '') + (s.combat ? ' in-combat' : '') + (tutStep() ? ' lesson' : '');
@@ -2260,7 +2278,7 @@ function onClick(e) {
 
 function onAct(act, el) {
   const uid = Number(el.dataset.uid);
-  const busyOk = ['menu', 'help', 'close', 'log', 'leave', 'speed', 'rules', 'coach-skip', 'crown-info'].includes(act);
+  const busyOk = ['menu', 'help', 'close', 'log', 'leave', 'speed', 'rules', 'coach-skip', 'crown-info', 'reload'].includes(act);
   if (G.busy && !busyOk) return;
   // While choosing a target, the small chips on cards and bars are part of what you tap.
   const choosing = G.flow || G.atk || (G.blk && G.blk.sel != null);
@@ -2341,6 +2359,7 @@ function onAct(act, el) {
       break;
     case 'rules': leave('#/rules'); break;
     case 'leave': leave(); break;
+    case 'reload': location.reload(); break;
     case 'lobby': Net.backToLobby(G.code).catch((e) => flash(e.message)); break;
     case 'rematch': {
       const setup = { ...G.setup, seed: (Math.random() * 2 ** 31) | 0 };

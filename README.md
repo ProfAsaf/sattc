@@ -18,7 +18,8 @@ no build step.
 | `js/game-ui.js` | The table (practice, lesson and online), the Play page (Friends, then Bots, on one screen), the online lobby and the help in the ☰ menu. Each move is animated on the old table, then redrawn and FLIP-glided |
 | `js/fx.js` | The physical layer: table cards (`tcardHTML`), the hand carousel, drag-to-play, swipe physics (`velocity`, `glide`, `rubber`), aiming arrows, FLIP, lunges, clashes, deaths, shown cards, banners |
 | `js/tutorial.js` | The guided lesson: stacked decks, the coach's 28 steps, the bot's scripted first turns |
-| `js/net.js` | Online play over Firebase Realtime Database: rooms, seats, the shared move list, draft picks |
+| `js/net.js` | Online play over Firebase Realtime Database: rooms, seats (each with its phone's version), the shared move list, draft picks |
+| `js/awake.js` | Keeps the screen on during a game, a draft or an online room (Screen Wake Lock) |
 | `js/draft.js` | Draft night's rules with no screen attached: the six piles, the 30 typed rounds, snake order, replay from the pick list, the draft bots |
 | `js/draft-ui.js` | Draft night's screens (practice against bots, and online in a room), plus its hooks into the Play page and lobby |
 | `css/draft.css` | Draft night's look |
@@ -48,6 +49,23 @@ Firebase Realtime Database, free plan. Rooms live at `rooms/{CODE}/info`
 phone replays the same move list and agrees on the game; a phone that sleeps or
 reloads catches up from the list. To switch it on, paste the web config into
 `js/firebase-config.js`.
+
+- **Delay:** a move reaches the other phones in well under a second (about
+  65 ms measured from a computer to the database and back out); your own
+  moves show at once. A phone that falls behind skips the animations to catch up.
+- **Screens stay on** during a game, a draft and while in an online room
+  (`js/awake.js`, the Screen Wake Lock API), so a phone doesn't lock and drop
+  out mid-game. The browser lets go whenever the page is hidden; it is asked
+  for again on return and on the next tap. Where it isn't supported, Auto-Lock
+  applies as usual.
+- **Same version on every phone:** phones replay each other's moves, so they
+  must run the same rules. A phone's version is the stamp of `engine.js`,
+  `cards.js` and `draft.js` (`Net.version()`, from the import map). Every seat
+  stores its phone's version (updated after a reload); the lobby names any
+  phone on another version and the host can't start a game or a draft until
+  every phone matches. A game remembers the version it started with, and a
+  phone that comes back on another one is told to reload. Don't publish while
+  friends are mid-game: reload every phone before starting instead.
 
 ## Balance notes (bot vs bot)
 

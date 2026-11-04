@@ -518,3 +518,13 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 
 /* an empty discard pile shows nothing (it keeps its place for the first card to land in) */
 .pbar .tc-pile.empty { visibility: hidden; }
+
+/* an online game started on another version of the game: this phone can't follow it */
+.g-stale {
+  position: absolute; inset: 0; z-index: 95;
+  display: flex; flex-direction: column; justify-content: center; gap: 12px;
+  padding: 24px max(24px, env(safe-area-inset-left, 0px));
+  background: rgba(8, 6, 4, .94); color: #f1e3bf; text-align: center;
+  font-size: 15px; line-height: 1.45;
+}
+.g-stale b { display: block; margin-bottom: 6px; font-size: 17px; color: #ffd2b8; }

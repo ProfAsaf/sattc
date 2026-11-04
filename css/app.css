@@ -564,3 +564,6 @@ details.fine li { font-size: 14px; }
   .fan { height: 330px; max-width: 520px; }
   .fan .card { --cw: 210px; }
 }
+
+/* a phone on another version of the game: named in the lobby until it reloads */
+.pp-stale { margin: 10px 0 0; padding: 8px 12px; border-radius: 12px; font-size: 13.5px; line-height: 1.4; color: #ffd2b8; background: rgba(120, 50, 20, .28); border: 1px solid rgba(255, 140, 90, .45); }

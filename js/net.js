@@ -44,6 +44,22 @@ export const setMyName = (n) => local.set('collective.name', n);
 export const lastRoom = () => local.get('collective.room') || '';
 export const setLastRoom = (c) => local.set('collective.room', c || '');
 
+// ── which version of the game this phone runs ──────────────────────
+// Phones replay each other's moves, so they must run the same rules. A phone's
+// version is the stamp (a content hash, tools/stamp.mjs) of the files a replay
+// depends on: the rules, the cards and the draft. Every seat in a room carries
+// its phone's version, so the lobby can tell when a phone needs a reload, and
+// a game remembers the version it was started with.
+export function version() {
+  try {
+    const map = JSON.parse(document.querySelector('script[type="importmap"]')?.textContent || '{}').imports || {};
+    return ['engine', 'cards', 'draft'].map((f) => String(map[`./js/${f}.js`] || '').split('?v=')[1] || '-').join('.');
+  } catch { return '-'; }
+}
+
+/** The seats whose phone runs a different version from this one (a phone from before seats had versions counts). */
+export const otherVersions = (info) => (info?.players || []).filter((p) => p && p.v !== version());
+
 // ── rooms ───────────────────────────────────────────────────────────
 const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const newCode = () => Array.from({ length: 4 }, () => LETTERS[Math.floor(Math.random() * LETTERS.length)]).join('');
@@ -56,7 +72,7 @@ export async function createRoom({ seats, name, deck, draft = false }) {
   for (let tries = 0; tries < 6; tries++) {
     const code = newCode();
     const res = await fb.runTransaction(infoRef(code), (cur) => (cur === null
-      ? { created: Date.now(), status: 'lobby', seats, host: clientId(), round: 0, players: [{ id: clientId(), name, deck }], ...(draft ? { draft: { on: true } } : {}) }
+      ? { created: Date.now(), status: 'lobby', seats, host: clientId(), round: 0, players: [{ id: clientId(), name, deck, v: version() }], ...(draft ? { draft: { on: true } } : {}) }
       : undefined));
     if (res.committed) { setLastRoom(code); return code; }
   }
@@ -72,7 +88,7 @@ export async function joinRoom(code, { name, deck }) {
     const players = room.players || [];
     const mine = players.findIndex((p) => p && p.id === clientId());
     if (mine >= 0) {
-      if (room.status === 'lobby') players[mine] = { ...players[mine], name, deck };
+      players[mine] = { ...players[mine], ...(room.status === 'lobby' ? { name, deck } : {}), v: version() };
       seat = mine;
       room.players = players;
       return room;
@@ -80,13 +96,27 @@ export async function joinRoom(code, { name, deck }) {
     if (room.status !== 'lobby') { why = 'That game has already started.'; return; }
     if (players.length >= room.seats) { why = 'That game is full.'; return; }
     seat = players.length;
-    room.players = [...players, { id: clientId(), name, deck }];
+    room.players = [...players, { id: clientId(), name, deck, v: version() }];
     return room;
   });
   if (!res.snapshot.exists()) throw new Error('No game with that code.');
   if (!res.committed || seat < 0) throw new Error(why || 'Could not join.');
   setLastRoom(code);
   return seat;
+}
+
+// Back in a room (say after a reload, which may bring a newer version): my
+// seat says which version this phone runs now.
+export async function markVersion(code) {
+  await connect();
+  const v = version();
+  await fb.runTransaction(infoRef(code), (room) => {
+    if (!room) return room;
+    const p = (room.players || []).find((x) => x && x.id === clientId());
+    if (!p || p.v === v) return; // nothing to change
+    p.v = v;
+    return room;
+  }, { applyLocally: false }); // a first try on an empty cache must not show the room as gone
 }
 
 // Update my deck between games (the 60 you left out are your sideboard).
@@ -119,6 +149,10 @@ export async function startGame(code) {
   await fb.runTransaction(infoRef(code), (room) => {
     if (!room || room.host !== clientId() || room.status !== 'lobby') return room;
     if ((room.players || []).length !== room.seats) return room;
+    // every phone on the host's version, or their games would not match
+    const v = version();
+    if (room.players.some((p) => !p || p.v !== v)) return room;
+    room.v = v;
     const round = (room.round || 0) + 1;
     room.round = round;
     room.seeds = { ...(room.seeds || {}), [round]: Math.floor(Math.random() * 2 ** 31) };
@@ -192,6 +226,7 @@ export async function startDraft(code, { again = false, pool = '' } = {}) {
     if (!room || room.host !== clientId() || room.status !== 'lobby' || !room.draft) return room;
     if (room.draft.id && !again) return room;
     if ((room.players || []).length !== room.seats) return room;
+    if (room.players.some((p) => !p || p.v !== version())) return room; // a phone on another version: reload first
     const seed = Math.floor(Math.random() * 2 ** 31);
     room.draft = { on: true, id: Date.now().toString(36) + seed.toString(36).slice(0, 4), seed, order: room.players.map((p) => p.id), pool };
     return room;

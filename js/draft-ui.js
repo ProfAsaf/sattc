@@ -19,6 +19,7 @@
 import { BY_ID, KEYWORDS } from './cards.js';
 import { cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
 import * as FX from './fx.js';
+import { keepAwake } from './awake.js';
 import * as Decks from './decks.js';
 import * as Net from './net.js';
 import {
@@ -121,6 +122,7 @@ function openScreen(kind) {
     const [head, main, foot, layer] = el.children;
     V = { kind, el, els: { head, main, foot, layer }, html: {}, mainKey: '', zoom: null, sheet: null, logLen: null };
     document.body.classList.add('in-draft');
+    keepAwake('draft', true);
   }
   if (V.kind !== kind) Object.assign(V, { kind, html: {}, mainKey: '', zoom: null, sheet: null, logLen: null });
   render();
@@ -131,6 +133,7 @@ function closeScreen() {
   V.el.remove();
   V = null;
   document.body.classList.remove('in-draft');
+  keepAwake('draft', false);
 }
 
 // Back to the Play page (the draft carries on; the Play page can reopen it).
@@ -312,8 +315,9 @@ function endFootHTML(d) {
   const info = d.info;
   if (info.host === Net.clientId()) {
     const full = (info.players || []).length === info.seats;
-    const ok = d.st.done && full && info.status === 'lobby';
-    const label = ok ? `Start game ${(info.round || 0) + 1}` : !d.st.done ? 'Waiting for the last pick…' : 'Waiting for everyone to be back in the game';
+    const odd = Net.otherVersions(info).length > 0;
+    const ok = d.st.done && full && info.status === 'lobby' && !odd;
+    const label = ok ? `Start game ${(info.round || 0) + 1}` : !d.st.done ? 'Waiting for the last pick…' : odd ? 'Reload every phone first' : 'Waiting for everyone to be back in the game';
     return `<button class="btn primary dr-go" data-act="draft-start-game" ${ok ? '' : 'disabled'}>${label}</button>`;
   }
   const ready = !!info.draft?.ready?.[Net.clientId()];
@@ -701,6 +705,15 @@ export function savedPractice() {
   return { picks, of: PICKS, done: picks >= PICKS };
 }
 
+// Phones replay each other's moves and picks, so they must all run the same
+// version of the game (Net.version). A phone that doesn't is named in the
+// lobby until it reloads, and the host can't start until every phone matches.
+export function versionNoteHTML(info) {
+  const odd = Net.otherVersions(info).filter((p) => p.id !== Net.clientId()); // this phone's own seat catches up by itself
+  if (!odd.length) return '';
+  return `<p class="pp-stale">${listNames(odd.map((p) => `${esc(p.name)}’s`))} ${odd.length > 1 ? 'phones have' : 'phone has'} a different version of the game. Reload the page on every phone.</p>`;
+}
+
 // The "Draft night" switch: in the new-game form (read when the game is
 // created) and, for the host, in the lobby until the draft starts.
 export function createSwitchHTML(on = false) {
@@ -727,6 +740,7 @@ export function roomPanelHTML(code, info) {
   const full = players.length === info.seats;
   const inDraft = order.includes(me);
   const link = `${location.origin}${location.pathname}?room=${code}`;
+  const odd = Net.otherVersions(info).length > 0; // a phone on another version: no starting until it reloads
   const seats = Array.from({ length: info.seats }, (_, i) => {
     const p = players[i];
     if (!p) return '<div class="deck-card"><span class="fac-slot-empty"></span><div class="muted">Waiting for a player…</div><span></span></div>';
@@ -752,7 +766,7 @@ export function roomPanelHTML(code, info) {
   else if (!started) {
     // how it works is a tap away, for whoever hasn't drafted before
     next = `<details class="dr-how"><summary>How the draft works</summary><p class="muted small">${explain(info.seats)}</p></details>${host
-      ? `${modeSwitchHTML(true)}<button class="btn primary" data-act="draft-start" ${full ? '' : 'disabled'}>${full ? 'Start the draft' : 'Waiting for everyone to join'}</button>`
+      ? `${modeSwitchHTML(true)}${odd ? '<button class="btn primary" disabled>Reload every phone first</button>' : `<button class="btn primary" data-act="draft-start" ${full ? '' : 'disabled'}>${full ? 'Start the draft' : 'Waiting for everyone to join'}</button>`}`
       : '<p class="muted small" style="margin:0">The host starts the draft when everyone is in.</p>'}`;
   } else if (!st) next = '<p class="muted small" style="margin:0">Loading the draft…</p>';
   else if (!st.done) {
@@ -761,12 +775,13 @@ export function roomPanelHTML(code, info) {
       <p class="muted small" style="margin:0">Round ${st.round + 1} of ${PICKS} (${esc(KIND_INFO[st.kind].name)}): ${up}.</p>`;
   } else {
     next = `<div class="dr-handoff"><b>Draft complete!</b> Host: tap Start game.</div>
-      ${host ? `<button class="btn primary" data-act="start" ${full ? '' : 'disabled'}>${full ? `Start game ${(info.round || 0) + 1}` : 'Waiting for everyone to come back'}</button>`
+      ${host ? (odd ? '<button class="btn primary" disabled>Reload every phone first</button>' : `<button class="btn primary" data-act="start" ${full ? '' : 'disabled'}>${full ? `Start game ${(info.round || 0) + 1}` : 'Waiting for everyone to come back'}</button>`)
         : `<p class="muted small" style="margin:0">${esc(hostName(info))} starts the game.</p>`}
       ${inDraft ? '<button class="btn" data-act="draft-open">See your deck</button>' : ''}
       ${host ? '<button class="btn ghost small" data-act="draft-again">Draft again from scratch</button>' : ''}`;
   }
   return `<div class="pp-title"><h3>Game <b>${esc(code)}</b> · Draft night</h3><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
     <div class="deck-cards" style="margin-top:12px">${seats}</div>
+    ${versionNoteHTML(info)}
     <div class="dr-room">${next}<button class="btn ghost" data-act="leave-room">Leave this game</button></div>`;
 }

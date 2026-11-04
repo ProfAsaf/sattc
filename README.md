@@ -227,6 +227,13 @@ text above them says.
   with the same glide: a normal swipe moves one card, a hard flick several);
   tap a side card to bring it to the middle. Details sit at the top; the
   cards, the Play button and the handle sit at the bottom.
+- **The draft's cards, big:** the same row of cards. Tap a card on the draft
+  table and all of that round's cards come up side by side, the one you tapped
+  in the middle, its rules on top, **Take it** low by your thumb, dots below
+  showing where you are. They swipe, glide, catch and close exactly like your
+  hand big; your deck so far opens the same way (without Take it, and with a
+  count instead of dots once it's long). The deck list closes with the same
+  handle as a game's sheets.
 - **Swipe up to close:** every info screen (a card, a player, the menu, help,
   the log) ends with a small handle at the bottom instead of a Close button.
   Swipe it up or tap it. In the big hand, swiping the cards up or down puts
@@ -237,7 +244,11 @@ text above them says.
 - The physics: `FX.velocity()` judges a finger's speed from its last ~100 ms,
   `FX.glide()` springs a position to where a flick would carry it (about an
   eighth of a second's worth), starting at the finger's speed so nothing stops
-  dead, and `FX.rubber()` makes the ends of a row resist.
+  dead, and `FX.rubber()` makes the ends of a row resist. A row of big cards
+  (`.hv-track` of `.hv-card`s) is driven by `FX.swipeTrack()` (sideways to look,
+  up or down to close), `FX.moveTrack()` (glide to a card) and
+  `FX.placeTrack()`; the game's big hand and the draft both use them, and
+  `FX.grabSwipe()` is every sheet's swipe-up handle.
 
 ## Keeping it smooth on phones
 

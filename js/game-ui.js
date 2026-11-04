@@ -1866,7 +1866,7 @@ const GRAB = '<div class="g-grab" data-act="close" role="button" aria-label="Clo
 // neighbour) to move along; the cards slide over like a hand being fanned.
 function openViewer(uid) {
   const hand = S().players[G.me].hand;
-  G.viewer = { i: Math.max(0, hand.indexOf(uid)), pos: null };
+  G.viewer = { i: Math.max(0, hand.indexOf(uid)) };
   G.peek = hand[G.viewer.i];
   G.sheet = viewerHTML();
   redraw();
@@ -1895,18 +1895,7 @@ function viewerHTML() {
 
 // A sheet's handle: swipe it up (or tap it) to close the sheet.
 function sheetGrab(e, grab) {
-  const y0 = e.clientY;
-  const up = (ev) => {
-    if (ev.pointerId !== e.pointerId) return;
-    removeEventListener('pointerup', up, true);
-    removeEventListener('pointercancel', up, true);
-    if (y0 - ev.clientY < 30) return; // a tap: the click closes it
-    swallowClick();
-    if (G) { G.sheet = null; redraw(); }
-  };
-  try { grab.setPointerCapture(e.pointerId); } catch { /* fine */ }
-  addEventListener('pointerup', up, true);
-  addEventListener('pointercancel', up, true);
+  FX.grabSwipe(e, grab, () => { if (G) { G.sheet = null; redraw(); } });
 }
 
 // Put the big hand away, the cards flying off the way they were swiped.
@@ -1927,11 +1916,9 @@ function goViewer(i) {
   redraw();
 }
 
-// Swipes on the big hand. Sideways: the cards follow the finger; let go and
-// they glide on (further the faster the flick) and settle on a card. A finger
-// on them while they glide catches them. Up or down (on the cards or the
-// handle): the hand follows, and far or fast enough puts it away.
-let VGLIDE = null;
+// Swipes on the big hand (FX.swipeTrack, the same as the draft's big cards):
+// sideways to look along it, gliding on after a flick; up or down, on the
+// cards or the handle, to put it away. A sheet's handle swipes up to close it.
 function viewerSwipe(e) {
   const grab = e.target.closest?.('.g-grab');
   if (grab && G?.sheet) { sheetGrab(e, grab); return; }
@@ -1939,90 +1926,11 @@ function viewerSwipe(e) {
   if (!zone || !G?.viewer) return;
   const hv = zone.closest('.hv'), track = hv?.querySelector('.hv-track');
   if (!track) return;
-  const x0 = e.clientX, y0 = e.clientY;
-  const sp = (track.querySelector('.hv-card.on')?.offsetWidth || 260) * 0.74; // one card along
-  const cards = [...track.querySelectorAll('.hv-card')];
-  const last = cards.length - 1;
-  // every card follows: its place, tilt, size and light, all fractional
-  const place = (p) => {
-    G.viewer.pos = p;
-    for (const c of cards) {
-      const kk = Number(c.dataset.hvI) - p;
-      c.style.setProperty('--kk', kk.toFixed(3));
-      c.style.setProperty('--akk', Math.min(3, Math.abs(kk)).toFixed(3));
-    }
-  };
-  const tilt = (pxPerMs) => track.style.setProperty('--tilt', `${Math.max(-6, Math.min(6, pxPerMs * 4)).toFixed(2)}deg`);
-  // let go at v cards a second: glide on and settle on a card
-  const settle = (v) => {
-    const from = G.viewer.pos ?? G.viewer.i;
-    const to = Math.min(last, Math.max(0, Math.round(from + v * 0.12)));
-    hv.classList.add('dragging');
-    VGLIDE = FX.glide(from, to, v, (x, vx) => { place(x); tilt((-vx * sp) / 1000); }, () => {
-      VGLIDE = null;
-      if (!G?.viewer) return;
-      hv.classList.remove('dragging');
-      tilt(0);
-      G.viewer.pos = null;
-      if (to !== G.viewer.i) goViewer(to); else place(to);
-    });
-  };
-  const caught = !!VGLIDE;
-  if (VGLIDE) { VGLIDE.stop(); VGLIDE = null; }
-  const pos0 = G.viewer.pos ?? G.viewer.i;
-  const vel = FX.velocity(), velY = FX.velocity();
-  let dx = 0, dy = 0, mode = null;
-  // nothing gets picked up and dragged away
-  zone.addEventListener('dragstart', (d) => d.preventDefault(), { once: true });
-  const move = (ev) => {
-    if (ev.pointerId !== e.pointerId) return;
-    dx = ev.clientX - x0;
-    dy = ev.clientY - y0;
-    if (!mode) {
-      if (Math.hypot(dx, dy) < 8) return;
-      // the handle only goes up and down; the cards go whichever way the finger starts
-      mode = zone === track && Math.abs(dx) > Math.abs(dy) ? 'side' : 'away';
-      hv.classList.add('dragging');
-      // a real swipe keeps the finger even off the cards (a tap stays a tap on its card)
-      try { zone.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
-    }
-    vel.add(ev.clientX);
-    velY.add(ev.clientY);
-    if (mode === 'side') {
-      let p = pos0 - dx / sp;
-      if (p < 0) p = -FX.rubber(-p); else if (p > last) p = last + FX.rubber(p - last);
-      place(p);
-      tilt(vel.get());
-    } else {
-      // the whole hand lifts (or drops) with the finger, fading as it goes
-      track.style.setProperty('--lift', `${dy.toFixed(1)}px`);
-      track.style.opacity = String(Math.max(0.3, 1 - Math.abs(dy) / 420));
-    }
-  };
-  const up = (ev) => {
-    if (ev.pointerId !== e.pointerId) return;
-    removeEventListener('pointermove', move, true);
-    removeEventListener('pointerup', up, true);
-    removeEventListener('pointercancel', up, true);
-    if (!mode) {
-      // a tap that caught the cards mid-glide lets them settle; any other tap is the click handler's
-      if (caught) { swallowClick(); settle(0); }
-      return;
-    }
-    swallowClick();
-    if (mode === 'away') {
-      hv.classList.remove('dragging');
-      if (Math.abs(dy) > 90 || Math.abs(velY.get()) > 0.5) { closeViewer(dy < 0 ? 'up' : 'down'); return; }
-      track.style.setProperty('--lift', '0px'); // not far enough: it settles back
-      track.style.opacity = '';
-      if (caught) settle(0);
-      return;
-    }
-    settle((-vel.get() / sp) * 1000);
-  };
-  addEventListener('pointermove', move, true);
-  addEventListener('pointerup', up, true);
-  addEventListener('pointercancel', up, true);
+  FX.swipeTrack(e, {
+    track, zone, host: hv, index: G.viewer.i,
+    onSettle: (i) => { if (G?.viewer && i !== G.viewer.i) goViewer(i); },
+    onClose: (dir) => closeViewer(dir),
+  });
 }
 
 function cardSheet(uid, { from = 'hand' } = {}) {

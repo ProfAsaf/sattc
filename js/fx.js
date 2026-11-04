@@ -538,6 +538,147 @@ export function glide(from, to, v, onFrame, onDone, { k = 230, zeta = 0.86 } = {
   return g;
 }
 
+// ── a row of big cards: your hand big, the draft's cards ─────────────
+// .hv-card children of a track (data-hv-i: their place in the row), each
+// placed by how far it is from the middle (--kk, and --akk without the sign),
+// so moving the middle makes them slide and swing over like a hand of cards
+// being fanned. The look is in game.css (.hv-*).
+const TRACK = new WeakMap(); // track → { pos, glide } while its cards move
+
+const trackStep = (track) => (track.querySelector('.hv-card')?.offsetWidth || 260) * 0.74; // one card along
+const tiltTrack = (track, pxPerMs) => track.style.setProperty('--tilt', `${clamp(pxPerMs * 4, -6, 6).toFixed(2)}deg`);
+
+/** Put the middle of a track at position p (between two cards while it moves). */
+export function placeTrack(track, p) {
+  const st = TRACK.get(track) || {};
+  st.pos = p;
+  TRACK.set(track, st);
+  for (const c of track.children) {
+    if (c.dataset.hvI == null) continue;
+    const kk = Number(c.dataset.hvI) - p, ak = Math.min(3, Math.abs(kk));
+    c.style.setProperty('--kk', kk.toFixed(3));
+    c.style.setProperty('--akk', ak.toFixed(3));
+    c.style.setProperty('--z', String(10 - Math.round(ak)));
+  }
+}
+
+/**
+ * Glide a track to card `to`, starting at v cards a second, then onDone(to).
+ * host gets .dragging (no CSS transitions) while it moves.
+ */
+export function moveTrack(track, host, to, v = 0, onDone) {
+  const st = TRACK.get(track) || {};
+  st.glide?.stop();
+  const from = st.pos ?? Number(track.querySelector('.hv-card.on')?.dataset.hvI ?? to);
+  const sp = trackStep(track);
+  host.classList.add('dragging');
+  st.glide = glide(from, to, v, (x, vx) => { placeTrack(track, x); tiltTrack(track, (-vx * sp) / 1000); }, () => {
+    TRACK.delete(track);
+    host.classList.remove('dragging');
+    tiltTrack(track, 0);
+    onDone?.(to);
+  });
+  TRACK.set(track, st);
+}
+
+/**
+ * Swipes on a row of big cards: call it from a pointerdown on the track or its
+ * handle. Sideways (on the cards): they follow the finger; let go and they
+ * glide on (further the faster the flick) and settle on a card. A finger on
+ * them while they glide catches them. Up or down (on the cards, or anywhere on
+ * the handle): the whole row follows the finger, fading, and far or fast
+ * enough puts it away.
+ *   swipeTrack(e, {
+ *     track, zone,     // the track, and what the finger came down on (the track, or a handle: up and down only)
+ *     host,            // gets .dragging (no transitions) while the cards move
+ *     index,           // the card in the middle now
+ *     onSettle(i),     // came to rest on card i (maybe the same one)
+ *     onClose(dir),    // swiped away, 'up' or 'down'
+ *   })
+ */
+export function swipeTrack(e, o) {
+  const { track, zone = track, host = track, index, onSettle, onClose } = o;
+  const x0 = e.clientX, y0 = e.clientY;
+  const last = track.querySelectorAll('.hv-card').length - 1;
+  const sp = trackStep(track);
+  const st = TRACK.get(track);
+  const caught = !!st?.glide;
+  st?.glide?.stop();
+  if (st) st.glide = null;
+  const pos0 = st?.pos ?? index;
+  const vel = velocity(), velY = velocity();
+  let dx = 0, dy = 0, mode = null;
+  // let go at v cards a second: glide on, about an eighth of a second's worth, and settle on a card
+  const settle = (v) => moveTrack(track, host, clamp(Math.round((TRACK.get(track)?.pos ?? pos0) + v * 0.12), 0, last), v, onSettle);
+  // nothing gets picked up and dragged away
+  zone.addEventListener('dragstart', (d) => d.preventDefault(), { once: true });
+  const move = (ev) => {
+    if (ev.pointerId !== e.pointerId) return;
+    dx = ev.clientX - x0;
+    dy = ev.clientY - y0;
+    if (!mode) {
+      if (Math.hypot(dx, dy) < 8) return;
+      // the handle only goes up and down; the cards go whichever way the finger starts
+      mode = zone === track && Math.abs(dx) > Math.abs(dy) ? 'side' : 'away';
+      host.classList.add('dragging');
+      // a real swipe keeps the finger even off the cards (a tap stays a tap on its card)
+      try { zone.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
+    }
+    vel.add(ev.clientX);
+    velY.add(ev.clientY);
+    if (mode === 'side') {
+      let p = pos0 - dx / sp;
+      if (p < 0) p = -rubber(-p); else if (p > last) p = last + rubber(p - last);
+      placeTrack(track, p);
+      tiltTrack(track, vel.get());
+    } else {
+      // the whole row lifts (or drops) with the finger, fading as it goes
+      track.style.setProperty('--lift', `${dy.toFixed(1)}px`);
+      track.style.opacity = String(Math.max(0.3, 1 - Math.abs(dy) / 420));
+    }
+  };
+  const up = (ev) => {
+    if (ev.pointerId !== e.pointerId) return;
+    removeEventListener('pointermove', move, true);
+    removeEventListener('pointerup', up, true);
+    removeEventListener('pointercancel', up, true);
+    if (!mode) {
+      // a tap that caught the cards mid-glide lets them settle; any other tap is the click handler's
+      if (caught) { suppressClick(); settle(0); }
+      return;
+    }
+    suppressClick();
+    if (mode === 'away') {
+      host.classList.remove('dragging');
+      if (Math.abs(dy) > 90 || Math.abs(velY.get()) > 0.5) { onClose?.(dy < 0 ? 'up' : 'down'); return; }
+      track.style.setProperty('--lift', '0px'); // not far enough: it settles back
+      track.style.opacity = '';
+      if (caught) settle(0);
+      return;
+    }
+    settle((-vel.get() / sp) * 1000);
+  };
+  addEventListener('pointermove', move, true);
+  addEventListener('pointerup', up, true);
+  addEventListener('pointercancel', up, true);
+}
+
+/** A handle at the bottom of a sheet: swipe it up and onClose(); a tap is left to the click handler. */
+export function grabSwipe(e, el, onClose) {
+  const y0 = e.clientY;
+  const up = (ev) => {
+    if (ev.pointerId !== e.pointerId) return;
+    removeEventListener('pointerup', up, true);
+    removeEventListener('pointercancel', up, true);
+    if (y0 - ev.clientY < 30) return; // a tap: the click closes it
+    suppressClick();
+    onClose();
+  };
+  try { el.setPointerCapture(e.pointerId); } catch { /* fine */ }
+  addEventListener('pointerup', up, true);
+  addEventListener('pointercancel', up, true);
+}
+
 /**
  * Make hand cards draggable. Press and move more than `threshold` px and the
  * card follows the finger on a stiff spring, tilting with its speed. A tap

@@ -18,6 +18,7 @@
 
 import { BY_ID, KEYWORDS } from './cards.js';
 import { cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
+import * as FX from './fx.js';
 import * as Decks from './decks.js';
 import * as Net from './net.js';
 import {
@@ -118,9 +119,7 @@ function openScreen(kind) {
     el.innerHTML = '<header class="dr-head"></header><div class="dr-main"></div><footer class="dr-foot"></footer><div class="dr-layer"></div>';
     document.body.appendChild(el);
     el.addEventListener('click', onClick);
-    el.addEventListener('touchstart', onTouchStart, { passive: true });
-    el.addEventListener('touchmove', onTouchMove, { passive: false });
-    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    el.addEventListener('pointerdown', onPointerDown);
     const [head, main, foot, layer] = el.children;
     V = { kind, el, els: { head, main, foot, layer }, html: {}, mainKey: '', zoom: null, sheet: null, logLen: null };
     document.body.classList.add('in-draft');
@@ -179,7 +178,7 @@ function render() {
   if (setRegion('main', done ? endHTML(d) : tableHTML(d)) && V.mainKey !== key) V.els.main.scrollTop = 0;
   V.mainKey = key;
   setRegion('foot', done ? endFootHTML(d) : poolBarHTML(d));
-  setRegion('layer', (V.sheet ? poolSheetHTML(d) : '') + (V.zoom ? zoomHTML(d) : ''));
+  setRegion('layer', layerHTML(d));
 }
 
 // A taken card leaves the table: a copy flies to the picker's name (or to
@@ -313,10 +312,16 @@ function endFootHTML(d) {
   return `<button class="btn primary dr-go" data-act="draft-ready" ${ready || !d.st.done ? 'disabled' : ''}>${ready ? `Ready ✓ · ${esc(hostName(info))} starts the game` : 'Ready'}</button>`;
 }
 
-// The card big: from the table (with Take it on your turn) or from your deck.
-// It shows the baked picture, not the live drawing the gallery zoom uses:
-// that takes 0.3-3 s per card on a phone, too slow for looking through cards.
+// The cards big: the ones on the table (with Take it on your turn) or your
+// deck so far, side by side like your hand big in a game, the one you tapped
+// in the middle. Swipe sideways to look along them (they glide on after a
+// flick), up or down to put them away (FX.swipeTrack); Take it sits low, where
+// the thumb is. They show the baked pictures, not the live drawing the gallery
+// zoom uses: that takes 0.3-3 s per card on a phone, too slow for looking
+// through cards.
 const zoomList = (d, list) => (list === 'table' ? onTable(d) : byCost(mine(d)).map((c) => c.id));
+const zoomIndex = (d) => zoomList(d, V.zoom.list).indexOf(V.zoom.cid);
+const layerHTML = (d) => (V.sheet ? poolSheetHTML(d) : '') + (V.zoom ? zoomHTML(d) : '');
 
 function zoomHTML(d) {
   const z = V.zoom;
@@ -324,25 +329,25 @@ function zoomHTML(d) {
   const i = list.indexOf(z.cid);
   if (i < 0) return '';
   const st = d.st;
-  const card = BY_ID[z.cid];
   const table = z.list === 'table';
   const picking = table && canPickNow(d);
-  const tip = picking && tipsOn() && tipFor(st, d.me) === z.cid;
-  const label = table ? `${KIND_INFO[st.kind].name} · ${i + 1} of ${list.length}` : `Your deck · ${i + 1} of ${list.length}`;
+  const tip = picking && tipsOn() ? tipFor(st, d.me) : null;
+  const cards = list.map((cid, k) => {
+    const dk = k - i, ak = Math.min(Math.abs(dk), 3);
+    return `<div class="hv-card${dk ? '' : ' on'}${ak >= 3 ? ' far' : ''}${cid === tip ? ' tip' : ''}" data-hv-i="${k}" style="--kk:${dk};--akk:${ak};--z:${10 - ak}">`
+      + `${cid === tip ? '<span class="dr-star">★ Good pick</span>' : ''}${cardHTML(BY_ID[cid])}</div>`;
+  }).join('');
+  // dots for the few cards on the table, a count for a long deck
+  const where = list.length < 2 ? '' : list.length <= 12
+    ? `<div class="hv-dots">${list.map((_, k) => `<i${k === i ? ' class="on"' : ''}></i>`).join('')}</div>`
+    : `<div class="hv-count">${i + 1} / ${list.length}</div>`;
   const main = picking ? `<button class="btn primary" data-act="draft-pick" data-cid="${esc(z.cid)}">Take it</button>`
-    : table ? `<button class="btn" disabled>${sending(d) ? 'Sending your pick…' : `${esc(who(d, st.who))} is picking…`}</button>`
-      : '<button class="btn" data-act="draft-unlook">Close</button>';
-  const many = list.length > 1;
-  return `<div class="dr-zoom">
-      <div class="dr-zoom-top"><span>${label}</span><button class="dr-x" data-act="draft-unlook" aria-label="Close">×</button></div>
-      <div class="dr-zoom-card">${tip ? '<span class="dr-star">★ Good pick</span>' : ''}${cardHTML(card)}</div>
-      <div class="dr-zoom-bar">
-        <button class="btn dr-nav" data-act="draft-prev" aria-label="Previous card" ${many ? '' : 'disabled'}>‹</button>
-        ${main}
-        <button class="btn dr-nav" data-act="draft-next" aria-label="Next card" ${many ? '' : 'disabled'}>›</button>
-      </div>
-      ${kwHTML(card)}
-    </div>`;
+    : table ? `<button class="btn" disabled>${sending(d) ? 'Sending your pick…' : `${esc(who(d, st.who))} is picking…`}</button>` : '';
+  return `<div class="dr-zoom"><div class="hv">
+      <div class="hv-info">${kwHTML(BY_ID[z.cid])}</div>
+      <div class="hv-track">${cards}</div>${where}
+      ${main ? `<div class="hv-btns">${main}</div>` : ''}
+      <div class="hv-grab" data-act="draft-unlook" role="button" aria-label="Close"><i></i><span>Swipe up to close</span></div></div></div>`;
 }
 
 function poolSheetHTML(d) {
@@ -350,7 +355,7 @@ function poolSheetHTML(d) {
   const cards = byCost(pool);
   return `<div class="dr-sheet">
       <div class="dr-sheet-in">
-        <div class="dr-zoom-top"><span>Your deck so far · ${pool.length} of ${PICKS}</span><button class="dr-x" data-act="draft-sheet-close" aria-label="Close">×</button></div>
+        <div class="dr-zoom-top"><span>Your deck so far · ${pool.length} of ${PICKS}</span></div>
         <div class="dr-sum">
           <div class="dr-sum-l"><div class="dr-fcs">${factionsHTML(pool)}</div>${kindsHTML(pool)}</div>
           ${curveHTML(pool)}
@@ -358,8 +363,8 @@ function poolSheetHTML(d) {
         ${cards.length ? `<div class="rows">${cards.map((c) => cardRowHTML(c, 1, { controls: false })
           .replace('class="row"', 'class="row" data-act="draft-look-deck"')).join('')}</div>`
           : '<p class="muted small">Nothing yet: your picks gather here, cheapest first.</p>'}
-        <button class="btn ghost dr-go" data-act="draft-sheet-close">Back to the draft</button>
       </div>
+      <div class="g-grab" data-act="draft-sheet-close" role="button" aria-label="Close"><i></i><span>Swipe up to close</span></div>
     </div>`;
 }
 
@@ -369,18 +374,22 @@ function onClick(e) {
   const t = e.target;
   const el = t.closest('[data-act]');
   if (!el) {
-    // a tap beside the big card, or beside the list, closes it
-    if (V.zoom && t.closest('.dr-zoom') && !t.closest('.dr-zoom-card, .kw-help')) { V.zoom = null; render(); }
-    else if (V.sheet && !V.zoom && t.closest('.dr-sheet') && !t.closest('.dr-sheet-in')) { V.sheet = null; render(); }
+    // the big cards: tap one at the side to bring it to the middle, or the space around them to put them away
+    if (V.zoom && t.closest('.dr-zoom')) {
+      const card = t.closest('.hv-card');
+      if (card) { if (!card.classList.contains('on')) goZoom(Number(card.dataset.hvI)); }
+      else if (t.classList.contains('hv') || t.classList.contains('dr-zoom')) closeZoom('down');
+      return;
+    }
+    // a tap beside the deck list closes it
+    if (V.sheet && t.closest('.dr-sheet') && !t.closest('.dr-sheet-in')) { V.sheet = null; render(); }
     return;
   }
   const d = cur();
   switch (el.dataset.act) {
     case 'draft-look': V.zoom = { list: 'table', cid: el.dataset.cid }; render(); break;
     case 'draft-look-deck': V.zoom = { list: 'pool', cid: el.dataset.id }; render(); break;
-    case 'draft-prev': moveZoom(-1); break;
-    case 'draft-next': moveZoom(1); break;
-    case 'draft-unlook': V.zoom = null; render(); break;
+    case 'draft-unlook': closeZoom('up'); break;
     case 'draft-pick': pick(el.dataset.cid); break;
     case 'draft-pool': V.sheet = 'pool'; render(); break;
     case 'draft-sheet-close': V.sheet = null; V.zoom = null; render(); break;
@@ -394,38 +403,65 @@ function onClick(e) {
   }
 }
 
-function moveZoom(step) {
+// The cards came to rest on card i. They are already in place, so the rest of
+// the view (the rules, the dots, Take it) is refreshed around them instead of
+// redrawn (a redraw would rebuild every picture).
+function zoomSettled(i) {
   const d = cur();
   if (!V?.zoom || !d?.st) return;
   const list = zoomList(d, V.zoom.list);
-  if (list.length < 2) return;
-  V.zoom.cid = list[(list.indexOf(V.zoom.cid) + step + list.length) % list.length];
-  render();
+  if (!list[i]) return;
+  V.zoom.cid = list[i];
+  const html = layerHTML(d);
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  const live = V.els.layer.querySelector('.dr-zoom .hv'), fresh = tpl.content.querySelector('.dr-zoom .hv');
+  const rest = (hv) => [...hv.children].filter((c) => !c.classList.contains('hv-track'));
+  const was = live && rest(live), now = fresh && rest(fresh);
+  const lc = live?.querySelectorAll('.hv-card'), fc = fresh?.querySelectorAll('.hv-card');
+  if (!was || !now || was.length !== now.length || lc.length !== fc.length) { render(); return; }
+  was.forEach((c, k) => c.replaceWith(now[k]));
+  lc.forEach((c, k) => { c.className = fc[k].className; c.setAttribute('style', fc[k].getAttribute('style')); });
+  V.html.layer = html;
 }
 
-// Swipe sideways on the big card to look at the next one. A sideways swipe is
-// ours: cancelling its moves keeps the browser from treating it as a scroll or
-// fling (Chrome then swallows the next tap, the one on Take it).
-let touch = null;
-function onTouchStart(e) {
-  touch = V?.zoom && e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+// Bring card i to the middle (a tap on it at the side, or the arrow keys): the cards glide there.
+function goZoom(i) {
+  const d = cur();
+  const hv = V?.els.layer.querySelector('.dr-zoom .hv'), track = hv?.querySelector('.hv-track');
+  if (!track || !V.zoom || !d?.st) return;
+  const n = zoomList(d, V.zoom.list).length;
+  FX.moveTrack(track, hv, Math.max(0, Math.min(n - 1, i)), 0, zoomSettled);
 }
-function onTouchMove(e) {
-  if (!touch || !V?.zoom || e.touches.length !== 1) return;
-  const dx = e.touches[0].clientX - touch.x, dy = e.touches[0].clientY - touch.y;
-  if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) && e.cancelable) e.preventDefault();
+const moveZoom = (step) => { const d = cur(); if (V?.zoom && d?.st) goZoom(zoomIndex(d) + step); };
+
+// Put the big cards away, flying off the way they were swiped.
+function closeZoom(dir = 'up') {
+  const hv = V?.els.layer.querySelector('.dr-zoom .hv');
+  const done = () => { if (V?.zoom) { V.zoom = null; render(); } };
+  if (!hv) { done(); return; }
+  hv.classList.add(`out-${dir}`);
+  setTimeout(done, 240);
 }
-function onTouchEnd(e) {
-  if (!touch || !V?.zoom) return;
-  const dx = e.changedTouches[0].clientX - touch.x, dy = e.changedTouches[0].clientY - touch.y;
-  touch = null;
-  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) moveZoom(dx < 0 ? 1 : -1);
+
+// Swipes: the big cards (FX.swipeTrack, as with your hand big in a game:
+// sideways to look along them, up or down to put them away) and the deck
+// list's handle (up to close it).
+function onPointerDown(e) {
+  if (!V) return;
+  const grab = e.target.closest?.('.dr-sheet .g-grab');
+  if (grab && V.sheet && !V.zoom) { FX.grabSwipe(e, grab, () => { if (V) { V.sheet = null; render(); } }); return; }
+  const zone = e.target.closest?.('.dr-zoom .hv-track, .dr-zoom .hv-grab');
+  const d = cur();
+  if (!zone || !V.zoom || !d?.st) return;
+  const hv = zone.closest('.hv'), track = hv.querySelector('.hv-track');
+  FX.swipeTrack(e, { track, zone, host: hv, index: zoomIndex(d), onSettle: zoomSettled, onClose: closeZoom });
 }
 
 if (typeof document !== 'undefined') {
   document.addEventListener('keydown', (e) => {
     if (!V) return;
-    if (e.key === 'Escape' && (V.zoom || V.sheet)) { V.zoom ? (V.zoom = null) : (V.sheet = null); render(); }
+    if (e.key === 'Escape' && (V.zoom || V.sheet)) { if (V.zoom) closeZoom('down'); else { V.sheet = null; render(); } }
     if (V.zoom && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) moveZoom(e.key === 'ArrowLeft' ? -1 : 1);
     if (!V.zoom && (e.key === 'Enter' || e.key === ' ') && e.target?.dataset?.act === 'draft-look') { e.preventDefault(); e.target.click(); }
   });

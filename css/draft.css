@@ -277,8 +277,14 @@ body.in-draft .topbar, body.in-draft .tabbar, body.in-draft main { display: none
   padding: calc(env(safe-area-inset-top, 0px) + 6px) 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
   animation: fade .15s ease-out;
 }
-/* sideways swipes flip through the cards; the browser must not take them as "back" */
-.dr-zoom { z-index: 6; display: flex; flex-direction: column; align-items: center; touch-action: pan-y pinch-zoom; overscroll-behavior-x: none; }
+/* the big cards: the same row as your hand big in a game (.hv-* in game.css);
+   every swipe on them is ours, so the browser never takes one as "back" */
+.dr-zoom { z-index: 6; padding: 0; overflow: hidden; touch-action: none; overscroll-behavior: none; }
+.dr-zoom .hv-card .dr-star { top: -11px; font-size: 12px; padding: 3px 10px; }
+.dr-zoom .hv-card.tip .card { box-shadow: 0 0 0 2px var(--gold), 0 0 18px rgba(214, 180, 106, .45); border-radius: 5%; }
+.hv-count { flex: none; margin: 0 0 8px; text-align: center; font-size: 13px; letter-spacing: .04em; color: var(--muted); }
+/* swiped away: the dark backdrop goes with the cards */
+.dr-zoom:has(> .hv.out-up), .dr-zoom:has(> .hv.out-down) { opacity: 0; transition: opacity .24s ease-in; }
 .dr-zoom-top {
   width: min(100%, 400px);
   display: flex;
@@ -291,38 +297,11 @@ body.in-draft .topbar, body.in-draft .tabbar, body.in-draft main { display: none
   letter-spacing: .04em;
   color: var(--muted);
 }
-.dr-x {
-  width: 40px;
-  height: 40px;
-  flex: none;
-  border-radius: 50%;
-  border: 1px solid var(--line);
-  background: rgba(30, 25, 19, .9);
-  color: var(--ink);
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-}
-.dr-zoom-card { position: relative; }
-.dr-zoom-card .dr-star { top: -11px; font-size: 12px; padding: 3px 10px; }
-/* the card fills the width, but never pushes Take it off a short screen */
-.dr-zoom-card .card { --cw: min(80vw, calc((100vh - 220px) * .716), 340px); }
-@supports (height: 100dvh) {
-  .dr-zoom-card .card { --cw: min(80vw, calc((100dvh - 220px) * .716), 340px); }
-}
-.dr-zoom-bar {
-  width: min(100%, 400px);
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) 52px;
-  gap: 8px;
-  margin-top: 14px;
-}
-.dr-zoom-bar .btn { min-height: 48px; }
-.dr-nav { padding: 0; font-size: 26px; line-height: 1; }
-.dr-zoom .kw-help { width: min(100%, 400px); }
-.dr-sheet-in { width: min(100%, 520px); margin: 0 auto; }
+.dr-sheet-in { width: min(100%, 520px); margin: 0 auto 12px; }
+/* the deck list closes with the same handle as a game's sheets: swipe it up, or tap it */
+.dr-sheet { display: flex; flex-direction: column; padding-bottom: 0; }
+.dr-sheet > .g-grab { margin: auto -16px 0; }
 .dr-sheet .rows { margin-top: 12px; }
-.dr-sheet .dr-go { margin-top: 14px; }
 
 /* ── Play page and lobby ─────────────────────────────────────────── */
 .panel.dr-panel { border-color: rgba(214, 180, 106, .3); }

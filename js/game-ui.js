@@ -1155,6 +1155,8 @@ async function animateNew(root, events) {
   const turn = events.find((e) => e.k === 'turn');
   if (!turn) return;
   const P = S().players[turn.p];
+  // a new turn's banner replaces any that is still on screen (bots can be quick)
+  document.querySelectorAll('#fx-layer .fx-banner').forEach((b) => b.remove());
   if (turn.p === G.me) { G.recap = S().turn; redraw(); FX.banner('Your turn', { sub: `${P.energy} Energy`, tone: 'mine' }); }
   else FX.banner(`${P.name}’s turn`, { tone: 'info', duration: 800 });
   await FX.wait(turn.p === G.me ? 250 : 450);

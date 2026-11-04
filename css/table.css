@@ -611,6 +611,28 @@
   transition: transform .38s cubic-bezier(.25, 1.3, .45, 1), opacity .25s;
 }
 .tc-hand > .tcard.touched { --sy: 0px; transition-duration: .22s; }
+
+/* The hand's focal card (and the one under your finger): it pokes up, a bit
+   bigger, and trades part of its picture for its rules in small print. */
+.tc-text { display: none; }
+.tcard.in-hand:is(.peek, .touched) .tc-art { height: calc(var(--h) * .34); }
+.tcard.in-hand:is(.peek, .touched) .tc-type { display: none; }
+.tcard.in-hand:is(.peek, .touched) .tc-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  flex: none;
+  margin: 0 calc(var(--w) * .02);
+  padding: calc(var(--w) * .03) calc(var(--w) * .045);
+  border-radius: calc(var(--w) * .03);
+  background: rgba(251, 244, 228, .95);
+  color: #2a2016;
+  font: 500 max(8px, calc(var(--w) * .088))/1.16 'EB Garamond', Georgia, serif;
+}
+.tc-hand > .tcard.peek { --shade: 0; }
 .tc-hand.wait > .tcard { --shade: .2; }
 
 /* ── discard pile: a small messy stack (pileHTML / toPile) ───────── */

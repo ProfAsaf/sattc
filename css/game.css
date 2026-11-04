@@ -378,6 +378,74 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 .fight-note { font-size: 14px; color: #ffe2c8; text-align: center; padding: 2px 8px; }
 .fight-note b { color: #ffb08a; }
 
+/* ── your hand, big (tap a card in your hand) ──────────────────────
+   One track across the whole screen. Each card knows how far it is from
+   the middle (--k, and --ak without the sign): that sets where it sits, how
+   much it tilts and how much smaller it is, so moving the middle makes the
+   cards slide and swing over like a hand being fanned. */
+.g-sheet { overflow-x: hidden; }
+/* the whole screen: details at the top, then the cards, Play and the handle low
+   down where the thumb is, at the same place whatever the text */
+.hv {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px calc(env(safe-area-inset-bottom, 0px) + 6px);
+}
+.hv-info { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding-bottom: 6px; }
+.hv-info .kw-help { margin: 0; }
+.hv-track {
+  --cw: min(64vw, 290px, calc((100vh - 330px) / 1.4)); /* short phones get smaller cards, so the details still fit */
+  flex: none;
+  position: relative;
+  width: 100vw;
+  margin-left: -16px;
+  height: calc(var(--cw) * 88 / 63 + 40px);
+  overflow: hidden;
+  touch-action: none; /* the swipes are ours: sideways to look, up or down to put away */
+  transform: translateY(var(--lift, 0px));
+  transition: transform .35s cubic-bezier(.22, 1.2, .4, 1), opacity .3s;
+}
+@supports (height: 100dvh) { .hv-track { --cw: min(64vw, 290px, calc((100dvh - 330px) / 1.4)); } }
+.hv.dragging .hv-track { transition: none; }
+.hv.out-up .hv-track { transform: translateY(-75vh) rotate(-4deg); opacity: 0; transition: transform .26s ease-in, opacity .26s ease-in; }
+.hv.out-down .hv-track { transform: translateY(65vh) rotate(3deg); opacity: 0; transition: transform .26s ease-in, opacity .26s ease-in; }
+.hv.out-up .hv-btns, .hv.out-up .hv-info, .hv.out-down .hv-btns, .hv.out-down .hv-info { opacity: 0; transition: opacity .2s; }
+/* the handle: swipe up (or tap) to put the hand away */
+.hv-grab { flex: none; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 0 4px; cursor: pointer; touch-action: none; }
+.hv-grab i { width: 44px; height: 5px; border-radius: 3px; background: rgba(240, 220, 190, .55); }
+.hv-grab span { font-size: 12px; color: var(--muted); letter-spacing: .03em; }
+.hv-card {
+  /* --kk: how far from the middle, fractional while a finger drags; --akk: the same without the sign (at most 3) */
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: var(--cw);
+  margin-left: calc(var(--cw) / -2);
+  z-index: var(--z, 1);
+  transform-origin: 50% 100%;
+  transform:
+    translateX(calc(var(--kk) * 74%))
+    translateY(calc(var(--akk) * 16px))
+    rotate(calc(var(--kk) * 5deg + var(--tilt, 0deg)))
+    scale(calc(1 - var(--akk) * .1));
+  filter: brightness(calc(1 - min(var(--akk), 1) * .4));
+  opacity: calc(3 - var(--akk));
+  transition: transform .5s cubic-bezier(.22, 1.28, .4, 1), filter .3s, opacity .3s;
+}
+.hv-card .card { --cw: 100%; margin: 0; }
+/* a swipe that starts on a picture must not pick the picture up */
+.hv-card img, .hv-card svg { pointer-events: none; -webkit-user-drag: none; user-select: none; }
+.hv-card:not(.on) { cursor: pointer; }
+.hv-card.far { pointer-events: none; }
+.hv.dragging .hv-card { transition: none; }
+.hv-dots { flex: none; display: flex; justify-content: center; gap: 7px; margin: 0 0 8px; }
+.hv-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(240, 220, 190, .25); }
+.hv-dots i.on { background: var(--gold); }
+.hv-btns { flex: none; display: grid; }
+.hv-btns .btn { min-height: 50px; font-size: 17px; }
+
 /* ── a calmer table ─────────────────────────────────────────────── */
 /* the others' Energy: one number */
 .pb-en { display: inline-flex; align-items: center; gap: 2px; flex: none; font-size: 16px; font-weight: 600; color: #f0d79c; }
@@ -396,3 +464,20 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
   background: rgba(24, 19, 14, .94); border: 1px solid rgba(214, 180, 106, .4); box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
   color: #f1e3bf; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* every sheet closes the same way: swipe this handle up, or tap it (or tap outside) */
+/* the handle always sits at the bottom of the screen, as in the big hand,
+   on a soft full-width fade that long sheets scroll under */
+.g-sheet:has(> .g-grab) { display: flex; flex-direction: column; padding-bottom: 0; }
+.g-sheet:has(> .g-grab) > .g-sheet-inner { margin-bottom: 12px; }
+.g-grab {
+  position: sticky; bottom: 0; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  margin: auto -14px 0; padding: 28px 0 calc(env(safe-area-inset-bottom, 0px) + 12px);
+  cursor: pointer; touch-action: none;
+  background: linear-gradient(rgba(8, 6, 4, 0), rgb(8, 6, 4) 24px);
+}
+.g-grab i { width: 44px; height: 5px; border-radius: 3px; background: rgba(240, 220, 190, .55); }
+.g-grab span { font-size: 12px; color: var(--muted); letter-spacing: .03em; }
+/* the 💡 tip: tap it to put it away */
+.suggest { cursor: pointer; }

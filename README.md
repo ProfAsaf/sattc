@@ -180,6 +180,27 @@ The rule of thumb, borrowed from how the best phone card games do it (three
   creature lies sideways with a small ↻, no stamp over its art. ⚡ chips show
   on your own creatures only.
 
+## Your hand, and swipes instead of buttons
+
+Where a gesture is easy to guess, it replaces a button or a line of text.
+Things the thumb uses sit low on the screen, in the same place whatever the
+text above them says.
+
+- **The focal card:** one card in your hand pokes up, a little bigger, with its
+  rules in small print. Slide a finger along the hand to move the focus; it
+  stays where you leave it.
+- **The whole hand, big:** tap a card to see your whole hand full size. Swipe
+  sideways to go through it (the cards shift and tilt like a hand of cards);
+  tap a side card to bring it to the middle. Details sit at the top; the
+  cards, the Play button and the handle sit at the bottom.
+- **Swipe up to close:** every info screen (a card, a player, the menu, help,
+  the log) ends with a small handle at the bottom instead of a Close button.
+  Swipe it up or tap it. In the big hand, swiping the cards up or down puts
+  them away. On the table, dragging a hand card up still plays it.
+- **The 💡 tip** goes away when you tap it.
+- Choices (a target, a discard) keep their Cancel button: there, a stray
+  gesture could be taken for a choice.
+
 ## Keeping it smooth on phones
 
 - The table is updated in place (`morphChildren` in `js/game-ui.js`): cards

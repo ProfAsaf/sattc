@@ -304,6 +304,8 @@ export function tcardHTML(card, state = {}) {
     + `<div class="tc-art">${art}</div>`
     + `<div class="tc-name${tier}"><span>${esc(card.name)}</span></div>`
     + (hand ? `<div class="tc-type">${esc(typeText(card))}</div>` : '')
+    // the rules in small print, shown on the hand's focal card (.peek)
+    + (hand && card.text ? `<div class="tc-text">${esc(card.text).replace(/\n/g, '<br>')}</div>` : '')
     + '</div></div>'
     + (hand ? `<div class="tc-cost${costCls}"><span>${cost}</span></div>` : '')
     + (creature ? `<b class="tc-p${pCls}">${p}</b><b class="tc-v${vCls}">${v}</b>` : '')
@@ -400,9 +402,13 @@ export function layoutHand(container, o = {}) {
     s = fit(w);
   }
   const h = w * 1.397;
-  const fi = cards.findIndex((c) => c.classList.contains('touched') || c.classList.contains('selected'));
+  // The card under your finger (or being played) rises highest. Otherwise the
+  // hand's focal card (.peek) pokes up a little, a bit bigger, its rules showing.
+  let fi = cards.findIndex((c) => c.classList.contains('touched') || c.classList.contains('selected'));
+  const lift = fi >= 0 ? { y: 0.26, s: 1.15 } : { y: 0.2, s: 1.12 };
+  if (fi < 0) fi = cards.findIndex((c) => c.classList.contains('peek'));
   const mid = (n - 1) / 2;
-  const spread = fi < 0 ? 0 : clamp((w * 1.15 - s) * 0.45, 0, 24);
+  const spread = fi < 0 ? 0 : clamp((w * lift.s - s) * 0.45, 0, 24);
   const fresh = [];
   cards.forEach((c, i) => {
     const arc0 = (i - mid) * s;
@@ -411,10 +417,10 @@ export function layoutHand(container, o = {}) {
     const th = arc / R;
     let x = R * Math.sin(th), y = R * (1 - Math.cos(th)), r = (th * 180) / Math.PI, sc = 1, z = i + 1;
     if (i === fi) {
-      const lim = Math.max(0, avail / 2 - (w * 1.15) / 2);
+      const lim = Math.max(0, avail / 2 - (w * lift.s) / 2);
       x = clamp(R * Math.sin(arc0 / R), -lim, lim);
-      y = -h * 0.26;
-      r = 0; sc = 1.15; z = 60;
+      y = -h * lift.y;
+      r = 0; sc = lift.s; z = 60;
     }
     SLOT.set(c, { x, y, r, s: sc, x0: R * Math.sin(arc0 / R) });
     if (!c.dataset.fan) { c.dataset.fan = '1'; c.classList.add('fx-nofx'); fresh.push(c); }
@@ -501,7 +507,8 @@ const damp = (k, zeta) => 2 * zeta * Math.sqrt(k);
  *     enabled(el),      // false → no drag (taps still work)
  *     canDrop(info),    // true → releasing here plays it
  *     onDrop(info),     // return false (or a Promise of false) to send it back
- *     onStart(info), onMove(info), onBack(info)
+ *     onStart(info), onMove(info), onBack(info),
+ *     onScrub(el)       // a sideways slide along the hand ended on this card
  *   }) → { destroy() }
  *
  * info = { el, uid, cid, x, y, dx, dy, vx, vy, rect, handRect, overHand, back() }
@@ -574,6 +581,8 @@ function beginPress(el, e, o) {
     suppressClick();
     if (S.mode === 'scrub') {
       S.el.classList.remove('touched');
+      // the card you slid to stays the hand's focal card
+      if (o.onScrub) safeCall(o.onScrub, S.el);
       if (hand.isConnected) layoutHand(hand);
       return;
     }

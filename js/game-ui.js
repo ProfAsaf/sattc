@@ -323,7 +323,15 @@ function mount() {
       enabled: (el) => !!G && !G.busy && !G.flow && !G.sheet && !playable(Number(el.dataset.uid)),
       canDrop: (info) => !info.overHand && info.y < info.handRect.top - 24,
       onDrop: (info) => dropPlay(Number(info.el.dataset.uid)),
+      // sliding along the hand moves its focal card, which stays where you leave it
+      onScrub: (el) => {
+        if (!G) return;
+        G.peek = Number(el.dataset.uid);
+        for (const c of el.parentElement.children) c.classList.toggle('peek', c === el);
+      },
     });
+    // Your hand, big: swipe sideways to move along it.
+    root.addEventListener('pointerdown', viewerSwipe);
     // Drag from your creature to aim: at an opponent to attack, at an attacker to block it.
     FX.dragArrow(root, {
       selector: '.g-side.me .tcard',
@@ -529,16 +537,16 @@ function suggestRings(s, a) {
   return [];
 }
 
+// The 💡 tip. Tapping it puts it away (no "Got it" button).
 function suggestHTML() {
   const sg = G.suggest;
   if (!sg || sg.state !== G.state || !myMove()) return '';
   if (sg.thinking) return '<div class="suggest"><span class="suggest-t"><span class="suggest-h">💡 Thinking…</span></span></div>';
   if (sg.setUp) {
-    return `<div class="suggest"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text} It’s set up: tap <b>${esc(sg.setUp)}</b>, or change it.</span>
-      <div class="suggest-row"><button class="btn small ghost" data-act="suggest-close">Got it</button></div></div>`;
+    return `<div class="suggest" data-act="suggest-close"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text} It’s set up: tap <b>${esc(sg.setUp)}</b>, or change it.</span></div>`;
   }
-  return `<div class="suggest"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text}</span>
-    <div class="suggest-row"><button class="btn small ghost" data-act="suggest-close">Got it</button><button class="btn small primary" data-act="suggest-do">Do it</button></div></div>`;
+  return `<div class="suggest" data-act="suggest-close"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text}</span>
+    <div class="suggest-row"><button class="btn small primary" data-act="suggest-do">Do it</button></div></div>`;
 }
 
 // Queue the animation of a move, then the redraw of the position after it.
@@ -1016,13 +1024,24 @@ function battleHTML(s, bv, hl) {
   return `<div class="g-battle ${bv.attTop ? 'att-top' : 'att-bottom'}${bv.cols.length > 4 || across > 5 ? ' many' : ''}" data-key="battle">${tutStep() ? '' : `<div class="gb-label">${label}</div>`}<div class="gb-cols">${cols}</div></div>`;
 }
 
+// The hand always has a focal card: the one you last slid to or looked at,
+// or (when that one is gone) the card that took its place.
+function peekOf(hand) {
+  if (!hand.length) return null;
+  if (!hand.includes(G.peek)) G.peek = hand[Math.min(G.peekAt ?? Math.floor((hand.length - 1) / 2), hand.length - 1)];
+  G.peekAt = hand.indexOf(G.peek);
+  return G.peek;
+}
+
 function handHTML(s) {
   const P = s.players[G.me];
+  const peek = peekOf(P.hand);
   return P.hand.map((u) => {
     const c = s.cards[u], d = BY_ID[c.cid];
     const can = !playable(u);
     const st = can ? ['can'] : myMove() ? ['dim'] : [];
     if (G.flow?.a.uid === u) st.push('selected');
+    if (u === peek) st.push('peek');
     return FX.tcardHTML(d, { uid: u, zone: 'hand', cost: costOf(s, G.me, c), states: st });
   }).join('');
 }
@@ -1216,7 +1235,7 @@ function tableHTML() {
     <div class="tc-hand g-hand${myMove() ? '' : ' wait'}${me.out ? ' out' : ''}">${handHTML(s)}</div>
     <svg class="g-lines" aria-hidden="true"></svg>
     ${s.phase === 'over' ? overHTML() : ''}
-    ${G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div></div>` : ''}`;
+    ${G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div>${G.viewer || G.flow ? '' : GRAB}</div>` : ''}`;
 }
 
 // ── updating the page in place ──────────────────────────────────────
@@ -1313,7 +1332,7 @@ function draw(root) {
   syncBlocks();
   if (s.phase === 'mulligan' && !me.mull) {
     root.className = 'g-mull';
-    morphChildren(root, mulliganHTML() + (G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div></div>` : ''));
+    morphChildren(root, mulliganHTML() + (G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div>${GRAB}</div>` : ''));
     return;
   }
   const cls = (s.players.length === 2 ? 'g-duel' : 'g-ffa') + (G.busy ? ' busy' : '') + (s.combat || G.atk ? ' fighting' : '') + (s.combat ? ' in-combat' : '') + (tutStep() ? ' lesson' : '');
@@ -1722,6 +1741,174 @@ function kwHelp(card, extra = []) {
   return list.map((k) => `<div><b>${k.name}</b> — ${esc(k.text)}</div>`).join('');
 }
 
+// The Play button for one of your cards (or Echo from the discard pile), and why not if it can't be played.
+function playPanel(uid, from = 'hand') {
+  const s = S(), c = s.cards[uid];
+  let why = playable(uid, from);
+  const cost = costOf(s, G.me, c, from);
+  // in the lesson, only the card the coach is asking for can be played
+  const st = tutStep();
+  let advice = '';
+  if (st && !why) {
+    if (st.expect?.t === 'play' && st.expect.cid === c.cid) advice = st.sheet || '';
+    else why = st.expect?.t === 'play' ? `For now, play ${BY_ID[st.expect.cid].name} (it's glowing).` : 'Not yet: follow the box on the table first.';
+  }
+  const actions = `<button class="btn primary" data-act="${from === 'discard' ? 'echo' : 'play'}" data-uid="${uid}" ${why ? 'disabled' : ''}>${from === 'discard' ? 'Play with Echo' : 'Play'} · ${cost} Energy</button>`;
+  let note = why ? `<div class="why">${esc(why)}</div>` : '';
+  if (advice) note = `<div class="coach coach-sheet"><div class="coach-text">${esc(advice)}</div></div>`;
+  return { actions, note };
+}
+
+// Sheets close with a handle at the bottom: swipe it up or tap it (or tap outside the sheet).
+const GRAB = '<div class="g-grab" data-act="close" role="button" aria-label="Close"><i></i><span>Swipe up to close</span></div>';
+
+// ── your hand, big ──────────────────────────────────────────────────
+// Tap a card in your hand and the whole hand comes up close: that card in
+// the middle, its neighbours fanned at the sides. Swipe (or tap a
+// neighbour) to move along; the cards slide over like a hand being fanned.
+function openViewer(uid) {
+  const hand = S().players[G.me].hand;
+  G.viewer = { i: Math.max(0, hand.indexOf(uid)) };
+  G.peek = hand[G.viewer.i];
+  G.sheet = viewerHTML();
+  redraw();
+}
+
+function viewerHTML() {
+  const s = S(), hand = s.players[G.me].hand;
+  if (!hand.length || !G.viewer) { G.viewer = null; return ''; }
+  const i = G.viewer.i = Math.min(Math.max(0, G.viewer.i), hand.length - 1);
+  const uid = hand[i], d = BY_ID[s.cards[uid].cid];
+  const cards = hand.map((u, k) => {
+    const dk = k - i, ak = Math.min(Math.abs(dk), 3);
+    return `<div class="hv-card${dk ? '' : ' on'}${ak >= 3 ? ' far' : ''}" data-hv-i="${k}" style="--kk:${dk};--akk:${ak};--z:${10 - ak}">${cardHTML(BY_ID[s.cards[u].cid], { cost: costOf(s, G.me, s.cards[u]) })}</div>`;
+  }).join('');
+  const dots = hand.length > 1 ? `<div class="hv-dots">${hand.map((u, k) => `<i${k === i ? ' class="on"' : ''}></i>`).join('')}</div>` : '';
+  const { actions, note } = playPanel(uid, 'hand');
+  // The cards and Play sit low, where the thumb is, and never move with the
+  // amount of text: the details fill the space above them. No Close button:
+  // swipe the cards up (or down) to put the hand away; the handle says so.
+  return `<div class="hv" data-key="hv">
+    <div class="hv-info"><div class="kw-help">${kwHelp(d)}</div>${note}</div>
+    <div class="hv-track">${cards}</div>${dots}
+    <div class="hv-btns">${actions}</div>
+    <div class="hv-grab" data-act="close" role="button" aria-label="Close"><i></i><span>Swipe up to close</span></div></div>`;
+}
+
+// A sheet's handle: swipe it up (or tap it) to close the sheet.
+function sheetGrab(e, grab) {
+  const y0 = e.clientY;
+  const up = (ev) => {
+    if (ev.pointerId !== e.pointerId) return;
+    removeEventListener('pointerup', up, true);
+    removeEventListener('pointercancel', up, true);
+    if (y0 - ev.clientY < 30) return; // a tap: the click closes it
+    const kill = (k) => { k.stopPropagation(); k.preventDefault(); };
+    addEventListener('click', kill, { capture: true, once: true });
+    setTimeout(() => removeEventListener('click', kill, { capture: true }), 350);
+    if (G) { G.sheet = null; redraw(); }
+  };
+  try { grab.setPointerCapture(e.pointerId); } catch { /* fine */ }
+  addEventListener('pointerup', up, true);
+  addEventListener('pointercancel', up, true);
+}
+
+// Put the big hand away, the cards flying off the way they were swiped.
+function closeViewer(dir = 'up') {
+  const hv = document.querySelector('.hv');
+  const done = () => { if (!G) return; G.sheet = null; G.viewer = null; redraw(); };
+  if (!hv) { done(); return; }
+  hv.classList.add(`out-${dir}`);
+  setTimeout(done, 240);
+}
+
+function goViewer(i) {
+  const hand = S().players[G.me].hand;
+  if (!G.viewer || i < 0 || i >= hand.length || i === G.viewer.i) return;
+  G.viewer.i = i;
+  G.peek = hand[i];
+  G.sheet = viewerHTML();
+  redraw();
+}
+
+// Swipes on the big hand. Sideways: the cards follow the finger, then settle
+// on the card you swiped to (a quick flick moves one card). Up or down (on
+// the cards or the handle): the hand follows, and far or fast enough puts it away.
+function viewerSwipe(e) {
+  const grab = e.target.closest?.('.g-grab');
+  if (grab && G?.sheet) { sheetGrab(e, grab); return; }
+  const zone = e.target.closest?.('.hv-track, .hv-grab');
+  if (!zone || !G?.viewer) return;
+  const hv = zone.closest('.hv'), track = hv?.querySelector('.hv-track');
+  if (!track) return;
+  const x0 = e.clientX, y0 = e.clientY, t0 = performance.now();
+  const width = track.querySelector('.hv-card.on')?.offsetWidth || 260;
+  const cards = [...track.querySelectorAll('.hv-card')];
+  // every card follows the finger: its place, tilt, size and light, all fractional
+  const place = (shift) => {
+    for (const c of cards) {
+      const kk = Number(c.dataset.hvI) - G.viewer.i + shift;
+      c.style.setProperty('--kk', kk.toFixed(3));
+      c.style.setProperty('--akk', Math.min(3, Math.abs(kk)).toFixed(3));
+    }
+  };
+  let dx = 0, dy = 0, mode = null, lastX = x0, lastY = y0, lastT = t0, vx = 0, vy = 0;
+  // nothing gets picked up and dragged away
+  zone.addEventListener('dragstart', (d) => d.preventDefault(), { once: true });
+  const move = (ev) => {
+    if (ev.pointerId !== e.pointerId) return;
+    dx = ev.clientX - x0;
+    dy = ev.clientY - y0;
+    if (!mode) {
+      if (Math.hypot(dx, dy) < 8) return;
+      // the handle only goes up and down; the cards go whichever way the finger starts
+      mode = zone === track && Math.abs(dx) > Math.abs(dy) ? 'side' : 'away';
+      hv.classList.add('dragging');
+      // a real swipe keeps the finger even off the cards (a tap stays a tap on its card)
+      try { zone.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
+    }
+    const now = performance.now(), dt = Math.max(1, now - lastT);
+    vx = (ev.clientX - lastX) / dt; vy = (ev.clientY - lastY) / dt;
+    lastX = ev.clientX; lastY = ev.clientY; lastT = now;
+    if (mode === 'side') {
+      place(dx / (width * 0.74));
+      track.style.setProperty('--tilt', `${Math.max(-6, Math.min(6, vx * 4)).toFixed(2)}deg`);
+    } else {
+      // the whole hand lifts (or drops) with the finger, fading as it goes
+      track.style.setProperty('--lift', `${dy.toFixed(1)}px`);
+      track.style.opacity = String(Math.max(0.3, 1 - Math.abs(dy) / 420));
+    }
+  };
+  const up = (ev) => {
+    if (ev.pointerId !== e.pointerId) return;
+    removeEventListener('pointermove', move, true);
+    removeEventListener('pointerup', up, true);
+    removeEventListener('pointercancel', up, true);
+    if (!mode) return; // a tap: the click handler has it
+    // swallow the click that follows a swipe
+    const kill = (k) => { k.stopPropagation(); k.preventDefault(); };
+    addEventListener('click', kill, { capture: true, once: true });
+    setTimeout(() => removeEventListener('click', kill, { capture: true }), 350);
+    hv.classList.remove('dragging');
+    if (mode === 'away') {
+      if (Math.abs(dy) > 90 || Math.abs(vy) > 0.5) { closeViewer(dy < 0 ? 'up' : 'down'); return; }
+      track.style.setProperty('--lift', '0px'); // not far enough: it settles back
+      track.style.opacity = '';
+      return;
+    }
+    let step = Math.round(-dx / (width * 0.74));
+    if (!step && Math.abs(vx) > 0.35) step = vx < 0 ? 1 : -1;
+    track.style.setProperty('--tilt', '0deg');
+    const n = S().players[G.me].hand.length;
+    const to = Math.min(n - 1, Math.max(0, G.viewer.i + step));
+    if (to === G.viewer.i) place(0); // not far enough: everything swings back
+    else goViewer(to);
+  };
+  addEventListener('pointermove', move, true);
+  addEventListener('pointerup', up, true);
+  addEventListener('pointercancel', up, true);
+}
+
 function cardSheet(uid, { from = 'hand' } = {}) {
   const s = S(), c = s.cards[uid], d = BY_ID[c.cid];
   const onBoard = c.zone === 'board';
@@ -1729,20 +1916,7 @@ function cardSheet(uid, { from = 'hand' } = {}) {
   const opts = onBoard ? { power: power(s, c), vitality: vitality(s, c) - (c.dmg || 0) } : { cost: c.owner === G.me && c.zone === 'hand' ? costOf(s, G.me, c, from) : d.cost };
   let actions = '', note = '';
   const granted = onBoard ? FX.KEYWORD_BADGES.filter((k) => hasKw(s, c, k) && !d.keywords.includes(k)) : [];
-  if (c.owner === G.me && s.phase !== 'mulligan' && (c.zone === 'hand' || (from === 'discard' && d.echo))) {
-    let why = playable(uid, from);
-    const cost = costOf(s, G.me, c, from);
-    // in the lesson, only the card the coach is asking for can be played
-    const st = tutStep();
-    let advice = '';
-    if (st && !why) {
-      if (st.expect?.t === 'play' && st.expect.cid === c.cid) advice = st.sheet || '';
-      else why = st.expect?.t === 'play' ? `For now, play ${BY_ID[st.expect.cid].name} (it's glowing).` : 'Not yet: follow the box on the table first.';
-    }
-    actions = `<button class="btn primary" data-act="${from === 'discard' ? 'echo' : 'play'}" data-uid="${uid}" ${why ? 'disabled' : ''}>${from === 'discard' ? 'Play with Echo' : 'Play'} · ${cost} Energy</button>`;
-    if (why) note = `<div class="why">${esc(why)}</div>`;
-    if (advice) note = `<div class="coach coach-sheet"><div class="coach-text">${esc(advice)}</div></div>`;
-  }
+  if (c.owner === G.me && s.phase !== 'mulligan' && (c.zone === 'hand' || (from === 'discard' && d.echo))) ({ actions, note } = playPanel(uid, from));
   if (onBoard) {
     const bits = [];
     if (c.dmg) bits.push(`${c.dmg} damage this turn (heals at the end of the turn)`);
@@ -1773,7 +1947,7 @@ function cardSheet(uid, { from = 'hand' } = {}) {
     if (bits.length) note = `<div class="sheet-note">${bits.map(esc).join('<br>')}</div>`;
   }
   return `${cardHTML(d, opts)}${note}<div class="kw-help">${kwHelp(d, granted)}</div>
-    <div class="btn-col">${actions}<button class="btn ghost" data-act="close">Close</button></div>`;
+    ${actions ? `<div class="btn-col">${actions}</div>` : ''}`;
 }
 
 function choiceSheet(st) {
@@ -1824,7 +1998,7 @@ function discardSheet(pi) {
   return `<h3>${pi === G.me ? 'Your' : esc(poss(shortName(P.name)))} discard pile (${list.length})</h3>
     ${list.length ? `<div class="choice-grid big">${items}</div>` : '<p class="sheet-note">Empty.</p>'}
     ${P.exile.length ? `<p class="sheet-note">Removed from the game: ${P.exile.map((u) => esc(BY_ID[s.cards[u].cid].name)).join(', ')}</p>` : ''}
-    <div class="btn-col"><button class="btn ghost" data-act="close">Close</button></div>`;
+`;
 }
 
 // Tap a player's bar: everything about them, in words.
@@ -1844,7 +2018,7 @@ function playerSheet(pi) {
   return `<h3>${who}</h3>
     <div class="pl-rows">${rows.map(([k, v]) => `<div>${k}</div><div>${typeof v === 'number' ? v : esc(String(v))}</div>`).join('')}</div>
     ${relics ? `<div class="kw-help"><div class="sheet-note" style="text-align:left;margin:0 0 4px">Relics</div>${relics}</div>` : ''}
-    <div class="btn-col">${P.discard.length ? `<button class="btn" data-act="discards" data-of="${pi}">Look at the discard pile</button>` : ''}<button class="btn ghost" data-act="close">Close</button></div>`;
+    <div class="btn-col">${P.discard.length ? `<button class="btn" data-act="discards" data-of="${pi}">Look at the discard pile</button>` : ''}</div>`;
 }
 
 function menuSheet() {
@@ -1856,7 +2030,7 @@ function menuSheet() {
     <button class="btn" data-act="rules">How to play (leaves the table; resume from Play)</button>
     <button class="btn danger" data-act="concede">${G.concedeArm && Date.now() - G.concedeArm < 4000 ? 'Tap again to concede' : 'Concede'}</button>
     <button class="btn ghost" data-act="leave">Leave (${G.mode === 'practice' ? 'you can resume later' : 'the game continues'})</button>
-    <button class="btn ghost" data-act="close">Back to the game</button></div>`;
+    </div>`;
 }
 
 function helpSheet() {
@@ -1864,6 +2038,7 @@ function helpSheet() {
     <div class="help-list">
       <div><b>Top: your opponents.</b> Name, Life ❤, Energy ⚡ and cards in hand. <b>Tap anyone’s bar</b> for the rest: their deck, discard pile and Relics. ⊠ is a face-down Trap.</div>
       <div><b>Creatures</b>: theirs above, yours below. Left number = <b>Power</b> (damage it deals), right = <b>Vitality</b> (damage it can take). Small badges are keywords; tap any card to read it.</div>
+      <div><b>Your hand</b>: one card pokes up with its rules showing; slide your finger along the hand to move it. <b>Tap a card</b> to see your whole hand big, and swipe through it.</div>
       <div><b>Play a card</b>: drag it from your hand up onto the table, or tap it and tap Play. Glowing cards can be played now.</div>
       <div><b>Attack</b> (once a turn): tap your glowing creatures and they step into the middle of the table, then tap <b>Attack!</b> (bottom right). Attackers are exhausted afterwards: they can’t block until your next turn.</div>
       <div><b>Block</b>: when you are attacked, the attackers come to the middle. Tap one of your creatures and it steps in front of an attacker (if it could stop several, tap the one you want). Then <b>Done</b>. The line above tells you what will happen.</div>
@@ -1879,13 +2054,13 @@ function helpSheet() {
     </div>
     <div class="btn-col">
       ${G.mode === 'online' ? '' : '<button class="btn" data-act="tutorial">Play the guided lesson</button>'}
-      <button class="btn ghost" data-act="close">Back to the game</button></div>`;
+      </div>`;
 }
 
 function logSheet() {
   const items = G.state.log.map((l) => `<div class="${/’s turn\.$|'s turn\.$/.test(l.text) ? 'turn' : ''}">${esc(speak(l.text))}</div>`).join('');
   setTimeout(() => { const box = document.querySelector('.log-list'); if (box) box.scrollTop = box.scrollHeight; }, 0);
-  return `<h3>Game log</h3><div class="log-list">${items}</div><div class="btn-col"><button class="btn ghost" data-act="close">Close</button></div>`;
+  return `<h3>Game log</h3><div class="log-list">${items}</div>`;
 }
 
 function fixSheet() {
@@ -1898,12 +2073,13 @@ function fixSheet() {
       <div>Your Energy · ${s.players[G.me].energy}</div>
       <button class="btn small" data-act="fix-energy" data-n="-1">−1</button>
       <button class="btn small" data-act="fix-energy" data-n="1">+1</button></div>
-    <div class="btn-col"><button class="btn ghost" data-act="close">Done</button></div>`;
+`;
 }
 
 // ── playing a card, one choice at a time ───────────────────────────
 function startPlay(uid, from = 'hand') {
   G.sheet = null;
+  G.viewer = null;
   G.atk = null;
   G.flow = { a: { t: 'play', p: G.me, uid, ...(from === 'discard' ? { from } : {}) }, steps: stepsFor(uid, from), i: 0, multi: [] };
   nextChoice();
@@ -1986,7 +2162,11 @@ function onClick(e) {
       nextChoice();
       return;
     }
-    if (t.closest('[data-sheet]') && !t.closest('.g-sheet-inner')) { if (!G.flow) { G.sheet = null; redraw(); } }
+    // the big hand: tap a neighbour to bring it to the middle; tap the empty background to put it away
+    const hv = t.closest('[data-hv-i]');
+    if (hv && G.viewer) { goViewer(Number(hv.dataset.hvI)); return; }
+    if (G.viewer && t.classList?.contains('hv')) { closeViewer('down'); return; }
+    if (t.closest('[data-sheet]') && !t.closest('.g-sheet-inner')) { if (!G.flow) { G.sheet = null; G.viewer = null; redraw(); } }
     return;
   }
 
@@ -2002,7 +2182,7 @@ function onClick(e) {
 
   if (G.flow) { if (target && !chooseOnTable(target)) flash('That is not one of the choices.'); return; }
 
-  if (inHand) { G.sheet = cardSheet(Number(card.dataset.uid)); redraw(); return; }
+  if (inHand) { openViewer(Number(card.dataset.uid)); return; }
   if (relic) { G.sheet = cardSheet(target.uid); redraw(); return; }
 
   // an empty "block here" slot in the battle zone
@@ -2080,7 +2260,7 @@ function onAct(act, el) {
         ? 'You hold the Crown: you draw an extra card at the end of each of your turns. Anyone who hits you in a fight takes it.'
         : `${name(S().crown)} holds the Crown: an extra card at the end of each of their turns. Hit them in a fight to take it.`);
       break;
-    case 'close': G.sheet = null; redraw(); break;
+    case 'close': if (G.viewer) { closeViewer('up'); break; } G.sheet = null; redraw(); break;
     case 'recap-close': G.recap = null; redraw(); break;
     case 'cancel': clearSelections(); G.sheet = null; redraw(); break;
     case 'keep': dispatch({ t: 'mulligan', p: G.me, redraw: false }); break;

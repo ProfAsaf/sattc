@@ -51,12 +51,12 @@ export const cleanCode = (s) => String(s || '').toUpperCase().replace(/[^A-Z]/g,
 const infoRef = (code) => fb.ref(db, `rooms/${code}/info`);
 const actionsRef = (code, round) => fb.ref(db, `rooms/${code}/rounds/${round}/actions`);
 
-export async function createRoom({ seats, name, deck }) {
+export async function createRoom({ seats, name, deck, draft = false }) {
   await connect();
   for (let tries = 0; tries < 6; tries++) {
     const code = newCode();
     const res = await fb.runTransaction(infoRef(code), (cur) => (cur === null
-      ? { created: Date.now(), status: 'lobby', seats, host: clientId(), round: 0, players: [{ id: clientId(), name, deck }] }
+      ? { created: Date.now(), status: 'lobby', seats, host: clientId(), round: 0, players: [{ id: clientId(), name, deck }], ...(draft ? { draft: { on: true } } : {}) }
       : undefined));
     if (res.committed) { setLastRoom(code); return code; }
   }
@@ -160,4 +160,77 @@ export async function watchActions(code, round, onActions) {
 export async function sendAction(code, round, a) {
   await connect();
   await fb.push(actionsRef(code, round), JSON.parse(JSON.stringify(a)));
+}
+
+// ── draft night ─────────────────────────────────────────────────────
+// rooms/{code}/info.draft          { on: true } while the room waits to draft, then
+//                                  { on, id, seed, order: [client ids, by draft seat] }
+// rooms/{code}/draft/{id}/picks    the picks, a push list of { p, k, cid }: draft seat
+//                                  p's pick number k was card cid (js/draft.js)
+// The draft runs while the room is in the lobby. Every phone replays the picks,
+// like a game's moves; each player then sets their deck from their 30 picks.
+// Picks live under the draft's id, so a new draft (or a reused room code)
+// never sees old picks.
+const picksRef = (code, id) => fb.ref(db, `rooms/${code}/draft/${id}/picks`);
+
+// Host, before the draft starts: switch the room between bring-your-deck and draft.
+export async function setDraftMode(code, on) {
+  await connect();
+  await fb.runTransaction(infoRef(code), (room) => {
+    if (!room || room.host !== clientId() || room.status !== 'lobby' || room.draft?.id) return room;
+    room.draft = on ? { on: true } : null;
+    return room;
+  });
+}
+
+// Host: start the draft (a fresh seed) once everyone is in. `again` starts a
+// new draft in a room that has drafted before. `pool` fingerprints the host's
+// card list, so a phone on an older version can tell (js/draft.js poolKey).
+export async function startDraft(code, { again = false, pool = '' } = {}) {
+  await connect();
+  await fb.runTransaction(infoRef(code), (room) => {
+    if (!room || room.host !== clientId() || room.status !== 'lobby' || !room.draft) return room;
+    if (room.draft.id && !again) return room;
+    if ((room.players || []).length !== room.seats) return room;
+    const seed = Math.floor(Math.random() * 2 ** 31);
+    room.draft = { on: true, id: Date.now().toString(36) + seed.toString(36).slice(0, 4), seed, order: room.players.map((p) => p.id), pool };
+    return room;
+  });
+}
+
+export async function sendPick(code, id, { p, k, cid }) {
+  await connect();
+  await fb.push(picksRef(code, id), { p, k, cid });
+}
+
+// The whole pick list, in key order, every time it grows.
+export async function watchPicks(code, id, onPicks) {
+  await connect();
+  return fb.onValue(fb.query(picksRef(code, id), fb.orderByKey()), (snap) => {
+    const list = [];
+    snap.forEach((c) => { list.push(c.val()); });
+    onPicks(list);
+  });
+}
+
+// Host, starting a game after a draft: make sure every deck is the drafted one
+// (each phone sets its own, but a phone asleep at the end may not have yet).
+// `decks` maps client id -> deck code.
+export async function setDraftDecks(code, decks) {
+  await connect();
+  await fb.runTransaction(infoRef(code), (room) => {
+    if (!room || room.status !== 'lobby' || !room.draft?.id) return room;
+    for (const p of room.players || []) if (p && decks[p.id]) p.deck = decks[p.id];
+    return room;
+  });
+}
+
+// "I've seen my deck, ready to play" after a draft (shown to the host).
+export async function setDraftReady(code) {
+  await connect();
+  await fb.runTransaction(infoRef(code), (room) => {
+    if (!room || !room.draft?.id) return room;
+    room.draft.ready = { ...(room.draft.ready || {}), [clientId()]: true };
+    return room;
+  });
 }

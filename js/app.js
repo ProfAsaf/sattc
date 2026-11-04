@@ -77,6 +77,7 @@ function openZoom(id, deckCtx = null) {
     }
   };
   scan(card.text || '');
+  if (card.ability && !kwSeen.has('ability')) { kwSeen.add('ability'); kwList.push('ability'); }
   const notes = [];
   if (/Spirit/.test(card.text)) notes.push('<b>Spirit</b> — a 1/1 Radiant creature token. Tokens vanish if they leave play.');
   if (/Fish/.test(card.text)) notes.push('<b>Fish</b> — it loses everything it had. If it leaves play it turns back into its old self.');
@@ -357,9 +358,13 @@ function rules() {
       <li>Choose an opponent and any of your ready creatures. A creature can't attack on the turn it arrived, unless it has <b>Rush</b>.</li>
       <li>Attacking <b>exhausts</b> a creature (it tilts): it can't block until your next turn. So every attack is a choice: hit now, or stay home to defend.</li>
       <li>The defender chooses <b>blockers</b>: each of their ready creatures can stop one attacker. Creatures with <b>Soar</b> can only be blocked by <b>Soar</b> or <b>Reach</b>.</li>
-      <li>Then both sides may play <b>Tricks</b>, attacker first, back and forth until both are done.</li>
+      <li><b>Teaming up.</b> Several creatures can block the same attacker. They all hit it, and it splits its damage among them, destroying the costliest ones it can.</li>
+      <li>Then both sides may play <b>Tricks</b> and use <b>abilities</b>, attacker first, back and forth until both are done.</li>
       <li><b>Damage.</b> A blocked attacker and its blocker hit each other, each dealing its Power; a creature dies when the damage reaches its Vitality. Unblocked attackers hit the player. A blocked attacker never hits the player (unless it has <b>Overrun</b>), even if its blocker is gone.</li>
     </ul>
+
+    <h2>⚡ Abilities</h2>
+    <p>Some creatures say <b>“Pay 2 Energy: …”</b>. Pay the Energy and it happens. Each ability works <b>once each turn</b>, whenever you could play a Trick: on your own turn, or during a fight you are in. On the table, tap the ⚡ chip on the creature; it glows gold when you can use it.</p>
 
     <h2>Kinds of cards</h2>
     <ul>
@@ -394,6 +399,7 @@ function rules() {
 
     <h2>Three players</h2>
     <p>Free-for-all. Each attack goes at one opponent of your choice, and only that player blocks. "Each opponent" hits both. Last player standing wins.</p>
+    <p><b>👑 The Crown.</b> Nobody has it at the start. The first player to hit an opponent in a fight takes it. Whoever holds the Crown draws an extra card at the end of each of their turns, and anyone who hits them in a fight takes it from them. If the holder is knocked out, the Crown goes to whoever's turn it is.</p>
 
     <details class="fine"><summary>Fine print</summary>
       <ul>
@@ -401,7 +407,8 @@ function rules() {
         <li>If you must draw from an empty deck, you lose ${RULES.emptyDeckDamage} Life instead.</li>
         <li>"Permanently" lasts until the creature leaves play. "This turn" ends when the turn ends.</li>
         <li>Swift: a Swift creature deals its damage first; if that kills the other creature, it takes nothing back.</li>
-        <li>Guard: one Guard creature can block two attackers and deals its full Power to each.</li>
+        <li>Guard: one Guard creature can block two attackers and deals its full Power to each. Other creatures can join either block.</li>
+        <li>Teaming up: the attacker destroys its blockers one at a time, the costliest first, skipping any it can't finish. Leftover damage lands on the next blocker; with Overrun it goes to the player once every blocker has had enough.</li>
         <li>Hunt: the hunted creature must block that attacker if it can (if it is exhausted, it can't).</li>
         <li>Venom with Overrun: 1 damage is enough for the blocker; the rest goes through.</li>
         <li>Awaken also counts boosts that last one turn.</li>

@@ -46,13 +46,14 @@ export function typeLine(card) {
 export const kindOf = (card) => (card.type === 'relic' ? 'Relic' : card.subtype === 'Trick' || card.subtype === 'Trap' ? card.subtype : card.type === 'creature' ? 'Creature' : 'Spell');
 
 // Rules text: one paragraph per line, keywords set in bold so a tap can explain them.
+// An ability line ("Pay 2 Energy: …") starts with a ⚡ cost.
 export function rulesHTML(text) {
   if (!text) return '';
   return text.split('\n').map((line) => {
     const safe = esc(line).replace(KEYWORD_PATTERN, (m) => {
       const key = Object.keys(KEYWORDS).find((k) => KEYWORDS[k].name.toLowerCase() === m.toLowerCase());
       return `<b class="kw" data-kw="${key}">${m}</b>`;
-    });
+    }).replace(/^Pay (\d+) Energy:/, '<b class="kw ab" data-kw="ability">⚡ Pay $1 Energy:</b>');
     return `<p>${safe}</p>`;
   }).join('');
 }

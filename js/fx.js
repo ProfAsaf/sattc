@@ -201,6 +201,8 @@ const KW = {
   leaving:    { name: 'Leaves at the end of the turn', c: '#d8cfbd', svg: HOURGLASS },
 };
 const SPENT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.6 12.4a7.6 7.6 0 1 1-2.3-6.1" fill="none" stroke="currentColor" stroke-width="2.9" stroke-linecap="round"/><path d="M20.9 2.9v7.1h-7.1z" fill="currentColor"/></svg>';
+// ⚡ on an ability chip
+const BOLT = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14.2 1.5 4.5 13.6h6.3L9 22.5l10.5-12.9h-6.4z"/></svg>';
 // "zZ": just arrived, not awake enough to attack
 const DOZE = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 10.4h8.4L2.8 20.6h8.4" stroke-width="2.7"/><path d="M14.2 3.4h6.4l-6.4 7.8h6.4" stroke-width="2.3"/></svg>';
 
@@ -258,6 +260,9 @@ function typeText(card) {
  *   w          width in px (sets --w; otherwise --w-board / --w-hand)
  *   legendary  override for card.legendary
  *   cls        extra classes
+ *   ability    { cost, on, used } → a ⚡ chip for a "Pay N Energy" ability
+ *              (on: usable now, glows; used: already used this turn).
+ *              Tapping it fires data-act="ability" with data-ab = uid.
  */
 export function tcardHTML(card, state = {}) {
   if (!card) return '';
@@ -302,6 +307,7 @@ export function tcardHTML(card, state = {}) {
     + '</div></div>'
     + (hand ? `<div class="tc-cost${costCls}"><span>${cost}</span></div>` : '')
     + (creature ? `<b class="tc-p${pCls}">${p}</b><b class="tc-v${vCls}">${v}</b>` : '')
+    + (s.ability && !hand ? `<i class="tc-ab${s.ability.on ? ' on' : ''}${s.ability.used ? ' used' : ''}" data-act="ability"${s.uid != null ? ` data-ab="${esc(s.uid)}"` : ''} role="button" aria-label="Ability: pay ${s.ability.cost} Energy">${BOLT}<b>${s.ability.cost}</b></i>` : '')
     + (badges ? `<div class="tc-kws">${badges}</div>` : '')
     + `<i class="tc-ex">${SPENT}<b>Spent</b></i>`
     + `<i class="tc-zz">${DOZE}</i>`
@@ -313,6 +319,7 @@ export function tcardHTML(card, state = {}) {
 // ══════════════════════════════════════════════════════════════════
 
 const SLOT = new WeakMap();       // hand card → its fan slot from the last layout
+const HAND_DIM = new WeakMap();   // hand → its card sizes and width, and what they depend on
 const HANDS = new Set();
 let RO = null;
 const PENDING = new Set();
@@ -354,11 +361,18 @@ export function layoutHand(container, o = {}) {
   const cards = [...container.children].filter((c) => c.classList?.contains('tcard') && !c.classList.contains('dragging'));
   const n = cards.length;
   if (!n) return;
-  const cs = getComputedStyle(container);
-  const base = parseFloat(cs.getPropertyValue('--w-hand')) || 104;
-  const minW = parseFloat(cs.getPropertyValue('--w-hand-min')) || 82;
-  const reveal = o.reveal ?? 36;
-  const W = container.clientWidth || 360;
+  // The sizes only change with the screen or the page's mode: read them once,
+  // not on every redraw (each read forces the browser to restyle the page).
+  const key = `${(container.parentElement?.className || '').replace(/\bbusy\b/, '')}|${innerWidth}x${innerHeight}`;
+  let dim = HAND_DIM.get(container);
+  if (!dim || dim.key !== key) {
+    const cs = getComputedStyle(container);
+    dim = { key, base: parseFloat(cs.getPropertyValue('--w-hand')) || 104, minW: parseFloat(cs.getPropertyValue('--w-hand-min')) || 82, W: container.clientWidth || 360 };
+    HAND_DIM.set(container, dim);
+  }
+  const { base, minW, W } = dim;
+  // a full hand shows a little more of each card, so a tap lands on the one you meant
+  const reveal = o.reveal ?? (n >= 8 ? 40 : 36);
   const pad = o.pad ?? 4;
   const avail = Math.max(base, W - 2 * pad);
   // a fuller hand fans flatter
@@ -2126,7 +2140,13 @@ export async function banner(text, o = {}) {
   b.innerHTML = `<div class="fx-banner-band"></div><div class="fx-banner-inner"><div class="fx-banner-text"></div>${o.sub ? '<div class="fx-banner-sub"></div>' : ''}</div>`;
   b.querySelector('.fx-banner-text').textContent = text;
   if (o.sub) b.querySelector('.fx-banner-sub').textContent = o.sub;
+  // long lines (three players' names) step down a size instead of wrapping out of the band
+  if (text.length > 15) b.classList.add(text.length > 23 ? 'longer' : 'long');
+  if (o.sub && o.sub.length > 30) b.classList.add('long-sub');
   const band = b.firstElementChild, inner = b.lastElementChild;
+  // and if it still wraps, the band grows to hold it
+  const need = inner.offsetHeight + 28;
+  if (need > h) { b.style.height = `${need}px`; b.style.top = `${(y - need / 2).toFixed(1)}px`; }
   try {
     if (isReduced()) { await sleep(HOLD(900)); return; }
     const total = o.duration ?? 1250;

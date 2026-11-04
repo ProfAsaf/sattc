@@ -57,6 +57,18 @@ export function validate(counts) {
   return { ok: errors.length === 0, errors };
 }
 
+// Drafted decks (Draft night): your 30 picks, one of each card, any factions.
+export function validateDrafted(counts) {
+  const errors = [];
+  const n = total(counts);
+  if (n !== RULES.deckSize) errors.push(`A drafted deck has ${RULES.deckSize} cards, not ${n}.`);
+  for (const [id, c] of Object.entries(counts)) {
+    if (!BY_ID[id] || BY_ID[id].token) errors.push(`Unknown card: ${id}.`);
+    else if (c > 1) errors.push(`${BY_ID[id].name}: one copy only.`);
+  }
+  return { ok: errors.length === 0, errors };
+}
+
 // Expand counts into a 30-card list of ids (deterministic order).
 export function cardList(counts) {
   const out = [];

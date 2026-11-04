@@ -1,0 +1,742 @@
+// Draft night, on screen: the draft itself (online, or against bots for
+// practice), the lobby panel of a draft room, and the Play page's "Draft
+// against bots" panel. The rules, the replay and the bots are in draft.js.
+//
+// The draft screen is a full-screen layer (#draft) above the app, like the
+// game table: the round and its kind of card, the picking order with whose
+// turn it is, the cards on the table (tap one to see it big, then Take it),
+// what everyone else took, and your deck so far. When your 30 picks are in,
+// it turns into your deck, with Start game / Ready / Play.
+//
+// game-ui.js calls in from the Play page and the online lobby:
+//   practicePanelHTML(), roomPanelHTML(code, info), modeSwitchHTML(on), createSwitchHTML()
+//   onPlayAct(act, el, ctx)          the Play page's draft-* buttons
+//   onRoomInfo(code, info, refresh)  each lobby update of the room this phone is in
+//   beforeStart(code, info)          the host's Start game in a draft room
+//   leaveRoom()                      this phone leaves the room
+
+import { BY_ID, KEYWORDS } from './cards.js';
+import { cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
+import * as Decks from './decks.js';
+import * as Net from './net.js';
+import {
+  KINDS, KIND_INFO, PICKS, botChoice, byCost, deckCounts, deckName, factionCounts, kindCounts, lastPicks,
+  newSeed, poolKey, replay, roundPicks, tipFor,
+} from './draft.js';
+
+const SAVE = 'collective.draft.snake.v1';
+const store = {
+  get() { try { return JSON.parse(localStorage.getItem(SAVE)); } catch { return null; } },
+  set(v) { try { localStorage.setItem(SAVE, JSON.stringify(v)); } catch { /* fine without */ } },
+  clear() { try { localStorage.removeItem(SAVE); } catch { /* fine */ } },
+};
+const TIPS = 'collective.draft.tips';
+const tipsOn = () => { try { return localStorage.getItem(TIPS) !== '0'; } catch { return true; } };
+const BOT_MS = 700; // practice bots pick after this long, so you see what they took
+
+// R: the draft of the online room this phone is in (kept while in the room,
+//    whether or not the screen is open).
+// P: a practice draft against bots.
+// V: the draft screen, while it is open.
+let R = null;
+let P = null;
+let V = null;
+let refreshPlay = null; // redraws the Play page (from game-ui.js)
+
+// for checks from the console or a test script
+if (typeof window !== 'undefined') window.collectiveDraft = { get R() { return R; }, get P() { return P; }, get V() { return V; }, redraw: () => render() };
+
+// ── small helpers ───────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  document.querySelector('.toast')?.remove();
+  const box = document.createElement('div');
+  box.className = 'toast';
+  box.style.zIndex = 90;
+  box.textContent = msg;
+  document.body.appendChild(box);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => box.remove(), 2600);
+}
+const fail = (e) => toast(e?.message || String(e));
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const listNames = (ns) => (ns.length < 2 ? ns.join('') : `${ns.slice(0, -1).join(', ')} and ${ns[ns.length - 1]}`);
+const who = (d, p) => (p === d.me ? 'You' : d.names[p] || `Player ${p + 1}`);
+const nameOf = (cid) => esc(BY_ID[cid]?.name || cid);
+const mine = (d) => d.st.pools[d.me];
+const myDone = (d) => mine(d).length >= PICKS;
+// an online pick of mine on its way to the database (not in the replay yet)
+const sending = (d) => !!(d.sent && !d.st.done && d.sent.k === d.st.round && d.st.who === d.me);
+// This phone's card list is not the one the draft was dealt from (an old version
+// of the app on one of the phones): its table would be wrong, so it must not pick.
+const stale = (d) => !!(d?.kind === 'online' && d.info?.draft?.pool && d.info.draft.pool !== poolKey());
+const STALE = 'This phone’s cards don’t match the draft’s: one of the phones has an older version of the game. Reload the page on every phone, then carry on.';
+const myTurn = (d) => !d.st.done && d.st.who === d.me;
+const canPickNow = (d) => d.me >= 0 && myTurn(d) && !sending(d) && !stale(d) && d.st.table.length > 0;
+// the cards still on the table (my pick on its way counts as gone)
+const onTable = (d) => d.st.table.filter((c) => !(sending(d) && c === d.sent.cid));
+const hostName = (info) => (info.players || []).find((p) => p && p.id === info.host)?.name || 'the host';
+
+function explain(n) {
+  return 'Each round, up to 6 cards of one kind (small, medium or big creatures, spells, tricks, relics) go on the table, and everyone takes one, in turn. '
+    + 'The order snakes: whoever picks last in a round picks first in the next. 30 rounds, and your 30 picks are your deck, any factions. '
+    + (n === 3 ? 'With three of you, every one of the 90 cards gets picked.' : 'With two of you, 60 of the 90 cards get picked.');
+}
+
+function curveHTML(pool) {
+  const c = Decks.curve(deckCounts(pool)).slice(1); // costs 1..7+
+  const max = Math.max(4, ...c);
+  return `<div class="curve dr-curve" aria-label="Cards by cost">${c.map((n, i) =>
+    `<div><i style="height:${Math.round((n / max) * 22)}px"></i><span>${i === 6 ? '7+' : i + 1}</span></div>`).join('')}</div>`;
+}
+
+// Small 3 · Medium 2 · Big 1 · Spells 2 · Tricks 1 · Relics 0
+function kindsHTML(pool) {
+  const k = kindCounts(pool);
+  return `<span class="dr-kinds">${KINDS.map((x) => `<span${k[x] ? '' : ' class="zero"'}>${KIND_INFO[x].short} <b>${k[x]}</b></span>`).join('')}</span>`;
+}
+
+function factionsHTML(pool) {
+  const fs = factionCounts(pool);
+  return fs.length ? fs.map(([f, n]) => `<span class="dr-fc">${factionCoin(f)}<b>${n}</b></span>`).join('') : '';
+}
+
+function kwHTML(card) {
+  const list = Object.values(KEYWORDS).filter((k) => new RegExp('\\b' + k.name + '\\b', 'i').test(card.text || ''));
+  return list.length ? `<div class="kw-help">${list.map((k) => `<div><b>${k.name}</b> — ${esc(k.text)}</div>`).join('')}</div>` : '';
+}
+
+// ── the screen ──────────────────────────────────────────────────────
+const cur = () => (V ? (V.kind === 'online' ? R : P) : null);
+
+function openScreen(kind) {
+  if (!V) {
+    const el = document.createElement('div');
+    el.id = 'draft';
+    el.className = 'dr';
+    el.innerHTML = '<header class="dr-head"></header><div class="dr-main"></div><footer class="dr-foot"></footer><div class="dr-layer"></div>';
+    document.body.appendChild(el);
+    el.addEventListener('click', onClick);
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    const [head, main, foot, layer] = el.children;
+    V = { kind, el, els: { head, main, foot, layer }, html: {}, mainKey: '', zoom: null, sheet: null, logLen: null };
+    document.body.classList.add('in-draft');
+  }
+  if (V.kind !== kind) Object.assign(V, { kind, html: {}, mainKey: '', zoom: null, sheet: null, logLen: null });
+  render();
+}
+
+function closeScreen() {
+  if (!V) return;
+  V.el.remove();
+  V = null;
+  document.body.classList.remove('in-draft');
+}
+
+// Back to the Play page (the draft carries on; the Play page can reopen it).
+function backToPlay() {
+  if (V?.kind === 'online' && R) R.dismissed = true;
+  if (V?.kind === 'practice') { clearTimeout(P?.timer); toast('Your draft is saved: resume it from Play.'); }
+  closeScreen();
+  if (location.hash !== '#/play') location.hash = '#/play';
+  else refreshPlay?.();
+}
+
+// Each part of the screen is only rebuilt when its markup changes, so the
+// table keeps its scroll position while other players pick.
+function setRegion(name, html) {
+  if (V.html[name] === html) return false;
+  V.html[name] = html;
+  V.els[name].innerHTML = html;
+  return true;
+}
+
+function render() {
+  if (!V) return;
+  const d = cur();
+  if (!d || !d.st || stale(d)) {
+    const back = `<div class="dr-top"><button class="dr-back" data-act="draft-close">‹ ${V.kind === 'online' ? 'Lobby' : 'Play'}</button><span class="dr-kicker">Draft night</span><span></span></div>`;
+    setRegion('head', back);
+    setRegion('main', d?.st ? `<div class="dr-wait"><h3>Update needed</h3><p class="dr-stale">${STALE}</p><button class="btn primary" data-act="draft-reload">Reload this page</button></div>`
+      : '<div class="dr-wait"><h3>Dealing the cards<span class="dr-dots"><i></i><i></i><i></i></span></h3></div>');
+    setRegion('foot', '');
+    setRegion('layer', '');
+    V.mainKey = '';
+    return;
+  }
+  const st = d.st;
+  // cards that just left the table fly to whoever took them
+  const fresh = V.logLen != null && st.log.length > V.logLen ? st.log.slice(V.logLen) : [];
+  if (fresh.length && fresh.length <= st.n && !document.hidden) fresh.forEach((e, i) => flyAway(e, d, i * 260));
+  V.logLen = st.log.length;
+  const done = myDone(d);
+  if (V.zoom && (done || (V.zoom.list === 'table' && !onTable(d).includes(V.zoom.cid)))) V.zoom = null; // that card is gone
+  const key = done ? 'end' : `round:${st.round}`;
+  setRegion('head', headHTML(d));
+  if (setRegion('main', done ? endHTML(d) : tableHTML(d)) && V.mainKey !== key) V.els.main.scrollTop = 0;
+  V.mainKey = key;
+  setRegion('foot', done ? endFootHTML(d) : poolBarHTML(d));
+  setRegion('layer', (V.sheet ? poolSheetHTML(d) : '') + (V.zoom ? zoomHTML(d) : ''));
+}
+
+// A taken card leaves the table: a copy flies to the picker's name (or to
+// your deck, for your own picks) and fades.
+function flyAway(e, d, delay = 0) {
+  const card = V.els.main.querySelector(`.dr-slot[data-cid="${e.cid}"] .card`);
+  if (!card) return;
+  const to = e.p === d.me ? V.els.foot.querySelector('.dr-pool') : V.els.head.querySelector(`.dr-seat[data-p="${e.p}"]`);
+  const a = card.getBoundingClientRect();
+  if (!a.width) return;
+  const b = to ? to.getBoundingClientRect() : { left: a.left, top: -a.height, width: a.width, height: 0 };
+  const ghost = card.cloneNode(true);
+  ghost.classList.add('dr-ghost');
+  Object.assign(ghost.style, { left: `${a.left}px`, top: `${a.top}px` });
+  ghost.style.setProperty('--cw', `${a.width}px`);
+  V.el.appendChild(ghost);
+  const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
+  const anim = ghost.animate([
+    { transform: 'none', opacity: 1 },
+    { transform: `translate(${dx * 0.12}px, ${dy * 0.12 - 16}px) scale(1.06)`, opacity: 1, offset: 0.3 },
+    { transform: `translate(${dx}px, ${dy}px) scale(.16)`, opacity: 0.15 },
+  ], { duration: 620, delay, easing: 'cubic-bezier(.45,.05,.3,1)', fill: 'backwards' });
+  anim.onfinish = anim.oncancel = () => ghost.remove();
+}
+
+function headHTML(d) {
+  const st = d.st;
+  const top = `<div class="dr-top">
+      <button class="dr-back" data-act="draft-close">‹ ${d.kind === 'online' ? 'Lobby' : 'Play'}</button>
+      <span class="dr-kicker">Draft night</span>
+      <span class="dr-top-r">${d.kind === 'online' ? `Game ${esc(d.code)}` : 'Practice'}</span>
+    </div>`;
+  if (myDone(d)) return `${top}<div class="dr-title">Your deck</div>`;
+  const kind = KIND_INFO[st.kind];
+  const took = new Set(roundPicks(st).map((e) => e.p));
+  if (sending(d)) took.add(d.me);
+  const strip = st.order.map((p) => {
+    const cls = took.has(p) ? ' done' : p === st.who && !sending(d) ? ' now' : '';
+    return `<span class="dr-seat${cls}${p === d.me ? ' me' : ''}" data-p="${p}">${esc(who(d, p))}${took.has(p) ? ' ✓' : ''}</span>`;
+  }).join('<i class="dr-arrow" aria-hidden="true">→</i>');
+  const status = sending(d) ? 'Sending your pick…' : myTurn(d) ? 'Your pick!' : `${esc(who(d, st.who))} is picking…`;
+  return `${top}
+    <div class="dr-title">Round ${st.round + 1} of ${PICKS} · ${esc(kind.name)}</div>
+    <div class="dr-sub">${esc(kind.line)}</div>
+    <div class="dr-turns" aria-label="Picking order this round">${strip}</div>
+    <div class="dr-status${canPickNow(d) ? ' mine' : ''}" role="status">${status}</div>`;
+}
+
+function newsHTML(d) {
+  if (sending(d)) return `You took <b>${nameOf(d.sent.cid)}</b>.`;
+  const e = d.st.log[d.st.log.length - 1];
+  if (!e) return 'Everyone takes one card, in turn. Tap a card to see it big.';
+  const card = `<b>${nameOf(e.cid)}</b>`;
+  if (e.auto) return e.p === d.me ? `The last card is yours: ${card}.` : `The last card went to ${esc(who(d, e.p))}: ${card}.`;
+  return `${esc(who(d, e.p))} took ${card}.`;
+}
+
+function tableHTML(d) {
+  const st = d.st;
+  const picking = canPickNow(d);
+  const taken = new Map(roundPicks(st).map((e) => [e.cid, e.p]));
+  if (sending(d)) taken.set(d.sent.cid, d.me);
+  const tip = picking && tipsOn() ? tipFor(st, d.me) : null;
+  const slots = st.dealt.map((cid, i) => (taken.has(cid)
+    ? `<div class="dr-slot taken" data-cid="${esc(cid)}"><div class="dr-gone"><b>${esc(who(d, taken.get(cid)))}</b> took<span>${nameOf(cid)}</span></div></div>`
+    : `<div class="dr-slot${cid === tip ? ' tip' : ''}" style="--i:${i}" data-act="draft-look" data-cid="${esc(cid)}" role="button" tabindex="0" aria-label="${nameOf(cid)}">${cid === tip ? '<span class="dr-star">★ Good pick</span>' : ''}${cardHTML(BY_ID[cid])}</div>`)).join('');
+  const tips = picking
+    ? `<div class="dr-tips">${tipsOn() ? '<span>★ marks a good pick for your deck.</span><button class="dr-link" data-act="draft-tips">Hide tips</button>' : '<button class="dr-link" data-act="draft-tips">Show tips</button>'}</div>` : '';
+  // the host can pick for a phone that went to sleep (the bot chooses)
+  const away = d.kind === 'online' && d.info?.host === Net.clientId() && !st.done && st.who !== d.me && !stale(d)
+    ? `<div class="dr-pickfor"><span>${esc(who(d, st.who))}’s phone asleep?</span><button class="btn small ghost" data-act="draft-pickfor">${d.armed === st.log.length ? `Tap again: pick for ${esc(who(d, st.who))}` : `Pick for ${esc(who(d, st.who))}`}</button></div>` : '';
+  const others = d.names.map((_, p) => p).filter((p) => p !== d.me).map((p) => {
+    const last = lastPicks(st, p, 3).map((e) => nameOf(e.cid));
+    return `<div class="dr-other"><b>${esc(who(d, p))}</b><span>${plural(st.pools[p].length, 'card')}</span><em>${last.length ? last.join(' · ') : 'no picks yet'}</em></div>`;
+  }).join('');
+  return `<div class="dr-news">${newsHTML(d)}</div>
+    <div class="dr-grid">${slots}</div>
+    ${tips}${away}
+    <div class="dr-others">${others}</div>`;
+}
+
+function poolBarHTML(d) {
+  const pool = mine(d);
+  return `<button class="dr-pool" data-act="draft-pool" aria-label="Your deck so far: ${pool.length} cards">
+      <span class="dr-pool-n"><b>${pool.length}</b><small>of ${PICKS}</small></span>
+      ${kindsHTML(pool)}
+      ${curveHTML(pool)}
+    </button>`;
+}
+
+function handoffHTML(d) {
+  if (d.kind === 'practice') return d.st.done ? '<b>Draft complete!</b> Tap Play to take your deck against the bots.' : 'The bots are making their last picks…';
+  if (!d.st.done) return `<b>Your 30 picks are in.</b> Waiting for ${esc(who(d, d.st.who))} to make the last pick…`;
+  const info = d.info;
+  const host = info.host === Net.clientId();
+  const ready = info.draft?.ready || {};
+  const meReady = !!ready[Net.clientId()];
+  const chips = d.order.map((id, p) => (id === info.host ? ''
+    : `<span class="dr-who${ready[id] ? ' ok' : ''}"><span class="dr-dot"></span>${esc(who(d, p))}<i>${ready[id] ? 'ready' : 'looking'}</i></span>`)).join('');
+  return `<b>Draft complete!</b> ${host ? 'Host: tap Start game when everyone is ready.' : `${meReady ? 'You are ready.' : 'Tap Ready.'} ${esc(hostName(info))} (the host) starts the game.`}
+    ${chips ? `<div class="dr-whos">${chips}</div>` : ''}`;
+}
+
+function endHTML(d) {
+  const pool = mine(d);
+  const groups = [];
+  for (const c of byCost(pool)) (groups[Math.min(7, c.cost)] ||= []).push(c);
+  return `<div class="dr-end">
+      <div class="dr-handoff">${handoffHTML(d)}</div>
+      <div class="dr-sum">
+        <div class="dr-sum-l"><div class="dr-fcs">${factionsHTML(pool)}</div>${kindsHTML(pool)}</div>
+        ${curveHTML(pool)}
+      </div>
+      ${groups.map((g, k) => (g ? `<div class="group-label">${k === 7 ? '7+' : k} Energy · ${g.length}</div>
+        <div class="rows">${g.map((c) => cardRowHTML(c, 1, { controls: false }).replace('class="row"', 'class="row" data-act="draft-look-deck"')).join('')}</div>` : '')).join('')}
+    </div>`;
+}
+
+function endFootHTML(d) {
+  if (d.kind === 'practice') {
+    return `<button class="btn primary dr-go" data-act="draft-play" ${d.st.done ? '' : 'disabled'}>${d.st.done ? 'Play' : 'Waiting for the bots…'}</button>`;
+  }
+  const info = d.info;
+  if (info.host === Net.clientId()) {
+    const full = (info.players || []).length === info.seats;
+    const ok = d.st.done && full && info.status === 'lobby';
+    const label = ok ? `Start game ${(info.round || 0) + 1}` : !d.st.done ? 'Waiting for the last pick…' : 'Waiting for everyone to be back in the game';
+    return `<button class="btn primary dr-go" data-act="draft-start-game" ${ok ? '' : 'disabled'}>${label}</button>`;
+  }
+  const ready = !!info.draft?.ready?.[Net.clientId()];
+  return `<button class="btn primary dr-go" data-act="draft-ready" ${ready || !d.st.done ? 'disabled' : ''}>${ready ? `Ready ✓ · ${esc(hostName(info))} starts the game` : 'Ready'}</button>`;
+}
+
+// The card big: from the table (with Take it on your turn) or from your deck.
+// It shows the baked picture, not the live drawing the gallery zoom uses:
+// that takes 0.3-3 s per card on a phone, too slow for looking through cards.
+const zoomList = (d, list) => (list === 'table' ? onTable(d) : byCost(mine(d)).map((c) => c.id));
+
+function zoomHTML(d) {
+  const z = V.zoom;
+  const list = zoomList(d, z.list);
+  const i = list.indexOf(z.cid);
+  if (i < 0) return '';
+  const st = d.st;
+  const card = BY_ID[z.cid];
+  const table = z.list === 'table';
+  const picking = table && canPickNow(d);
+  const tip = picking && tipsOn() && tipFor(st, d.me) === z.cid;
+  const label = table ? `${KIND_INFO[st.kind].name} · ${i + 1} of ${list.length}` : `Your deck · ${i + 1} of ${list.length}`;
+  const main = picking ? `<button class="btn primary" data-act="draft-pick" data-cid="${esc(z.cid)}">Take it</button>`
+    : table ? `<button class="btn" disabled>${sending(d) ? 'Sending your pick…' : `${esc(who(d, st.who))} is picking…`}</button>`
+      : '<button class="btn" data-act="draft-unlook">Close</button>';
+  const many = list.length > 1;
+  return `<div class="dr-zoom">
+      <div class="dr-zoom-top"><span>${label}</span><button class="dr-x" data-act="draft-unlook" aria-label="Close">×</button></div>
+      <div class="dr-zoom-card">${tip ? '<span class="dr-star">★ Good pick</span>' : ''}${cardHTML(card)}</div>
+      <div class="dr-zoom-bar">
+        <button class="btn dr-nav" data-act="draft-prev" aria-label="Previous card" ${many ? '' : 'disabled'}>‹</button>
+        ${main}
+        <button class="btn dr-nav" data-act="draft-next" aria-label="Next card" ${many ? '' : 'disabled'}>›</button>
+      </div>
+      ${kwHTML(card)}
+    </div>`;
+}
+
+function poolSheetHTML(d) {
+  const pool = mine(d);
+  const cards = byCost(pool);
+  return `<div class="dr-sheet">
+      <div class="dr-sheet-in">
+        <div class="dr-zoom-top"><span>Your deck so far · ${pool.length} of ${PICKS}</span><button class="dr-x" data-act="draft-sheet-close" aria-label="Close">×</button></div>
+        <div class="dr-sum">
+          <div class="dr-sum-l"><div class="dr-fcs">${factionsHTML(pool)}</div>${kindsHTML(pool)}</div>
+          ${curveHTML(pool)}
+        </div>
+        ${cards.length ? `<div class="rows">${cards.map((c) => cardRowHTML(c, 1, { controls: false })
+          .replace('class="row"', 'class="row" data-act="draft-look-deck"')).join('')}</div>`
+          : '<p class="muted small">Nothing yet: your picks gather here, cheapest first.</p>'}
+        <button class="btn ghost dr-go" data-act="draft-sheet-close">Back to the draft</button>
+      </div>
+    </div>`;
+}
+
+// ── input ───────────────────────────────────────────────────────────
+function onClick(e) {
+  if (!V) return;
+  const t = e.target;
+  const el = t.closest('[data-act]');
+  if (!el) {
+    // a tap beside the big card, or beside the list, closes it
+    if (V.zoom && t.closest('.dr-zoom') && !t.closest('.dr-zoom-card, .kw-help')) { V.zoom = null; render(); }
+    else if (V.sheet && !V.zoom && t.closest('.dr-sheet') && !t.closest('.dr-sheet-in')) { V.sheet = null; render(); }
+    return;
+  }
+  const d = cur();
+  switch (el.dataset.act) {
+    case 'draft-look': V.zoom = { list: 'table', cid: el.dataset.cid }; render(); break;
+    case 'draft-look-deck': V.zoom = { list: 'pool', cid: el.dataset.id }; render(); break;
+    case 'draft-prev': moveZoom(-1); break;
+    case 'draft-next': moveZoom(1); break;
+    case 'draft-unlook': V.zoom = null; render(); break;
+    case 'draft-pick': pick(el.dataset.cid); break;
+    case 'draft-pool': V.sheet = 'pool'; render(); break;
+    case 'draft-sheet-close': V.sheet = null; V.zoom = null; render(); break;
+    case 'draft-tips': try { localStorage.setItem(TIPS, tipsOn() ? '0' : '1'); } catch { /* fine */ } render(); break;
+    case 'draft-pickfor': pickFor(d); break;
+    case 'draft-close': backToPlay(); break;
+    case 'draft-play': playPractice(); break;
+    case 'draft-start-game': startOnlineGame(el); break;
+    case 'draft-ready': if (R) { el.disabled = true; Net.setDraftReady(R.code).catch(fail); } break;
+    case 'draft-reload': location.reload(); break;
+  }
+}
+
+function moveZoom(step) {
+  const d = cur();
+  if (!V?.zoom || !d?.st) return;
+  const list = zoomList(d, V.zoom.list);
+  if (list.length < 2) return;
+  V.zoom.cid = list[(list.indexOf(V.zoom.cid) + step + list.length) % list.length];
+  render();
+}
+
+// Swipe sideways on the big card to look at the next one. A sideways swipe is
+// ours: cancelling its moves keeps the browser from treating it as a scroll or
+// fling (Chrome then swallows the next tap, the one on Take it).
+let touch = null;
+function onTouchStart(e) {
+  touch = V?.zoom && e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+}
+function onTouchMove(e) {
+  if (!touch || !V?.zoom || e.touches.length !== 1) return;
+  const dx = e.touches[0].clientX - touch.x, dy = e.touches[0].clientY - touch.y;
+  if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) && e.cancelable) e.preventDefault();
+}
+function onTouchEnd(e) {
+  if (!touch || !V?.zoom) return;
+  const dx = e.changedTouches[0].clientX - touch.x, dy = e.changedTouches[0].clientY - touch.y;
+  touch = null;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) moveZoom(dx < 0 ? 1 : -1);
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('keydown', (e) => {
+    if (!V) return;
+    if (e.key === 'Escape' && (V.zoom || V.sheet)) { V.zoom ? (V.zoom = null) : (V.sheet = null); render(); }
+    if (V.zoom && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) moveZoom(e.key === 'ArrowLeft' ? -1 : 1);
+    if (!V.zoom && (e.key === 'Enter' || e.key === ' ') && e.target?.dataset?.act === 'draft-look') { e.preventDefault(); e.target.click(); }
+  });
+}
+
+function pick(cid) {
+  const d = cur();
+  if (!d?.st || !canPickNow(d)) return;
+  if (!d.st.table.includes(cid)) { V.zoom = null; render(); toast('That card is not on the table any more.'); return; }
+  const k = d.st.round;
+  V.zoom = null;
+  if (d.kind === 'practice') { addPracticePick({ p: d.me, k, cid }); return; }
+  flyAway({ p: d.me, cid }, d);
+  d.sent = { k, cid };
+  render();
+  Net.sendPick(d.code, d.id, { p: d.me, k, cid }).then(() => {
+    // stored, but the replay did not take it (someone picked for me first): carry on from the replay
+    setTimeout(() => {
+      if (R !== d || d.sent?.k !== k || !d.st || d.st.round !== k || d.st.who !== d.me) return;
+      d.sent = null;
+      render();
+      toast('That pick did not count. Please pick again.');
+    }, 2500);
+  }, (e) => {
+    if (R === d && d.sent?.k === k) d.sent = null;
+    render();
+    toast(`Pick not sent: ${e.message}`);
+  });
+}
+
+// Host only: pick for the seat that is up (its phone is asleep), with the bot's choice.
+function pickFor(d) {
+  if (!d?.st || d.kind !== 'online' || d.st.done || d.st.who === d.me || d.info?.host !== Net.clientId() || stale(d)) return;
+  const st = d.st;
+  if (d.armed !== st.log.length) { d.armed = st.log.length; render(); return; } // tap twice: it is someone else's card
+  d.armed = null;
+  const cid = botChoice(st);
+  if (!cid) return;
+  render();
+  Net.sendPick(d.code, d.id, { p: st.who, k: st.round, cid }).catch(fail);
+}
+
+// ── practice against bots ───────────────────────────────────────────
+function loadPractice() {
+  const s = store.get();
+  if (!s || ![2, 3].includes(s.n) || !Number.isInteger(s.seed) || !Array.isArray(s.picks)) return null;
+  try { replay(s, s.picks); return s; } catch { return null; }
+}
+
+function practiceFrom(saved, ctx) {
+  const bots = Array.from({ length: saved.n - 1 }, (_, i) => i + 1);
+  const d = {
+    kind: 'practice', seed: saved.seed, n: saved.n, picks: [...saved.picks], me: 0,
+    names: ['You', ...bots.map((p) => `Bot ${p}`)], bots, play: ctx.play, timer: null,
+  };
+  d.st = replay(d, d.picks);
+  return d;
+}
+
+function savePractice() {
+  if (P) store.set({ seed: P.seed, n: P.n, picks: P.picks, at: Date.now() });
+}
+
+function startPracticeDraft(bots, ctx) {
+  P = practiceFrom({ seed: newSeed(), n: bots + 1, picks: [] }, ctx);
+  savePractice();
+  openScreen('practice');
+  botsTick();
+}
+
+function resumePracticeDraft(ctx) {
+  const s = loadPractice();
+  if (!s) { store.clear(); toast('That draft could not be found.'); ctx.refresh?.(); return; }
+  P = practiceFrom(s, ctx);
+  openScreen('practice');
+  botsTick();
+}
+
+// A bot whose turn it is picks after a moment, so you can see what it took.
+function botsTick() {
+  if (!P) return;
+  clearTimeout(P.timer);
+  if (P.st.done || V?.kind !== 'practice' || !P.bots.includes(P.st.who)) return;
+  const d = P, turn = d.st.log.length;
+  P.timer = setTimeout(() => {
+    if (P !== d || d.st.done || d.st.log.length !== turn || !d.bots.includes(d.st.who)) return;
+    const cid = botChoice(d.st);
+    if (cid) addPracticePick({ p: d.st.who, k: d.st.round, cid });
+  }, BOT_MS + Math.random() * 200);
+}
+
+function addPracticePick(x) {
+  P.picks.push(x);
+  P.st = replay(P, P.picks);
+  savePractice();
+  if (V?.kind === 'practice') render();
+  botsTick();
+}
+
+function playPractice() {
+  if (!P?.st.done) return;
+  const st = P.st;
+  const you = { id: 'draft-you', name: 'Your draft', counts: deckCounts(st.pools[0]) };
+  const bots = P.bots.map((p) => ({ id: `draft-bot-${p}`, name: `${deckName(st.pools[p])} draft`, counts: deckCounts(st.pools[p]) }));
+  const bad = [you, ...bots].map((d) => Decks.validateDrafted(d.counts)).find((v) => !v.ok);
+  if (bad) { toast(bad.errors[0]); return; }
+  const play = P.play;
+  clearTimeout(P.timer);
+  P = null;
+  store.clear();
+  closeScreen();
+  play(you, bots);
+}
+
+// ── online: the room's draft ────────────────────────────────────────
+// Called with every lobby update of the room this phone is in (null when the
+// room is gone). Starts and stops watching the picks, opens the screen when
+// a draft starts (or this phone comes back mid-draft) and closes it when the
+// game begins.
+export function onRoomInfo(code, info, refresh) {
+  if (refresh) refreshPlay = refresh;
+  const d = info?.draft;
+  if (R && (R.code !== code || !d?.id || d.id !== R.id)) stopRoom();
+  if (!d?.id) { if (V?.kind === 'online') closeScreen(); return; }
+  if (!R) watchDraft(code, d);
+  R.info = info;
+  R.me = d.order.indexOf(Net.clientId());
+  R.names = d.order.map((id, p) => (info.players || []).find((x) => x && x.id === id)?.name || `Player ${p + 1}`);
+  if (R.me < 0 || info.status !== 'lobby') { if (V?.kind === 'online') closeScreen(); return; }
+  if (R.st) { ensureDeck(); maybeOpen(); }
+  if (V?.kind === 'online') render();
+}
+
+function watchDraft(code, draft) {
+  const d = {
+    kind: 'online', code, id: draft.id, seed: draft.seed, n: draft.order.length, order: draft.order,
+    info: null, picks: [], st: null, me: -1, names: [], sent: null, armed: null, dismissed: false, unsub: null, deckBusy: false,
+  };
+  R = d;
+  Net.watchPicks(code, draft.id, (picks) => {
+    if (R !== d) return;
+    const first = !d.st, wasDone = d.st?.done;
+    d.picks = picks;
+    try { d.st = replay(d, picks); } catch (e) { console.error(e); return; }
+    if (d.sent && (d.st.done || d.st.round > d.sent.k || d.st.who !== d.me)) d.sent = null;
+    ensureDeck();
+    if (first) maybeOpen();
+    if (V?.kind === 'online') render();
+    // the lobby shows everyone's progress, and the hand-off when it is done
+    if (V?.kind !== 'online' || first || wasDone !== d.st.done) refreshPlay?.();
+  }).then((unsub) => { if (R === d) d.unsub = unsub; else unsub(); }, fail);
+}
+
+function stopRoom() {
+  if (!R) return;
+  R.unsub?.();
+  R = null;
+}
+
+export function leaveRoom() {
+  stopRoom();
+  if (V?.kind === 'online') closeScreen();
+}
+
+// Mid-draft and not sent back to the lobby by the player: show the draft.
+function maybeOpen() {
+  if (!R?.st || R.dismissed || R.me < 0 || R.info?.status !== 'lobby' || myDone(R)) return;
+  if (V?.kind !== 'online') openScreen('online');
+}
+
+// My 30 picks are my deck: put it in the room as my deck for the games.
+function ensureDeck() {
+  const d = R;
+  if (!d?.st || d.me < 0 || d.deckBusy || d.info?.status !== 'lobby' || !myDone(d) || stale(d)) return;
+  const code = Decks.encode(deckCounts(mine(d)));
+  const me = (d.info.players || []).find((p) => p && p.id === Net.clientId());
+  if (!me || me.deck === code) return;
+  d.deckBusy = true;
+  Net.setDeck(d.code, code).catch((e) => toast(`Deck not saved: ${e.message}`)).finally(() => { d.deckBusy = false; });
+}
+
+// The host's Start game in a draft room: every deck must be the drafted one.
+export async function beforeStart(code, info) {
+  const draft = info?.draft;
+  if (!draft?.id) return;
+  if (!R || R.code !== code || R.id !== draft.id || !R.st) throw new Error('The draft is still loading. Try again in a moment.');
+  if (stale(R)) throw new Error(STALE);
+  if (!R.st.done) throw new Error(`The draft is not finished: ${R.names[R.st.who]} is picking.`);
+  const decks = {};
+  draft.order.forEach((id, p) => {
+    const counts = deckCounts(R.st.pools[p]);
+    const v = Decks.validateDrafted(counts);
+    if (!v.ok) throw new Error(`${R.names[p]}: ${v.errors[0]}`);
+    decks[id] = Decks.encode(counts);
+  });
+  await Net.setDraftDecks(code, decks);
+}
+
+async function startOnlineGame(btn) {
+  if (!R?.info) return;
+  btn.disabled = true;
+  try {
+    await beforeStart(R.code, R.info);
+    await Net.startGame(R.code); // the table takes over when the room says "playing"
+  } catch (e) { fail(e); btn.disabled = false; }
+}
+
+// ── the Play page ───────────────────────────────────────────────────
+export function onPlayAct(act, el, ctx = {}) {
+  if (ctx.refresh) refreshPlay = ctx.refresh;
+  switch (act) {
+    case 'draft-practice': startPracticeDraft(Number(el.dataset.n) === 2 ? 2 : 1, ctx); break;
+    case 'draft-resume': resumePracticeDraft(ctx); break;
+    case 'draft-forget': store.clear(); ctx.refresh?.(); break;
+    case 'draft-reload': location.reload(); break;
+    case 'draft-open': if (R && R.me >= 0) { R.dismissed = false; openScreen('online'); } break;
+    case 'draft-mode': if (ctx.code) Net.setDraftMode(ctx.code, !!el.checked).catch(fail); break;
+    case 'draft-start': if (ctx.code) { el.disabled = true; Net.startDraft(ctx.code, { pool: poolKey() }).catch((e) => { el.disabled = false; fail(e); }); } break;
+    case 'draft-again':
+      if (el.dataset.confirm !== '1') { el.dataset.confirm = '1'; el.textContent = 'Tap again: a new draft for everyone'; break; }
+      if (ctx.code) Net.startDraft(ctx.code, { again: true, pool: poolKey() }).catch(fail);
+      break;
+  }
+}
+
+export function practicePanelHTML() {
+  const s = loadPractice();
+  let saved = '';
+  if (s) {
+    const n = replay(s, s.picks).pools[0].length;
+    saved = `<div class="notice" style="margin-top:12px"><div>⏸</div><div>${n >= PICKS ? 'Your drafted deck is waiting.' : `A draft against ${s.n === 2 ? 'one bot' : 'two bots'} is in progress: ${n} of ${PICKS} picks.`}
+      <div class="btn-row" style="margin-top:8px"><button class="btn small primary" data-act="draft-resume">${n >= PICKS ? 'See the deck' : 'Resume the draft'}</button>
+      <button class="btn small ghost" data-act="draft-forget">Throw it away</button></div></div></div>`;
+  }
+  return `<div class="panel dr-panel" style="margin-top:12px">
+      <h3>Draft against bots</h3>
+      <p class="muted small" style="margin:6px 0 0">Practice for draft night: each round a few cards of one kind go on the table, and you take turns picking one. Your 30 picks are your deck, any factions.</p>
+      ${saved}
+      <div style="display:grid;gap:8px;margin-top:14px">
+        <button class="btn" data-act="draft-practice" data-n="1">Draft: you and one bot</button>
+        <button class="btn" data-act="draft-practice" data-n="2">Draft: you and two bots</button>
+      </div>
+    </div>`;
+}
+
+// The "Draft night" switch: in the new-game form (read when the game is
+// created) and, for the host, in the lobby until the draft starts.
+export function createSwitchHTML() {
+  return `<label class="dr-switch"><input type="checkbox" id="draft-new"><span class="dr-knob" aria-hidden="true"></span>
+      <span class="dr-switch-text"><b>Draft night</b><small>Everyone drafts a deck in the game instead of bringing one.</small></span></label>`;
+}
+
+export function modeSwitchHTML(on) {
+  return `<label class="dr-switch"><input type="checkbox" data-act="draft-mode"${on ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span>
+      <span class="dr-switch-text"><b>Draft night</b><small>${on ? 'On: everyone drafts a deck here before the first game.' : 'Draft decks from the 90 cards instead of bringing one.'}</small></span></label>`;
+}
+
+// The lobby of a draft room: seats with draft progress, then the next step.
+export function roomPanelHTML(code, info) {
+  const me = Net.clientId();
+  const players = info.players || [];
+  const meSeat = players.findIndex((p) => p && p.id === me);
+  const host = info.host === me;
+  const draft = info.draft || {};
+  const started = !!draft.id;
+  const order = draft.order || [];
+  const ready = draft.ready || {};
+  const st = R && R.code === code && R.id === draft.id ? R.st : null;
+  const full = players.length === info.seats;
+  const inDraft = order.includes(me);
+  const link = `${location.origin}${location.pathname}?room=${code}`;
+  const seats = Array.from({ length: info.seats }, (_, i) => {
+    const p = players[i];
+    if (!p) return '<div class="deck-card"><span class="fac-slot-empty"></span><div class="muted">Waiting for a player…</div><span></span></div>';
+    const ds = order.indexOf(p.id);
+    const pool = st && ds >= 0 ? st.pools[ds] : null;
+    let meta = 'Ready to draft', coins = '';
+    if (started) {
+      if (ds < 0) meta = 'Not in this draft';
+      else if (!pool) meta = 'Drafting…';
+      else if (pool.length >= PICKS) {
+        meta = ready[p.id] ? 'Deck drafted · ready' : 'Deck drafted';
+        coins = factionCounts(pool).slice(0, 3).map(([f]) => factionCoin(f)).join('');
+      } else meta = `Drafting · ${pool.length} of ${PICKS} cards${!st.done && st.who === ds ? ' · picking now' : ''}`;
+    }
+    return `<div class="deck-card${i === meSeat ? ' active' : ''}"><div class="deck-coins">${coins || '<span class="fac-slot-empty"></span>'}</div>
+      <div><div class="deck-name">${esc(p.name)}${i === meSeat ? ' (you)' : ''}</div><div class="deck-meta">${p.id === info.host ? 'Host · ' : ''}${meta}</div></div><span></span></div>`;
+  }).join('');
+
+  let next;
+  if (started && draft.pool && draft.pool !== poolKey()) {
+    next = `<p class="dr-stale">${STALE}</p><button class="btn primary" data-act="draft-reload">Reload this page</button>`;
+  } else if (info.status === 'playing') next = '<button class="btn primary" data-act="rejoin-table">Back to the table</button>';
+  else if (!started) {
+    next = `<p class="muted small dr-explain">${explain(info.seats)}</p>${host
+      ? `${modeSwitchHTML(true)}<button class="btn primary" data-act="draft-start" ${full ? '' : 'disabled'}>${full ? 'Start the draft' : 'Waiting for everyone to join'}</button>`
+      : '<p class="muted small" style="margin:0">The host starts the draft when everyone is in.</p>'}`;
+  } else if (!st) next = '<p class="muted small" style="margin:0">Loading the draft…</p>';
+  else if (!st.done) {
+    const up = order[st.who] === me ? 'your pick' : `${esc(R.names[st.who])} is picking`;
+    next = `${inDraft ? '<button class="btn primary" data-act="draft-open">Back to the draft</button>' : ''}
+      <p class="muted small" style="margin:0">Round ${st.round + 1} of ${PICKS} (${esc(KIND_INFO[st.kind].name)}): ${up}.</p>`;
+  } else {
+    next = `<div class="dr-handoff"><b>Draft complete!</b> Host: tap Start game.</div>
+      ${host ? `<button class="btn primary" data-act="start" ${full ? '' : 'disabled'}>${full ? `Start game ${(info.round || 0) + 1}` : 'Waiting for everyone to come back'}</button>`
+        : `<p class="muted small" style="margin:0">${esc(hostName(info))} starts the game.</p>`}
+      ${inDraft ? '<button class="btn" data-act="draft-open">See your deck</button>' : ''}
+      ${host ? '<button class="btn ghost small" data-act="draft-again">Draft again from scratch</button>' : ''}`;
+  }
+  return `<h3>Game ${esc(code)} · Draft night</h3>
+    <p class="muted small" style="margin:6px 0 10px">Friends join with the code <b style="color:var(--gold);letter-spacing:.1em">${esc(code)}</b>, or this link.</p>
+    <div class="btn-row"><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
+    <div class="deck-cards" style="margin-top:12px">${seats}</div>
+    <div class="dr-room">${next}<button class="btn ghost" data-act="leave-room">Leave this game</button></div>`;
+}

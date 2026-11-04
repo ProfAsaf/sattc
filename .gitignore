@@ -1,6 +1,7 @@
 # full-size originals stay local (Dropbox); the published site uses art/*.webp
 art/raw/
 tools/*.png
+tools/shots-*/
 __pycache__/
 .claude/
 *.log

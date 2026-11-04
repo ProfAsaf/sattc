@@ -59,10 +59,12 @@ function mk(s, cid, owner, zone) {
 // setup: { seed, players: [{ name, deck: [cardId × 30] }] }
 // The tutorial adds `stacked: true` (decks keep their order, top card first)
 // and `first` (who goes first), so every step of the lesson is predictable.
-export function newGame({ seed = 1, players, stacked = false, first = null }) {
+// `crown` turns the Crown on or off (on by default with three or more players).
+export function newGame({ seed = 1, players, stacked = false, first = null, crown = null }) {
   const s = {
     v: 2, rng: seed | 0, mode: players.length > 2 ? 'ffa' : 'duel',
     turn: 0, active: 0, first: 0, phase: 'mulligan', winner: null, combat: null,
+    crownOn: crown ?? players.length > 2, crown: null,
     players: [], cards: {}, nextUid: 1, died: 0, diedOwn: [], log: [], events: [],
   };
   players.forEach((pl, i) => {
@@ -256,6 +258,8 @@ function eliminate(s, pi) {
   for (const u of [...P.relics, ...P.traps]) s.cards[u].zone = 'gone';
   P.relics = [];
   P.traps = [];
+  // Their Crown goes to whoever's turn it is (back to the middle if it was their own).
+  if (s.crown === pi) setCrown(s, s.active !== pi && !s.players[s.active].out ? s.active : null);
   if (s.combat && (s.combat.a === pi || s.combat.d === pi)) { clearCombatMarks(s); s.combat = null; s.phase = 'main'; }
   const alive = living(s);
   if (alive.length <= 1) {
@@ -264,6 +268,19 @@ function eliminate(s, pi) {
     s.winner = alive.length ? alive[0].i : null;
     log(s, s.winner, alive.length ? `${alive[0].name} wins!` : 'Nobody is left standing.');
   }
+}
+
+// ── the Crown ───────────────────────────────────────────────────────
+// Three-player games: the first player to hit someone in a fight takes the
+// Crown, hitting whoever holds it takes it from them, and the holder draws
+// an extra card at the end of each of their turns. It keeps everyone attacking.
+function setCrown(s, to) {
+  if (!s.crownOn || s.crown === to) return;
+  const from = s.crown;
+  s.crown = to;
+  if (to == null) log(s, null, 'The Crown goes back to the middle: the next player to hit someone in a fight takes it.');
+  else log(s, to, from == null ? `${s.players[to].name} takes the Crown!` : `${s.players[to].name} takes the Crown from ${s.players[from].name}!`);
+  ev(s, { k: 'crown', p: to, from });
 }
 
 // ── creatures: buffs, damage, death ─────────────────────────────────
@@ -542,16 +559,16 @@ function springTrap(s, Q, t) {
   toDiscard(s, t, 'trap');
 }
 
+// C.blk maps each blocked attacker to its blockers, in the order they were chosen.
 function declareBlocks(s, pi, blocks) {
   const C = s.combat, Q = s.players[pi];
   C.blk = {};
-  const said = [];
   for (const [b, at] of blocks) {
-    C.blk[at] = b;
+    (C.blk[at] ||= []).push(b);
     s.cards[b].blocking = true;
     ev(s, { k: 'block', uid: b, att: at });
-    said.push(`${nameOf(s.cards[b])} blocks ${nameOf(s.cards[at])}`);
   }
+  const said = Object.entries(C.blk).map(([at, bs]) => `${listNames(bs.map((b) => nameOf(s.cards[b])))} ${bs.length > 1 ? 'block' : 'blocks'} ${nameOf(s.cards[at])}`);
   log(s, pi, said.length ? `${Q.name}: ${said.join('; ')}.` : `${Q.name} doesn't block.`);
   C.step = 'tricks';
   C.prio = C.a;
@@ -561,15 +578,16 @@ function declareBlocks(s, pi, blocks) {
 // Combat damage: Swift creatures strike first, then everyone still standing.
 function fight(s) {
   const C = s.combat, d = C.d;
-  const pairs = C.att.map((u) => s.cards[u]).filter((c) => c.zone === 'board' && c.ctrl === C.a)
-    .map((c) => ({ a: c, b: C.blk[c.uid] != null ? s.cards[C.blk[c.uid]] : null }));
+  const live = (c, side) => !!c && c.zone === 'board' && c.ctrl === side;
+  const groups = C.att.map((u) => s.cards[u]).filter((c) => live(c, C.a))
+    .map((a) => ({ a, bs: (C.blk[a.uid] || []).map((u) => s.cards[u]) }));
   ev(s, { k: 'fight', a: C.a, d });
   for (const first of [true, false]) {
-    for (const { a, b } of pairs) {
-      const aLive = a.zone === 'board' && a.ctrl === C.a;
-      const bLive = b && b.zone === 'board' && b.ctrl === d;
-      if (aLive && hasKw(s, a, 'swift') === first) strike(s, a, b, bLive, d);
-      if (bLive && a.zone === 'board' && hasKw(s, b, 'swift') === first) {
+    for (const { a, bs } of groups) {
+      const standing = bs.filter((b) => live(b, d));
+      if (live(a, C.a) && hasKw(s, a, 'swift') === first) strike(s, a, bs, standing, d);
+      for (const b of standing) {
+        if (!live(a, C.a) || hasKw(s, b, 'swift') !== first) continue;
         ev(s, { k: 'strike', uid: b.uid, to: a.uid });
         damage(s, a, power(s, b), b);
       }
@@ -580,25 +598,46 @@ function fight(s) {
   endCombat(s);
 }
 
-function strike(s, a, b, bLive, d) {
+// `bs` are the creatures that blocked `a`; `standing` those still there.
+function strike(s, a, bs, standing, d) {
   const pw = power(s, a);
-  if (!b) {
-    ev(s, { k: 'strike', uid: a.uid, to: { p: d } });
-    damagePlayer(s, d, pw, a);
-    return;
+  if (!bs.length) { hitInFight(s, a, d, pw); return; }
+  // Its blockers are gone: only Overrun carries the damage through.
+  if (!standing.length) { if (hasKw(s, a, 'overrun')) hitInFight(s, a, d, pw); return; }
+  const { parts, rest } = splitDamage(s, a, standing, pw);
+  for (const [b, n] of parts) {
+    ev(s, { k: 'strike', uid: a.uid, to: b.uid });
+    damage(s, b, n, a);
   }
-  if (!bLive) {
-    // Its blocker is gone: only Overrun carries the damage through.
-    if (hasKw(s, a, 'overrun')) { ev(s, { k: 'strike', uid: a.uid, to: { p: d } }); damagePlayer(s, d, pw, a); }
-    return;
+  if (rest > 0) { log(s, a.ctrl, `${nameOf(a)} overruns!`); hitInFight(s, a, d, rest); }
+}
+
+// An attacker blocked by several creatures splits its damage: it destroys
+// the costliest blockers it can, one after another; what is left lands on
+// the next blocker, or with Overrun (once every blocker has its fill) on the player.
+export function splitDamage(s, a, bs, pw) {
+  const venom = hasKw(s, a, 'venom');
+  const lethal = (b) => { const left = Math.max(0, vitality(s, b) - b.dmg); return venom ? Math.min(1, left) : left; };
+  const order = [...bs].sort((x, y) => def(y).cost - def(x).cost || power(s, y) - power(s, x) || x.uid - y.uid);
+  const got = new Map();
+  let rest = pw;
+  for (const b of order) {
+    const need = lethal(b);
+    if (need > 0 && need <= rest) { got.set(b, need); rest -= need; }
   }
-  ev(s, { k: 'strike', uid: a.uid, to: b.uid });
-  if (!hasKw(s, a, 'overrun')) { damage(s, b, pw, a); return; }
-  const left = Math.max(0, vitality(s, b) - b.dmg);
-  const lethal = hasKw(s, a, 'venom') ? Math.min(1, left) : left;
-  const onBlocker = Math.min(pw, lethal);
-  damage(s, b, onBlocker, a);
-  if (pw > onBlocker) { log(s, a.ctrl, `${nameOf(a)} overruns!`); damagePlayer(s, d, pw - onBlocker, a); }
+  if (rest > 0) {
+    const spare = order.find((b) => !got.has(b));
+    if (spare) { got.set(spare, rest); rest = 0; }
+    else if (!hasKw(s, a, 'overrun')) { got.set(order[0], got.get(order[0]) + rest); rest = 0; }
+  }
+  return { parts: order.filter((b) => got.has(b)).map((b) => [b, got.get(b)]), rest };
+}
+
+// Combat damage to a player. It takes the Crown if they hold it (or if nobody does yet).
+function hitInFight(s, a, d, n) {
+  ev(s, { k: 'strike', uid: a.uid, to: { p: d } });
+  damagePlayer(s, d, n, a);
+  if (n > 0 && s.crownOn && s.phase !== 'over' && (s.crown == null || s.crown === d) && !s.players[a.ctrl].out) setCrown(s, a.ctrl);
 }
 
 // After every move in a fight: skip anyone who has nothing they could do.
@@ -606,12 +645,12 @@ function advance(s) {
   for (let guard = 0; guard < 12 && s.phase === 'combat'; guard++) {
     const C = s.combat;
     if (C.step === 'block') {
-      if (blockersExist(s, C) || canPlayTrick(s, C.d)) return;
+      if (blockersExist(s, C) || canRespond(s, C.d)) return;
       declareBlocks(s, C.d, forcedBlocks(s, C));
       continue;
     }
     if (C.passes >= 2) { fight(s); return; }
-    if (canPlayTrick(s, C.prio)) return;
+    if (canRespond(s, C.prio)) return;
     C.passes += 1;
     C.prio = otherSide(C);
   }
@@ -635,10 +674,43 @@ export function forcedBlocks(s, C = s.combat) {
   return out;
 }
 
-function canPlayTrick(s, pi) {
+// Does this player have anything to do in a fight: a Trick, or a creature's ability?
+function canRespond(s, pi) {
   const P = s.players[pi];
   if (P.out) return false;
-  return P.hand.some((u) => isTrick(def(s.cards[u])) && playOptions(s, pi, s.cards[u], 'hand', 1).length > 0);
+  return P.hand.some((u) => isTrick(def(s.cards[u])) && playOptions(s, pi, s.cards[u], 'hand', 1).length > 0)
+    || P.board.some((u) => def(s.cards[u]).ability && useOptions(s, pi, s.cards[u], 1).length > 0);
+}
+
+// ── abilities ───────────────────────────────────────────────────────
+// "Pay N Energy: …" on a creature. Each works once each turn, whenever you
+// could play a Trick: on your own turn, or during a fight you are in.
+export function abilityNeeds(s, pi, c) {
+  const T = (uids) => uids.map((u) => ({ uid: u }));
+  const others = s.players[pi].board.filter((u) => u !== c.uid);
+  switch (c.cid) {
+    case 'ember-duelist': return { target: T(s.players.flatMap((Q) => Q.board)) };
+    case 'canopy-archer': return { target: T(s.players.flatMap((Q) => Q.board).filter((u) => hasKw(s, s.cards[u], 'soar'))) };
+    case 'hungry-ghoul': case 'dawnwatch-knight': return { target: T(others) };
+    default: return {};
+  }
+}
+
+// Every legal way to use a creature's ability or a Relic, up to `limit` (whose move it is aside).
+export function useOptions(s, pi, c, limit = Infinity) {
+  const out = [];
+  if (!c) return out;
+  const base = { t: 'use', p: pi, uid: c.uid };
+  const push = (a) => { if (out.length < limit && !checkUse(s, a)) out.push(a); };
+  if (c.zone === 'relic') {
+    if (c.cid === 'bone-altar') for (const sac of s.players[pi].board) push({ ...base, sac });
+    return out;
+  }
+  if (!def(c).ability || c.zone !== 'board') return out;
+  const n = abilityNeeds(s, pi, c);
+  if (n.target) for (const target of n.target) push({ ...base, target });
+  else push(base);
+  return out;
 }
 
 // ── what a card needs from the player ───────────────────────────────
@@ -782,13 +854,13 @@ function checkBlock(s, a) {
   const C = s.combat;
   if (C.step !== 'block') return 'Blockers are already chosen.';
   const blocks = a.blocks || [];
-  const blocked = new Set(), count = {};
+  const seen = new Set(), count = {};
   for (const pair of blocks) {
     const [b, at] = pair || [];
     const bc = s.cards[b], ac = s.cards[at];
     if (!C.att.includes(at) || !ac || ac.zone !== 'board') return 'That creature is not attacking.';
-    if (blocked.has(at)) return 'Each attacker can only be blocked by one creature.';
-    blocked.add(at);
+    if (seen.has(`${b}>${at}`)) return 'That creature is already blocking it.';
+    seen.add(`${b}>${at}`);
     if (!bc || bc.zone !== 'board' || bc.ctrl !== a.p) return 'Block with your own creatures.';
     if (!canBlock(s, bc, ac)) return `${nameOf(bc)} can't block ${nameOf(ac)}.`;
     count[b] = (count[b] || 0) + 1;
@@ -802,12 +874,23 @@ function checkBlock(s, a) {
 
 function checkUse(s, a) {
   const P = s.players[a.p];
-  const r = s.cards[a.uid];
-  if (!r || r.zone !== 'relic' || !P.relics.includes(a.uid)) return 'That Relic is not yours.';
-  if (r.cid !== 'bone-altar') return 'That Relic works by itself.';
-  if (a.p !== s.active) return 'Only on your turn.';
-  if (r.usedOn === s.turn) return 'Already used this turn.';
-  if (!P.board.includes(a.sac)) return 'Choose one of your creatures to sacrifice.';
+  const c = s.cards[a.uid];
+  if (c?.zone === 'relic') {
+    if (!P.relics.includes(a.uid)) return 'That Relic is not yours.';
+    if (c.cid !== 'bone-altar') return 'That Relic works by itself.';
+    if (a.p !== s.active) return 'Only on your turn.';
+    if (c.usedOn === s.turn) return 'Already used this turn.';
+    if (!P.board.includes(a.sac)) return 'Choose one of your creatures to sacrifice.';
+    return null;
+  }
+  if (!c || c.zone !== 'board' || c.ctrl !== a.p) return 'Use your own creatures.';
+  const ab = def(c).ability;
+  if (!ab) return `${nameOf(c)} has no ability to use.`;
+  if (c.usedOn === s.turn) return 'Already used this turn.';
+  if (ab.cost > P.energy) return 'Not enough Energy.';
+  if (c.cid === 'choirmother' && P.board.length >= RULES.boardMax) return `You already have ${RULES.boardMax} creatures.`;
+  const n = abilityNeeds(s, a.p, c);
+  if (n.target && !n.target.some((t) => sameTarget(t, a.target))) return n.target.length ? 'Choose a target.' : 'There is nothing to target.';
   return null;
 }
 
@@ -1144,14 +1227,39 @@ function play(s, pi, a) {
   settle(s);
 }
 
-function useRelic(s, pi, a) {
-  const r = s.cards[a.uid];
-  r.usedOn = s.turn;
-  const sac = s.cards[a.sac];
-  log(s, pi, `Bone Altar: ${s.players[pi].name} sacrifices ${nameOf(sac)} and draws a card.`);
-  ev(s, { k: 'use', uid: r.uid });
-  sacrifice(s, sac);
-  draw(s, pi, 1);
+function use(s, pi, a) {
+  const c = s.cards[a.uid];
+  const P = s.players[pi];
+  c.usedOn = s.turn;
+  if (c.zone === 'relic') {
+    const sac = s.cards[a.sac];
+    log(s, pi, `Bone Altar: ${P.name} sacrifices ${nameOf(sac)} and draws a card.`);
+    ev(s, { k: 'use', uid: c.uid, p: pi, cid: c.cid });
+    sacrifice(s, sac);
+    draw(s, pi, 1);
+    settle(s);
+    return;
+  }
+  const d = def(c);
+  const t = a.target?.uid != null ? s.cards[a.target.uid] : null;
+  P.energy -= d.ability.cost;
+  log(s, pi, `${P.name} pays ${d.ability.cost} Energy: ${d.name} — ${d.ability.short}${t ? ` (${nameOf(t)})` : ''}.`);
+  ev(s, { k: 'use', uid: c.uid, p: pi, cid: c.cid, target: a.target || null });
+  switch (c.cid) {
+    case 'reckless-initiate': buff(s, c, 2, 0, false); break;
+    case 'ember-duelist': damage(s, t, 1, c); break;
+    case 'mossback': buff(s, c, 1, 1, true); break;
+    case 'canopy-archer': damage(s, t, 1, c); break;
+    case 'curious-wisp': draw(s, pi, 1); break;
+    case 'cloud-ray': bounce(s, c); break;
+    case 'vesper-bat':
+      for (const o of opponents(s, pi)) loseLife(s, o.i, 1);
+      gainLife(s, pi, 1);
+      break;
+    case 'hungry-ghoul': if (t?.zone === 'board') sacrifice(s, t); break;
+    case 'choirmother': makeTokens(s, pi, 'spirit', 1); break;
+    case 'dawnwatch-knight': buff(s, t, 0, 2, false); break;
+  }
   settle(s);
 }
 
@@ -1222,6 +1330,13 @@ function nextTurn(s) {
 
 function endTurn(s) {
   const all = () => s.players.flatMap((Q) => Q.board.map((u) => s.cards[u]));
+  const P = s.players[s.active];
+  if (s.crownOn && s.crown === P.i && !P.out) {
+    log(s, P.i, `${P.name} holds the Crown and draws a card.`);
+    ev(s, { k: 'crownDraw', p: P.i });
+    draw(s, P.i, 1);
+    if (s.phase === 'over') return;
+  }
   for (const c of all().filter((x) => x.sacEnd)) if (c.zone === 'board') { log(s, c.ctrl, `Borrowed Time runs out for ${nameOf(c)}.`); killBatch(s, [c]); }
   settle(s);
   // Borrowed creatures go home.
@@ -1294,7 +1409,7 @@ export function apply(state, a) {
     case 'attack': attack(s, a.p, a); break;
     case 'block': declareBlocks(s, a.p, a.blocks || []); break;
     case 'pass': s.combat.passes += 1; s.combat.prio = otherSide(s.combat); break;
-    case 'use': useRelic(s, a.p, a); break;
+    case 'use': use(s, a.p, a); break;
     case 'phoenix': {
       const P = s.players[a.p];
       P.energy -= 2;
@@ -1309,8 +1424,8 @@ export function apply(state, a) {
     case 'fix': fix(s, a); break;
   }
   if (s.phase === 'combat') {
-    // A Trick played after blockers gives the other side a chance to answer.
-    if (inFight && a.t === 'play' && s.combat.step === 'tricks') { s.combat.passes = 0; s.combat.prio = otherSide(s.combat); }
+    // A Trick (or an ability) after blockers gives the other side a chance to answer.
+    if (inFight && (a.t === 'play' || a.t === 'use') && s.combat.step === 'tricks') { s.combat.passes = 0; s.combat.prio = otherSide(s.combat); }
     pruneCombat(s);
     advance(s);
   }
@@ -1404,7 +1519,8 @@ export function attackOptions(s, pi) {
   return out.filter((a) => !checkAttack(s, a));
 }
 
-// A few block declarations: none, each single block, and one blocker per attacker.
+// A few block declarations: none, each single block, one blocker per
+// attacker, and everyone who can piling onto the first attacker.
 export function blockOptions(s, pi) {
   const C = s.combat;
   if (!C || C.step !== 'block' || C.d !== pi) return [];
@@ -1419,6 +1535,7 @@ export function blockOptions(s, pi) {
     if (b != null) { used.add(b); greedy.push([b, at]); }
   }
   out.push(greedy);
+  if (C.att.length) out.push([...forced, ...free.filter((b) => canBlock(s, s.cards[b], s.cards[C.att[0]])).map((b) => [b, C.att[0]])]);
   return out.map((blocks) => ({ t: 'block', p: pi, blocks })).filter((a) => !checkBlock(s, a));
 }
 
@@ -1430,10 +1547,7 @@ export function legalActions(s, pi) {
   if (actor(s) !== pi) return out;
   const sources = [...P.hand.map((u) => ['hand', u]), ...P.discard.filter((u) => def(s.cards[u]).echo).map((u) => ['discard', u])];
   for (const [from, uid] of sources) out.push(...playOptions(s, pi, s.cards[uid], from));
-  for (const u of P.relics) {
-    const r = s.cards[u];
-    if (r.cid === 'bone-altar') for (const sac of P.board) { const a = { t: 'use', p: pi, uid: u, sac }; if (!checkUse(s, a)) out.push(a); }
-  }
+  for (const u of [...P.relics, ...P.board]) out.push(...useOptions(s, pi, s.cards[u]));
   if (s.phase === 'combat') {
     if (s.combat.step === 'block') out.push(...blockOptions(s, pi));
     else out.push({ t: 'pass', p: pi });

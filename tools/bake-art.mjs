@@ -10,7 +10,7 @@
 // which makes art/<id>.webp and rewrites js/art-manifest.js.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,9 +21,18 @@ const W = 600, H = 420; // the art canvas is 300 × 210; twice that is sharp on 
 const only = process.argv[2] ? process.argv[2].split(',') : null;
 const chrome = join(process.env.LOCALAPPDATA || '', 'ms-playwright', 'chromium-1234', 'chrome-win64', 'chrome.exe');
 const port = 9500 + Math.floor(Math.random() * 400);
-const proc = spawn(chrome, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${mkdtempSync(join(tmpdir(), 'bake-'))}`,
+// A throwaway browser profile (tens of MB): removed again when the run ends.
+const profile = mkdtempSync(join(tmpdir(), 'bake-'));
+const proc = spawn(chrome, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`,
   '--no-first-run', '--hide-scrollbars', `--window-size=${W},${H}`, 'about:blank'], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function closeBrowser() {
+  // on Windows the browser's helper processes hold the profile open: end the whole tree
+  if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { stdio: 'ignore' });
+  await new Promise((r) => { if (proc.exitCode != null) return r(); proc.once('exit', r); proc.kill(); setTimeout(r, 4000); });
+  try { rmSync(profile, { recursive: true, force: true, maxRetries: 30, retryDelay: 200 }); } catch { /* still locked: the OS cleans Temp eventually */ }
+}
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { closeBrowser().finally(() => process.exit(1)); });
 
 let ws, seq = 0;
 const pending = new Map();
@@ -60,7 +69,7 @@ try {
   console.log(`\nbaked ${ids.length} pictures`);
 } finally {
   try { ws?.close(); } catch { /* closed */ }
-  proc.kill();
+  await closeBrowser();
 }
 const post = spawnSync('python', [join(ROOT, 'tools', 'bake_post.py')], { stdio: 'inherit' });
 process.exit(post.status ?? 0);

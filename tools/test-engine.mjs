@@ -2,7 +2,7 @@
 //   node tools/test-engine.mjs            all tests + 400 fuzz games
 //   node tools/test-engine.mjs 3000       more fuzz games
 
-import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack } from '../js/engine.js';
+import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack, useOptions } from '../js/engine.js';
 import { STARTERS } from '../js/cards.js';
 import { cardList } from '../js/decks.js';
 
@@ -41,7 +41,7 @@ function test(name, fn) {
 
 // ── Combat rules ────────────────────────────────────────────────────
 test('Unblocked attack, one attack a turn, summoning sickness', () => {
-  let s = scene();
+  let s = scene({ energy: 4 });
   const m = addCard(s, 'mossback', A, 'board');
   const fresh = addCard(s, 'lightweaver', A, 'hand');
   s = play(s, fresh.uid);
@@ -76,7 +76,8 @@ test('Blocking, trading, and an exhausted creature cannot block', () => {
   // Mossback attacked, so it is still exhausted on A's turn: it cannot block.
   ok(s.cards[mb.uid].ex, 'Mossback exhausted during A’s turn');
   s = attack(s, lw.uid);
-  eq(s.phase, 'main', 'nothing could block');
+  ok(s.phase === 'main' || !legalActions(s, B).some((a) => a.t === 'block' && a.blocks.length), 'nothing could block');
+  s = fight(s);
   eq(s.players[B].life, 18, 'Lightweaver hit for 1');
 });
 
@@ -133,7 +134,7 @@ test('Swift and Overrun with Venom', () => {
 test('Reckless Initiate hurts itself when attacking', () => {
   let s = scene();
   const r = addCard(s, 'reckless-initiate', A, 'board');
-  s = attack(s, r.uid);
+  s = fight(attack(s, r.uid));
   eq(s.players[B].life, 18, 'dealt 2');
   eq(s.cards[r.uid].dmg, 1, 'took 1');
 });
@@ -248,7 +249,7 @@ test('Mutiny and Bone Altar', () => {
   deckOf(s, A, 3);
   s = play(s, mu.uid, { target: { uid: mb.uid } });
   eq(s.cards[mb.uid].ctrl, A, 'A controls Mossback');
-  s = attack(s, mb.uid);
+  s = fight(attack(s, mb.uid));
   eq(s.players[B].life, 17, 'B hit by their own Mossback');
   s = act(s, { t: 'use', p: A, uid: alt.uid, sac: mb.uid });
   eq(zoneOf(s, mb.uid), 'discard', 'sacrificed');
@@ -290,7 +291,7 @@ test('Ashmaw breathes before blockers', () => {
   const sp = addCard(s, 'spirit', B, 'board');
   const lw = addCard(s, 'lightweaver', B, 'board');
   const mb = addCard(s, 'mossback', B, 'board');
-  s = attack(s, as.uid);
+  s = fight(attack(s, as.uid));
   eq(zoneOf(s, sp.uid), 'gone', 'Spirit burned away');
   eq(zoneOf(s, lw.uid), 'discard', 'Lightweaver burned');
   eq(s.cards[mb.uid].dmg, 2, 'Mossback singed');
@@ -737,7 +738,7 @@ test('Kiss of Night on a chump blocker', () => {
 test('Vesper Bat drains; Hungry Ghoul feeds', () => {
   let s = scene();
   const vb = addCard(s, 'vesper-bat', A, 'board');
-  s = attack(s, vb.uid);
+  s = fight(attack(s, vb.uid));
   eq(s.players[B].life, 19, 'hit for 1');
   eq(s.players[A].life, 21, 'drained 1');
   let t = scene();
@@ -1015,8 +1016,224 @@ test('Three players: each opponent, elimination, turn order, who you attack', ()
   const m = addCard(t, 'mossback', A, 'board');
   addCard(t, 'lightweaver', B, 'board');
   t = attack(t, m.uid, 2);
-  eq(t.phase, 'main', 'C had no blockers; B’s creature stays out of it');
+  ok(t.phase === 'main' || t.combat.step === 'tricks', 'C had no blockers; B’s creature stays out of it');
+  t = fight(t);
   eq(t.players[2].life, 17, 'C took 3');
+});
+
+// ── Double blocks ───────────────────────────────────────────────────
+test('Two creatures block one attacker', () => {
+  let s = scene();
+  const ac = addCard(s, 'ash-collector', A, 'board');           // 3/3
+  const ku = addCard(s, 'kindly-undertaker', B, 'board');       // 2/3, costs 2
+  const lw = addCard(s, 'lightweaver', B, 'board');             // 1/2, costs 2
+  s = attack(s, ac.uid);
+  s = block(s, [[ku.uid, ac.uid], [lw.uid, ac.uid]]);
+  ok(s.log.some((l) => l.text.includes('Kindly Undertaker and Lightweaver block Ash Collector')), 'both are blocking it');
+  s = fight(s);
+  eq(zoneOf(s, ac.uid), 'discard', 'the attacker took 2 + 1 and died');
+  eq(zoneOf(s, ku.uid), 'discard', 'it killed the stronger blocker');
+  eq(zoneOf(s, lw.uid), 'board', 'the other survived');
+  eq(s.players[B].life, 20, 'nothing got through');
+});
+
+test('Double blocks: the same pair twice is not allowed, a Guard can still block two', () => {
+  let s = scene();
+  const a1 = addCard(s, 'lightweaver', A, 'board');
+  const a2 = addCard(s, 'canopy-archer', A, 'board');
+  const sh = addCard(s, 'shieldbearer', B, 'board');
+  const sp = addCard(s, 'spirit', B, 'board');
+  s = attack(s, [a1.uid, a2.uid]);
+  ok(err(s, { t: 'block', p: B, blocks: [[sp.uid, a1.uid], [sp.uid, a1.uid]] }), 'the same pair twice');
+  s = fight(s, [[sh.uid, a1.uid], [sh.uid, a2.uid], [sp.uid, a2.uid]]);
+  eq(zoneOf(s, a2.uid), 'discard', 'Canopy Archer met the Shieldbearer and the Spirit');
+  eq(zoneOf(s, sp.uid), 'gone', 'the archer took the Spirit with it');
+  eq(s.cards[sh.uid].dmg, 2, 'the Shieldbearer took 1 from each attacker (the archer killed the Spirit first)');
+});
+
+test('Overrun and Venom through two blockers', () => {
+  let s = scene();
+  const ic = addCard(s, 'ironhide-charger', A, 'board');        // 4/4 Overrun
+  const s1 = addCard(s, 'spirit', B, 'board'), s2 = addCard(s, 'spirit', B, 'board');
+  s = fight(attack(s, ic.uid), [[s1.uid, ic.uid], [s2.uid, ic.uid]]);
+  eq(zoneOf(s, s1.uid), 'gone', 'first Spirit');
+  eq(zoneOf(s, s2.uid), 'gone', 'second Spirit');
+  eq(s.players[B].life, 18, '2 trampled over');
+  let t = scene();
+  const gs = addCard(t, 'gloomweb-spider', A, 'board');         // 2/3 Venom
+  const mb = addCard(t, 'mossback', B, 'board'), pg = addCard(t, 'patient-giant', B, 'board');
+  t = fight(attack(t, gs.uid), [[mb.uid, gs.uid], [pg.uid, gs.uid]]);
+  eq(zoneOf(t, mb.uid), 'discard', 'Venom: 1 damage is enough for Mossback');
+  eq(zoneOf(t, pg.uid), 'discard', 'and for the Giant');
+  eq(zoneOf(t, gs.uid), 'discard', 'the spider died too');
+});
+
+// ── The Crown (three players) ───────────────────────────────────────
+test('The Crown: first hit takes it, the holder draws, hitting them takes it', () => {
+  let s = scene({ players: 3 });
+  ok(s.crownOn && s.crown == null, 'on, and nobody holds it yet');
+  const C3 = 2;
+  const sr = addCard(s, 'spark-runner', A, 'board');
+  const lw = addCard(s, 'shieldbearer', B, 'board');
+  const sp = addCard(s, 'spirit', C3, 'board');
+  for (const p of [A, B, C3]) deckOf(s, p, 5);
+  s = fight(attack(s, sr.uid, B), [[lw.uid, sr.uid]]);
+  eq(s.crown, null, 'a blocked attack takes nothing');
+  s.players[A].attackedOn = -1;
+  s.cards[sr.uid].ex = false;
+  const lw2 = addCard(s, 'lightweaver', A, 'board');
+  s = fight(attack(s, lw2.uid, B));
+  eq(s.crown, A, 'A hit B first: A takes the Crown');
+  const hand = s.players[A].hand.length;
+  s = end(s);
+  eq(s.players[A].hand.length, hand + 1, 'A drew a card for the Crown at the end of the turn');
+  // B's turn: B hits C, who does not hold it: nothing changes.
+  s = fight(attack(s, lw.uid, C3));
+  eq(s.crown, A, 'hitting someone else does not take it');
+  s = end(s);
+  // C's turn: C hits A, the holder.
+  s = fight(attack(s, sp.uid, A));
+  eq(s.crown, C3, 'C hit the holder: C takes the Crown');
+  ok(s.log.some((l) => /takes the Crown from/.test(l.text)), 'it says so in the log');
+});
+
+test('The Crown: knocked out, conceding, and two-player games', () => {
+  let s = scene({ players: 3 });
+  s.crown = B;
+  s.players[B].life = 2;
+  const sr = addCard(s, 'spark-runner', A, 'board');
+  s = fight(attack(s, sr.uid, B));
+  ok(s.players[B].out, 'B is out');
+  eq(s.crown, A, 'the Crown goes to the player who knocked them out');
+  s = act(s, { t: 'concede', p: A });
+  eq(s.phase, 'over', 'A conceded, only C is left');
+  let t = scene({ players: 3 });
+  t.crown = A;
+  t = act(t, { t: 'concede', p: A });
+  eq(t.crown, null, 'conceding on your own turn sends it back to the middle');
+  let d = scene();
+  ok(!d.crownOn, 'no Crown with two players');
+  d = fight(attack(d, addCard(d, 'spark-runner', A, 'board').uid));
+  eq(d.crown, null, 'nobody takes it');
+});
+
+// ── Abilities: "Pay N Energy: …" ────────────────────────────────────
+const use = (s, uid, extra = {}) => act(s, { t: 'use', p: actor(s), uid, ...extra });
+
+test('Reckless Initiate pumps after blockers, once a turn', () => {
+  let s = scene();
+  const r = addCard(s, 'reckless-initiate', A, 'board');
+  const ku = addCard(s, 'mossback', B, 'board');                // 3/4, and B could answer with its ability
+  s = attack(s, r.uid);
+  s = block(s, [[ku.uid, r.uid]]);
+  eq(actor(s), A, 'A may answer the block');
+  s = use(s, r.uid);
+  eq(s.players[A].energy, 6, 'paid 2 Energy');
+  eq(power(s, s.cards[r.uid]), 4, '+2 Power');
+  ok(err(s, { t: 'use', p: actor(s), uid: r.uid }), 'only once each turn');
+  s = fight(s);
+  eq(zoneOf(s, ku.uid), 'discard', 'the pumped Initiate killed its blocker');
+});
+
+test('Ember Duelist and Canopy Archer shoot', () => {
+  let s = scene();
+  const ed = addCard(s, 'ember-duelist', A, 'board');
+  const sp = addCard(s, 'spirit', B, 'board');
+  s = use(s, ed.uid, { target: { uid: sp.uid } });
+  eq(zoneOf(s, sp.uid), 'gone', 'the Spirit is shot down');
+  const ca = addCard(s, 'canopy-archer', A, 'board');
+  const lw = addCard(s, 'lightweaver', B, 'board');
+  const cr = addCard(s, 'cloud-ray', B, 'board');
+  ok(err(s, { t: 'use', p: A, uid: ca.uid, target: { uid: lw.uid } }), 'the Archer only shoots creatures with Soar');
+  s = use(s, ca.uid, { target: { uid: cr.uid } });
+  eq(zoneOf(s, cr.uid), 'discard', 'Cloud Ray (2/1) falls');
+  eq(s.players[A].energy, 4, 'two abilities, 2 Energy each');
+  s.players[A].energy = 1;
+  const ed2 = addCard(s, 'ember-duelist', A, 'board');
+  ok(err(s, { t: 'use', p: A, uid: ed2.uid, target: { uid: lw.uid } }), 'not enough Energy');
+});
+
+test('Mossback grows for good; Curious Wisp draws; Choirmother calls Spirits', () => {
+  let s = scene();
+  const mb = addCard(s, 'mossback', A, 'board');
+  s = use(s, mb.uid);
+  eq(vitality(s, s.cards[mb.uid]), 5, '+1/+1');
+  eq(s.players[A].life, 22, 'Awaken: gain 2 Life');
+  s = end(s); s = end(s);
+  eq(power(s, s.cards[mb.uid]), 4, 'still bigger next turn');
+  let t = scene();
+  const cw = addCard(t, 'curious-wisp', A, 'board');
+  deckOf(t, A, 2);
+  t = use(t, cw.uid);
+  eq(t.players[A].hand.length, 1, 'drew a card');
+  const cm = addCard(t, 'choirmother', A, 'board');
+  t.players[A].energy = 4;
+  t = use(t, cm.uid);
+  const spirit = t.cards[t.players[A].board[t.players[A].board.length - 1]];
+  eq(spirit.cid, 'spirit', 'a Spirit');
+  eq(power(t, spirit), 2, 'with Choirmother it is a 2/2');
+});
+
+test('Cloud Ray escapes a block; Dawnwatch Knight shields a blocker', () => {
+  let s = scene();
+  const sr = addCard(s, 'spark-runner', A, 'board');            // 3/1
+  const cr = addCard(s, 'cloud-ray', B, 'board');
+  s = attack(s, sr.uid);
+  s = block(s, [[cr.uid, sr.uid]]);
+  eq(actor(s), B, 'A had nothing to play; B gets a chance');
+  s = use(s, cr.uid);
+  eq(zoneOf(s, cr.uid), 'hand', 'Cloud Ray went back to B’s hand');
+  s = fight(s);
+  eq(s.players[B].life, 20, 'the Runner was blocked: no damage');
+  let t = scene();
+  const as = addCard(t, 'ash-collector', A, 'board');           // 3/3
+  const dk = addCard(t, 'dawnwatch-knight', B, 'board');
+  const ku = addCard(t, 'kindly-undertaker', B, 'board');       // 2/3
+  t = attack(t, as.uid);
+  t = block(t, [[ku.uid, as.uid]]);
+  t = use(t, dk.uid, { target: { uid: ku.uid } });
+  t = fight(t);
+  eq(zoneOf(t, ku.uid), 'board', 'the Undertaker (2/5 this turn) survived');
+});
+
+test('Vesper Bat and Hungry Ghoul', () => {
+  let s = scene({ players: 3 });
+  const vb = addCard(s, 'vesper-bat', A, 'board');
+  s = use(s, vb.uid);
+  eq(s.players[1].life, 19, 'B lost 1');
+  eq(s.players[2].life, 19, 'C lost 1');
+  eq(s.players[A].life, 21, 'A gained 1');
+  let t = scene();
+  const hg = addCard(t, 'hungry-ghoul', A, 'board');
+  const lw = addCard(t, 'lightweaver', A, 'board');
+  ok(err(t, { t: 'use', p: A, uid: hg.uid, target: { uid: hg.uid } }), 'not itself');
+  t = use(t, hg.uid, { target: { uid: lw.uid } });
+  eq(zoneOf(t, lw.uid), 'discard', 'sacrificed');
+  eq(power(t, t.cards[hg.uid]), 3, 'the Ghoul fed');
+  eq(t.players[A].energy, 7, 'for 1 Energy');
+});
+
+test('Abilities: whose turn, fights, Fish, and the move list', () => {
+  let s = scene();
+  const sr = addCard(s, 'spark-runner', A, 'board');
+  const mb = addCard(s, 'mossback', B, 'board');
+  ok(err(s, { t: 'use', p: B, uid: mb.uid }), 'not on someone else’s turn outside a fight');
+  ok(legalActions(s, A).every((a) => a.t !== 'use' || a.uid !== mb.uid), 'A cannot use B’s creature');
+  s = attack(s, sr.uid);
+  eq(actor(s), B, 'B chooses blockers');
+  s = use(s, mb.uid);
+  eq(vitality(s, s.cards[mb.uid]), 5, 'B grew Mossback before blocking');
+  s = fight(s, [[mb.uid, sr.uid]]);
+  eq(zoneOf(s, sr.uid), 'discard', 'and blocked with it');
+  let t = scene();
+  const ri = addCard(t, 'reckless-initiate', A, 'board');
+  const sc = addCard(t, 'sea-change', A, 'hand');
+  ok(useOptions(t, A, t.cards[ri.uid]).length === 1, 'usable');
+  t = play(t, sc.uid, { target: { uid: ri.uid } });
+  ok(err(t, { t: 'use', p: A, uid: ri.uid }), 'a Fish has no abilities');
+  let u = scene();
+  addCard(u, 'reckless-initiate', A, 'board');
+  ok(legalActions(u, A).some((a) => a.t === 'use'), 'abilities are in the move list');
 });
 
 test('Replay is deterministic', () => {

@@ -1,0 +1,371 @@
+/* Draft night (js/draft-ui.js): the draft screen, its big-card view, the
+   deck list, and the Play page and lobby bits. Phone first: 390×844 and
+   375×667, held upright. */
+
+body.in-draft { overflow: hidden; padding-bottom: 0; }
+body.in-draft .topbar, body.in-draft .tabbar, body.in-draft main { display: none; }
+
+.dr {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(130% 55% at 50% 0%, rgba(214, 180, 106, .1), transparent 62%),
+    var(--bg);
+  touch-action: manipulation;
+}
+
+/* ── header: the round, its kind, whose turn ─────────────────────── */
+.dr-head {
+  flex: none;
+  padding: calc(env(safe-area-inset-top, 0px) + 2px) 12px 10px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(19, 16, 13, .92);
+  text-align: center;
+}
+.dr-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; min-height: 34px; text-align: left; }
+.dr-back {
+  justify-self: start;
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--gold);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 7px 6px 7px 0;
+  cursor: pointer;
+}
+.dr-kicker {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--gold);
+  white-space: nowrap;
+}
+.dr-top-r { justify-self: end; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.dr-title {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.12;
+  color: #f4e7c8;
+}
+.dr-sub { margin-top: 2px; font-size: 13px; line-height: 1.35; color: var(--muted); }
+.dr-turns { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 6px; margin-top: 8px; }
+.dr-seat {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.dr-seat.me { color: var(--ink); }
+.dr-seat.done { color: var(--ok); border-color: rgba(143, 191, 122, .4); background: rgba(143, 191, 122, .08); }
+.dr-seat.now {
+  color: #1d150b;
+  border-color: transparent;
+  background: linear-gradient(180deg, #e6c983, var(--gold-2));
+  box-shadow: 0 0 0 3px rgba(214, 180, 106, .22), 0 0 16px rgba(214, 180, 106, .35);
+}
+.dr-arrow { font-style: normal; font-size: 13px; color: var(--muted); }
+.dr-status {
+  margin-top: 6px;
+  font-family: 'EB Garamond', Georgia, serif;
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.dr-status.mine { color: var(--gold); text-shadow: 0 0 18px rgba(214, 180, 106, .45); animation: drPop .35s ease-out; }
+@keyframes drPop { from { transform: scale(.92); opacity: .4; } }
+
+/* ── the cards on the table ──────────────────────────────────────── */
+.dr-main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 10px 12px 22px;
+}
+.dr-news { margin: 0 4px 10px; font-size: 14px; line-height: 1.4; text-align: center; color: var(--muted); animation: fade .3s ease-out; }
+.dr-news b { color: var(--ink); }
+.dr-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; }
+@media (min-width: 640px) { .dr-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.dr-slot {
+  position: relative;
+  cursor: pointer;
+  border-radius: 5%;
+  animation: drIn .38s cubic-bezier(.2, .8, .3, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+.dr-slot .card { --cw: 100%; width: 100%; transition: transform .1s ease-out; }
+.dr-slot:active .card { transform: scale(.96); }
+.dr-slot:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+@keyframes drIn { from { opacity: 0; transform: translateY(22px) scale(.95); } }
+/* a card someone took this round leaves its place empty, with a note */
+.dr-slot.taken {
+  cursor: default;
+  aspect-ratio: 63 / 88;
+  display: grid;
+  place-items: center;
+  border-radius: 5%;
+  border: 1.5px dashed rgba(239, 230, 210, .18);
+  background: rgba(255, 255, 255, .02);
+  animation: fade .3s ease-out both;
+}
+.dr-gone { padding: 6px; text-align: center; font-size: 12px; line-height: 1.35; color: var(--muted); }
+.dr-gone b { display: block; font-size: 13px; color: var(--ink); }
+.dr-gone span { display: block; margin-top: 3px; font-family: 'EB Garamond', Georgia, serif; font-size: 14px; color: #d8cbb0; }
+/* the newbie tip: the bot's pick for your deck */
+.dr-slot.tip .card { box-shadow: 0 0 0 2px var(--gold), 0 0 18px rgba(214, 180, 106, .45); border-radius: 5%; }
+.dr-star {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ecd28f, var(--gold-2));
+  color: #1d150b;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .45);
+  pointer-events: none;
+}
+.dr-tips { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 8px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.dr-link {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 8px 6px;
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.dr-pickfor { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+/* what everyone else has */
+.dr-others { display: grid; gap: 6px; margin-top: 14px; }
+.dr-other {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  font-size: 13px;
+}
+.dr-other b { font-size: 14px; color: var(--ink); }
+.dr-other span { color: var(--muted); white-space: nowrap; }
+.dr-other em { font-style: normal; color: #d8cbb0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* a card on its way to whoever took it */
+.dr-ghost { position: fixed; margin: 0; z-index: 8; pointer-events: none; }
+
+/* ── waiting, loading, out of date ───────────────────────────────── */
+.dr-wait { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 8px; text-align: center; }
+.dr-wait h3 { font-size: 22px; }
+.dr-stale { max-width: 30em; margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink); }
+.dr-dots { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
+.dr-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); animation: drBlink 1.2s infinite; }
+.dr-dots i:nth-child(2) { animation-delay: .2s; }
+.dr-dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes drBlink { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
+
+/* ── footer: your deck so far, or the end-screen button ──────────── */
+.dr-foot {
+  flex: none;
+  padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  border-top: 1px solid var(--line);
+  background: rgba(19, 16, 13, .95);
+}
+.dr-foot:empty { display: none; }
+.dr-pool {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px 7px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.dr-pool:active { background: var(--bg-3); }
+.dr-pool-n { display: flex; flex-direction: column; align-items: center; line-height: 1; min-width: 32px; }
+.dr-pool-n b { font-family: 'EB Garamond', Georgia, serif; font-size: 26px; font-weight: 700; color: #f4e7c8; }
+.dr-pool-n small { margin-top: 2px; font-size: 11px; color: var(--muted); }
+.dr-kinds { display: flex; flex-wrap: wrap; gap: 1px 9px; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.dr-kinds span { white-space: nowrap; }
+.dr-kinds b { color: var(--ink); font-weight: 700; }
+.dr-kinds .zero { opacity: .55; }
+.dr-fcs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 9px; }
+.dr-fcs:empty { display: none; }
+.dr-fc { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 700; }
+.dr-fc .coin { --s: 18px; }
+.dr-curve { margin-left: 0; height: 32px; }
+.dr-go { width: 100%; }
+
+/* ── the end: your deck ──────────────────────────────────────────── */
+.dr-end { max-width: 640px; margin: 0 auto; }
+.dr-handoff {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(214, 180, 106, .5);
+  background: linear-gradient(180deg, rgba(214, 180, 106, .16), rgba(214, 180, 106, .05));
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.dr-handoff b { color: #f4e7c8; }
+.dr-whos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.dr-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.dr-who i { font-style: normal; font-weight: 500; font-size: 12px; color: var(--muted); }
+.dr-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); animation: drPulse 1.3s ease-in-out infinite; }
+.dr-who.ok { border-color: rgba(143, 191, 122, .45); background: rgba(143, 191, 122, .1); }
+.dr-who.ok i { color: var(--ok); }
+.dr-who.ok .dr-dot { background: var(--ok); animation: none; }
+@keyframes drPulse { 0%, 100% { opacity: .35; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.1); } }
+.dr-sum { display: flex; align-items: center; gap: 12px; margin: 12px 2px 4px; }
+.dr-sum-l { flex: 1; min-width: 0; display: grid; gap: 5px; }
+.dr-end .group-label { margin-top: 16px; }
+
+/* ── the big card, and the deck list ─────────────────────────────── */
+.dr-zoom, .dr-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  background: rgba(9, 7, 5, .9);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  animation: fade .15s ease-out;
+}
+/* sideways swipes flip through the cards; the browser must not take them as "back" */
+.dr-zoom { z-index: 6; display: flex; flex-direction: column; align-items: center; touch-action: pan-y pinch-zoom; overscroll-behavior-x: none; }
+.dr-zoom-top {
+  width: min(100%, 400px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  margin: 0 auto 4px;
+  font-size: 13px;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+.dr-x {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(30, 25, 19, .9);
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dr-zoom-card { position: relative; }
+.dr-zoom-card .dr-star { top: -11px; font-size: 12px; padding: 3px 10px; }
+/* the card fills the width, but never pushes Take it off a short screen */
+.dr-zoom-card .card { --cw: min(80vw, calc((100vh - 220px) * .716), 340px); }
+@supports (height: 100dvh) {
+  .dr-zoom-card .card { --cw: min(80vw, calc((100dvh - 220px) * .716), 340px); }
+}
+.dr-zoom-bar {
+  width: min(100%, 400px);
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 52px;
+  gap: 8px;
+  margin-top: 14px;
+}
+.dr-zoom-bar .btn { min-height: 48px; }
+.dr-nav { padding: 0; font-size: 26px; line-height: 1; }
+.dr-zoom .kw-help { width: min(100%, 400px); }
+.dr-sheet-in { width: min(100%, 520px); margin: 0 auto; }
+.dr-sheet .rows { margin-top: 12px; }
+.dr-sheet .dr-go { margin-top: 14px; }
+
+/* ── Play page and lobby ─────────────────────────────────────────── */
+.panel.dr-panel { border-color: rgba(214, 180, 106, .3); }
+.dr-room { display: grid; gap: 8px; margin-top: 12px; }
+.dr-explain { margin: 0 0 4px; line-height: 1.45; }
+.dr-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-3);
+  cursor: pointer;
+}
+.dr-room .dr-switch { margin-top: 0; }
+.dr-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.dr-knob {
+  position: relative;
+  width: 46px;
+  height: 28px;
+  border-radius: 999px;
+  background: #4a4034;
+  transition: background .18s;
+}
+.dr-knob::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #efe6d2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+  transition: transform .18s;
+}
+.dr-switch input:checked + .dr-knob { background: var(--gold-2); }
+.dr-switch input:checked + .dr-knob::after { transform: translateX(18px); }
+.dr-switch input:focus-visible + .dr-knob { outline: 2px solid var(--gold); outline-offset: 2px; }
+.dr-switch-text { display: grid; gap: 2px; min-width: 0; }
+.dr-switch-text b { font-size: 15px; }
+.dr-switch-text small { font-size: 12.5px; line-height: 1.35; color: var(--muted); }

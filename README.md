@@ -18,7 +18,11 @@ no build step.
 | `js/game-ui.js` | The table (practice, lesson and online), the Play page, the online lobby, the hint line and the ? help. Each move is animated on the old table, then redrawn and FLIP-glided |
 | `js/fx.js` | The physical layer: table cards (`tcardHTML`), the fanned hand, drag-to-play, aiming arrows, FLIP, lunges, clashes, deaths, shown cards, banners |
 | `js/tutorial.js` | The guided lesson: stacked decks, the coach's 28 steps, the bot's scripted first turns |
-| `js/net.js` | Online play over Firebase Realtime Database: rooms, seats, the shared move list |
+| `js/net.js` | Online play over Firebase Realtime Database: rooms, seats, the shared move list, draft picks |
+| `js/draft.js` | Draft night's rules with no screen attached: the six piles, the 30 typed rounds, snake order, replay from the pick list, the draft bots |
+| `js/draft-ui.js` | Draft night's screens (practice against bots, and online in a room), plus its hooks into the Play page and lobby |
+| `css/draft.css` | Draft night's look |
+| `tools/test-draft.mjs` | Draft checks: seeds, snake order, the recipe, replay, bots, Pick for (`node tools/test-draft.mjs`) |
 | `js/firebase-config.js` | Paste the Firebase web config here to switch online play on |
 | `js/art/` | Card art drawn in code: `kit.js` (drawing tools), `scenes.js` (style rules), `scenes/*.js` (one file per faction) |
 | `css/card.css` | The physical-card look, sized in `cqw` so one component scales from thumbnail to zoom |
@@ -52,6 +56,10 @@ reloads catches up from the list. To switch it on, paste the web config into
   7-drops), the five starters land between 46% and 58%.
 - Three players, 60 games: about 28 turns in total (9 each), wins by seat
   35% / 37% / 28%, about 15 attacks a game.
+- After the Crown, double blocks and abilities (2026-11-04): 1v1 starters at
+  48–56%, first player 58%. Three players, 30 games: about 30 turns either
+  way (the Crown's extra cards cancel out the extra attacking), and the Crown
+  changes hands about 7 times a game.
 
 ## Run locally
 
@@ -104,7 +112,7 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
 
 - **Fights work like Magic's.** Once a turn you attack one opponent with any of
   your ready creatures; attacking exhausts them (they can't block until your
-  next turn). The defender chooses blockers, one per attacker (Guard: two).
+  next turn). The defender chooses blockers; each blocks one attacker (Guard: two).
   Then Tricks, attacker first, back and forth until both pass. Blocked
   attackers never hit the player unless they have Overrun.
 - New keywords: Soar, Reach, Swift, Venom, Drain, Overrun, Watchful, Hunt.
@@ -117,6 +125,39 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
   fights resolve one pair at a time; the main button (Attack!, Done, Fight!,
   End turn) is always bottom right.
 
+## More from Magic (2026-11-04)
+
+- **Double blocks.** Several creatures may block one attacker (`C.blk` maps
+  each attacker to a list of blockers). The attacker splits its damage
+  automatically (`splitDamage` in the engine): it destroys the costliest
+  blockers it can, one after another, puts what is left on the next blocker,
+  and with Overrun sends the rest to the player once every blocker has its
+  fill. Venom makes 1 damage enough for each blocker.
+- **⚡ Abilities.** Ten creatures got a "Pay N Energy: …" ability (`ability:
+  { cost, short }` in `js/cards.js`, effects in `use()` in the engine):
+  Reckless Initiate, Ember Duelist, Mossback, Canopy Archer, Curious Wisp,
+  Cloud Ray, Vesper Bat, Hungry Ghoul, Choirmother, Dawnwatch Knight. Each
+  works once a turn, whenever you could play a Trick, so a fight also stops
+  for a player who could use one. On the table a ⚡ chip on the card glows
+  when it can be used; tap it for the card with a Use button.
+- **Draft night**, a snake draft for new players. Six piles by kind of card
+  (small, medium and big creatures, spells, tricks and traps, relics); 30
+  rounds, each one kind (fixed order) with 6 cards face up; everyone takes
+  one in snake order (A-B-C, then C-B-A), the rest go to the bottom of their
+  pile. Everyone ends with 5 small, 6 medium, 4 big, 6 spells, 4 tricks, 2
+  relics and 3 "last call" picks. With three players all 90 cards are dealt
+  once. Online: the Draft night switch when creating a room; practice: Draft
+  against bots on the Play page.
+- **💡 Suggest** (bottom left on the table, hidden during the lesson): asks the
+  practice bot what it would do in your place, without peeking at face-down
+  Traps. A play comes with "Do it"; an attack or a block is set up on the
+  table for you to confirm or change. The mulligan screen says whether the
+  bot would keep the hand.
+- **👑 The Crown** (three or more players; `crown` in the setup turns it off).
+  The first player to hit an opponent in a fight takes it; the holder draws an
+  extra card at the end of each of their turns; hitting the holder in a fight
+  takes it. If the holder is knocked out it goes to whoever's turn it is.
+
 ## Keeping it smooth on phones
 
 - The table is updated in place (`morphChildren` in `js/game-ui.js`): cards
@@ -126,6 +167,15 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
   tile rather than an SVG noise filter.
 - `?demo=8&moves=46` plus `window.collectiveDebug.redraw()` is handy for timing
   a redraw in the browser's performance tools.
+- Big cards shown during play (a bot's card, a card's sheet) use the baked
+  picture: drawing the live SVG art the first time took up to 2.5 s on a slow
+  CPU. Only the gallery's zoom view draws it live.
+- The hand reads its sizes once per screen size (`layoutHand`), and the
+  table's class is only rewritten when it changes, so a tap restyles the
+  page fewer times.
+- Three players on a short phone: in a fight, the player who isn't in it
+  folds to just their bar, unblocked attackers get a small label instead of
+  an empty slot, and the line saying what will happen is pinned in view.
 
 ## Rule changes from the first draft
 

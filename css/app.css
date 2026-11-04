@@ -182,6 +182,7 @@ main {
   height: 250px;
   margin: 18px auto 6px;
   max-width: 360px;
+  overflow: clip; /* the tilted outer cards must not make a narrow phone scroll sideways */
 }
 .fan .card { --cw: 150px; position: absolute; left: 50%; top: 8px; cursor: pointer; transition: transform .25s; }
 .fan .card:nth-child(1) { transform: translateX(-118%) rotate(-11deg) translateY(18px); }

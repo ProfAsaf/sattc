@@ -21,7 +21,8 @@ const drops = (list, fill, r = 1.2) => list.map(([x, y], i) =>
 // A little bird (a gull, a crow) in flight, as one subpath.
 const bird = (x, y, k) => `M${f1(x)},${f1(y)}c${f1(2 * k)},${f1(-2.6 * k)} ${f1(4.4 * k)},${f1(-2.6 * k)} ${f1(6 * k)},0c${f1(1.6 * k)},${f1(-2.6 * k)} ${f1(4 * k)},${f1(-2.6 * k)} ${f1(6 * k)},0c${f1(-2 * k)},${f1(-0.8 * k)} ${f1(-4 * k)},0 ${f1(-6 * k)},${f1(2 * k)}c${f1(-2 * k)},${f1(-2 * k)} ${f1(-4 * k)},${f1(-2.8 * k)} ${f1(-6 * k)},${f1(-2 * k)}Z`;
 // Mirror local x,y pairs across x = 0 (for shapes drawn about their own centre).
-const flipX = (d) => d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_, x, y) => `${f1(-Number(x))},${y}`);
+// (numbers like "-.5" count too: matching only "5" there would leave "-.-5")
+const flipX = (d) => d.replace(/(-?(?:\d*\.\d+|\d+)),(-?(?:\d*\.\d+|\d+))/g, (_, x, y) => `${f1(-Number(x))},${y}`);
 // Grave markers standing on a baseline b, optionally leaning (degrees).
 const lean = (d, x, b, a) => (a ? `<path d="${d}" transform="rotate(${a} ${x} ${b})"/>` : `<path d="${d}"/>`);
 const stoneD = (x, b, w, h) => {

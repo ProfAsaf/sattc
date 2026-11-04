@@ -5,10 +5,11 @@
 // Trick; after blockers are chosen it plays a Trick only if that wins more
 // than holding the card. Quick enough for a phone.
 
-import { apply, legalActions, opponents, power, vitality, actor, hasKw, canBlock, blockLimit, forcedBlocks, canAttack, playOptions } from './engine.js';
+import { apply, legalActions, opponents, power, vitality, actor, hasKw, canBlock, blockLimit, forcedBlocks, canAttack, playOptions, useOptions, splitDamage } from './engine.js';
 import { BY_ID, isTrick } from './cards.js';
 
 const lifeValue = (l) => (l <= 0 ? -200 : Math.sqrt(l) * 7 + l * 0.5);
+const CROWN = 4.5; // a card at the end of every turn, for as long as you keep it
 
 const KW_VALUE = { soar: 1.3, venom: 1.2, drain: 0.8, swift: 0.8, overrun: 0.6, watchful: 0.5, reach: 0.4, guard: 0.6, hunt: 0.7, lastBreath: 0.8 };
 const ENGINES = new Set(['standard-keeper', 'lightning-theorist', 'mirror-mage', 'forbidden-archivist', 'kindly-undertaker', 'little-gardener',
@@ -25,6 +26,7 @@ export function creatureValue(s, c) {
   for (const k in KW_VALUE) if (d.keywords.includes(k) || (k === 'soar' && hasKw(s, c, 'soar'))) val += KW_VALUE[k];
   if (d.cantBlock) val -= 1;
   if (ENGINES.has(c.cid)) val += 1.5;
+  if (d.ability) val += 0.8;
   if (c.sacEnd || c.stolen) val *= 0.2;
   return val;
 }
@@ -58,9 +60,10 @@ export function evaluate(s, me) {
   // an extra turn coming up is worth about a turn's worth of cards and attacks
   let v = lifeValue(P.life) + boardValue(s, me) + relicValue(s, me) + P.hand.length * 1.6 + P.traps.length * 2.2 + (P.extra || 0) * 9;
   v += Math.min(P.deck.length, 6) * 0.3;
+  if (s.crown === me) v += CROWN;
   const w = 1 / opps.length;
   for (const o of opps) {
-    v -= (lifeValue(o.life) + boardValue(s, o.i) * 1.05 + relicValue(s, o.i) + o.hand.length * 1.2 + o.traps.length * 2 + (o.extra || 0) * 9) * w;
+    v -= (lifeValue(o.life) + boardValue(s, o.i) * 1.05 + relicValue(s, o.i) + o.hand.length * 1.2 + o.traps.length * 2 + (o.extra || 0) * 9 + (s.crown === o.i ? CROWN : 0)) * w;
     if (s.active === me) {
       // Creatures that attacked can't block on the turns in between: count the risk.
       const inc = threat(s, o.i, me, false);
@@ -95,8 +98,29 @@ function duel(s, a, b) {
   return { aDies, bDies, through };
 }
 
-// A defender's likely blocks: good blocks first, then chumps if the hit would be lethal.
-export function quickBlocks(s, me, { chump = 'auto' } = {}) {
+// What happens if several creatures block `a` together, ignoring Tricks.
+function gang(s, a, bs) {
+  const la = vitality(s, a) - (a.dmg || 0);
+  const aSw = hasKw(s, a, 'swift');
+  const kills = (n, ven) => n > 0 && (n >= la || ven);
+  // Swift blockers strike first; if that kills the attacker, it never swings.
+  const early = bs.filter((b) => hasKw(s, b, 'swift') && !aSw);
+  let hit = early.reduce((n, b) => n + power(s, b), 0);
+  let ven = early.some((b) => hasKw(s, b, 'venom') && power(s, b) > 0);
+  if (kills(hit, ven)) return { aDies: true, dead: [], through: 0 };
+  const { parts, rest } = splitDamage(s, a, bs, power(s, a));
+  const dead = parts.filter(([b, n]) => n > 0 && (n >= vitality(s, b) - (b.dmg || 0) || hasKw(s, a, 'venom'))).map(([b]) => b);
+  for (const b of bs) {
+    if (early.includes(b) || (aSw && !hasKw(s, b, 'swift') && dead.includes(b))) continue;
+    hit += power(s, b);
+    ven ||= hasKw(s, b, 'venom') && power(s, b) > 0;
+  }
+  return { aDies: kills(hit, ven), dead, through: rest };
+}
+
+// A defender's likely blocks: good blocks first, then two creatures on an
+// attacker neither could stop alone, then chumps if the hit would be lethal.
+export function quickBlocks(s, me, { chump = 'auto', gangUp = true } = {}) {
   const C = s.combat;
   const forced = forcedBlocks(s, C);
   const out = [...forced];
@@ -123,6 +147,19 @@ export function quickBlocks(s, me, { chump = 'auto' } = {}) {
       if (score > bestScore) { bestScore = score; best = b; }
     }
     if (best) take(best, a); else left.push(a);
+  }
+  if (gangUp) {
+    for (const a of [...left]) {
+      const cands = blockers.filter((b) => free(b) && canBlock(s, b, a));
+      let best = null, bestScore = 0.8;
+      for (let i = 0; i < cands.length; i++) for (let j = i + 1; j < cands.length; j++) {
+        const o = gang(s, a, [cands[i], cands[j]]);
+        if (!o.aDies) continue;
+        const score = creatureValue(s, a) - o.dead.reduce((n, b) => n + creatureValue(s, b), 0) + (power(s, a) - o.through) * 0.15;
+        if (score > bestScore) { bestScore = score; best = [cands[i], cands[j]]; }
+      }
+      if (best) { for (const b of best) take(b, a); left.splice(left.indexOf(a), 1); }
+    }
   }
   const incoming = left.reduce((n, a) => n + power(s, a), 0);
   if (chump === 'all' || (chump === 'auto' && incoming >= P.life)) {
@@ -190,9 +227,11 @@ function attackCandidates(s, me) {
   return out;
 }
 
-const trickPlays = (s, me) => s.players[me].hand
-  .filter((u) => isTrick(BY_ID[s.cards[u].cid]))
-  .flatMap((u) => playOptions(s, me, s.cards[u], 'hand', 24));
+// What can be done in a fight: Tricks from the hand, and creatures' abilities.
+const trickPlays = (s, me) => [
+  ...s.players[me].hand.filter((u) => isTrick(BY_ID[s.cards[u].cid])).flatMap((u) => playOptions(s, me, s.cards[u], 'hand', 24)),
+  ...s.players[me].board.flatMap((u) => useOptions(s, me, s.cards[u], 12)),
+];
 
 // ── deciding ────────────────────────────────────────────────────────
 export function chooseAction(s, me, { noise = 0.4, rand = Math.random } = {}) {
@@ -238,6 +277,7 @@ function chooseBlock(s, me, jitter) {
   };
   addBlocks(forcedBlocks(s, C));
   addBlocks(quickBlocks(s, me));
+  addBlocks(quickBlocks(s, me, { gangUp: false }));
   addBlocks(quickBlocks(s, me, { chump: 'all' }));
   addBlocks(quickBlocks(s, me, { chump: 'none' }));
   let best = null, bestV = -Infinity;

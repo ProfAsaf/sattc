@@ -1,0 +1,725 @@
+/* ══════════════════════════════════════════════════════════════════
+   Table cards and effects (pairs with js/fx.js).
+
+   .tcard is a small physical card for the board and the hand: black edge,
+   faction frame, art window, cream name plate, P/V coins, keyword badges.
+   Every size comes from --w (the card's width), so the same markup works
+   from a crowded board (48px) to the hand (104px) and to ghosts in the
+   effects layer.
+
+   Transforms are layered so nothing fights:
+     transform  = hand fan (--fx --fy --fr --fs, set by layoutHand)
+                + state pose (--sx --sy --sr --ss, set by state classes)
+     translate / rotate / scale (the individual properties) = motion from
+                fx.js: FLIP, drag, lunges. They stack on top of the pose.
+   Shake and flash happen on the inner .tc-body, so they never fight a
+   lunge running on the card itself.
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --w-board: 66px;      /* creature width on the board (5 in a row; .tc-row adapts it) */
+  --w-board-max: 72px;  /* up to 4 in a row */
+  --w-hand: 104px;      /* card width in the hand (layoutHand may shrink it) */
+  --w-hand-min: 82px;
+  --tc-gold: #ecc66c;
+}
+
+.tcard {
+  --w: var(--w-board);
+  --ar: 1.33;                         /* a little shorter than a real card on the board */
+  --h: calc(var(--w) * var(--ar));
+  --r: calc(var(--w) * .085);
+  --edge: max(2px, calc(var(--w) * .034));
+  --fwd: -1;                          /* toward the enemy: up for mine, down for .foe */
+  --ring: transparent;
+  --ring-w: 0px;
+  --glow: transparent;
+  --shade: 0;
+  position: relative;
+  flex: none;
+  width: var(--w);
+  height: var(--h);
+  border-radius: var(--r);
+  transform-origin: 50% 50%;
+  transform:
+    translate(calc(var(--fx, 0px) + var(--sx, 0px)), calc(var(--fy, 0px) + var(--sy, 0px)))
+    rotate(calc(var(--fr, 0deg) + var(--sr, 0deg)))
+    scale(calc(var(--fs, 1) * var(--ss, 1)));
+  transition: transform .34s cubic-bezier(.3, 1.4, .5, 1), opacity .25s;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;                 /* drags never scroll the page */
+  cursor: pointer;
+  isolation: isolate;
+  color: var(--ink-card, #1c1611);
+}
+.tcard.in-hand { --w: var(--w-hand); --ar: 1.397; }
+.tcard.foe { --fwd: 1; }
+.tcard img { pointer-events: none; -webkit-user-drag: none; -webkit-touch-callout: none; }
+
+/* lift shadow: grows as the card leaves the table */
+.tcard::before {
+  content: '';
+  position: absolute;
+  inset: 6% 5% 4%;
+  z-index: -1;
+  border-radius: var(--r);
+  box-shadow: 0 calc(var(--w) * .1) calc(var(--w) * .2) calc(var(--w) * .02) rgba(0, 0, 0, .75);
+  opacity: 0;
+  transform: translateY(0) scale(.94);
+  transition: opacity .25s, transform .3s;
+  pointer-events: none;
+}
+.tcard.dragging::before, .tcard.returning::before, .tcard.touched::before, .tcard.selected::before,
+.tcard.attacking::before, .tcard.aiming::before, .tcard.fx-air::before, .fx-show-card::before {
+  opacity: 1;
+  transform: translateY(calc(var(--w) * .14)) scale(1.04);
+}
+
+/* glow halo for states (opacity and scale only, so it stays cheap) */
+.tcard::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--edge) * -1.4);
+  z-index: 2;
+  border-radius: calc(var(--r) * 1.2);
+  box-shadow: 0 0 calc(var(--w) * .16) calc(var(--w) * .03) var(--glow);
+  opacity: 0;
+  transition: opacity .25s;
+  pointer-events: none;
+}
+
+.tc-body {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r);
+}
+
+.tc-face {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r);
+  padding: var(--edge);
+  background: #120e0a;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 var(--ring-w) var(--ring),
+    inset 0 0 0 1px rgba(255, 255, 255, .06),
+    0 calc(var(--w) * .035) calc(var(--w) * .09) rgba(0, 0, 0, .6),
+    0 1px 2px rgba(0, 0, 0, .5);
+  transition: box-shadow .25s;
+}
+/* shade for exhausted / sick / dim, as an overlay (cheaper than filter) */
+.tc-face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  background: #0b0806;
+  opacity: var(--shade);
+  transition: opacity .25s;
+  pointer-events: none;
+}
+
+.tc-frame {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--w) * .03);
+  padding: calc(var(--w) * .04);
+  border-radius: calc(var(--r) * .65);
+  overflow: hidden;
+  background:
+    var(--grain),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, .05) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, color-mix(in srgb, var(--fl) 42%, var(--f)) 0%, var(--f) 42%, color-mix(in srgb, var(--f) 76%, #000) 100%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4), inset 0 0 calc(var(--w) * .1) rgba(0, 0, 0, .35);
+}
+.tcard.multi .tc-frame {
+  background:
+    var(--grain),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, .05) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(0, 0, 0, .25)),
+    linear-gradient(100deg, var(--f) 0%, var(--f) 38%, var(--f2) 62%, var(--f2) 100%);
+}
+
+.tc-art {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  border-radius: calc(var(--w) * .03);
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 38%, var(--fl), var(--f) 82%);
+  box-shadow: 0 0 0 1px rgba(15, 10, 6, .85), 0 0 0 calc(1px + var(--w) * .012) rgba(255, 238, 205, .14);
+}
+.tc-art > img, .tc-art > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tc-ph { position: absolute; inset: 0; display: grid; place-items: center; --gl-bg: var(--f); }
+.tc-ph .glyph { width: 46%; height: 46%; color: rgba(255, 245, 225, .55); }
+
+.tcard { --plate: max(13px, calc(var(--w) * .205)); }
+.tcard.on-board.name2 { --plate: max(21px, calc(var(--w) * .33)); }
+.tc-name {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  height: var(--plate);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 calc(var(--w) * .04);
+  border-radius: calc(var(--w) * .03);
+  background: var(--grain), linear-gradient(180deg, #f4ebd7, var(--cream-2, #e2d4b6));
+  box-shadow: inset 0 0 0 1px rgba(30, 20, 10, .5), 0 1px 2px rgba(0, 0, 0, .3);
+  font-family: 'EB Garamond', Georgia, serif;
+  font-weight: 600;
+  font-size: max(9px, calc(var(--w) * .146));
+  line-height: 1;
+  color: #1c1611;
+  text-align: center;
+}
+.tc-name span { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-top: .06em; }
+/* a long name takes two lines rather than shrinking below 9px */
+.tcard.on-board .tc-name.n2 { font-size: max(9px, calc(var(--w) * .136)); }
+.tcard.on-board .tc-name.n2 span {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1;
+  padding-top: .04em;
+}
+
+/* ── hand layout of the card: taller, two-line name, type line, cost ── */
+.tcard.in-hand .tc-frame { gap: calc(var(--w) * .028); padding-bottom: calc(var(--w) * .16); }
+.tcard.in-hand .tc-art { flex: none; height: calc(var(--h) * .5); }
+.tcard.in-hand .tc-name {
+  height: calc(var(--w) * .27);
+  justify-content: flex-start;   /* the strip a neighbour leaves uncovered shows the start of the name */
+  text-align: left;
+  font-size: calc(var(--w) * .118);
+  line-height: 1.04;
+  padding: 0 calc(var(--w) * .06);
+}
+.tcard.in-hand .tc-name span {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tcard.in-hand .tc-name.n-sm { font-size: calc(var(--w) * .106); }
+.tc-type {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  font-family: 'EB Garamond', Georgia, serif;
+  font-weight: 600;
+  font-size: max(7.5px, calc(var(--w) * .074));
+  line-height: 1;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(248, 236, 212, .82);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Energy cost: the bronze hexagon from the full card */
+.tc-cost {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--w) * -.035);
+  left: calc(var(--w) * -.035);
+  width: calc(var(--w) * .25);
+  height: calc(var(--w) * .28);
+  display: grid;
+  place-items: center;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: linear-gradient(160deg, #ecd7a2, #8d7444);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .5));
+}
+.tc-cost::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--w) * .013);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: radial-gradient(circle at 38% 28%, #6c5a3e, #261d14 72%);
+}
+.tc-cost span {
+  position: relative;
+  font-family: 'EB Garamond', Georgia, serif;
+  font-weight: 700;
+  font-size: calc(var(--w) * .165);
+  line-height: 1;
+  color: #f7ead0;
+  margin-top: -.08em;
+}
+.tc-cost.cheaper::before { background: radial-gradient(circle at 38% 28%, #5d8a4e, #1d3218 72%); }
+.tc-cost.pricier::before { background: radial-gradient(circle at 38% 28%, #a04a3c, #3a140f 72%); }
+
+/* Power (left, cream coin) and Vitality (right, dark coin) */
+.tc-p, .tc-v {
+  --d: max(17px, calc(var(--w) * .29));
+  position: absolute;
+  z-index: 3;
+  bottom: calc(var(--plate) + var(--w) * .06);
+  width: var(--d);
+  height: var(--d);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-family: 'EB Garamond', Georgia, serif;
+  font-weight: 700;
+  font-size: max(12px, calc(var(--w) * .2));
+  line-height: 1;
+  font-style: normal;
+  padding-top: .04em;
+  transition: background .3s, color .3s;
+}
+.tc-p {
+  left: calc(var(--w) * -.04);
+  color: #2a1f15;
+  background: radial-gradient(circle at 35% 30%, #fff6e0, #e4d3ad 60%, #b99d68);
+  box-shadow: 0 0 0 1px rgba(40, 28, 15, .75), 0 2px 4px rgba(0, 0, 0, .6);
+}
+.tc-v {
+  right: calc(var(--w) * -.04);
+  color: #f6ead2;
+  background: radial-gradient(circle at 35% 30%, #5a4838, #2a2018 70%);
+  box-shadow: 0 0 0 1px #cdb68d, 0 2px 4px rgba(0, 0, 0, .6);
+}
+.tcard.in-hand .tc-p, .tcard.in-hand .tc-v {
+  --d: calc(var(--w) * .215);
+  bottom: calc(var(--w) * -.03);
+  font-size: calc(var(--w) * .15);
+}
+.tcard.in-hand .tc-p { left: calc(var(--w) * -.03); }
+.tcard.in-hand .tc-v { right: calc(var(--w) * -.03); }
+.tc-p.up, .tc-v.up, .tcard.buffed .tc-p, .tcard.buffed .tc-v {
+  color: #14300f;
+  background: radial-gradient(circle at 35% 30%, #eaffd8, #a9dc8a 60%, #5f9a48);
+  box-shadow: 0 0 0 1px #2c5222, 0 0 6px rgba(150, 230, 120, .55), 0 2px 4px rgba(0, 0, 0, .6);
+}
+.tc-p.down { color: #4a130c; background: radial-gradient(circle at 35% 30%, #ffe1d6, #e3a796 60%, #a85e4c); }
+.tc-v.hurt, .tcard.hurt .tc-v {
+  color: #fff0ea;
+  background: radial-gradient(circle at 35% 30%, #d8452f, #7a1a10 70%);
+  box-shadow: 0 0 0 1px #ff9a85, 0 0 7px rgba(255, 90, 60, .6), 0 2px 4px rgba(0, 0, 0, .6);
+}
+
+/* keyword badges: a column on the top-right of the art */
+.tc-kws {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--w) * .07);
+  right: calc(var(--w) * .07);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--w) * .025);
+}
+.tc-kw {
+  --s: max(14px, calc(var(--w) * .215));
+  width: var(--s);
+  height: var(--s);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--kc, #f6e7c5);
+  background: radial-gradient(circle at 40% 30%, rgba(52, 40, 30, .96), rgba(14, 10, 7, .96));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--kc, #f6e7c5) 55%, transparent), 0 1px 3px rgba(0, 0, 0, .6);
+}
+.tc-kw svg { width: 68%; height: 68%; display: block; }
+.tcard.in-hand .tc-kws { top: calc(var(--w) * .06); right: calc(var(--w) * .06); }
+.tcard.in-hand .tc-kw { --s: calc(var(--w) * .17); }
+.tc-kw:nth-child(n+4) { display: none; } /* three at most; the big view lists them all */
+
+/* "spent" marker for exhausted creatures */
+.tc-ex {
+  --s: max(14px, calc(var(--w) * .215));
+  position: absolute;
+  z-index: 4;
+  top: calc(var(--w) * .05);
+  left: calc(var(--w) * .05);
+  width: var(--s);
+  height: var(--s);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #e8dcc4;
+  background: rgba(14, 10, 7, .9);
+  box-shadow: 0 0 0 1px rgba(232, 220, 196, .5);
+  opacity: 0;
+  transform: scale(.4);
+  transition: opacity .25s, transform .3s cubic-bezier(.3, 1.6, .5, 1);
+}
+.tc-ex svg { width: 66%; height: 66%; }
+
+/* Legendary: a foil sheen that crosses the frame (under the art and plate) */
+.tc-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.tc-sheen::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: -60%;
+  width: 70%;
+  background: linear-gradient(100deg, transparent 0%, rgba(255, 236, 190, 0) 20%, rgba(255, 244, 214, .75) 42%,
+    rgba(190, 236, 255, .5) 52%, rgba(255, 200, 245, .4) 60%, transparent 80%);
+  transform: translateX(0) skewX(-12deg);
+  animation: tc-foil 3.6s ease-in-out infinite;
+}
+.tcard.legendary .tc-face {
+  background: linear-gradient(135deg, #3a2c16, #120e0a 40%, #2e2412 70%, #120e0a);
+  box-shadow:
+    0 0 0 var(--ring-w) var(--ring),
+    inset 0 0 0 1px rgba(236, 198, 108, .55),
+    0 calc(var(--w) * .035) calc(var(--w) * .09) rgba(0, 0, 0, .6),
+    0 1px 2px rgba(0, 0, 0, .5);
+}
+.tcard.legendary .tc-name { background: var(--grain), linear-gradient(180deg, #fbf1d8, #e8d3a2); }
+@keyframes tc-foil {
+  0% { transform: translateX(0) skewX(-12deg); }
+  55%, 100% { transform: translateX(330%) skewX(-12deg); }
+}
+
+/* Guard: a heavier, metal-trimmed frame */
+.tcard.guard .tc-frame {
+  box-shadow: inset 0 0 0 max(1.5px, calc(var(--w) * .028)) #cdbb85, inset 0 0 0 max(2.5px, calc(var(--w) * .045)) rgba(0, 0, 0, .45),
+    inset 0 0 calc(var(--w) * .1) rgba(0, 0, 0, .35);
+}
+
+/* ── states ──────────────────────────────────────────────────────── */
+.tcard.ready { --ring: var(--tc-gold); --ring-w: 2px; --glow: rgba(236, 198, 108, .62); }
+.tcard.ready::after { opacity: 1; animation: tc-breathe 1.9s ease-in-out infinite; }
+
+.tcard.exhausted { --sr: 13deg; --shade: .32; }
+.tcard.foe.exhausted { --sr: -13deg; }
+.tcard.exhausted .tc-ex { opacity: 1; transform: scale(1); }
+
+.tcard.attacking { --sy: calc(var(--fwd) * var(--w) * .2); --ss: 1.07; --ring: #ff8a5c; --ring-w: 2px; --glow: rgba(255, 96, 50, .7); }
+.tcard.attacking::after { opacity: 1; animation: tc-breathe .9s ease-in-out infinite; }
+
+.tcard.blocking { --sy: calc(var(--fwd) * var(--w) * .1); --ss: 1.04; --ring: #e6f5ff; --ring-w: 2px; --glow: rgba(140, 205, 255, .75); }
+.tcard.blocking::after { opacity: 1; animation: tc-breathe 1.3s ease-in-out infinite; }
+
+.tcard.selected { --sy: calc(var(--w) * -.13); --ss: 1.08; --ring: #fff1c4; --ring-w: 2.5px; --glow: rgba(255, 220, 140, .75); }
+.tcard.selected::after { opacity: 1; }
+.tcard.in-hand.selected { --sy: 0px; --ss: 1; } /* the hand fan lifts it instead */
+
+.tcard.target { --ring: #ffb38a; --ring-w: 2px; --glow: rgba(255, 130, 90, .8); }
+.tcard.target::after {
+  opacity: 1;
+  box-shadow: 0 0 0 2px rgba(255, 196, 160, .95), 0 0 calc(var(--w) * .16) calc(var(--w) * .03) var(--glow);
+  animation: tc-target 1.15s ease-out infinite;
+}
+/* the target the drag-arrow is resting on */
+.tcard.aim { --ss: 1.1; --ring: #fff; --ring-w: 3px; --glow: rgba(255, 150, 100, .95); z-index: 6; }
+.tcard.aim::after { opacity: 1; animation: none; transform: scale(1.06); }
+.tcard.aiming { --ss: 1.06; --ring: #ffd2a8; --ring-w: 2px; --glow: rgba(255, 120, 70, .7); z-index: 6; }
+.tcard.aiming::after { opacity: 1; }
+/* a player (or other piece) under an arrow */
+.pbar.aim, .aim:not(.tcard) {
+  box-shadow: 0 0 0 2px #ffb38a, 0 0 18px rgba(255, 110, 80, .6);
+  background-color: rgba(255, 110, 80, .1);
+  transition: box-shadow .2s, background-color .2s;
+}
+
+.tcard.sick { --shade: .26; }
+.tcard.sick .tc-art { filter: saturate(.7); }
+
+.tcard.can { --ring: var(--tc-gold); --ring-w: 2px; --glow: rgba(236, 198, 108, .5); }
+.tcard.can::after { opacity: .9; animation: tc-breathe 2.4s ease-in-out infinite; }
+.tcard.dim { --shade: .42; }
+.tcard.dim .tc-art { filter: saturate(.55); }
+
+.tcard.drop-ok { --ring: #fff3c8; --ring-w: 3px; --glow: rgba(255, 214, 120, .95); }
+.tcard.drop-ok::after { opacity: 1; animation: none; }
+
+.tcard.touched, .tcard.dragging, .tcard.returning, .tcard.fx-air, .tcard.fx-lunge { z-index: 50; }
+.tcard.dragging, .tcard.returning {
+  transform: none !important;  /* translate/rotate/scale from fx.js carry the card */
+  transition: none !important;
+  cursor: grabbing;
+}
+.tcard.fx-nofx, .tcard.fx-nofx::before, .tcard.fx-nofx::after { transition: none !important; }
+
+@keyframes tc-breathe { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes tc-target {
+  0% { opacity: 1; transform: scale(1); }
+  70% { opacity: .2; transform: scale(1.13); }
+  100% { opacity: 0; transform: scale(1.16); }
+}
+
+/* ── layout helpers ─────────────────────────────────────────────── */
+/* A row of creatures: big while there are few, smaller as it fills, so
+   seven fit in the 366px a phone leaves. Its height never changes. */
+.tc-row {
+  --gap: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--gap);
+  min-height: calc(var(--w-board-max) * 1.33 + 16px);
+  padding: 8px 0;
+}
+.tc-row:not(:has(> .tcard:nth-child(5))) { --w-board: var(--w-board-max); }
+.tc-row:has(> .tcard.exhausted) { --gap: 8px; }
+.tc-row:has(> .tcard:nth-child(6)) { --w-board: 56px; --gap: 5px; }
+.tc-row:has(> .tcard:nth-child(7)) { --w-board: 48px; --gap: 4px; }
+
+/* The hand: cards are stacked at the centre and fanned by layoutHand(). */
+.tc-hand {
+  position: relative;
+  height: var(--hand-h, 150px);
+  overflow: visible;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.tc-hand > .tcard {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--hand-sink, 12px) * -1);
+  margin-left: calc(var(--w) / -2);
+  z-index: var(--z, 1);
+  transition: transform .38s cubic-bezier(.25, 1.3, .45, 1), opacity .25s;
+}
+.tc-hand > .tcard.touched { --sy: 0px; transition-duration: .22s; }
+.tc-hand.wait > .tcard { --shade: .2; }
+
+/* ══════════════════════════════════════════════════════════════════
+   Effects layer
+   ══════════════════════════════════════════════════════════════════ */
+#fx-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  pointer-events: none;
+  overflow: hidden;
+  contain: layout paint style;
+}
+#fx-layer > * { position: absolute; left: 0; top: 0; }
+.fx-hidden { visibility: hidden !important; }
+
+.fx-ghost {
+  margin: 0 !important;
+  transition: none !important;
+  pointer-events: none !important;
+  z-index: 2;
+}
+.fx-ghost::after, .fx-ghost *::before { animation: none !important; }
+
+/* particles: a glowing dot or a streak, moved only by transform */
+.fx-p {
+  width: var(--s, 5px);
+  height: var(--s, 5px);
+  margin: calc(var(--s, 5px) / -2) 0 0 calc(var(--s, 5px) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 18%, var(--c, #ffcf7a) 42%, transparent 72%);
+}
+.fx-p.streak {
+  width: 2.5px;
+  height: calc(var(--s, 5px) * 2.6);
+  margin: calc(var(--s, 5px) * -1.3) 0 0 -1.25px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, transparent, var(--c, #ffcf7a) 35%, #fff 70%, #fff);
+}
+.fx-p.ash { background: radial-gradient(circle, #6d6157 0 30%, rgba(60, 50, 44, .7) 55%, transparent 72%); }
+.fx-p.shard {
+  border-radius: 1px;
+  background: linear-gradient(135deg, var(--c, #e9dcc0), color-mix(in srgb, var(--c, #e9dcc0) 50%, #000));
+}
+
+.fx-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  border-radius: inherit;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+.fx-ring {
+  border-radius: 50%;
+  border: 3px solid var(--c, #ffd27a);
+  box-shadow: 0 0 12px var(--c, #ffd27a), inset 0 0 10px var(--c, #ffd27a);
+}
+.fx-glow {
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--c, #ffd27a) 0%, color-mix(in srgb, var(--c, #ffd27a) 45%, transparent) 30%, transparent 68%);
+}
+.fx-glow.white { background: radial-gradient(circle, #fff 0%, rgba(255, 246, 220, .7) 22%, rgba(255, 220, 160, .25) 45%, transparent 68%); }
+.fx-pillar {
+  border-radius: 50% 50% 8px 8px / 30% 30% 8px 8px;
+  background: linear-gradient(0deg, rgba(255, 248, 225, .95), rgba(255, 228, 160, .55) 45%, rgba(255, 220, 150, 0));
+  transform-origin: 50% 100%;
+}
+
+/* floating numbers */
+.fx-num {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-weight: 700;
+  font-size: var(--fs, 36px);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--nc, #ff5a3c);
+  -webkit-text-stroke: 1.2px rgba(25, 8, 4, .85);
+  paint-order: stroke fill;
+  text-shadow: 0 2px 0 rgba(30, 8, 4, .9), 0 0 14px rgba(0, 0, 0, .55), 0 0 22px color-mix(in srgb, var(--nc, #ff5a3c) 50%, transparent);
+  transform-origin: 50% 70%;
+}
+.fx-num.k-heal { --nc: #79e690; }
+.fx-num.k-buff { --nc: #ffd35e; }
+.fx-num.k-damage { --nc: #ff5a3c; }
+
+/* badge pop when a number changes */
+.fx-pop { animation: fx-pop .5s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes fx-pop { 0% { transform: scale(1.75); filter: brightness(1.8); } 100% { transform: scale(1); filter: none; } }
+
+/* the big card in the middle of the screen */
+.fx-dim {
+  background: radial-gradient(70% 55% at 50% 46%, rgba(8, 6, 4, .25), rgba(8, 6, 4, .78));
+  opacity: 0;
+}
+.fx-show { transform-origin: 50% 50%; }
+.fx-show.skippable { pointer-events: auto; cursor: pointer; }
+.fx-show .card { margin: 0; }
+.fx-show-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  perspective: 1200px;
+}
+.fx-show-card::before {
+  content: '';
+  position: absolute;
+  inset: 4%;
+  border-radius: 6%;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, .7), 0 0 70px rgba(255, 210, 130, .18);
+  z-index: -1;
+}
+.fx-flipper { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }
+.fx-flipper > .card { position: absolute; inset: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.fx-flipper > .card-back { transform: rotateY(180deg); }
+.fx-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: 4.6%;
+  overflow: hidden;
+  pointer-events: none;
+}
+.fx-shine::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -70%;
+  width: 55%;
+  background: linear-gradient(100deg, transparent, rgba(255, 250, 235, .32) 45%, rgba(255, 255, 255, .5) 50%, rgba(255, 250, 235, .32) 55%, transparent);
+  transform: skewX(-14deg);
+  animation: fx-shine 1.15s cubic-bezier(.4, 0, .3, 1) .25s 1 both;
+}
+@keyframes fx-shine { from { transform: translateX(0) skewX(-14deg); } to { transform: translateX(420%) skewX(-14deg); } }
+
+/* turn banner */
+.fx-banner {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  --bc: #d6b46a;
+  --bt: #fff3d6;
+}
+.fx-banner.tone-foe { --bc: #e0573c; --bt: #ffe6dc; }
+.fx-banner.tone-info { --bc: #8fc3df; --bt: #eef8ff; }
+.fx-banner-band {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 120% at 50% 50%, color-mix(in srgb, var(--bc) 22%, transparent), transparent 70%),
+    linear-gradient(90deg, rgba(12, 9, 6, .7), rgba(12, 9, 6, .97) 16%, rgba(12, 9, 6, .97) 84%, rgba(12, 9, 6, .7));
+  border-top: 1px solid color-mix(in srgb, var(--bc) 70%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--bc) 70%, transparent);
+  box-shadow: 0 0 40px color-mix(in srgb, var(--bc) 35%, transparent);
+}
+.fx-banner-inner { position: relative; padding: 0 16px; }
+.fx-banner-text {
+  position: relative;
+  font-family: 'EB Garamond', Georgia, serif;
+  font-weight: 600;
+  font-size: 38px;
+  line-height: 1;
+  letter-spacing: .06em;
+  color: var(--bt);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--bc) 70%, transparent), 0 2px 0 rgba(0, 0, 0, .6);
+}
+.fx-banner-sub {
+  position: relative;
+  margin-top: 8px;
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 15px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--bc) 80%, #fff);
+}
+
+/* arrows */
+.fx-arrow { width: 100%; height: 100%; overflow: visible; --ac: #ff6b3d; }
+.fx-arrow path, .fx-arrow circle { vector-effect: non-scaling-stroke; }
+.fx-a-glow { fill: none; stroke: var(--ac); stroke-width: 15; stroke-linecap: round; opacity: .28; }
+.fx-a-body { fill: none; stroke: color-mix(in srgb, var(--ac) 80%, #000); stroke-width: 7; stroke-linecap: round; opacity: .9; }
+.fx-a-core {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ac) 35%, #fff);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 1 11;
+  animation: fx-flow .5s linear infinite;
+}
+.fx-a-head { fill: var(--ac); stroke: color-mix(in srgb, var(--ac) 30%, #fff); stroke-width: 2; stroke-linejoin: round; }
+.fx-a-socket { fill: none; stroke: var(--ac); stroke-width: 3; opacity: .85; }
+@keyframes fx-flow { to { stroke-dashoffset: -12; } }
+
+/* board-wide sweep */
+.fx-wave { overflow: hidden; }
+.fx-wave-band {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  width: 70%;
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--c) 25%, transparent) 25%,
+    color-mix(in srgb, var(--c) 75%, transparent) 62%, rgba(255, 246, 222, .9) 78%, color-mix(in srgb, var(--c) 60%, transparent) 86%, transparent 100%);
+}
+.fx-wave.left .fx-wave-band { background: linear-gradient(270deg, transparent 0%, color-mix(in srgb, var(--c) 25%, transparent) 25%, color-mix(in srgb, var(--c) 75%, transparent) 62%, rgba(255, 246, 222, .9) 78%, color-mix(in srgb, var(--c) 60%, transparent) 86%, transparent 100%); }
+.fx-wave.up .fx-wave-band, .fx-wave.down .fx-wave-band { top: 0; bottom: auto; left: -10%; right: -10%; width: auto; height: 70%; }
+.fx-wave.up .fx-wave-band { background: linear-gradient(0deg, transparent 0%, color-mix(in srgb, var(--c) 25%, transparent) 25%, color-mix(in srgb, var(--c) 75%, transparent) 62%, rgba(255, 246, 222, .9) 78%, color-mix(in srgb, var(--c) 60%, transparent) 86%, transparent 100%); }
+.fx-wave.down .fx-wave-band { background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--c) 25%, transparent) 25%, color-mix(in srgb, var(--c) 75%, transparent) 62%, rgba(255, 246, 222, .9) 78%, color-mix(in srgb, var(--c) 60%, transparent) 86%, transparent 100%); }
+.fx-wave-tint { position: absolute; inset: 0; background: var(--c); opacity: 0; }
+
+/* death: crack lines drawn over the card before it breaks */
+.fx-cracks { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 9; overflow: visible; pointer-events: none; }
+.fx-cracks path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tcard::after, .tc-sheen::before, .fx-a-core, .fx-shine::before { animation: none !important; }
+  .tcard, .tc-hand > .tcard { transition-duration: .01s !important; }
+}

@@ -37,10 +37,13 @@ export function factionVars(card) {
 }
 
 export function typeLine(card) {
-  const t = card.type === 'creature' ? 'Creature' : 'Spell';
-  const tok = card.token ? 'Token ' : '';
-  return card.subtype ? `${tok}${t} — ${card.subtype}` : `${tok}${t}`;
+  const t = card.type === 'creature' ? 'Creature' : card.type === 'relic' ? 'Relic' : 'Spell';
+  const pre = (card.token ? 'Token ' : '') + (card.legendary ? 'Legendary ' : '');
+  return card.subtype && card.type !== 'relic' ? `${pre}${t} — ${card.subtype}` : `${pre}${t}`;
 }
+
+// A one-word label for a non-creature: Spell, Trick, Trap or Relic.
+export const kindOf = (card) => (card.type === 'relic' ? 'Relic' : card.subtype === 'Trick' || card.subtype === 'Trap' ? card.subtype : card.type === 'creature' ? 'Creature' : 'Spell');
 
 // Rules text: one paragraph per line, keywords set in bold so a tap can explain them.
 export function rulesHTML(text) {
@@ -99,8 +102,8 @@ export function cardHTML(card, opts = {}) {
     ? `<div class="c-pv">${opts.power ?? card.power}<span>/</span>${opts.vitality ?? card.vitality}</div>` : '';
   const flavor = card.flavor && !opts.noFlavor ? `<div class="c-flavor">${esc(card.flavor)}</div>` : '';
   const coins = (card.factions.length ? card.factions : ['neutral']).map(factionCoin).join('');
-  const num = card.n ? `${String(card.n).padStart(2, '0')}/45` : 'token';
-  return `<div class="card${multi}${opts.cls ? ' ' + opts.cls : ''}" data-id="${esc(card.id)}" data-type="${card.type}" style="${factionVars(card)}">
+  const num = card.n ? `${String(card.n).padStart(2, '0')}/90` : 'token';
+  return `<div class="card${multi}${card.legendary ? ' legendary' : ''}${opts.cls ? ' ' + opts.cls : ''}" data-id="${esc(card.id)}" data-type="${card.type}" style="${factionVars(card)}">
     <div class="card-face">
       <div class="c-frame">
         <div class="c-head">
@@ -146,13 +149,13 @@ export function cardBackHTML(cls = '') {
 export function cardRowHTML(card, count = 0, opts = {}) {
   const url = artURL(card);
   const thumb = url ? `<img src="${esc(url)}" alt="" loading="lazy">` : artTag(card.id) || glyph(card.factions[0] || 'neutral');
-  const pv = card.type === 'creature' ? `<span class="r-pv">${card.power}/${card.vitality}</span>` : '<span class="r-pv r-spell">Spell</span>';
+  const pv = card.type === 'creature' ? `<span class="r-pv">${card.power}/${card.vitality}</span>` : `<span class="r-pv r-spell">${kindOf(card)}</span>`;
   const coins = card.factions.map(factionCoin).join('');
   const controls = opts.controls === false ? '' : `
       <div class="r-ctl">
         <button class="r-btn" data-act="minus" ${count <= 0 ? 'disabled' : ''} aria-label="Remove one">−</button>
         <span class="r-count${count ? ' on' : ''}">${count}</span>
-        <button class="r-btn" data-act="plus" ${count >= (opts.max ?? 2) || opts.blocked ? 'disabled' : ''} aria-label="Add one">+</button>
+        <button class="r-btn" data-act="plus" ${count >= (opts.max ?? 1) || opts.blocked ? 'disabled' : ''} aria-label="Add one">+</button>
       </div>`;
   return `<div class="row" data-id="${esc(card.id)}" style="${factionVars(card)}">
       <div class="r-thumb">${thumb}</div>

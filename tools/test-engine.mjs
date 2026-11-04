@@ -2,8 +2,8 @@
 //   node tools/test-engine.mjs            all tests + 400 fuzz games
 //   node tools/test-engine.mjs 3000       more fuzz games
 
-import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check } from '../js/engine.js';
-import { STARTERS, CARDS } from '../js/cards.js';
+import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack } from '../js/engine.js';
+import { STARTERS } from '../js/cards.js';
 import { cardList } from '../js/decks.js';
 
 let pass = 0, fail = 0;
@@ -11,7 +11,7 @@ const failures = [];
 function ok(cond, msg) { if (cond) pass++; else { fail++; failures.push(msg); } }
 function eq(a, b, msg) { ok(a === b, `${msg}: expected ${b}, got ${a}`); }
 
-// A blank mid-game position: A to act on turn 5 with `energy`, both at 20 Life.
+// A blank mid-game position: A to act on turn 5 with `energy`, everyone at 20 Life.
 function scene({ energy = 8, players = 2 } = {}) {
   const s = newGame({ seed: 7, players: Array.from({ length: players }, (_, i) => ({ name: 'ABC'[i], deck: [] })) });
   for (const P of s.players) { P.hand = []; P.mull = 'kept'; P.maxEnergy = energy; P.energy = energy; P.turns = 3; }
@@ -20,32 +20,120 @@ function scene({ energy = 8, players = 2 } = {}) {
 }
 const A = 0, B = 1;
 const act = (s, a) => { const r = apply(s, a); if (r.error) throw new Error(`${a.t} ${s.cards[a.uid]?.cid || ''}: ${r.error}`); return r.state; };
-const play = (s, uid, extra = {}) => act(s, { t: 'play', p: s.active, uid, ...extra });
-const hitP = (s, uid, p) => act(s, { t: 'attack', p: s.active, uid, target: { p } });
-const hitC = (s, uid, t) => act(s, { t: 'attack', p: s.active, uid, target: { uid: t } });
+const play = (s, uid, extra = {}) => act(s, { t: 'play', p: actor(s), uid, ...extra });
+const attack = (s, att, d = B, hunt) => act(s, { t: 'attack', p: s.active, target: d, att: [].concat(att), ...(hunt ? { hunt } : {}) });
+const block = (s, blocks) => act(s, { t: 'block', p: s.combat.d, blocks });
+const pass_ = (s) => act(s, { t: 'pass', p: s.combat.prio });
+// Finish a fight: choose blockers if asked, then everyone passes.
+function fight(s, blocks = []) {
+  if (s.phase === 'combat' && s.combat.step === 'block') s = block(s, blocks);
+  for (let i = 0; i < 10 && s.phase === 'combat'; i++) s = pass_(s);
+  return s;
+}
 const end = (s) => act(s, { t: 'end', p: s.active });
 const zoneOf = (s, uid) => s.cards[uid].zone;
 const deckOf = (s, p, n, cid = 'grave-rat') => { for (let i = 0; i < n; i++) addCard(s, cid, p, 'deck'); };
+const err = (s, a) => apply(s, a).error;
 
 function test(name, fn) {
   try { fn(); } catch (e) { fail++; failures.push(`${name}: threw ${e.message}`); }
 }
 
-// ── Ember ───────────────────────────────────────────────────────────
-test('Cinderling Last Breath', () => {
+// ── Combat rules ────────────────────────────────────────────────────
+test('Unblocked attack, one attack a turn, summoning sickness', () => {
   let s = scene();
-  const c = addCard(s, 'cinderling', A, 'board');
-  const m = addCard(s, 'mossback', B, 'board');
-  s = hitC(s, c.uid, m.uid);
-  eq(zoneOf(s, c.uid), 'discard', 'Cinderling died');
-  eq(s.players[B].life, 19, 'opponent took 1 from Last Breath');
-  eq(s.cards[m.uid].dmg, 2, 'Mossback took 2');
+  const m = addCard(s, 'mossback', A, 'board');
+  const fresh = addCard(s, 'lightweaver', A, 'hand');
+  s = play(s, fresh.uid);
+  ok(!canAttack(s, A, s.cards[fresh.uid]), 'new creature cannot attack');
+  s = attack(s, m.uid);
+  eq(s.phase, 'main', 'no blockers and no Tricks: the fight resolved at once');
+  eq(s.players[B].life, 17, '3 damage');
+  ok(s.cards[m.uid].ex, 'attacker is exhausted');
+  ok(err(s, { t: 'attack', p: A, target: B, att: [m.uid] }), 'only one attack a turn');
 });
 
+test('Blocking, trading, and an exhausted creature cannot block', () => {
+  let s = scene();
+  const c = addCard(s, 'cinderling', A, 'board');
+  const mb = addCard(s, 'mossback', B, 'board');
+  const lw = addCard(s, 'lightweaver', A, 'board');
+  deckOf(s, A, 3); deckOf(s, B, 3);
+  s = attack(s, c.uid);
+  eq(s.combat.step, 'block', 'B decides on blockers');
+  eq(actor(s), B, 'it is B’s move');
+  s = fight(s, [[mb.uid, c.uid]]);
+  eq(zoneOf(s, c.uid), 'discard', 'Cinderling died');
+  eq(s.players[B].life, 19, 'Last Breath burned B for 1');
+  eq(s.cards[mb.uid].dmg, 2, 'Mossback took 2');
+  s = end(s);
+  // B attacks back; A's Lightweaver is ready, Mossback attacks.
+  s = attack(s, mb.uid, A);
+  eq(s.combat.step, 'block', 'A may block with Lightweaver');
+  s = fight(s, []);
+  eq(s.players[A].life, 17, 'A took 3');
+  s = end(s);
+  // Mossback attacked, so it is still exhausted on A's turn: it cannot block.
+  ok(s.cards[mb.uid].ex, 'Mossback exhausted during A’s turn');
+  s = attack(s, lw.uid);
+  eq(s.phase, 'main', 'nothing could block');
+  eq(s.players[B].life, 18, 'Lightweaver hit for 1');
+});
+
+test('A blocked attacker whose blocker vanished deals nothing', () => {
+  let s = scene();
+  const m = addCard(s, 'mossback', A, 'board');
+  const lw = addCard(s, 'lightweaver', B, 'board');
+  const sc = addCard(s, 'scorch', A, 'hand');
+  s = attack(s, m.uid);
+  s = block(s, [[lw.uid, m.uid]]);
+  eq(actor(s), A, 'attacker answers first after blocks');
+  s = play(s, sc.uid, { target: { uid: lw.uid } });
+  s = fight(s);
+  eq(zoneOf(s, lw.uid), 'discard', 'blocker scorched');
+  eq(s.players[B].life, 20, 'no damage got through');
+});
+
+test('Only Tricks during a fight', () => {
+  let s = scene();
+  const m = addCard(s, 'mossback', A, 'board');
+  addCard(s, 'lightweaver', B, 'board');
+  const w = addCard(s, 'wildfire', B, 'hand');
+  s = attack(s, m.uid);
+  ok(err(s, { t: 'play', p: B, uid: w.uid }), 'Wildfire is not a Trick');
+  ok(err(s, { t: 'end', p: A }), 'cannot end the turn mid-fight');
+});
+
+test('Energy carries over to opponents’ turns', () => {
+  let s = scene({ energy: 3 });
+  deckOf(s, B, 2);
+  s = end(s);
+  eq(s.players[A].energy, 3, 'A kept 3 Energy for Tricks');
+});
+
+test('Swift and Overrun with Venom', () => {
+  let s = scene();
+  const k = addCard(s, 'dawnwatch-knight', A, 'board');
+  const ar = addCard(s, 'canopy-archer', B, 'board');
+  s = attack(s, k.uid);
+  s = fight(s, [[ar.uid, k.uid]]);
+  eq(zoneOf(s, ar.uid), 'discard', 'Swift killed the 2/2 first');
+  eq(s.cards[k.uid].dmg, 0, 'and took nothing back');
+  ok(!s.cards[k.uid].ex, 'Watchful: still ready');
+  let t = scene();
+  const ch = addCard(t, 'ironhide-charger', A, 'board', { tKw: ['venom'] });
+  const mb = addCard(t, 'mossback', B, 'board');
+  t = attack(t, ch.uid);
+  t = fight(t, [[mb.uid, ch.uid]]);
+  eq(zoneOf(t, mb.uid), 'discard', 'Venom killed the blocker with 1');
+  eq(t.players[B].life, 17, '3 overran');
+});
+
+// ── Ember ───────────────────────────────────────────────────────────
 test('Reckless Initiate hurts itself when attacking', () => {
   let s = scene();
   const r = addCard(s, 'reckless-initiate', A, 'board');
-  s = hitP(s, r.uid, B);
+  s = attack(s, r.uid);
   eq(s.players[B].life, 18, 'dealt 2');
   eq(s.cards[r.uid].dmg, 1, 'took 1');
 });
@@ -54,17 +142,23 @@ test('Spark Runner has Rush', () => {
   let s = scene();
   const sr = addCard(s, 'spark-runner', A, 'hand');
   s = play(s, sr.uid);
-  s = hitP(s, sr.uid, B);
+  s = attack(s, sr.uid);
   eq(s.players[B].life, 17, 'rushed for 3');
 });
 
-test('Feed the Flame with Last Breath', () => {
+test('Feed the Flame with Last Breath, and The Kiln', () => {
   let s = scene();
   const c = addCard(s, 'cinderling', A, 'board');
   const f = addCard(s, 'feed-the-flame', A, 'hand');
   s = play(s, f.uid, { sac: c.uid, target: { p: B } });
   eq(s.players[B].life, 15, '4 from Feed the Flame + 1 from Last Breath');
   eq(s.players[A].energy, 6, 'paid 2');
+  let t = scene();
+  addCard(t, 'the-kiln', A, 'relics');
+  const c2 = addCard(t, 'cinderling', A, 'board');
+  const f2 = addCard(t, 'feed-the-flame', A, 'hand');
+  t = play(t, f2.uid, { sac: c2.uid, target: { p: B } });
+  eq(t.players[B].life, 14, 'plus 1 from The Kiln');
 });
 
 test('Ash Collector and Wildfire', () => {
@@ -73,7 +167,7 @@ test('Ash Collector and Wildfire', () => {
   addCard(s, 'grave-rat', A, 'board');
   addCard(s, 'cinderling', A, 'board');
   const sp = addCard(s, 'street-recruit', B, 'board');
-  deckOf(s, A, 5);
+  deckOf(s, A, 5); deckOf(s, B, 5);
   const w = addCard(s, 'wildfire', A, 'hand');
   s = play(s, w.uid);
   eq(s.players[A].board.length, 1, 'only Ash Collector survives');
@@ -98,16 +192,109 @@ test('The Mountain Is Angry gets cheaper', () => {
   eq(s.players[B].life, 13, '7 damage');
 });
 
-test('Phoenix returns next turn for 2', () => {
+test('Phoenix: Soar, Reach, and returning next turn', () => {
   let s = scene();
   const ph = addCard(s, 'phoenix-of-the-last-spark', A, 'board');
+  const mb = addCard(s, 'mossback', B, 'board');
   const g = addCard(s, 'patient-giant', B, 'board');
-  s = hitC(s, ph.uid, g.uid);
-  eq(zoneOf(s, ph.uid), 'discard', 'Phoenix died');
-  ok(apply(s, { t: 'phoenix', p: A, uid: ph.uid }).error, 'cannot return the same turn');
+  deckOf(s, A, 3); deckOf(s, B, 3);
+  s = attack(s, ph.uid);
+  ok(err(s, { t: 'block', p: B, blocks: [[mb.uid, ph.uid]] }), 'Mossback cannot block a flier');
+  s = fight(s, [[g.uid, ph.uid]]);
+  eq(zoneOf(s, ph.uid), 'discard', 'Phoenix died to the Giant');
+  eq(power(s, s.cards[g.uid]), 4, 'Patient Giant survived and grew');
+  ok(err(s, { t: 'phoenix', p: A, uid: ph.uid }), 'cannot return the same turn');
   s = end(s); s = end(s);
   s = act(s, { t: 'phoenix', p: A, uid: ph.uid });
   eq(zoneOf(s, ph.uid), 'hand', 'back in hand');
+});
+
+test('Scorch and Kindle', () => {
+  let s = scene();
+  const lw = addCard(s, 'lightweaver', B, 'board');
+  const sc = addCard(s, 'scorch', A, 'hand');
+  s = play(s, sc.uid, { target: { uid: lw.uid } });
+  eq(zoneOf(s, lw.uid), 'discard', 'Scorch killed a 1/2');
+  let t = scene();
+  const a1 = addCard(t, 'canopy-archer', A, 'board');
+  const b1 = addCard(t, 'canopy-archer', B, 'board');
+  const kd = addCard(t, 'kindle', A, 'hand');
+  t = attack(t, a1.uid);
+  t = block(t, [[b1.uid, a1.uid]]);
+  t = play(t, kd.uid, { target: { uid: a1.uid } });
+  t = fight(t);
+  eq(zoneOf(t, b1.uid), 'discard', 'Kindled archer struck first');
+  eq(t.cards[a1.uid].dmg, 0, 'and was not hit back');
+});
+
+test('Ember Duelist hunts', () => {
+  let s = scene();
+  const d = addCard(s, 'ember-duelist', A, 'board');
+  const lw = addCard(s, 'lightweaver', B, 'board');
+  const sh = addCard(s, 'shieldbearer', B, 'board');
+  s = attack(s, d.uid, B, [[d.uid, lw.uid]]);
+  ok(err(s, { t: 'block', p: B, blocks: [[sh.uid, d.uid]] }), 'the hunted creature must block');
+  ok(err(s, { t: 'block', p: B, blocks: [] }), 'it cannot stay back');
+  s = fight(s, [[lw.uid, d.uid]]);
+  eq(zoneOf(s, lw.uid), 'discard', 'prey killed');
+  eq(s.cards[d.uid].dmg, 0, 'Swift: no damage back');
+});
+
+test('Mutiny and Bone Altar', () => {
+  let s = scene();
+  const mu = addCard(s, 'mutiny', A, 'hand');
+  const alt = addCard(s, 'bone-altar', A, 'relics');
+  const mb = addCard(s, 'mossback', B, 'board');
+  deckOf(s, A, 3);
+  s = play(s, mu.uid, { target: { uid: mb.uid } });
+  eq(s.cards[mb.uid].ctrl, A, 'A controls Mossback');
+  s = attack(s, mb.uid);
+  eq(s.players[B].life, 17, 'B hit by their own Mossback');
+  s = act(s, { t: 'use', p: A, uid: alt.uid, sac: mb.uid });
+  eq(zoneOf(s, mb.uid), 'discard', 'sacrificed');
+  ok(s.players[B].discard.includes(mb.uid), 'into its owner’s discard pile');
+  eq(s.players[A].hand.length, 1, 'A drew');
+  let t = scene();
+  const mu2 = addCard(t, 'mutiny', A, 'hand');
+  const mb2 = addCard(t, 'mossback', B, 'board');
+  deckOf(t, B, 2);
+  t = play(t, mu2.uid, { target: { uid: mb2.uid } });
+  t = end(t);
+  eq(t.cards[mb2.uid].ctrl, B, 'it goes home at the end of the turn');
+});
+
+test('Molten Berserker cannot block', () => {
+  let s = scene();
+  const c = addCard(s, 'cinderling', A, 'board');
+  addCard(s, 'molten-berserker', B, 'board');
+  s = attack(s, c.uid);
+  eq(s.phase, 'main', 'nobody could block');
+  eq(s.players[B].life, 18, 'hit for 2');
+});
+
+test('Smoldering Golem goes out with a bang', () => {
+  let s = scene();
+  const g = addCard(s, 'smoldering-golem', A, 'board');
+  const lw = addCard(s, 'lightweaver', B, 'board');
+  const mb = addCard(s, 'mossback', B, 'board');
+  const dd = addCard(s, 'death-is-a-door', A, 'hand');
+  s = play(s, dd.uid, { target: { uid: g.uid } });
+  eq(zoneOf(s, lw.uid), 'discard', 'Lightweaver burned');
+  eq(s.cards[mb.uid].dmg, 2, 'Mossback took 2');
+  eq(s.players[B].life, 18, 'B took 2');
+});
+
+test('Ashmaw breathes before blockers', () => {
+  let s = scene();
+  const as = addCard(s, 'ashmaw', A, 'board');
+  const sp = addCard(s, 'spirit', B, 'board');
+  const lw = addCard(s, 'lightweaver', B, 'board');
+  const mb = addCard(s, 'mossback', B, 'board');
+  s = attack(s, as.uid);
+  eq(zoneOf(s, sp.uid), 'gone', 'Spirit burned away');
+  eq(zoneOf(s, lw.uid), 'discard', 'Lightweaver burned');
+  eq(s.cards[mb.uid].dmg, 2, 'Mossback singed');
+  eq(s.players[B].life, 14, 'nothing could block the dragon');
 });
 
 // ── Verdant ─────────────────────────────────────────────────────────
@@ -126,39 +313,54 @@ test('Wild Growth, Awaken, Little Gardener', () => {
   eq(s.players[A].life, 22, 'Awaken only once');
 });
 
-test('Two Little Gardeners do not loop', () => {
+test('Two Little Gardeners and Grandmother Bramble do not loop', () => {
   let s = scene();
   const g1 = addCard(s, 'little-gardener', A, 'board');
   const g2 = addCard(s, 'little-gardener', A, 'board');
+  addCard(s, 'grandmother-bramble', A, 'board');
   const m = addCard(s, 'mossback', A, 'board');
   const wg = addCard(s, 'wild-growth', A, 'hand');
   s = play(s, wg.uid, { target: { uid: m.uid } });
-  ok(vitality(s, s.cards[g1.uid]) <= 5 && vitality(s, s.cards[g2.uid]) <= 5, 'finite growth');
+  ok(vitality(s, s.cards[g1.uid]) <= 7 && vitality(s, s.cards[g2.uid]) <= 7, 'finite growth');
+  eq(power(s, s.cards[m.uid]), 6, 'Mossback +2 and +1 more from Bramble');
 });
 
-test('Patient Giant grows when it survives', () => {
+test('Grandmother Bramble with one Gardener', () => {
   let s = scene();
-  const pg = addCard(s, 'patient-giant', B, 'board');
-  const r = addCard(s, 'cinderling', A, 'board');
-  s = hitC(s, r.uid, pg.uid);
-  eq(power(s, s.cards[pg.uid]), 4, 'Giant +1 Power');
+  addCard(s, 'grandmother-bramble', A, 'board');
+  const lg = addCard(s, 'little-gardener', A, 'board');
+  const m = addCard(s, 'mossback', A, 'board');
+  const wg = addCard(s, 'wild-growth', A, 'hand');
+  s = play(s, wg.uid, { target: { uid: m.uid } });
+  eq(vitality(s, s.cards[m.uid]), 7, 'Mossback 4 + 2 + 1');
+  eq(vitality(s, s.cards[lg.uid]), 5, 'Gardener 3 + 1 + 1');
 });
 
 test('Seedling sacrifices itself to draw once grown', () => {
   let s = scene();
   const sd = addCard(s, 'seedling', A, 'board');
-  deckOf(s, A, 5);
+  deckOf(s, A, 5); deckOf(s, B, 5);
   s.cards[sd.uid].pV = 1;
   s = end(s); s = end(s);
   eq(zoneOf(s, sd.uid), 'discard', 'Seedling gone');
   eq(s.players[A].hand.length, 2, 'drew for turn and for Seedling');
 });
 
-test('Ancient Roots', () => {
+test('Ancient Roots and Grove Druid', () => {
   let s = scene({ energy: 4 });
   const ar = addCard(s, 'ancient-roots', A, 'hand');
   s = play(s, ar.uid);
   eq(s.players[A].maxEnergy, 5, 'max Energy 5');
+  const gd = addCard(s, 'grove-druid', A, 'hand');
+  s.players[A].energy = 4;
+  s = play(s, gd.uid);
+  eq(s.players[A].maxEnergy, 6, 'Druid ramped');
+  const be = addCard(s, 'beacon-of-hope', B, 'relics');
+  const gd2 = addCard(s, 'grove-druid', A, 'hand');
+  s.players[A].energy = 4;
+  s = play(s, gd2.uid, { target: { uid: be.uid } });
+  eq(zoneOf(s, be.uid), 'discard', 'Relic destroyed');
+  eq(s.players[A].maxEnergy, 6, 'no ramp that time');
 });
 
 test('The Forest Remembers gets cheaper', () => {
@@ -176,6 +378,68 @@ test('Worldtree Stag', () => {
   const st = addCard(s, 'worldtree-stag', A, 'hand');
   s = play(s, st.uid, { target: { uid: m.uid } });
   eq(vitality(s, s.cards[m.uid]), 4, 'Recruit +2/+2');
+});
+
+test('Sudden Growth while blocking', () => {
+  let s = scene();
+  const mb = addCard(s, 'mossback', A, 'board');
+  const lw = addCard(s, 'lightweaver', B, 'board');
+  const sg = addCard(s, 'sudden-growth', B, 'hand');
+  s = attack(s, mb.uid);
+  s = play(s, sg.uid, { target: { uid: lw.uid } });
+  eq(actor(s), B, 'B still chooses blockers');
+  s = fight(s, [[lw.uid, mb.uid]]);
+  eq(zoneOf(s, mb.uid), 'discard', 'the 4/5 Lightweaver killed Mossback');
+  eq(zoneOf(s, lw.uid), 'board', 'and survived');
+});
+
+test('Canopy Archer reaches a Cloud Ray', () => {
+  let s = scene();
+  const ray = addCard(s, 'cloud-ray', A, 'board');
+  const ca = addCard(s, 'canopy-archer', B, 'board');
+  const mb = addCard(s, 'mossback', B, 'board');
+  s = attack(s, ray.uid);
+  ok(err(s, { t: 'block', p: B, blocks: [[mb.uid, ray.uid]] }), 'no Reach, no block');
+  s = fight(s, [[ca.uid, ray.uid]]);
+  eq(zoneOf(s, ray.uid), 'discard', 'Ray shot down');
+});
+
+test('Savage Clash and Heartwood Totem', () => {
+  let s = scene();
+  const mb = addCard(s, 'mossback', A, 'board');
+  const lw = addCard(s, 'lightweaver', B, 'board');
+  const sc = addCard(s, 'savage-clash', A, 'hand');
+  s = play(s, sc.uid, { fighter: mb.uid, target: { uid: lw.uid } });
+  eq(zoneOf(s, lw.uid), 'discard', 'Lightweaver lost the fight');
+  eq(s.cards[mb.uid].dmg, 1, 'Mossback took 1');
+  let t = scene();
+  addCard(t, 'heartwood-totem', A, 'relics');
+  addCard(t, 'mossback', A, 'board');
+  const small = addCard(t, 'lightweaver', A, 'board');
+  deckOf(t, A, 3); deckOf(t, B, 3);
+  t = end(t); t = end(t);
+  eq(power(t, t.cards[small.uid]), 2, 'smallest creature grew');
+});
+
+test('Ironhide Charger hunts and overruns; Stampede', () => {
+  let s = scene();
+  const ch = addCard(s, 'ironhide-charger', A, 'board');
+  const lw = addCard(s, 'lightweaver', B, 'board');
+  addCard(s, 'mossback', B, 'board');
+  s = attack(s, ch.uid, B, [[ch.uid, lw.uid]]);
+  s = fight(s, [[lw.uid, ch.uid]]);
+  eq(zoneOf(s, lw.uid), 'discard', 'prey trampled');
+  eq(s.players[B].life, 18, '2 overran');
+  let t = scene();
+  const a1 = addCard(t, 'canopy-archer', A, 'board');
+  const a2 = addCard(t, 'lightweaver', A, 'board');
+  const sp = addCard(t, 'spirit', B, 'board');
+  const st = addCard(t, 'stampede', A, 'hand');
+  t = attack(t, [a1.uid, a2.uid]);
+  t = block(t, [[sp.uid, a1.uid]]);
+  t = play(t, st.uid);
+  t = fight(t);
+  eq(t.players[B].life, 14, '3 overran the Spirit, 3 unblocked');
 });
 
 // ── Tide ────────────────────────────────────────────────────────────
@@ -202,15 +466,24 @@ test('Curious Wisp puts a card on the bottom', () => {
   eq(s.players[A].deck[s.players[A].deck.length - 1], top.uid, 'Wildfire on the bottom');
 });
 
-test('Not Yet and tokens', () => {
+test('Not Yet: mid-fight, on tokens, on Relics', () => {
   let s = scene();
-  const sr = addCard(s, 'street-recruit', B, 'board');
-  const sp = addCard(s, 'spirit', B, 'board');
-  const n1 = addCard(s, 'not-yet', A, 'hand'), n2 = addCard(s, 'not-yet', A, 'hand');
-  s = play(s, n1.uid, { target: { uid: sr.uid } });
-  eq(zoneOf(s, sr.uid), 'hand', 'Recruit back in hand');
-  s = play(s, n2.uid, { target: { uid: sp.uid } });
-  eq(zoneOf(s, sp.uid), 'gone', 'token vanished');
+  const mb = addCard(s, 'mossback', A, 'board');
+  addCard(s, 'lightweaver', B, 'board');
+  const ny = addCard(s, 'not-yet', B, 'hand');
+  s = attack(s, mb.uid);
+  s = play(s, ny.uid, { target: { uid: mb.uid } });
+  eq(zoneOf(s, mb.uid), 'hand', 'attacker sent home');
+  eq(s.phase, 'main', 'the fight is over');
+  eq(s.players[B].life, 20, 'no damage');
+  let t = scene();
+  const sp = addCard(t, 'spirit', B, 'board');
+  const ht = addCard(t, 'heartwood-totem', B, 'relics');
+  const n1 = addCard(t, 'not-yet', A, 'hand'), n2 = addCard(t, 'not-yet', A, 'hand');
+  t = play(t, n1.uid, { target: { uid: sp.uid } });
+  eq(zoneOf(t, sp.uid), 'gone', 'token vanished');
+  t = play(t, n2.uid, { target: { uid: ht.uid } });
+  eq(zoneOf(t, ht.uid), 'hand', 'Relic back in hand');
 });
 
 test('Second Thought', () => {
@@ -248,11 +521,21 @@ test('Countercurrent', () => {
   eq(s.players[A].energy, 1, 'paid 3 + 2');
   eq(s.players[A].board.length, 0, 'Wildfire resolved');
   eq(zoneOf(s, cc2.uid), 'discard', 'second trap used up');
-  // setting your own trap
   let t = scene();
   const own = addCard(t, 'countercurrent', A, 'hand');
   t = play(t, own.uid);
   eq(zoneOf(t, own.uid), 'trap', 'set as a trap');
+});
+
+test('Riptide sends the biggest attacker home', () => {
+  let s = scene();
+  const rt = addCard(s, 'riptide', B, 'traps');
+  const lw = addCard(s, 'lightweaver', A, 'board');
+  const mb = addCard(s, 'mossback', A, 'board');
+  s = attack(s, [lw.uid, mb.uid]);
+  eq(zoneOf(s, mb.uid), 'hand', 'Mossback washed back');
+  eq(zoneOf(s, rt.uid), 'discard', 'trap used');
+  eq(s.players[B].life, 19, 'Lightweaver still hit');
 });
 
 test('Deepwater Leviathan bounce is optional', () => {
@@ -276,23 +559,104 @@ test('Perfect Recall', () => {
   eq(s.players[A].hand.length, 2, 'two spells back');
 });
 
-// ── Umbral ──────────────────────────────────────────────────────────
-test('Grave Rat mills two', () => {
+test('Sea Change', () => {
   let s = scene();
-  const gr = addCard(s, 'grave-rat', A, 'board');
-  deckOf(s, A, 4, 'seedling');
-  const m = addCard(s, 'mossback', B, 'board');
-  s = hitC(s, gr.uid, m.uid);
-  eq(s.players[A].discard.length, 3, 'rat + 2 milled');
+  const ch = addCard(s, 'ironhide-charger', B, 'board', { pP: 2, pV: 2 });
+  const sc = addCard(s, 'sea-change', A, 'hand');
+  s = play(s, sc.uid, { target: { uid: ch.uid } });
+  eq(s.cards[ch.uid].cid, 'fish', 'it is a Fish');
+  eq(power(s, s.cards[ch.uid]), 1, '1 Power');
+  ok(!hasKw(s, s.cards[ch.uid], 'overrun'), 'no Overrun');
+  const sc2 = addCard(s, 'scorch', A, 'hand');
+  s = play(s, sc2.uid, { target: { uid: ch.uid } });
+  eq(s.cards[ch.uid].cid, 'ironhide-charger', 'back to itself in the discard pile');
+  eq(zoneOf(s, ch.uid), 'discard', 'dead');
 });
 
-test('Kindly Undertaker', () => {
+test('Windborne Sage, Brook Hydra', () => {
+  let s = scene();
+  const hy = addCard(s, 'brook-hydra', A, 'board');
+  deckOf(s, A, 3);
+  const ws = addCard(s, 'windborne-sage', A, 'hand');
+  s = play(s, ws.uid);
+  eq(s.players[A].hand.length, 1, 'drew a card');
+  eq(power(s, s.cards[hy.uid]), 2, 'Hydra grew');
+});
+
+test('Tidal Mimic copies', () => {
+  let s = scene();
+  const g = addCard(s, 'patient-giant', B, 'board');
+  const tm = addCard(s, 'tidal-mimic', A, 'hand');
+  s = play(s, tm.uid, { target: { uid: g.uid } });
+  eq(s.cards[tm.uid].cid, 'patient-giant', 'a second Giant');
+  eq(vitality(s, s.cards[tm.uid]), 6, '6 Vitality');
+  ok(hasKw(s, s.cards[tm.uid], 'reach'), 'with Reach');
+  const dd = addCard(s, 'death-is-a-door', A, 'hand');
+  s.players[A].energy = 8;
+  s = play(s, dd.uid, { target: { uid: tm.uid } });
+  eq(s.cards[tm.uid].cid, 'tidal-mimic', 'a Mimic again in the discard pile');
+});
+
+test('The Drowned Clock strikes three', () => {
+  let s = scene();
+  const dc = addCard(s, 'the-drowned-clock', A, 'relics');
+  deckOf(s, A, 6); deckOf(s, B, 6);
+  for (let k = 0; k < 4; k++) s = end(s);
+  eq(s.cards[dc.uid].chimes, 2, 'two chimes');
+  eq(s.players[B].life, 20, 'not yet');
+  s = end(s); s = end(s);
+  eq(s.players[B].life, 14, 'B lost 6');
+  eq(s.cards[dc.uid].chimes, 0, 'count starts over');
+});
+
+test('One More Wave', () => {
+  let s = scene();
+  deckOf(s, A, 3);
+  const ow = addCard(s, 'one-more-wave', A, 'hand');
+  s = play(s, ow.uid);
+  const t0 = s.turn;
+  s = end(s);
+  eq(s.active, A, 'A again');
+  eq(s.turn, t0 + 1, 'a new turn');
+  s = end(s);
+  eq(s.active, B, 'then B');
+});
+
+test('Nerissa takes a creature for good', () => {
+  let s = scene();
+  const mb = addCard(s, 'mossback', B, 'board');
+  const st = addCard(s, 'worldtree-stag', B, 'board');
+  const ne = addCard(s, 'nerissa', A, 'hand');
+  ok(err(s, { t: 'play', p: A, uid: ne.uid, target: { uid: st.uid } }), 'the Stag costs too much');
+  s = play(s, ne.uid, { target: { uid: mb.uid } });
+  eq(s.cards[mb.uid].ctrl, A, 'Mossback is A’s');
+  ok(!canAttack(s, A, s.cards[mb.uid]), 'not this turn');
+  deckOf(s, A, 2); deckOf(s, B, 2);
+  s = end(s); s = end(s);
+  eq(s.cards[mb.uid].ctrl, A, 'still A’s');
+});
+
+// ── Umbral ──────────────────────────────────────────────────────────
+test('Grave Rat: Venom and Last Breath', () => {
+  let s = scene();
+  const mb = addCard(s, 'mossback', A, 'board');
+  const gr = addCard(s, 'grave-rat', B, 'board');
+  deckOf(s, B, 4, 'seedling');
+  s = attack(s, mb.uid);
+  s = fight(s, [[gr.uid, mb.uid]]);
+  eq(zoneOf(s, mb.uid), 'discard', 'Venom killed Mossback');
+  eq(s.players[B].discard.length, 3, 'rat + 2 milled');
+});
+
+test('Kindly Undertaker and The Pale Abbess', () => {
   let s = scene();
   addCard(s, 'kindly-undertaker', A, 'board');
+  addCard(s, 'the-pale-abbess', A, 'board');
   const c = addCard(s, 'cinderling', A, 'board');
   const f = addCard(s, 'feed-the-flame', A, 'hand');
   s = play(s, f.uid, { sac: c.uid, target: { p: B } });
   eq(s.players[A].life, 21, 'gained 1');
+  eq(s.players[B].life, 14, '4 + 1 Last Breath + 1 Abbess');
 });
 
 test('Unearth and Echo', () => {
@@ -305,18 +669,24 @@ test('Unearth and Echo', () => {
   eq(zoneOf(s, u.uid), 'exile', 'Unearth removed from the game');
 });
 
-test('Bonepicker and Death Is a Door get cheaper', () => {
+test('Bonepicker and Death Is a Door get cheaper; Door hits Relics', () => {
   let s = scene();
   const bp = addCard(s, 'bonepicker', A, 'hand');
   const dd = addCard(s, 'death-is-a-door', A, 'hand');
   eq(costOf(s, A, s.cards[bp.uid]), 3, 'Bonepicker 3');
   const c = addCard(s, 'cinderling', A, 'board');
   const m = addCard(s, 'mossback', B, 'board');
-  s = hitC(s, c.uid, m.uid);
+  s = attack(s, c.uid);
+  s = fight(s, [[m.uid, c.uid]]);
   eq(costOf(s, A, s.cards[bp.uid]), 2, 'Bonepicker 2 after a death');
   eq(costOf(s, A, s.cards[dd.uid]), 3, 'Death Is a Door 3 after own death');
   s = play(s, dd.uid, { target: { uid: m.uid } });
   eq(zoneOf(s, m.uid), 'discard', 'Mossback destroyed');
+  let t = scene();
+  const be = addCard(t, 'beacon-of-hope', B, 'relics');
+  const d2 = addCard(t, 'death-is-a-door', A, 'hand');
+  t = play(t, d2.uid, { target: { uid: be.uid } });
+  eq(zoneOf(t, be.uid), 'discard', 'Relic destroyed');
 });
 
 test('Borrowed Time', () => {
@@ -325,7 +695,7 @@ test('Borrowed Time', () => {
   const bt = addCard(s, 'borrowed-time', A, 'hand');
   deckOf(s, B, 3);
   s = play(s, bt.uid, { pick: c.uid });
-  s = hitP(s, c.uid, B);
+  s = attack(s, c.uid);
   eq(s.players[B].life, 18, 'attacked with Rush');
   s = end(s);
   eq(zoneOf(s, c.uid), 'discard', 'sacrificed at end of turn');
@@ -352,6 +722,78 @@ test('The One Who Came Back via Echo', () => {
   eq(zoneOf(s, o.uid), 'exile', 'removed from the game');
 });
 
+test('Kiss of Night on a chump blocker', () => {
+  let s = scene();
+  const st = addCard(s, 'worldtree-stag', A, 'board');
+  const sp = addCard(s, 'spirit', B, 'board');
+  const kn = addCard(s, 'kiss-of-night', B, 'hand');
+  s = attack(s, st.uid);
+  s = play(s, kn.uid, { target: { uid: sp.uid } });
+  s = fight(s, [[sp.uid, st.uid]]);
+  eq(zoneOf(s, st.uid), 'discard', 'the Stag died to Venom');
+  eq(s.players[B].life, 21, 'Drain gained 1');
+});
+
+test('Vesper Bat drains; Hungry Ghoul feeds', () => {
+  let s = scene();
+  const vb = addCard(s, 'vesper-bat', A, 'board');
+  s = attack(s, vb.uid);
+  eq(s.players[B].life, 19, 'hit for 1');
+  eq(s.players[A].life, 21, 'drained 1');
+  let t = scene();
+  const hg = addCard(t, 'hungry-ghoul', A, 'board');
+  const x = addCard(t, 'lightweaver', B, 'board'), y = addCard(t, 'spirit', B, 'board');
+  for (const v of [x, y]) { const sc = addCard(t, 'scorch', A, 'hand'); t = play(t, sc.uid, { target: { uid: v.uid } }); }
+  eq(power(t, t.cards[hg.uid]), 4, 'Ghoul +2/+2');
+});
+
+test('Bone Altar once a turn', () => {
+  let s = scene();
+  const alt = addCard(s, 'bone-altar', A, 'relics');
+  const a1 = addCard(s, 'spirit', A, 'board'), a2 = addCard(s, 'spirit', A, 'board');
+  deckOf(s, A, 3);
+  s = act(s, { t: 'use', p: A, uid: alt.uid, sac: a1.uid });
+  eq(s.players[A].hand.length, 1, 'drew');
+  ok(err(s, { t: 'use', p: A, uid: alt.uid, sac: a2.uid }), 'once a turn');
+});
+
+test('The Culling', () => {
+  let s = scene();
+  const mb = addCard(s, 'mossback', A, 'board');
+  const lw = addCard(s, 'lightweaver', A, 'board');
+  const ca = addCard(s, 'canopy-archer', B, 'board');
+  const ch = addCard(s, 'ironhide-charger', B, 'board');
+  const cu = addCard(s, 'the-culling', A, 'hand');
+  s = play(s, cu.uid);
+  eq(zoneOf(s, mb.uid), 'board', 'Mossback spared');
+  eq(zoneOf(s, ch.uid), 'board', 'Charger spared');
+  eq(zoneOf(s, lw.uid), 'discard', 'Lightweaver culled');
+  eq(zoneOf(s, ca.uid), 'discard', 'Archer culled');
+});
+
+test('Carrion Wyrm vs Gloomweb Spider', () => {
+  let s = scene();
+  const wy = addCard(s, 'carrion-wyrm', A, 'board');
+  const gs = addCard(s, 'gloomweb-spider', B, 'board');
+  s = attack(s, wy.uid);
+  s = fight(s, [[gs.uid, wy.uid]]);
+  eq(zoneOf(s, wy.uid), 'discard', 'Venom spider killed the Wyrm');
+  eq(zoneOf(s, gs.uid), 'discard', 'and died to its Venom');
+});
+
+test('The Barrow Queen raids another discard pile', () => {
+  let s = scene();
+  const st = addCard(s, 'worldtree-stag', B, 'discard');
+  const q = addCard(s, 'the-barrow-queen', A, 'hand');
+  s = play(s, q.uid, { pick: st.uid });
+  eq(s.cards[st.uid].ctrl, A, 'the Stag fights for A');
+  eq(s.cards[st.uid].owner, B, 'still B’s card');
+  s.players[A].energy = 8;
+  const dd = addCard(s, 'death-is-a-door', A, 'hand');
+  s = play(s, dd.uid, { target: { uid: st.uid } });
+  ok(s.players[B].discard.includes(st.uid), 'back to B’s discard pile');
+});
+
 // ── Radiant ─────────────────────────────────────────────────────────
 test('Street Recruit Bond and Standard Keeper', () => {
   let s = scene();
@@ -362,22 +804,40 @@ test('Street Recruit Bond and Standard Keeper', () => {
   eq(power(s, s.cards[sk.uid]), 2, 'Keeper does not buff itself');
 });
 
-test('Guard', () => {
+test('Guard blocks two', () => {
   let s = scene();
-  const c = addCard(s, 'cinderling', A, 'board');
+  const a1 = addCard(s, 'lightweaver', A, 'board');
+  const a2 = addCard(s, 'canopy-archer', A, 'board');
   const sh = addCard(s, 'shieldbearer', B, 'board');
-  addCard(s, 'grave-rat', B, 'board');
-  ok(apply(s, { t: 'attack', p: A, uid: c.uid, target: { p: B } }).error, 'cannot hit the player');
-  s = hitC(s, c.uid, sh.uid);
-  eq(s.cards[sh.uid].dmg, 2, 'hit the Shieldbearer');
+  const sp = addCard(s, 'spirit', B, 'board');
+  s = attack(s, [a1.uid, a2.uid]);
+  ok(err(s, { t: 'block', p: B, blocks: [[sp.uid, a1.uid], [sp.uid, a2.uid]] }), 'a Spirit blocks only one');
+  s = fight(s, [[sh.uid, a1.uid], [sh.uid, a2.uid]]);
+  eq(s.cards[sh.uid].dmg, 3, 'Shieldbearer took 1 + 2');
+  eq(zoneOf(s, sh.uid), 'board', 'and held');
+  eq(s.cards[a1.uid].dmg, 1, 'hit back');
+  eq(s.cards[a2.uid].dmg, 1, 'both');
+  eq(s.players[B].life, 20, 'nothing got through');
 });
 
-test('Twin Souls and the board limit', () => {
+test('Twin Souls as an ambush; Ambush at Dawn', () => {
   let s = scene();
-  for (let i = 0; i < 6; i++) addCard(s, 'grave-rat', A, 'board');
-  const t = addCard(s, 'twin-souls', A, 'hand');
-  s = play(s, t.uid);
-  eq(s.players[A].board.length, 7, 'only one Spirit fits');
+  const mb = addCard(s, 'mossback', A, 'board');
+  const ts = addCard(s, 'twin-souls', B, 'hand');
+  s = attack(s, mb.uid);
+  eq(s.combat?.step, 'block', 'B holds a Trick, so B gets to answer');
+  s = play(s, ts.uid);
+  const sp = s.players[B].board[0];
+  s = fight(s, [[sp, mb.uid]]);
+  eq(s.players[B].life, 20, 'the Spirit took the hit');
+  let t = scene();
+  const ad = addCard(t, 'ambush-at-dawn', B, 'traps');
+  const mb2 = addCard(t, 'mossback', A, 'board');
+  t = attack(t, mb2.uid);
+  eq(zoneOf(t, ad.uid), 'discard', 'trap sprang');
+  eq(t.players[B].board.length, 2, 'two Spirits');
+  t = fight(t, [[t.players[B].board[0], mb2.uid]]);
+  eq(t.players[B].life, 20, 'blocked by a fresh Spirit');
 });
 
 test('Rally, Stand Together, Awaken from a one-turn boost', () => {
@@ -394,12 +854,15 @@ test('Rally, Stand Together, Awaken from a one-turn boost', () => {
   eq(s.players[A].hand.length, 1, 'drew with 4 creatures');
 });
 
-test('Dawn Captain and A Thousand Lights', () => {
+test('Dawn Captain, Watchful, A Thousand Lights', () => {
   let s = scene();
+  deckOf(s, A, 3); deckOf(s, B, 3);
   const dc = addCard(s, 'dawn-captain', A, 'hand');
   s = play(s, dc.uid);
   eq(s.players[A].board.length, 3, 'Captain + 2 Spirits');
   s = end(s); s = end(s);
+  s = attack(s, dc.uid);
+  ok(!s.cards[dc.uid].ex, 'Watchful: not exhausted');
   const tl = addCard(s, 'a-thousand-lights', A, 'hand');
   s.players[A].energy = 8;
   s = play(s, tl.uid);
@@ -414,6 +877,49 @@ test('We Grow Together', () => {
   s = play(s, w.uid, { targets: ids.slice(0, 3) });
   eq(vitality(s, s.cards[ids[2]]), 3, 'third target grew');
   ok(check(scene(), { t: 'play', p: A, uid: 999, targets: [] }), 'bad card rejected');
+});
+
+test('Bastion and Dawn’s Judgment', () => {
+  let s = scene();
+  const mb = addCard(s, 'mossback', A, 'board');
+  const lw = addCard(s, 'lightweaver', B, 'board');
+  const ba = addCard(s, 'bastion', B, 'hand');
+  s = attack(s, mb.uid);
+  s = play(s, ba.uid, { target: { uid: lw.uid } });
+  s = fight(s, [[lw.uid, mb.uid]]);
+  eq(zoneOf(s, lw.uid), 'board', 'the 2/5 Lightweaver held');
+  let t = scene();
+  const st = addCard(t, 'worldtree-stag', A, 'board');
+  const dj = addCard(t, 'dawns-judgment', B, 'hand');
+  ok(err(t, { t: 'play', p: B, uid: dj.uid, target: { uid: st.uid } }), 'only during a fight');
+  t = attack(t, st.uid);
+  t = play(t, dj.uid, { target: { uid: st.uid } });
+  eq(zoneOf(t, st.uid), 'discard', 'attacker destroyed');
+  eq(t.phase, 'main', 'fight over');
+  eq(t.players[B].life, 20, 'no damage');
+});
+
+test('Lightweaver, Choirmother, Beacon of Hope', () => {
+  let s = scene();
+  deckOf(s, A, 3); deckOf(s, B, 3);
+  const lw = addCard(s, 'lightweaver', A, 'hand');
+  s = play(s, lw.uid);
+  const sp = s.players[A].board[1];
+  addCard(s, 'choirmother', A, 'board');
+  eq(power(s, s.cards[sp]), 2, 'Spirit 2/2');
+  ok(hasKw(s, s.cards[sp], 'soar'), 'Spirit soars');
+  addCard(s, 'beacon-of-hope', A, 'relics');
+  s = end(s); s = end(s);
+  eq(s.players[A].board.length, 4, 'a new Spirit at the start of the turn');
+});
+
+test('Seraphine', () => {
+  let s = scene();
+  const se = addCard(s, 'seraphine', A, 'board');
+  s = attack(s, se.uid);
+  eq(s.players[B].life, 16, 'hit for 4');
+  eq(s.players[A].life, 24, 'drained 4');
+  ok(!s.cards[se.uid].ex, 'Watchful');
 });
 
 // ── Two-faction ─────────────────────────────────────────────────────
@@ -437,10 +943,31 @@ test('Apex Predator fights and grows', () => {
   let s = scene();
   const m = addCard(s, 'mossback', B, 'board');
   const ap = addCard(s, 'apex-predator', A, 'hand');
-  ok(apply(s, { t: 'play', p: A, uid: ap.uid }).error, 'must fight when it can');
+  ok(err(s, { t: 'play', p: A, uid: ap.uid }), 'must fight when it can');
   s = play(s, ap.uid, { target: { uid: m.uid } });
   eq(zoneOf(s, m.uid), 'discard', 'Mossback died');
   eq(power(s, s.cards[ap.uid]), 7, 'grew +2/+2');
+});
+
+test('Banner of the Charge', () => {
+  let s = scene();
+  addCard(s, 'banner-of-the-charge', A, 'relics');
+  const lw = addCard(s, 'lightweaver', A, 'hand');
+  s = play(s, lw.uid);
+  ok(canAttack(s, A, s.cards[lw.uid]), 'Rush from the Banner');
+});
+
+test('Sky Warden pins a creature down', () => {
+  let s = scene();
+  const mb = addCard(s, 'mossback', B, 'board');
+  const sw = addCard(s, 'sky-warden', A, 'hand');
+  deckOf(s, A, 3); deckOf(s, B, 3);
+  s = play(s, sw.uid, { target: { uid: mb.uid } });
+  ok(s.cards[mb.uid].ex, 'exhausted');
+  s = end(s);
+  ok(!canAttack(s, B, s.cards[mb.uid]), 'cannot attack on its next turn');
+  s = end(s); s = end(s);
+  ok(canAttack(s, B, s.cards[mb.uid]), 'ready the turn after');
 });
 
 // ── Rules ───────────────────────────────────────────────────────────
@@ -472,7 +999,7 @@ test('Empty deck and full hand', () => {
   eq(zoneOf(t, top.uid), 'discard', 'eleventh card burned');
 });
 
-test('Three players: each opponent, elimination, turn order', () => {
+test('Three players: each opponent, elimination, turn order, who you attack', () => {
   let s = scene({ players: 3 });
   s.players[2].life = 1;
   addCard(s, 'lightning-theorist', A, 'board');
@@ -484,6 +1011,12 @@ test('Three players: each opponent, elimination, turn order', () => {
   eq(s.active, 1, 'B is next');
   s = end(s);
   eq(s.active, 0, 'C is skipped');
+  let t = scene({ players: 3 });
+  const m = addCard(t, 'mossback', A, 'board');
+  addCard(t, 'lightweaver', B, 'board');
+  t = attack(t, m.uid, 2);
+  eq(t.phase, 'main', 'C had no blockers; B’s creature stays out of it');
+  eq(t.players[2].life, 17, 'C took 3');
 });
 
 test('Replay is deterministic', () => {
@@ -491,8 +1024,8 @@ test('Replay is deterministic', () => {
   const setup = { seed: 99, players: [{ name: 'A', deck }, { name: 'B', deck: cardList(STARTERS[2].counts) }] };
   let s = newGame(setup);
   const actions = [];
-  for (let k = 0; k < 120 && s.phase !== 'over'; k++) {
-    const p = s.phase === 'mulligan' ? s.players.findIndex((P) => !P.mull) : s.active;
+  for (let k = 0; k < 160 && s.phase !== 'over'; k++) {
+    const p = s.phase === 'mulligan' ? s.players.findIndex((P) => !P.mull) : actor(s);
     const legal = legalActions(s, p);
     const a = legal[(k * 7919) % legal.length];
     actions.push(a);
@@ -504,7 +1037,7 @@ test('Replay is deterministic', () => {
 
 // ── fuzz: random legal play ─────────────────────────────────────────
 function fuzz(games) {
-  let crashes = 0, unfinished = 0, totalActions = 0;
+  let crashes = 0, unfinished = 0, totalActions = 0, fights = 0;
   const decks = STARTERS.map((d) => cardList(d.counts));
   let seed = 1;
   for (let g = 0; g < games; g++) {
@@ -514,39 +1047,42 @@ function fuzz(games) {
     let rand = g * 2654435761 >>> 0;
     const R = () => (rand = (Math.imul(rand, 1103515245) + 12345) >>> 0) / 4294967296;
     try {
-      for (let k = 0; k < 2500 && s.phase !== 'over'; k++) {
-        const p = s.phase === 'mulligan' ? s.players.findIndex((P) => !P.mull) : s.active;
+      for (let k = 0; k < 3000 && s.phase !== 'over'; k++) {
+        const p = s.phase === 'mulligan' ? s.players.findIndex((P) => !P.mull) : actor(s);
         const legal = legalActions(s, p);
         if (!legal.length) throw new Error('no legal actions');
         const nonEnd = legal.filter((a) => a.t !== 'end');
         const a = nonEnd.length && R() < 0.85 ? nonEnd[Math.floor(R() * nonEnd.length)] : legal[legal.length - 1];
         const r = apply(s, a);
         if (r.error) throw new Error('legal action rejected: ' + r.error + ' ' + JSON.stringify(a));
+        if (a.t === 'attack') fights++;
         s = r.state;
         totalActions++;
         for (const P of s.players) {
           if (P.board.length > 7) throw new Error('board over 7');
+          if (P.relics.length > 3) throw new Error('relics over 3');
           if (P.hand.length > 10) throw new Error('hand over 10');
-          for (const z of ['hand', 'deck', 'discard', 'board', 'exile']) for (const u of P[z]) {
-            const want = z === 'board' ? 'board' : z;
+          for (const [z, want] of [['hand', 'hand'], ['deck', 'deck'], ['discard', 'discard'], ['board', 'board'], ['exile', 'exile'], ['relics', 'relic'], ['traps', 'trap']]) for (const u of P[z]) {
             if (s.cards[u].zone !== want) throw new Error(`zone mismatch ${s.cards[u].cid} in ${z} says ${s.cards[u].zone}`);
+            if ((z === 'board' || z === 'relics') && s.cards[u].ctrl !== P.i) throw new Error(`control mismatch ${s.cards[u].cid}`);
           }
           if (!Number.isFinite(P.life)) throw new Error('life not finite');
         }
+        if (s.phase === 'combat' && (s.players[s.combat.a].out || s.players[s.combat.d].out)) throw new Error('fight with a player who is out');
       }
       if (s.phase !== 'over') unfinished++;
     } catch (e) {
       crashes++;
-      if (crashes <= 5) failures.push(`fuzz game ${g}: ${e.message}`);
+      if (crashes <= 5) failures.push(`fuzz game ${g}: ${e.message}\n${e.stack.split('\n').slice(1, 4).join('\n')}`);
     }
   }
   ok(crashes === 0, `${crashes} fuzz games crashed`);
-  return { games, crashes, unfinished, totalActions };
+  return { games, crashes, unfinished, totalActions, fights };
 }
 
 const games = Number(process.argv[2] || 400);
 const t0 = Date.now();
 const f = fuzz(games);
 console.log(`scenario + invariant checks: ${pass} passed, ${fail} failed`);
-console.log(`fuzz: ${f.games} random games, ${f.totalActions} actions, ${f.crashes} crashes, ${f.unfinished} unfinished, ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+console.log(`fuzz: ${f.games} random games, ${f.totalActions} actions, ${f.fights} attacks, ${f.crashes} crashes, ${f.unfinished} unfinished, ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 if (failures.length) { console.log('\nFAILURES:'); for (const m of failures) console.log(' - ' + m); process.exit(1); }

@@ -8,28 +8,31 @@
 //   { bot: [moves], say }              the bot plays these moves, slowly
 // `show` lists CSS selectors to ring with a glow; `sheet` is extra advice
 // shown on the card's big view when you tap the card you're meant to play.
+// tools/check-tutorial.mjs plays the whole script against the engine.
 
 const YOU = [
-  'cinderling', 'spark-runner', 'rally', 'standard-keeper', 'dawn-captain', // opening hand
-  'ash-collector', 'reckless-initiate', 'twin-souls', 'stand-together', 'street-recruit',
-  'shieldbearer', 'cinderling', 'spark-runner', 'rally', 'standard-keeper',
-  'dawn-captain', 'a-thousand-lights', 'ash-collector', 'reckless-initiate', 'twin-souls',
-  'street-recruit', 'shieldbearer', 'stand-together', 'phoenix-of-the-last-spark', 'phoenix-of-the-last-spark',
-  'a-thousand-lights', 'the-mountain-is-angry', 'the-mountain-is-angry',
+  'cinderling', 'spark-runner', 'kindle', 'lightweaver', 'dawnwatch-knight', // opening hand
+  'street-recruit', 'shieldbearer', 'ember-duelist', 'twin-souls', 'rally',
+  'standard-keeper', 'scorch', 'dawn-captain', 'phoenix-of-the-last-spark', 'stand-together',
+  'bastion', 'molten-berserker', 'banner-of-the-charge', 'choirmother', 'reckless-initiate',
+  'feed-the-flame', 'ash-collector', 'wildfire', 'seraphine', 'ashmaw',
+  'beacon-of-hope', 'dawns-judgment', 'a-thousand-lights', 'the-kiln', 'smoldering-golem',
 ];
 
 const BOT = [
-  'street-recruit', 'shieldbearer', 'mossback', 'grave-rat', 'seedling', // opening hand
-  'kindly-undertaker', 'little-gardener', 'patient-giant', 'curious-wisp', 'mossback',
-  'grave-rat', 'seedling', 'street-recruit', 'kindly-undertaker', 'little-gardener',
-  'bonepicker', 'patient-giant', 'curious-wisp', 'shieldbearer', 'bonepicker',
-  'mirror-mage', 'mirror-mage', 'wild-growth', 'wild-growth', 'rally', 'rally',
+  'street-recruit', 'shieldbearer', 'spark-runner', 'mossback', 'seedling', // opening hand
+  'grave-rat', 'little-gardener', 'kindly-undertaker', 'canopy-archer', 'patient-giant',
+  'marsh-adder', 'curious-wisp', 'wild-growth', 'hungry-ghoul', 'bonepicker',
+  'worldtree-stag', 'sudden-growth', 'gloomweb-spider', 'grove-druid', 'carrion-wyrm',
+  'vesper-bat', 'savage-clash', 'ironhide-charger', 'unearth', 'brook-hydra',
+  'the-culling', 'heartwood-totem', 'death-is-a-door', 'something-beneath', 'the-forest-remembers',
 ];
 
-const me = (cid) => `.g-side.me .tok[data-cid="${cid}"]`;
-const bot = (cid) => `.g-side.opp .tok[data-cid="${cid}"]`;
-const hand = (cid) => `.hc[data-cid="${cid}"]`;
+const me = (cid) => `.g-side.me .tcard[data-cid="${cid}"]`;
+const bot = (cid) => `.g-side.opp .tcard[data-cid="${cid}"]`;
+const hand = (cid) => `.g-hand .tcard[data-cid="${cid}"]`;
 const BOT_LIFE = '.pbar[data-p="1"] .pb-life';
+const MY_LIFE = '.pbar[data-p="0"] .pb-life';
 
 export const TUTORIAL = {
   setup: { seed: 11, stacked: true, first: 0, players: [{ name: 'You', deck: YOU }, { name: 'Bot', deck: BOT }] },
@@ -39,66 +42,98 @@ export const TUTORIAL = {
     { next: true, show: ['.g-hand'],
       say: 'These are your cards: your hand. The number in the dark hexagon is what a card costs to play, in Energy.' },
     { next: true, show: ['.pbar[data-p="0"] .pb-energy'],
-      say: 'This is your Energy. You get 1 on your first turn, 2 on your second, and so on up to 8. It refills every turn, so spend it!' },
+      say: 'This is your Energy. You get 1 on your first turn, 2 on your second, and so on up to 8. It refills every turn.' },
     { expect: { t: 'play', cid: 'cinderling' }, show: [hand('cinderling')],
-      say: 'Let\'s play a creature. Tap Cinderling, then tap Play.',
+      say: 'Let’s play a creature. Drag Cinderling up onto the table (or tap it, then tap Play).',
       sheet: 'Cinderling costs 1 and you have 1 Energy. Tap Play.' },
     { next: true, show: [me('cinderling')],
-      say: 'Cinderling is on the table now. Creatures stay until they die. The left number is its Power (the damage it deals). The right number is its Vitality (the damage it can take).' },
-    { next: true, show: [me('cinderling')],
-      say: 'A new creature needs a turn to get ready, so it can\'t attack yet. You\'re also out of Energy, so you\'re done for this turn.' },
-    { expect: { t: 'end' }, show: ['.end-btn'], say: 'Tap End turn.' },
+      say: 'Cinderling is on the table. The left number is its Power (the damage it deals), the right one its Vitality (the damage it can take). A new creature needs a turn before it can attack.' },
+    { expect: { t: 'end' }, show: ['.end-btn'], say: 'You’re out of Energy. Tap End turn.' },
 
     { bot: [{ t: 'play', cid: 'street-recruit' }, { t: 'end' }], say: 'The bot is taking its turn…' },
     { next: true, show: [bot('street-recruit'), '.pbar[data-p="0"] .pb-energy'],
-      say: 'The bot played Street Recruit: 1 Power, 2 Vitality. Now it\'s your turn again. You drew a card and you have 2 Energy.' },
-    { next: true, show: [me('cinderling')],
-      say: 'Cinderling is glowing: it\'s ready to attack. You choose what to hit: the bot itself, or one of its creatures. When two creatures fight, both deal their Power to each other at the same time.' },
-    { expect: { t: 'attack', cid: 'cinderling', target: { cid: 'street-recruit' } }, show: [me('cinderling'), bot('street-recruit')],
-      say: 'Tap Cinderling, then tap the bot\'s Street Recruit.' },
-    { next: true, show: [BOT_LIFE],
-      say: 'Both died: Cinderling dealt 2 (all the Recruit could take) and took 1. But Cinderling has Last Breath: when it dies, it deals 1 damage to each opponent. The bot is down to 19.' },
+      say: 'The bot played Street Recruit (1 Power, 2 Vitality). Your turn again: you drew a card and have 2 Energy.' },
     { expect: { t: 'play', cid: 'spark-runner' }, show: [hand('spark-runner')],
-      say: 'Now play Spark Runner. It costs 2: all your Energy.',
-      sheet: 'Spark Runner has Rush: it can attack the turn it arrives. Tap Play.' },
-    { expect: { t: 'attack', cid: 'spark-runner', target: { p: 1 } }, show: [me('spark-runner'), '.pbar[data-p="1"]'],
-      say: 'Spark Runner has Rush, so it can attack right away. Tap it, then tap the bot\'s name bar at the top to hit the bot directly.' },
+      say: 'Play Spark Runner. It has Rush: it can attack the turn it arrives.',
+      sheet: 'Spark Runner costs 2: all your Energy. Tap Play.' },
+    { expect: { t: 'attack', att: ['cinderling', 'spark-runner'], target: 1 }, show: [me('cinderling'), me('spark-runner'), '.atk-btn'],
+      say: 'Time to attack! Tap Cinderling and Spark Runner to send them in, then tap Attack. The bot then decides which of its creatures block.' },
+    { bot: [{ t: 'block', blocks: [['street-recruit', 'cinderling']] }], say: 'The bot decides how to block…' },
     { next: true, show: [BOT_LIFE],
-      say: '3 damage! The bot is at 16. Tip: you can tap any card, yours or the bot\'s, to read what it does.' },
-    { expect: { t: 'end' }, show: ['.end-btn'], say: 'That\'s all for this turn. Tap End turn.' },
+      say: 'The bot blocked Cinderling with Street Recruit. Blocked creatures hit each other: both died. Cinderling’s Last Breath burned the bot for 1, and unblocked Spark Runner hit for 3. The bot is at 16.' },
+    { next: true, show: [me('spark-runner')],
+      say: 'See Spark Runner leaning over? Attacking exhausts a creature: it can’t block until your next turn. Every attack is a choice: hit now, or stay home to defend.' },
+    { expect: { t: 'end' }, show: ['.end-btn'], say: 'Tap End turn.' },
 
     { bot: [{ t: 'play', cid: 'shieldbearer' }, { t: 'end' }], say: 'The bot is taking its turn…' },
     { next: true, show: [bot('shieldbearer')],
-      say: 'The bot played Shieldbearer. The shield badge means Guard: while it\'s there, you must attack it before you can hit the bot or its other creatures.' },
-    { next: true, show: [me('spark-runner'), bot('shieldbearer')],
-      say: 'Shieldbearer can take 4 damage. Spark Runner only deals 3… unless you make it stronger.' },
-    { expect: { t: 'play', cid: 'rally' }, show: [hand('rally')],
-      say: 'Rally is a Spell. A Spell happens once, then goes to your discard pile. Rally gives your creatures +1 Power this turn. Play Rally.',
-      sheet: 'Rally costs 2. You have 3 Energy this turn. Tap Play.' },
-    { expect: { t: 'attack', cid: 'spark-runner', target: { cid: 'shieldbearer' } }, show: [me('spark-runner'), bot('shieldbearer')],
-      say: 'Spark Runner has 4 Power now. Attack Shieldbearer!' },
-    { next: true, show: ['.g-side.opp .g-row'],
-      say: 'Shieldbearer is gone. Spark Runner went too: Shieldbearer hit back for 1, and the Runner could only take 1. Creatures that survive heal at the end of every turn.' },
-    { expect: { t: 'end' }, show: ['.end-btn'], say: 'End your turn.' },
+      say: 'The bot played Shieldbearer: 1 Power, 4 Vitality and Guard (it can block two attackers). If Spark Runner attacks, Shieldbearer will block it and survive…' },
+    { next: true, show: [hand('kindle')],
+      say: '…unless you have a Trick. Tricks are Spells you can play in the middle of a fight. Kindle gives a creature +2 Power and Swift: it strikes first.' },
+    { expect: { t: 'attack', att: ['spark-runner'], target: 1 }, show: [me('spark-runner'), '.atk-btn'],
+      say: 'Attack with Spark Runner: tap it, then tap Attack.' },
+    { bot: [{ t: 'block', blocks: [['shieldbearer', 'spark-runner']] }], say: 'The bot decides how to block…' },
+    { expect: { t: 'play', cid: 'kindle', target: { cid: 'spark-runner' } }, show: [hand('kindle'), me('spark-runner')],
+      say: 'Shieldbearer blocked, just as planned. Now play Kindle on Spark Runner: tap Kindle, Play, then tap Spark Runner.',
+      sheet: 'Kindle costs 1. Tap Play, then tap your Spark Runner.' },
+    { next: true, show: [me('spark-runner')],
+      say: 'Spark Runner struck first with 5 Power. Shieldbearer is gone, and your Runner took no damage. That’s a Trick!' },
+    { expect: { t: 'play', cid: 'lightweaver' }, show: [hand('lightweaver')],
+      say: 'You have 2 Energy left. Play Lightweaver: she brings a 1/1 Spirit with her.',
+      sheet: 'Lightweaver costs 2. Tap Play.' },
+    { expect: { t: 'end' }, show: ['.end-btn'], say: 'Tap End turn.' },
 
-    { bot: [{ t: 'play', cid: 'mossback' }, { t: 'end' }], say: 'The bot is taking its turn…' },
+    { bot: [{ t: 'play', cid: 'spark-runner' }, { t: 'attack', att: ['spark-runner'], target: 0 }], say: 'The bot is taking its turn…' },
+    { expect: { t: 'block', blocks: [['spirit', 'spark-runner']] }, show: [me('spirit'), bot('spark-runner'), '.blk-btn'],
+      say: 'The bot attacks you with its own Spark Runner (3 Power, 1 Vitality)! Yours is exhausted, so it can’t help. Block with your Spirit: tap the Spirit, tap the attacker, then tap Done.' },
+    { next: true, show: [MY_LIFE],
+      say: 'Your Spirit and its Runner traded, and you took no damage. That’s blocking. Unblocked attackers hit you; blocked ones fight your creature instead.' },
+    { bot: [{ t: 'end' }], say: 'The bot ends its turn…' },
     { next: true, final: true,
-      say: 'You know the basics! From now on the bot plays for real. Play creatures, attack when it\'s a good trade, and bring the bot to 0. The line under this box always says what you can do, and the ? button explains the screen. Good luck!' },
+      say: 'You know the basics! From now on the bot plays for real. Attack when the trade is good, keep blockers home when you need them, and save Energy for Tricks. The line under this box always says what you can do, and ? explains the screen. Good luck!' },
   ],
 };
+
+const cidOf = (s, u) => s.cards[u]?.cid;
+const sameSet = (xs, ys) => xs.length === ys.length && [...xs].sort().join() === [...ys].sort().join();
 
 // Does action `a` (in position `s`) do what the step asks?
 export function matches(s, a, want) {
   if (a.t !== want.t) return false;
-  if (want.cid && s.cards[a.uid]?.cid !== want.cid) return false;
+  if (want.cid && cidOf(s, a.uid) !== want.cid) return false;
+  if (want.t === 'attack') return a.target === want.target && sameSet((a.att || []).map((u) => cidOf(s, u)), want.att);
+  if (want.t === 'block') return sameSet((a.blocks || []).map(([b, at]) => `${cidOf(s, b)}>${cidOf(s, at)}`), want.blocks.map(([b, at]) => `${b}>${at}`));
   if (!want.target) return true;
   if (want.target.p != null) return a.target?.p === want.target.p;
-  return a.target?.uid != null && s.cards[a.target.uid]?.cid === want.target.cid;
+  return a.target?.uid != null && cidOf(s, a.target.uid) === want.target.cid;
 }
 
 // Turn a scripted bot move into a real action in the current position.
 export function botAction(s, p, m) {
-  if (m.t === 'end') return { t: 'end', p };
-  const uid = s.players[p].hand.find((u) => s.cards[u].cid === m.cid);
-  return { t: 'play', p, uid };
+  const P = s.players[p];
+  const onBoard = (cid, pi) => s.players[pi].board.find((u) => s.cards[u].cid === cid);
+  switch (m.t) {
+    case 'end': return { t: 'end', p };
+    case 'play': return { t: 'play', p, uid: P.hand.find((u) => s.cards[u].cid === m.cid) };
+    case 'attack': return { t: 'attack', p, target: m.target, att: m.att.map((cid) => onBoard(cid, p)) };
+    case 'block': return { t: 'block', p, blocks: m.blocks.map(([b, at]) => [onBoard(b, p), s.combat.att.find((u) => s.cards[u].cid === at)]) };
+  }
+  return null;
+}
+
+// The move a step asks for, as a real action (for tools/check-tutorial.mjs).
+export function expectedAction(s, p, want) {
+  const onBoard = (cid, pi) => s.players[pi].board.find((u) => s.cards[u].cid === cid);
+  const P = s.players[p];
+  switch (want.t) {
+    case 'end': return { t: 'end', p };
+    case 'play': {
+      const a = { t: 'play', p, uid: P.hand.find((u) => s.cards[u].cid === want.cid) };
+      if (want.target?.cid) a.target = { uid: onBoard(want.target.cid, p) ?? s.players.flatMap((Q) => Q.board).find((u) => s.cards[u].cid === want.target.cid) };
+      return a;
+    }
+    case 'attack': return { t: 'attack', p, target: want.target, att: want.att.map((cid) => onBoard(cid, p)) };
+    case 'block': return { t: 'block', p, blocks: want.blocks.map(([b, at]) => [onBoard(b, p), s.combat.att.find((u) => s.cards[u].cid === at)]) };
+  }
+  return null;
 }

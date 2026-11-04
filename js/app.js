@@ -1,10 +1,10 @@
 // The Collective — app shell: hash router and the non-game views
 // (home, card gallery, deck list, deckbuilder, rules).
 
-import { BY_ID, CARDS, FACTIONS, FACTION_ORDER, KEYWORDS, RULES, SET, STARTERS, TOKENS } from './cards.js';
+import { BY_ID, CARDS, FACTIONS, FACTION_ORDER, KEYWORDS, RULES, SET, STARTERS, TOKENS, isTrick } from './cards.js';
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
 import * as Decks from './decks.js';
-import { autoRejoin, demo, playPage, startTutorial } from './game-ui.js';
+import { autoRejoin, demo, playPage, startTutorial, startThreeWay } from './game-ui.js';
 
 const view = document.getElementById('view');
 
@@ -36,7 +36,7 @@ function curveHTML(counts) {
 
 function chipsHTML(state, opts = {}) {
   const fchips = [['all', 'All'], ...FACTION_ORDER.map((f) => [f, FACTIONS[f].name]), ['multi', 'Two-faction']];
-  const tchips = [['all', 'Any type'], ['creature', 'Creatures'], ['spell', 'Spells']];
+  const tchips = [['all', 'Any type'], ['creature', 'Creatures'], ['spell', 'Spells'], ['trick', 'Tricks'], ['relic', 'Relics'], ['legendary', 'Legendary']];
   return `<div class="chips">${fchips.map(([k, label]) =>
       `<button class="chip${state.f === k ? ' on' : ''}" data-f="${k}">${FACTIONS[k] ? factionCoin(k) : ''}${label}</button>`).join('')}</div>
     <div class="chips">${tchips.map(([k, label]) =>
@@ -45,7 +45,7 @@ function chipsHTML(state, opts = {}) {
 
 function matches(card, state) {
   const okF = state.f === 'all' || (state.f === 'multi' ? card.factions.length > 1 : card.factions.includes(state.f));
-  const okT = state.t === 'all' || card.type === state.t;
+  const okT = state.t === 'all' || (state.t === 'trick' ? isTrick(card) : state.t === 'legendary' ? !!card.legendary : card.type === state.t);
   return okF && okT;
 }
 
@@ -78,8 +78,9 @@ function openZoom(id, deckCtx = null) {
   };
   scan(card.text || '');
   const notes = [];
-  if (/Spirit creature/.test(card.text)) notes.push('<b>Spirit</b> — a 1/1 Radiant creature token. Tokens vanish if they leave play.');
-  if (card.subtype === 'Trap') notes.push('Sits face-down on your side until an opponent plays a Spell.');
+  if (/Spirit/.test(card.text)) notes.push('<b>Spirit</b> — a 1/1 Radiant creature token. Tokens vanish if they leave play.');
+  if (/Fish/.test(card.text)) notes.push('<b>Fish</b> — it loses everything it had. If it leaves play it turns back into its old self.');
+  if (/exhaust/i.test(card.text)) notes.push('<b>Exhausted</b> — tilted sideways: it can\u2019t attack or block until it readies at the start of its controller\u2019s turn.');
 
   const render = () => {
     const n = deckCtx ? deckCtx.counts[id] || 0 : 0;
@@ -94,9 +95,9 @@ function openZoom(id, deckCtx = null) {
               <button class="r-btn" data-act="minus" ${n <= 0 ? 'disabled' : ''}>−</button>
               <span class="r-count${n ? ' on' : ''}" style="width:auto;padding:0 8px">${n} in deck</span>
               <button class="r-btn" data-act="plus" ${!can.ok ? 'disabled' : ''}>+</button>
-            </div>` : `<span class="muted small">2 copies in the pool</span>`}
+            </div>` : `<span class="muted small">Everyone owns one</span>`}
         </div>
-        ${deckCtx && !can.ok && n < 2 ? `<div class="zoom-note">${esc(can.reason)}</div>` : ''}
+        ${deckCtx && !can.ok && n < RULES.maxCopies ? `<div class="zoom-note">${esc(can.reason)}</div>` : ''}
         ${kwList.length || notes.length ? `<div class="kw-help">${kwList.map((k) =>
           `<div><b>${KEYWORDS[k].name}</b> — ${esc(KEYWORDS[k].text)}</div>`).join('')}${notes.map((t) => `<div>${t}</div>`).join('')}</div>` : ''}
       </div>`;
@@ -124,7 +125,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeZoom(
 
 // ── home ────────────────────────────────────────────────────────────
 function home() {
-  const fan = ['cinderling', 'memory-diver', 'something-beneath'].map((id) => cardHTML(BY_ID[id], { cls: 'anim' })).join('');
+  const fan = ['ashmaw', 'seraphine', 'the-barrow-queen'].map((id) => cardHTML(BY_ID[id], { cls: 'anim' })).join('');
   view.innerHTML = `
     <section class="hero">
       <div class="kicker">${esc(SET.week)}</div>
@@ -138,13 +139,15 @@ function home() {
       <a class="btn" href="#/cards">See all 90 cards</a>
       <a class="btn" href="#/decks">Build a deck</a>
     </div>
-    <div class="notice"><div>⚔</div><div>Then <b>practice</b> against the bot, or <b>play your friends</b> online (1v1 or three-way), on the Play tab.</div></div>
+    <div class="notice"><div>⚔</div><div>Then <b>practice</b> against the bot, or <b>play your friends</b> online (1v1 or three-way), on the Play tab.
+      <div class="btn-row" style="margin-top:8px"><button class="btn small" data-act="threeway">Try a three-way game against two bots</button></div></div></div>
     <div class="sect-title"><h3>Five factions</h3></div>
     <div class="factions-list">${FACTION_ORDER.map((f) => `
       <div class="faction-item">${factionCoin(f)}<div><b>${FACTIONS[f].name}</b><div>${esc(FACTIONS[f].blurb)}</div></div></div>`).join('')}
     </div>`;
   view.onclick = (e) => {
     if (e.target.closest('[data-act="tutorial"]')) { startTutorial(); return; }
+    if (e.target.closest('[data-act="threeway"]')) { startThreeWay(); return; }
     const c = e.target.closest('.card[data-id]');
     if (c) openZoom(c.dataset.id);
   };
@@ -157,7 +160,7 @@ function gallery() {
     const list = CARDS.filter((c) => matches(c, galleryState));
     view.innerHTML = `
       ${chipsHTML(galleryState)}
-      <p class="count-line">${list.length} card${list.length === 1 ? '' : 's'} · everyone has 2 copies of each</p>
+      <p class="count-line">${list.length} card${list.length === 1 ? '' : 's'} · everyone owns one of each</p>
       <div class="grid">${list.map((c) => cardHTML(c)).join('')}</div>`;
   };
   render();
@@ -266,7 +269,7 @@ function builder(id) {
       const inDeck = CARDS.filter((c) => counts[c.id]).sort((a, b) => a.cost - b.cost || a.n - b.n);
       const group = (label, cards) => cards.length ? `<div class="group-label">${label} · ${cards.reduce((s, c) => s + counts[c.id], 0)}</div>
         <div class="rows">${cards.map((c) => cardRowHTML(c, counts[c.id], { blocked: !Decks.canAdd(counts, c.id).ok })).join('')}</div>` : '';
-      body = (inDeck.length ? group('Creatures', inDeck.filter((c) => c.type === 'creature')) + group('Spells', inDeck.filter((c) => c.type === 'spell'))
+      body = (inDeck.length ? group('Creatures', inDeck.filter((c) => c.type === 'creature')) + group('Spells', inDeck.filter((c) => c.type === 'spell')) + group('Relics', inDeck.filter((c) => c.type === 'relic'))
         : '<p class="muted">Empty so far. Switch to “All cards” and tap + to add.</p>') + `
         <div class="sect-title"><h3>Deck tools</h3></div>
         <div class="btn-row">
@@ -331,27 +334,41 @@ function rules() {
   view.innerHTML = `<article class="rules-page">
     <div class="notice" style="margin-bottom:8px"><div>▶</div><div>Rather learn by doing? <button class="btn small primary" data-act="tutorial" style="margin-left:6px">Play the guided lesson</button></div></div>
     <h2>The idea</h2>
-    <p>Every player gets the <b>same 90 cards</b>: 45 different cards, two copies of each. Before you play, you build a deck of exactly <b>30</b>. Everyone is solving the same puzzle. The fun is finding combinations nobody else spotted, and guessing what your friends will bring.</p>
+    <p>Every player owns the <b>same 90 cards</b>, one of each. Before you play, you build a deck of exactly <b>30</b>. Everyone is solving the same puzzle. The fun is finding combinations nobody else spotted, and guessing what your friends will bring.</p>
 
     <h2>Winning</h2>
     <p>Everyone starts with <b>${RULES.startLife} Life</b>. Bring a player to 0 and they are out. Last player standing wins.</p>
 
     <h2>Setting up</h2>
-    <p>Shuffle your 30 cards and draw ${RULES.openingHand}. Don't like your hand? You may shuffle it back and draw ${RULES.openingHand} new cards, once. A random player goes first; that player skips their first draw, and everyone else starts with a free <b>Spark</b> card (gain 1 Energy this turn).</p>
+    <p>Shuffle your 30 cards and draw ${RULES.openingHand}. Don't like your hand? You may shuffle it back and draw ${RULES.openingHand} new cards, once. A random player goes first; that player skips their first draw, and everyone else starts with a free <b>Spark</b> card (gain 1 Energy).</p>
 
     <h2>Your turn</h2>
     <ol>
-      <li><b>Energy.</b> Your maximum Energy goes up by 1 (up to ${RULES.maxEnergy}) and refills completely. Turn one you have 1, turn two you have 2, and so on.</li>
+      <li><b>Ready.</b> Your exhausted creatures stand back up. Your maximum Energy goes up by 1 (up to ${RULES.maxEnergy}) and refills.</li>
       <li><b>Draw</b> a card.</li>
-      <li><b>Play cards and attack</b>, in any order. Pay a card's cost in Energy to play it. Creatures stay on the table; Spells happen once and go to your discard pile.</li>
-      <li><b>End your turn.</b> All damage on creatures heals.</li>
+      <li><b>Play cards</b>: pay a card's cost in Energy. Creatures and Relics stay on the table; Spells happen once.</li>
+      <li><b>Attack</b>, once, with as many creatures as you like (see below). You can still play cards afterwards.</li>
+      <li><b>End your turn.</b> Damage on creatures heals and "this turn" effects end.</li>
     </ol>
+    <p>Energy you don't spend stays until your next turn: keep some back to answer with a <b>Trick</b> when someone attacks you.</p>
 
-    <h2>Attacking</h2>
-    <p>Each of your creatures can attack once per turn, but not on the turn it arrived (unless it has <b>Rush</b>). You pick the target: an opponent, or one of their creatures. Nobody blocks; that is what <b>Guard</b> is for.</p>
+    <h2>Attacking and blocking</h2>
     <ul>
-      <li><b>Attack a player:</b> they lose Life equal to your creature's Power.</li>
-      <li><b>Attack a creature:</b> both hit each other at the same time, each dealing damage equal to its Power. A creature dies when the damage on it reaches its Vitality.</li>
+      <li>Choose an opponent and any of your ready creatures. A creature can't attack on the turn it arrived, unless it has <b>Rush</b>.</li>
+      <li>Attacking <b>exhausts</b> a creature (it tilts): it can't block until your next turn. So every attack is a choice: hit now, or stay home to defend.</li>
+      <li>The defender chooses <b>blockers</b>: each of their ready creatures can stop one attacker. Creatures with <b>Soar</b> can only be blocked by <b>Soar</b> or <b>Reach</b>.</li>
+      <li>Then both sides may play <b>Tricks</b>, attacker first, back and forth until both are done.</li>
+      <li><b>Damage.</b> A blocked attacker and its blocker hit each other, each dealing its Power; a creature dies when the damage reaches its Vitality. Unblocked attackers hit the player. A blocked attacker never hits the player (unless it has <b>Overrun</b>), even if its blocker is gone.</li>
+    </ul>
+
+    <h2>Kinds of cards</h2>
+    <ul>
+      <li><b>Creatures</b> fight for you.</li>
+      <li><b>Spells</b> happen once, on your turn.</li>
+      <li><b>Tricks</b> are Spells you can also play in the middle of a fight, even on someone else's turn.</li>
+      <li><b>Traps</b> are set face-down on your turn and spring by themselves when their moment comes.</li>
+      <li><b>Relics</b> stay on the table and keep working. They never fight. At most ${RULES.relicMax} each.</li>
+      <li><b>Legendary</b> cards are the big ones, with a shimmering frame.</li>
     </ul>
 
     <h2>Reading a card</h2>
@@ -369,22 +386,27 @@ function rules() {
 
     <h2>Building a deck</h2>
     <ul>
-      <li>Exactly <b>${RULES.deckSize} cards</b>, at most <b>${RULES.maxCopies} copies</b> of any card.</li>
+      <li>Exactly <b>${RULES.deckSize} cards</b>; you own one of each, so no repeats.</li>
       <li>At most <b>${RULES.maxFactions} factions</b>. Two-faction cards count as both.</li>
       <li>Between games, you may swap cards with the 60 you left out.</li>
       <li>Not sure? Use a <a href="#/decks">starter deck</a> and change it later.</li>
     </ul>
 
     <h2>Three players</h2>
-    <p>Free-for-all: you may attack either opponent. "Each opponent" hits both. Guard only protects its owner. Last player standing wins.</p>
+    <p>Free-for-all. Each attack goes at one opponent of your choice, and only that player blocks. "Each opponent" hits both. Last player standing wins.</p>
 
     <details class="fine"><summary>Fine print</summary>
       <ul>
         <li>At most ${RULES.boardMax} creatures each, and at most ${RULES.handMax} cards in hand (extra draws go to the discard pile).</li>
         <li>If you must draw from an empty deck, you lose ${RULES.emptyDeckDamage} Life instead.</li>
         <li>"Permanently" lasts until the creature leaves play. "This turn" ends when the turn ends.</li>
+        <li>Swift: a Swift creature deals its damage first; if that kills the other creature, it takes nothing back.</li>
+        <li>Guard: one Guard creature can block two attackers and deals its full Power to each.</li>
+        <li>Hunt: the hunted creature must block that attacker if it can (if it is exhausted, it can't).</li>
+        <li>Venom with Overrun: 1 damage is enough for the blocker; the rest goes through.</li>
         <li>Awaken also counts boosts that last one turn.</li>
-        <li>Tokens (Spirits, Spark) vanish when they would leave play.</li>
+        <li>Tokens (Spirits, Spark) vanish when they would leave play. A creature turned into a Fish, or a Tidal Mimic copying something, turns back into itself when it leaves play.</li>
+        <li>Creatures you take with Mutiny go back at the end of the turn. Creatures you take for good (Nerissa, The Barrow Queen) still go to their owner's discard pile when they die.</li>
         <li>A card played with Echo is removed from the game when it would go to the discard pile.</li>
         <li>Funeral Pyre: the sacrificed creature's Last Breath happens twice in total.</li>
         <li>Countercurrent: the player casting into it sees the trap and chooses to pay 2 more or let the Spell be canceled (its cost is still spent).</li>

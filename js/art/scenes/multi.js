@@ -72,6 +72,7 @@ export const multi = {
   // Ember + Umbral: a shrouded body on the pyre, the fire orange below and
   // violet above, faces in the smoke.
   'funeral-pyre'(s) {
+    s.finish({ faction: ['ember', 'umbral'] });
     s.rect(s.lin([[0, '#0b0810'], [0.5, '#1d0f1c'], [0.8, '#3a1620'], [1, '#1a0b0e']]));
     s.glow(150, 132, 165, '#ff6a2e', 0.34);
     s.glow(150, 66, 120, '#8f55e8', 0.3);
@@ -96,9 +97,9 @@ export const multi = {
     const outer = U(flame(150, 150, 122, -8, 36), flame(130, 150, 94, -18, 26, -0.14), flame(171, 150, 102, 16, 27),
       flame(114, 154, 66, -14, 19), flame(187, 154, 74, 16, 19, -0.14), flame(141, 142, 108, 12, 16, -0.16), flame(160, 144, 88, -12, 15),
       flame(104, 160, 40, -10, 13), flame(198, 160, 46, 12, 13, -0.14));
-    s.path(outer, s.lin([[0, '#9a5cf0', 0], [0.2, '#a868f4', 0.85], [0.48, '#d65aa6', 0.92], [0.7, '#ff7a2e', 1], [1, '#ffc35a', 1]]));
-    s.path(U(flame(150, 148, 82, -5, 21), flame(135, 148, 58, -10, 13, -0.14), flame(165, 148, 64, 10, 14)),
-      s.lin([[0, '#efe2ff', 0], [0.3, '#e7d2ff', 0.8], [0.7, '#ffd27a', 1], [1, '#fff3d6', 1]]));
+    s.bloom(`<path d="${outer}" fill="${s.lin([[0, '#9a5cf0', 0], [0.2, '#a868f4', 0.85], [0.48, '#d65aa6', 0.92], [0.7, '#ff7a2e', 1], [1, '#ffc35a', 1]])}"/>` +
+      `<path d="${U(flame(150, 148, 82, -5, 21), flame(135, 148, 58, -10, 13, -0.14), flame(165, 148, 64, 10, 14))}" fill="${s.lin([[0, '#efe2ff', 0], [0.3, '#e7d2ff', 0.8], [0.7, '#ffd27a', 1], [1, '#fff6de', 1]])}"/>`,
+    { sd: 2.6, k: 1.2, box: [60, -10, 180, 200] });
     // the pyre and the shrouded body on it
     s.glow(150, 162, 58, '#ffb347', 0.95);
     const pyre = U(
@@ -108,32 +109,34 @@ export const multi = {
       blob([[116, 137], [121, 128.5], [133, 127], [150, 129], [168, 127.5], [182, 131], [187, 137]]),
       ell(121.5, 130, 6, 5),
     );
-    s.figure(`<path d="${pyre}"/>`, { fill: '#120708', rim: '#ff9447', offsets: [[0, -1.2], [-0.8, -0.6], [0.8, -0.6]], rimOp: 0.9 });
-    s.path(U(flame(118, 172, 12, -3, 5), flame(184, 172, 13, 3, 5, -0.14), flame(132, 161, 11, -2, 4.4, -0.14), flame(166, 161, 12, 2, 4.4), flame(146, 150.5, 10, 2, 4)),
-      s.lin([[0, '#ffe08a', 0.8], [1, '#ff7a2e', 1]]));
+    s.figure(`<path d="${pyre}"/>`, { fill: '#120708', rim: '#ff9447', offsets: [[0, -1.2], [-0.8, -0.6], [0.8, -0.6]], rimOp: 0.9, shade: 0.5, halo: 0.3 });
+    s.bloom(`<path d="${U(flame(118, 172, 12, -3, 5), flame(184, 172, 13, 3, 5, -0.14), flame(132, 161, 11, -2, 4.4, -0.14), flame(166, 161, 12, 2, 4.4), flame(146, 150.5, 10, 2, 4))}" fill="${s.lin([[0, '#ffe8a0', 0.85], [1, '#ff7a2e', 1]])}"/>`,
+      { sd: 1.4, k: 1.4, box: [96, 126, 110, 60] });
     // mourners at the edges, hoods bowed
     const mourner = U(
       blob([[24, 214], [26, 178], [30, 152], [36, 134], [46, 128], [56, 134], [62, 156], [67, 214]]),
       blob([[37, 136], [34, 124], [36, 112], [42, 106], [50, 108], [58, 115], [64, 124], [62, 131], [55, 134], [46, 139]]),
       taper([[54, 140], [60, 148], [63, 153]], [6, 5, 4.6]),
     );
-    s.figure(`<path d="${mourner}"/>`, { fill: '#0c0609', rim: '#ff8a3a', offsets: [[1.4, -0.4], [0.8, -1]], rimOp: 0.8 });
-    s.figure(`<path d="${mirror(mourner)}"/>`, { fill: '#0c0609', rim: '#ff8a3a', offsets: [[-1.4, -0.4], [-0.8, -1]], rimOp: 0.8 });
-    s.add(particles({ seed: 604, n: 22, x: [100, 200], y: [40, 170], r: [0.5, 1.4], fill: '#ffb05a', cls: 'rise', t: [4, 8] }));
-    s.add(particles({ seed: 605, n: 14, x: [110, 190], y: [16, 120], r: [0.5, 1.3], fill: '#c9a2ff', cls: 'rise', t: [5, 9] }));
+    s.figure(`<path d="${mourner}"/>`, { fill: '#0c0609', rim: '#ff8a3a', offsets: [[1.4, -0.4], [0.8, -1]], rimOp: 0.8, shade: 0.5 });
+    s.figure(`<path d="${mirror(mourner)}"/>`, { fill: '#0c0609', rim: '#ff8a3a', offsets: [[-1.4, -0.4], [-0.8, -1]], rimOp: 0.8, shade: 0.5 });
+    s.motes({ seed: 604, n: 24, x: [100, 200], y: [40, 170], r: [0.4, 1.1], fill: '#ff9a3a', hot: '#ffe8b0', cls: 'rise', t: [4, 8] });
+    s.motes({ seed: 605, n: 14, x: [110, 190], y: [16, 120], r: [0.4, 1], fill: '#b48cff', hot: '#f4ecff', cls: 'rise', t: [5, 9] });
     return s.svg();
   },
 
   // Verdant + Radiant: a dryad and a knight clasp hands in a glade; leaves
   // and gold motes wheel round them.
   'we-grow-together'(s) {
-    s.rect(s.lin([[0, '#f6efc6'], [0.45, '#e2dba0'], [1, '#98ae72']]));
-    s.glow(150, 14, 170, '#fff2c0', 0.9);
-    s.add(rays({ cx: 150, cy: -30, from: 64, to: 116, n: 9, len: 300, spread: 2.6, color: '#fffbe2', op: 0.3, seed: 611 }));
+    s.finish({ faction: ['verdant', 'radiant'] });
+    s.rect(s.lin([[0, '#ece2b2'], [0.45, '#d9d293'], [1, '#90a86a']]));
+    s.glow(150, 14, 160, '#fff2c0', 0.8);
+    s.shafts({ cx: 150, cy: -30, from: 64, to: 116, n: 9, len: 300, spread: 2.6, color: '#fffbe2', op: 0.32, seed: 611, sd: 2 });
     // the glade: a low far wood; trunks rising out of frame, their crowns
     // closing in at the corners round a gap of sky
-    s.path(canopy({ seed: 612, base: 134, top: 94, r0: 12, r1: 20 }), '#c6cf9d');
-    s.add(`<g fill="#9cb07c">${[[26, 7], [62, 5], [92, 4], [204, 4], [232, 6], [262, 8]].map(([x, w]) => `<rect x="${x}" y="-5" width="${w}" height="185"/>`).join('')}</g>`);
+    s.layer(canopy({ seed: 612, base: 134, top: 94, r0: 12, r1: 20 }), '#c6cf9d', { blur: 0.6 });
+    s.haze(116, 140, '#fbf6d8', 0.2, 8);
+    s.add(`<g fill="#8ca26e">${[[26, 7], [62, 5], [92, 4], [204, 4], [232, 6], [262, 8]].map(([x, w]) => `<rect x="${x}" y="-5" width="${w}" height="185"/>`).join('')}</g>`);
     const crowns = (list) => U(list.map(([x, y, r]) => ell(x, y, r * 1.2, r)));
     s.path(crowns([[-6, 6, 30], [30, -4, 26], [66, 8, 20], [96, 0, 16], [14, 30, 16]]), '#a6b884');
     s.path(crowns([[306, 6, 30], [270, -4, 26], [236, 8, 20], [206, 0, 16], [288, 30, 16]]), '#a6b884');
@@ -197,20 +200,21 @@ export const multi = {
       taper([[174, 102], [184, 118], [190, 140], [193, 158]], [8, 12, 12, 6]),
       ell(150, 118, 4.2, 3.8),
     );
-    s.figure(`<path d="${pair}"/>`, { fill: '#1d2416', rim: '#fff3c0', offsets: [[0, -1.3], [-0.9, -0.8], [0.9, -0.8]], rimOp: 0.95 });
-    s.glow(150, 118, 30, '#fff6c8', 0.95, 'breathe');
-    s.path(glint(150, 118, 9), '#fffbea');
+    s.figure(`<path d="${pair}"/>`, { fill: '#1d2416', rim: '#fff3c0', offsets: [[0, -1.3], [-0.9, -0.8], [0.9, -0.8]], rimOp: 0.95, shade: 0.45, edge: 0.3, halo: 0.35 });
+    s.glow(150, 118, 32, '#fff6c8', 0.95, 'breathe');
+    s.bloom(`<path d="${glint(150, 118, 9)}" fill="#fffdf2"/>`, { sd: 1.6, k: 1.4, box: [120, 90, 60, 56] });
     swirl(true);
     const fern = (pts, w) => taper(pts, w);
     s.path(U(fern([[-6, 214], [6, 196], [22, 184], [40, 180]], [7, 4, 2, 0.4]), fern([[-4, 214], [2, 190], [6, 170], [16, 156]], [6, 4, 2, 0.4]),
       fern([[306, 214], [294, 194], [280, 184], [264, 182]], [7, 4, 2, 0.4]), fern([[304, 214], [298, 188], [300, 168], [292, 154]], [6, 4, 2, 0.4])), '#16210f');
-    s.add(particles({ seed: 616, n: 18, x: [60, 240], y: [60, 170], r: [0.5, 1.3], fill: '#fff3c0', cls: 'float', t: [5, 9], op: [0.5, 1] }));
+    s.motes({ seed: 616, n: 20, x: [60, 240], y: [60, 170], r: [0.4, 1.1], fill: '#ffe9a0', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 1] });
     return s.svg();
   },
 
   // Tide + Umbral: knee-deep in a flooded vault, reading by cold candlelight
   // from a book that drips black water.
   'forbidden-archivist'(s) {
+    s.finish({ faction: ['tide', 'umbral'] });
     s.rect(s.lin([[0, '#14223a'], [0.55, '#1a2038'], [1, '#090c16']]));
     // the shelves behind the arches
     const R = rng(621);
@@ -226,7 +230,7 @@ export const multi = {
         }
       }
     }
-    s.path(books, '#2c3d5c').path(books2, '#243250').path(planks, '#0d1424');
+    s.blur(`<path d="${books}" fill="#2c3d5c"/><path d="${books2}" fill="#243250"/><path d="${planks}" fill="#0d1424"/>`, 0.5);
     // the vault wall, arches cut through it
     let wall = 'M-10,-10L310,-10L310,214L-10,214Z';
     for (const [x0, x1] of [[20, 84], [118, 182], [216, 280]]) wall += `M${x0},172L${x0},60A32,32 0 0 1 ${x1},60L${x1},172Z`;
@@ -236,7 +240,7 @@ export const multi = {
     const candles = [[40, 152, 9], [62, 126, 7], [236, 152, 8], [262, 100, 7], [204, 172, 10], [96, 172, 9]];
     for (const [x, y, h] of candles) s.glow(x, y - h - 3, 14, '#b07cff', 0.45, 'breathe');
     s.path(U(candles.map(([x, y, h]) => poly([[x - 1.4, y], [x - 1.4, y - h], [x + 1.4, y - h], [x + 1.4, y]]))), '#cfc6d8', 'opacity=".85"');
-    s.path(U(candles.map(([x, y, h]) => blob([[x, y - h - 7], [x + 1.6, y - h - 2.5], [x, y - h - 0.5], [x - 1.6, y - h - 2.5]], 4))), '#f4ecff');
+    s.bloom(`<path d="${U(candles.map(([x, y, h]) => blob([[x, y - h - 7], [x + 1.6, y - h - 2.5], [x, y - h - 0.5], [x - 1.6, y - h - 2.5]], 4)))}" fill="#f8f2ff"/>`, { sd: 1.3, k: 1.5, box: [20, 70, 260, 110] });
     // the flood
     s.path('M-10,214L-10,170L310,170L310,214Z', s.lin([[0, '#11223a'], [1, '#04070d']]));
     s.add('<path d="M-10,170.5L310,170.5" stroke="#5c86a6" stroke-width=".8" opacity=".6"/>');
@@ -254,13 +258,13 @@ export const multi = {
       poly([[151, 116], [161, 121], [159, 133], [150, 128]]),
       taper([[154, 107], [162, 113], [168, 117]], [6, 5, 4]),
     );
-    s.figure(`<g ${big}><path d="${man}"/></g>`, { fill: '#070b13', rim: '#a6e4ec', offsets: [[1.3, 0.5], [0.8, 1], [0, -1]], rimOp: 0.85 });
+    s.figure(`<g ${big}><path d="${man}"/></g>`, { fill: '#070b13', rim: '#a6e4ec', offsets: [[1.3, 0.5], [0.8, 1], [0, -1]], rimOp: 0.85, shade: 0.5, edge: 0.3, halo: 0.35 });
     s.add(`<g ${big}>`);
     s.path(poly([[160.5, 96], [163.5, 98], [165.5, 102.5], [163.8, 103.4], [164.3, 105.6], [161, 106.4], [158.4, 102]]), '#cfe3e8', 'opacity=".9"');
     // the open book, pages lit from within, black water running off them
-    s.path(poly([[159, 112.5], [172, 116.5], [172, 121.5], [160, 118]]), '#e7fbf8');
-    s.path(poly([[172, 116.5], [186, 111.5], [185, 117], [172, 121.5]]), '#d6f5f2');
-    s.add('<path d="M162,114.6L170,117M162,116.4L169,118.6M174.5,116.8L183,113.8M174.5,118.6L182,115.8" stroke="#7fa7b0" stroke-width=".5"/>');
+    s.add(`<g ${s.fx('bloom', { sd: 1.4, k: 1.3 })}><path d="${poly([[159, 112.5], [172, 116.5], [172, 121.5], [160, 118]])}" fill="#effdfb"/>` +
+      `<path d="${poly([[172, 116.5], [186, 111.5], [185, 117], [172, 121.5]])}" fill="#def8f5"/>` +
+      '<path d="M162,114.6L170,117M162,116.4L169,118.6M174.5,116.8L183,113.8M174.5,118.6L182,115.8" stroke="#7fa7b0" stroke-width=".5"/></g>');
     s.path(U(taper([[164, 118.6], [164.4, 124], [164.8, 129]], [2, 1.4, 0.4]), taper([[177, 119.6], [177.3, 126], [177.6, 133]], [2.2, 1.5, 0.4]),
       taper([[183, 117.6], [183.2, 122], [183.4, 126]], [1.6, 1.1, 0.3])), '#05070d', 'stroke="#8d6ad8" stroke-width=".4"');
     s.add([[164.8, 140, 0], [177.6, 148, 0.5], [183.4, 136, 1.1], [177.6, 160, 0.8]].map(([x, y, d]) =>
@@ -275,14 +279,15 @@ export const multi = {
   // Ember + Tide: on a sea cliff in a storm, lightning held arcing between
   // her raised hands.
   'lightning-theorist'(s) {
+    s.finish({ faction: ['ember', 'tide'] });
     s.rect(s.lin([[0, '#091520'], [0.45, '#163241'], [0.68, '#2a4c58'], [1, '#0f232c']]));
     s.glow(122, 52, 150, '#ffb35a', 0.32);
     // storm clouds lit from below by the bolt
     const puffs = (list) => U(list.map(([x, y, r]) => ell(x, y, r * 1.3, r)));
     s.figure(`<path d="${puffs([[-6, 30, 22], [26, 40, 16], [58, 30, 18], [176, 34, 16], [210, 44, 20], [246, 52, 18], [280, 46, 22], [310, 56, 18]])}"/>`,
-      { fill: '#1b3442', rim: '#ffcf8a', offsets: [[0, 1.4]], rimOp: 0.35 });
+      { fill: '#1b3442', rim: '#ffcf8a', offsets: [[0, 1.4]], rimOp: 0.35, shade: 0.4 });
     s.figure(`<path d="${puffs([[14, -10, 36], [62, 2, 24], [96, -8, 22], [160, -2, 22], [200, 6, 26], [240, 14, 24], [286, 4, 32], [36, 16, 14], [264, 30, 15], [120, 4, 14]])}"/>`,
-      { fill: '#0b1821', rim: '#ffd9a0', offsets: [[0, 1.6]], rimOp: 0.6 });
+      { fill: '#0b1821', rim: '#ffd9a0', offsets: [[0, 1.6]], rimOp: 0.6, shade: 0.4 });
     // the sea, far and near
     s.path('M-10,214L-10,138L310,138L310,214Z', s.lin([[0, '#1e4350'], [1, '#06151b']]));
     s.add('<path d="M-10,138.5L310,138.5" stroke="#7fb5bd" stroke-width=".7" opacity=".5"/>');
@@ -300,7 +305,7 @@ export const multi = {
     s.add(`<path d="${rain}" stroke="#9fc9d2" stroke-width=".5" opacity=".35"/>`);
     // the cliff
     s.figure(`<path d="${poly([[-10, 214], [-10, 150], [30, 147], [70, 151], [104, 152], [134, 150], [150, 154], [156, 166], [162, 186], [170, 214]])}"/>`,
-      { fill: '#0a1418', rim: '#ffcf8a', offsets: [[0, -1.2]], rimOp: 0.55 });
+      { fill: '#0a1418', rim: '#ffcf8a', offsets: [[0, -1.2]], rimOp: 0.55, shade: 0.5 });
     s.add(particles({ seed: 632, n: 16, x: [158, 200], y: [170, 206], r: [0.6, 1.6], fill: '#cdeff2', cls: 'rise', t: [3, 6], op: [0.4, 0.9] }));
     // the theorist, arms up, coat and hair thrown back by the gale
     const her = U(
@@ -319,7 +324,7 @@ export const multi = {
       taper([[93, 67], [90, 61]], [1.6, 0.4]), taper([[95.5, 66], [95, 59.5]], [1.6, 0.4]), taper([[97.5, 67], [100, 61.5]], [1.5, 0.4]),
       taper([[148, 67.5], [145.5, 61.5]], [1.6, 0.4]), taper([[150.5, 66.5], [151, 60]], [1.6, 0.4]), taper([[152.5, 68], [155.5, 62.5]], [1.5, 0.4]),
     );
-    s.figure(`<path d="${her}"/>`, { fill: '#071016', rim: '#ffe2b0', offsets: [[0, -1.4], [-0.8, -1], [0.8, -1]], rimOp: 0.95 });
+    s.figure(`<path d="${her}"/>`, { fill: '#071016', rim: '#ffe2b0', offsets: [[0, -1.4], [-0.8, -1], [0.8, -1]], rimOp: 0.95, shade: 0.5, edge: 0.3, halo: 0.4 });
     // the arc between her hands, and the bolt that feeds it
     const arc = Array.from({ length: 13 }, (_, i) => { const t = i / 12; return [95 + (149 - 95) * t, 64 - Math.sin(Math.PI * t) * 26]; });
     const R2 = rng(633);
@@ -327,25 +332,26 @@ export const multi = {
     const strike = bolt([136, -4], [124, 40], 634, 8, 7);
     const forks = [bolt([122, 38], [104, 30], 635, 4, 3), bolt([128, 18], [146, 10], 636, 4, 3), bolt([104, 50], [92, 44], 637, 3, 2.5)];
     const all = [jag, strike, ...forks].map(polyline).join('');
-    s.add(`<path d="${all}" stroke="#ff9a3c" stroke-width="5" fill="none" opacity=".35" stroke-linejoin="round"/>`);
-    s.add(`<path d="${all}" stroke="#fff6dc" stroke-width="1.5" fill="none" stroke-linejoin="round"/>`);
+    s.bloom(`<path d="${all}" stroke="#ff9a3c" stroke-width="5" fill="none" opacity=".4" stroke-linejoin="round"/><path d="${all}" stroke="#fffaea" stroke-width="1.5" fill="none" stroke-linejoin="round"/>`,
+      { sd: 2, k: 1.4, box: [66, -24, 110, 120] });
     s.glow(95, 66, 16, '#ffd27a', 0.9, 'breathe').glow(149, 68, 16, '#ffd27a', 0.9, 'breathe');
     s.glow(123, 40, 22, '#fff1c8', 0.55);
-    s.add(particles({ seed: 638, n: 14, x: [86, 160], y: [30, 90], r: [0.4, 1.1], fill: '#ffe2a6', cls: 'twinkle', t: [1.5, 3], op: [0.4, 1] }));
+    s.motes({ seed: 638, n: 16, x: [86, 160], y: [30, 90], r: [0.35, 0.9], fill: '#ffc870', hot: '#fffaea', cls: 'twinkle', t: [1.5, 3], op: [0.4, 1] });
     return s.svg();
   },
 
   // Verdant + Ember: a sabre-tooth in mid-leap through a burning jungle,
   // its stripes smouldering like coals.
   'apex-predator'(s) {
+    s.finish({ faction: ['verdant', 'ember'] });
     s.rect(s.lin([[0, '#1f0d09'], [0.4, '#4f1c0f'], [0.75, '#a8441a'], [1, '#d96d2c']]));
     s.glow(160, 176, 170, '#ff7a2e', 0.5);
     s.add(`<g fill="#2a120d" opacity=".5">${[[70, 40, 40], [140, 22, 46], [230, 36, 42], [290, 60, 30]].map(([x, y, r]) =>
       `<ellipse class="drift" cx="${x}" cy="${y}" rx="${r * 1.4}" ry="${r * 0.7}"/>`).join('')}</g>`);
     // burning jungle: far crowns lit from below, flames between the trunks
-    s.figure(`<path d="${canopy({ seed: 641, base: 150, top: 104, r0: 12, r1: 22 })}"/>`, { fill: '#4a2214', rim: '#ff9447', offsets: [[0, -1.2]], rimOp: 0.6 });
-    s.path(U(flame(40, 154, 46, 5, 16), flame(96, 152, 60, -7, 20, -0.14), flame(150, 154, 42, 5, 14), flame(206, 152, 64, 7, 20, -0.14), flame(262, 154, 50, -5, 16),
-      flame(68, 156, 30, -3, 11, -0.14), flame(234, 156, 34, 3, 11)), s.lin([[0, '#ffd27a', 0.15], [0.4, '#ff8a3a', 0.85], [1, '#ffcf6a', 1]]));
+    s.figure(`<path d="${canopy({ seed: 641, base: 150, top: 104, r0: 12, r1: 22 })}"/>`, { fill: '#4a2214', rim: '#ff9447', offsets: [[0, -1.2]], rimOp: 0.6, shade: 0.4 });
+    s.bloom(`<path d="${U(flame(40, 154, 46, 5, 16), flame(96, 152, 60, -7, 20, -0.14), flame(150, 154, 42, 5, 14), flame(206, 152, 64, 7, 20, -0.14), flame(262, 154, 50, -5, 16),
+      flame(68, 156, 30, -3, 11, -0.14), flame(234, 156, 34, 3, 11))}" fill="${s.lin([[0, '#ffd27a', 0.15], [0.4, '#ff8a3a', 0.85], [1, '#ffd98a', 1]])}"/>`, { sd: 2.4, k: 1.2, box: [-20, 70, 340, 110] });
     // palms
     const palm = (x, y, h, lean) => {
       const top = [x + lean, y - h];
@@ -355,7 +361,7 @@ export const multi = {
       });
       return [taper([[x, y], [x + lean * 0.4, y - h * 0.5], top], [6, 4.6, 3.4]), ...fr];
     };
-    s.figure(`<path d="${U(palm(24, 214, 150, 14), palm(282, 214, 136, -10))}"/>`, { fill: '#160f09', rim: '#ff9447', offsets: [[0, -1]], rimOp: 0.6 });
+    s.figure(`<path d="${U(palm(24, 214, 150, 14), palm(282, 214, 136, -10))}"/>`, { fill: '#160f09', rim: '#ff9447', offsets: [[0, -1]], rimOp: 0.6, shade: 0.4 });
     s.path(ridge({ seed: 642, base: 192, amp: 14, freq: 3 }), '#1d130b');
     // the beast, tipped down into its pounce
     const cat = U(
@@ -374,7 +380,7 @@ export const multi = {
       taper([[98, 88], [84, 80], [70, 77]], [8, 6, 3]),
     );
     const tilt = 'transform="rotate(10 150 104)"';
-    s.figure(`<g ${tilt}><path d="${cat}"/></g>`, { fill: '#120a07', rim: '#ff9a4a', offsets: [[0, -1.4], [-1, -0.8], [1, -0.8]], rimOp: 0.95 });
+    s.figure(`<g ${tilt}><path d="${cat}"/></g>`, { fill: '#120a07', rim: '#ff9a4a', offsets: [[0, -1.4], [-1, -0.8], [1, -0.8]], rimOp: 0.95, shade: 0.5, edge: 0.3, halo: 0.4 });
     // smouldering stripes, the eye, the sabres
     const stripes = U(
       [[124, 80, 14, 2], [136, 79, 17, -1], [148, 79, 15, 2], [160, 80, 18, -2], [170, 82, 12, 1]].map(([x, y, l, b]) => taper([[x, y], [x + 2 + b, y + l * 0.5], [x + 1, y + l]], [2.6, 1.8, 0.3])),
@@ -382,7 +388,7 @@ export const multi = {
       taper([[184, 84], [188, 92], [186, 100]], [2.6, 1.8, 0.3]), taper([[194, 86], [196, 94]], [2.2, 0.3]),
       taper([[90, 106], [86, 114]], [2.2, 0.3]), taper([[200, 116], [206, 122]], [2.2, 0.3]),
     );
-    s.add(`<g ${tilt}><path d="${stripes}" fill="#ff6a1f" opacity=".45" stroke="#ff7a2e" stroke-width="2.4" stroke-linejoin="round"/><path d="${stripes}" fill="#ffc46a"/>`);
+    s.add(`<g ${tilt}><g ${s.fx('bloom', { sd: 1.4, k: 1.4 })}><path d="${stripes}" fill="#ff6a1f" opacity=".45" stroke="#ff7a2e" stroke-width="2.4" stroke-linejoin="round"/><path d="${stripes}" fill="#ffcc78"/></g>`);
     s.glow(222, 92, 7, '#ffcf5a', 0.9);
     s.add(`<ellipse cx="222" cy="92" rx="2.8" ry="1.5" fill="#fff0b0" transform="rotate(12 222 92)"/>` +
       `<path d="${U(taper([[227, 104], [228.5, 113], [230, 122]], [3, 2.2, 0.3]), taper([[220, 106], [221, 113], [222.5, 119]], [2.4, 1.8, 0.3]))}" fill="#f3e3c0"/></g>`);
@@ -394,16 +400,19 @@ export const multi = {
       fronds.push(taper([[x, y], [x + Math.cos(r) * l * 0.5, y + Math.sin(r) * l * 0.5 - 6], [x + Math.cos(r) * l, y + Math.sin(r) * l]], [14 + R() * 4, 12, 0.6]));
     }
     s.path(U(fronds), '#0f160b');
-    s.add(particles({ seed: 644, n: 30, x: [20, 290], y: [60, 205], r: [0.5, 1.5], fill: '#ffb05a', cls: 'rise', t: [4, 8] }));
+    s.motes({ seed: 644, n: 30, x: [20, 290], y: [60, 205], r: [0.4, 1.2], fill: '#ff9a3a', hot: '#ffe8b0', cls: 'rise', t: [4, 8] });
     return s.svg();
   },
 
   // Token: a winged child of light hanging in the dawn.
   spirit(s) {
+    s.finish({ faction: 'radiant' });
     s.rect(s.lin([[0, '#36405f'], [0.45, '#7a84a0'], [0.76, '#e0c597'], [1, '#f1c07c']]));
     s.add(particles({ seed: 651, n: 16, x: [0, W], y: [0, 70], r: [0.3, 0.8], fill: '#f3ecff', cls: 'twinkle', op: [0.3, 0.8], t: [2.5, 6] }));
     s.glow(232, 168, 130, '#ffe3a6', 0.65);
-    s.path(ridge({ seed: 652, base: 166, amp: 16, freq: 2 }), '#8c7f74');
+    s.bloom('<circle cx="232" cy="164" r="11" fill="#fff6dc"/>', { sd: 3, k: 1.1, box: [176, 108, 112, 96] });
+    s.layer(ridge({ seed: 652, base: 166, amp: 16, freq: 2 }), '#8c7f74', { blur: 0.6 });
+    s.haze(146, 172, '#ffe3b0', 0.3, 6);
     s.path(ridge({ seed: 653, base: 182, amp: 12, freq: 2.6 }), '#4a4038');
     s.path('M-10,214L-10,194C60,189 130,188 190,191C240,193 280,190 310,192L310,214Z', '#1f1914');
     // grass at the corners
@@ -417,7 +426,8 @@ export const multi = {
     }
     s.path(U(blades), '#1f1914');
     // the spirit
-    s.glow(150, 100, 70, '#fff1c4', 0.55, 'breathe');
+    s.glow(150, 100, 76, '#fff1c4', 0.6, 'breathe');
+    s.glow(150, 100, 28, '#fffaf0', 0.9);
     const wing = (d) => U(
       taper([[150 + d * 4, 94], [150 + d * 20, 80], [150 + d * 38, 66], [150 + d * 48, 62]], [7, 9, 6, 0.6]),
       taper([[150 + d * 4, 97], [150 + d * 20, 90], [150 + d * 36, 84], [150 + d * 47, 82]], [6, 8, 5, 0.5]),
@@ -425,17 +435,16 @@ export const multi = {
       taper([[150 + d * 4, 103], [150 + d * 15, 107], [150 + d * 25, 113], [150 + d * 31, 118]], [4, 5, 3, 0.4]),
     );
     const wf = s.lin([[0, '#fffbe8', 0.95], [1, '#ffd77a', 0.35]], { x1: 0.5, y1: 0, x2: 0.5, y2: 1 });
-    s.path(wing(-1) + wing(1), wf);
-    s.glow(150, 100, 28, '#fffaf0', 0.9);
     // a small child: big head, round body, arms open, legs tucked
-    s.path(U(ell(150, 80, 7.6, 7.8), taper([[150, 87], [150, 90]], 5), ell(150, 99, 8.4, 11),
+    const child = U(ell(150, 80, 7.6, 7.8), taper([[150, 87], [150, 90]], 5), ell(150, 99, 8.4, 11),
       blob([[141.5, 100], [158.5, 100], [162, 114], [150, 117], [138, 114]]),
       taper([[146, 113], [143.5, 121], [140, 126]], [5.4, 4.4, 3.6]), taper([[154, 113], [158, 120], [162.5, 124]], [5.4, 4.4, 3.6]),
       taper([[143, 92], [135, 95], [128.5, 92]], [4.4, 3.6, 3]), ell(127.5, 91.5, 2.6, 2.4),
-      taper([[157, 92], [165, 95], [171.5, 92]], [4.4, 3.6, 3]), ell(172.5, 91.5, 2.6, 2.4)), '#fffdf4');
-    s.add('<ellipse cx="150" cy="69" rx="8" ry="2.4" fill="none" stroke="#fff3c6" stroke-width="1.2" opacity=".85"/>');
-    s.add(particles({ seed: 654, n: 20, x: [96, 204], y: [56, 150], r: [0.5, 1.3], fill: '#fff6d8', cls: 'float', t: [4, 8], op: [0.5, 1] }));
-    s.add(particles({ seed: 655, n: 10, x: [132, 168], y: [120, 175], r: [0.4, 1], fill: '#ffe9b0', cls: 'rise', t: [3, 6], op: [0.5, 1] }));
+      taper([[157, 92], [165, 95], [171.5, 92]], [4.4, 3.6, 3]), ell(172.5, 91.5, 2.6, 2.4));
+    s.bloom(`<path d="${wing(-1) + wing(1)}" fill="${wf}"/><path d="${child}" fill="#fffdf4"/>` +
+      '<ellipse cx="150" cy="69" rx="8" ry="2.4" fill="none" stroke="#fff3c6" stroke-width="1.2" opacity=".9"/>', { sd: 2, k: 1.2, box: [80, 36, 140, 110] });
+    s.motes({ seed: 654, n: 22, x: [96, 204], y: [56, 150], r: [0.4, 1.1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [4, 8], op: [0.5, 1] });
+    s.motes({ seed: 655, n: 10, x: [132, 168], y: [120, 175], r: [0.35, 0.8], fill: '#ffdf98', hot: '#ffffff', cls: 'rise', t: [3, 6], op: [0.5, 1] });
     return s.svg();
   },
 
@@ -454,14 +463,13 @@ export const multi = {
       taper([[173, 143], [159, 138], [149, 132], [144, 125]], [9.4, 8, 6.6, 5.2]), ell(143.5, 124.5, 2.8, 2.6),
       taper([[216, 148], [205, 133], [195, 123], [185, 118]], [17, 13, 10.5, 8.6]), ell(184, 117.5, 4.4, 4.2),
     );
-    s.figure(`<path d="${hand}"/>`, { fill: '#120c07', rim: '#ffcf6a', offsets: [[0, -1.3], [-0.7, -1], [0.7, -1]], rimOp: 0.9 });
+    s.figure(`<path d="${hand}"/>`, { fill: '#120c07', rim: '#ffcf6a', offsets: [[0, -1.3], [-0.7, -1], [0.7, -1]], rimOp: 0.9, shade: 0.5, edge: 0.3, halo: 0.35 });
     s.add('<ellipse cx="178" cy="150" rx="30" ry="4.6" fill="#ffcf6a" opacity=".13"/>');
     // the spark
-    s.glow(152, 86, 16, '#fff6d8', 1, 'breathe');
-    s.path(glint(152, 86, 15, 0.12), '#fffbea');
-    s.path(rot(glint(152, 86, 8, 0.2), 152, 86, 45), '#fff3cc');
-    s.add('<circle cx="152" cy="86" r="2.6" fill="#ffffff"/>');
-    s.add(particles({ seed: 661, n: 14, x: [116, 190], y: [52, 126], r: [0.3, 0.9], fill: '#ffe2a0', cls: 'twinkle', op: [0.3, 0.9], t: [1.5, 3.5] }));
+    s.glow(152, 86, 18, '#fff6d8', 1, 'breathe');
+    s.bloom(`<path d="${glint(152, 86, 15, 0.12)}" fill="#fffbea"/><path d="${rot(glint(152, 86, 8, 0.2), 152, 86, 45)}" fill="#fff3cc"/><circle cx="152" cy="86" r="2.6" fill="#ffffff"/>`,
+      { sd: 2, k: 1.5, box: [112, 46, 80, 80] });
+    s.motes({ seed: 661, n: 16, x: [116, 190], y: [52, 126], r: [0.3, 0.75], fill: '#ffd27a', hot: '#fffaea', cls: 'twinkle', op: [0.3, 0.9], t: [1.5, 3.5] });
     return s.svg();
   },
 };

@@ -1,7 +1,7 @@
 // Radiant card art. Style rules live in ../scenes.js; drawing tools in ../kit.js.
 
 import { H, W, blob, canopy, line, particles, pines, poly, pt, rays, ridge, rng, ruins, spline, taper } from '../kit.js';
-import { PAL, arcade, mirror, page } from './shared.js';
+import { PAL, arcade, faction, mirror, page } from './shared.js';
 
 // ── local helpers ───────────────────────────────────────────────────
 
@@ -92,67 +92,87 @@ function knight(cx, fy, k) {
   ];
 }
 
-export const radiant = {
+export const radiant = faction('radiant', {
+  // A soldier down on one knee behind his great shield, arrows thudding
+  // into it, the low sun right behind him.
   shieldbearer(s) {
     const p = PAL.radiant;
-    s.rect(s.lin([[0, '#8fa8bb'], [0.42, '#d6c49c'], [0.78, '#f4d99c'], [1, '#e7bf7a']]));
-    s.glow(156, 138, 160, '#fff2c8', 0.75);
-    s.add(rays({ cx: 156, cy: 138, from: -178, to: -2, n: 15, len: 280, spread: 2, color: '#fff8de', op: 0.24, seed: 51 }));
-    s.add('<circle cx="156" cy="138" r="21" fill="#fff6dd"/>');
-    s.path(ridge({ seed: 52, base: 166, amp: 24, freq: 2.1 }), '#c8ae84');
+    s.rect(s.lin([[0, '#88a2b7'], [0.4, '#d2c19c'], [0.74, '#f6dca2'], [1, '#e8bd78']]));
+    s.glow(98, 150, 175, '#fff1c4', 0.8);
+    s.shafts({ cx: 98, cy: 150, from: -178, to: -2, n: 15, len: 300, spread: 2.2, color: '#fff8de', op: 0.3, seed: 51, sd: 2.4 });
+    s.bloom('<circle cx="98" cy="150" r="22" fill="#fff8e6"/>', { sd: 4, k: 1, box: [24, 76, 148, 148] });
+    s.layer(ridge({ seed: 52, base: 168, amp: 24, freq: 2.1 }), s.lin([[0, '#cbb28b'], [1, '#b79c74']]), { blur: 0.6 });
     // banners on the far ridge
     s.add('<g><path d="M58,166L58,124" stroke="#8a7352" stroke-width="1.4"/><path d="M58,125L74,129.5L58,135Z" fill="#9c4c3a"/>' +
       '<path d="M246,168L246,130" stroke="#8a7352" stroke-width="1.4"/><path d="M246,131L262,135L246,140Z" fill="#3e5d77"/></g>');
-    s.path(ridge({ seed: 53, base: 184, amp: 16, freq: 3 }), '#8d7653');
-    s.path('M-10,214L-10,186C60,181 120,181 160,183C220,185 262,182 310,186L310,214Z', '#3b2e1f');
+    s.haze(138, 178, '#fff0c8', 0.35, 8);
+    s.path(ridge({ seed: 53, base: 186, amp: 14, freq: 3 }), '#8a7251');
+    s.path('M-10,214L-10,187C60,182 120,184 160,186C220,188 262,185 310,188L310,214Z', s.lin([[0, '#3a2c1d'], [1, '#22190f']]));
     // arrows in flight
-    const arrow = (x, y, a) => `<g transform="translate(${x} ${y}) rotate(${a})"><path d="M0,0L22,0" stroke="#2a1f15" stroke-width="1.1"/><path d="M22,0L18,-2L18,2Z" fill="#2a1f15"/><path d="M0,0L-3,-2.4M0,0L-3,2.4M3,0L0,-2.4M3,0L0,2.4" stroke="#2a1f15" stroke-width=".7"/></g>`;
-    s.add(arrow(262, 58, 158), arrow(238, 34, 162), arrow(282, 92, 155));
-    // the shieldbearer behind a planted tower shield
-    const soldier =
-      `<path d="${taper([[151, 111], [143, 126], [136, 144], [131, 162]], [12, 17, 19, 15])}"/>` +
-      '<path d="M122,160L131,170L140,159Z"/>' +
-      `<path d="${taper([[154, 112], [150, 130], [146, 149]], [16, 18, 16])}"/>` +
-      `<path d="${taper([[146, 147], [136, 162], [124, 182]], [12, 8.5, 6.5])}"/>` +
-      `<path d="${taper([[150, 149], [158, 164], [160, 182]], [11, 8.5, 6.5])}"/>` +
-      '<ellipse cx="121" cy="183" rx="7.5" ry="3"/><ellipse cx="163" cy="183" rx="7" ry="3"/>' +
-      `<path d="${taper([[158, 118], [164, 125], [169, 130]], [6.4, 5.4, 4.8])}"/>` +
-      '<circle cx="156" cy="104" r="8.5"/><ellipse cx="157" cy="107.5" rx="10.5" ry="3.2"/>' +
-      `<path d="${taper([[160, 96.5], [154, 93.5], [147, 94.5], [141, 99]], [4.6, 4.8, 3.6, 1.2])}"/>` +
-      `<path d="${taper([[139, 186], [133, 70]], [2.2, 1.7])}"/><path d="M130.4,72L133,57L135.6,72Z"/>` +
-      '<path d="M160,101C172,99 184,100 191,103L191,181C184,185 172,186 160,185Z"/>';
-    s.figure(soldier, { fill: p.fig, rim: p.rim, offsets: [[-1.4, -0.6], [1.4, -0.6], [0, -1.4]], rimOp: 0.95 });
-    // arrows stuck in the shield, and one broken in the mud
-    s.add(arrow(190, 126, -18), arrow(190, 152, -6), arrow(190, 138, 10));
-    s.add('<path d="M206,186L222,180" stroke="#2a1f15" stroke-width="1.2"/><path d="M226,184L236,186" stroke="#2a1f15" stroke-width="1.2"/>');
-    s.add(particles({ seed: 54, n: 18, x: [40, 260], y: [60, 180], r: [0.5, 1.2], fill: '#fff6d8', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
+    const arrow = (x, y, a) => `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${a})"><path d="M0,0L22,0" stroke="#2a1f15" stroke-width="1.1"/><path d="M22,0L18,-2L18,2Z" fill="#2a1f15"/><path d="M0,0L-3,-2.4M0,0L-3,2.4M3,0L0,-2.4M3,0L0,2.4" stroke="#2a1f15" stroke-width=".7"/></g>`;
+    s.add(arrow(266, 56, 160), arrow(240, 32, 163), arrow(284, 90, 156));
+    // the shieldbearer: down on one knee in profile, braced behind a tall
+    // shield that faces the arrows; a crested helm above its rim, spear upright
+    const man = U(
+      taper([[124, 153], [116, 168], [110, 182]], [13, 11, 9]),
+      taper([[110, 182], [99, 184], [89, 183]], [8, 6.5, 5]),
+      ell(87, 182, 3.4, 3),
+      taper([[127, 155], [140, 158], [150, 160]], [13, 11, 10]),
+      taper([[150, 160], [152, 172], [153, 182]], [9, 7.5, 6.5]),
+      ell(157, 184, 6.5, 2.6),
+      taper([[125, 154], [131, 136], [139, 120]], [19, 18, 17]),
+      taper([[140, 117], [144, 110]], [7, 6]),
+      ell(147, 102, 7.4, 7.8),
+      ell(147.5, 98.5, 9, 7.4),
+      poly([[152, 99], [158, 102], [156, 107], [151, 106]]),
+      taper([[149, 91], [142, 86.5], [133, 87], [126, 91.5], [122, 97]], [5, 6.5, 5.5, 3.2, 0.6]),
+      taper([[134, 121], [123, 125], [114, 120]], [6.4, 5.4, 4.6]),
+      ell(113, 119.5, 3.4, 3.6),
+      taper([[141, 122], [149, 131], [156, 134]], [6.4, 5.6, 5]),
+      taper([[112, 188], [112, 120], [111, 52]], [2.6, 2.3, 2]),
+      poly([[108.6, 54], [111, 38], [113.6, 54]]),
+      taper([[121, 152], [106, 161]], [3, 2.4]),
+    );
+    const shield = blob([[153, 114], [166, 109], [181, 108], [186, 126], [186, 150], [183, 172], [170, 180], [156, 180], [152, 160], [150, 136]]);
+    s.figure(`<path d="${man}"/><path d="${shield}"/>`, { fill: p.fig, rim: p.rim, offsets: [[-1.3, -0.6], [1.3, -0.6], [0, -1.4]], rimOp: 0.95, shade: 0.4, edge: 0.3, halo: 0.35 });
+    // three already in the shield: tips buried in its face, shafts sticking out
+    const stuck = (tx, ty, a) => { const r = (a * Math.PI) / 180; return arrow(tx - 22 * Math.cos(r), ty - 22 * Math.sin(r), a); };
+    s.add(stuck(185, 127, 168), stuck(188, 145, 175), stuck(185, 163, 161));
+    s.add('<path d="M208,189L224,183" stroke="#2a1f15" stroke-width="1.2"/><path d="M228,187L238,189" stroke="#2a1f15" stroke-width="1.2"/>');
+    s.motes({ seed: 54, n: 18, x: [40, 260], y: [50, 180], r: [0.4, 1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 0.9] });
     return s.svg();
   },
 
-  // A kid in a too-big helmet, fist on hip, beside the line he is joining.
+  // Golden hour at the end of the street: the line he is joining stands
+  // black against the low sun; the kid, in a kettle hat far too big, nearer.
   'street-recruit'(s) {
     const p = PAL.radiant;
-    s.rect(s.lin([[0, '#a3bccb'], [0.42, '#dcd2ac'], [0.76, '#f5dea6'], [1, '#ecc98e']]));
-    s.glow(236, 44, 150, '#fff3cc', 0.75);
-    s.add(rays({ cx: 236, cy: 44, from: 92, to: 228, n: 11, len: 300, spread: 2.2, color: '#fff8de', op: 0.2, seed: 501 }));
-    s.add('<circle cx="236" cy="44" r="13" fill="#fff7e0"/>');
-    // rooftops and a bell tower round the square
+    s.rect(s.lin([[0, '#9cb6c8'], [0.4, '#d9cea8'], [0.7, '#f6dca2'], [1, '#efc685']]));
+    const sx = 231, sy = 76;
+    s.glow(sx, sy, 175, '#fff1c4', 0.85);
+    s.bloom(`<circle cx="${sx}" cy="${sy}" r="16" fill="#fffbf0"/>`, { sd: 4, k: 1.3, box: [156, 0, 150, 150] });
+    // rooftops and a bell tower round the square; the street runs off
+    // between them toward the sun
     const b = 152;
-    const roofs = [[-12, 30, 36, 14, 1], [16, 26, 46, 13], [40, 30, 32, 15, 1], [88, 28, 40, 14], [114, 34, 30, 16, 1], [146, 26, 48, 13],
-      [170, 32, 36, 15, 1], [200, 28, 44, 14], [226, 34, 30, 16, 1], [258, 26, 42, 13], [282, 34, 34, 16, 1]];
+    const roofs = [[-12, 30, 40, 14, 1], [16, 26, 50, 13], [40, 30, 36, 15, 1], [88, 28, 44, 14], [114, 34, 34, 16, 1], [146, 26, 42, 13], [170, 22, 30, 11, 1],
+      [193, 14, 13, 6], [206, 12, 10, 5], [217, 14, 14, 6], [236, 24, 30, 12, 1], [258, 26, 46, 13], [282, 34, 40, 16, 1]];
     let town = roofs.map(([x, w, h, rf, ch]) => {
       let d = poly([[x, b], [x, b - h], [x + w / 2, b - h - rf], [x + w, b - h], [x + w, b]]);
       if (ch) d += poly([[x + w * 0.68, b - h - rf * 0.4], [x + w * 0.68, b - h - rf - 3], [x + w * 0.68 + 4, b - h - rf - 3], [x + w * 0.68 + 4, b - h - rf * 0.3]]);
       return d;
     }).join('');
     town += poly([[70, b], [70, 74], [67.5, 74], [79, 44], [90.5, 74], [88, 74], [88, b]]);
-    s.path(town, '#cdbb96');
+    s.path(town, '#c4b089');
     const win = (x, y) => poly([[x, y], [x + 3.4, y], [x + 3.4, y + 5], [x, y + 5]]);
-    s.path(roofs.map(([x, w, h]) => win(x + w * 0.2, b - h * 0.62) + win(x + w * 0.6, b - h * 0.62)).join('') +
-      poly([[75, 92], [75, 84], [79, 79], [83, 84], [83, 92]]), '#b29d78');
-    // the square
-    s.path(`M-10,${b}L310,${b}L310,214L-10,214Z`, s.lin([[0, '#c3ab80'], [1, '#806b4c']]));
+    s.path(roofs.filter(([, w]) => w > 20).map(([x, w, h]) => win(x + w * 0.2, b - h * 0.62) + win(x + w * 0.6, b - h * 0.62)).join('') +
+      poly([[75, 92], [75, 84], [79, 79], [83, 84], [83, 92]]), '#ab9570');
+    // light pouring down the street and across the square
+    s.shafts({ cx: sx, cy: sy, from: -200, to: 20, n: 13, len: 300, spread: 2.2, color: '#fff6d4', op: 0.28, seed: 501, sd: 2.4 });
+    s.haze(112, 152, '#fff0c8', 0.35, 6);
+    // the square, and a pool of light where the sun comes down the street
+    s.path(`M-10,${b}L310,${b}L310,214L-10,214Z`, s.lin([[0, '#c8af84'], [0.5, '#a3895f'], [1, '#6c573d']]));
     s.add(`<path d="M-10,${b + 1}L310,${b + 1}" stroke="#a48f6b" stroke-width="2.4"/>`);
+    s.add(`<ellipse cx="${sx - 20}" cy="${b + 15}" rx="96" ry="9" fill="${s.rad([[0, '#fff3cc', 0.6], [1, '#fff3cc', 0]])}"/>`);
     // bunting strung across the square, backlit
     const bz = (t) => { const u = 1 - t; return [u * u * -5 + 2 * u * t * 150 + t * t * 305, u * u * 18 + 2 * u * t * 62 + t * t * 14]; };
     s.add(`<path d="${line(Array.from({ length: 13 }, (_, i) => bz(i / 12)))}" fill="none" stroke="#6d5a42" stroke-width=".7"/>`);
@@ -162,14 +182,16 @@ export const radiant = {
       flags[i % 3] += poly([[x - 3.4, y], [x + 3.4, y + 0.3], [x, y + 8]]);
     }
     s.path(flags[0], '#9c4c3a').path(flags[1], '#e4d4a6').path(flags[2], '#3e5d77');
-    // the line of soldiers he is joining
-    const line5 = U([157, 186, 215, 244, 273].map((x) => soldier(x, 174, 1.16)));
-    s.figure(`<path d="${line5}"/>`, { fill: '#77634a', rim: '#f6e3b2', offsets: [[1, -0.8]], rimOp: 0.6 });
-    s.path('M-10,214L-10,196C60,192 140,194 200,196C250,198 280,195 310,196L310,214Z', '#3b2e1f');
+    // the line of soldiers he is joining, set back, black against the sun
+    const line5 = U([[166, 172, 0.96], [191, 171, 1.02], [217, 173, 0.97], [245, 171, 1.03], [271, 172, 0.95]].map(([x, y, k]) => soldier(x, y, k)));
+    s.figure(`<path d="${line5}"/>`, { fill: '#4a3a2a', rim: '#fff0c8', offsets: [[0, -1.2], [-0.9, -0.6], [0.9, -0.6]], rimOp: 0.8 });
+    s.haze(148, 174, '#ffe8b4', 0.3, 6);
+    s.path('M-10,214L-10,198C60,194 140,196 200,198C250,200 280,197 310,198L310,214Z', '#33271b');
     // the recruit: the same kettle hat as theirs, far too big for him, a
     // shield nearly as tall as his legs, fist on hip
-    const K = 1.14, kx = (x) => 100 + (x - 100) * K, ky = (y) => 188 + (y - 188) * K;
-    const kid = sc(U(
+    const K = 1.42, kx = (x) => 90 + (x - 100) * K, ky = (y) => 198 + (y - 188) * K;
+    const place = (d) => d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_, x, y) => `${f1(kx(+x))},${f1(ky(+y))}`);
+    const kid = place(U(
       taper([[95, 156], [90, 171], [85.5, 183.5]], [7, 5.6, 4.8]),
       taper([[102, 156], [108, 170], [112, 183.5]], [7, 5.6, 4.8]),
       ell(83.5, 185.5, 5.6, 2.5), ell(115, 185.5, 5.8, 2.5),
@@ -181,15 +203,15 @@ export const radiant = {
       ell(103.5, 122.5, 9, 7.6, -10),
       ell(105.5, 126.5, 13.5, 2.3, -10),
       ell(124, 152, 16.5, 20.5),
-    ), 100, 188, K);
-    s.figure(`<path d="${kid}"/>`, { fill: p.fig, rim: p.rim, offsets: [[1.2, -1], [0.4, -1.3]], rimOp: 0.95 });
+    ));
+    s.figure(`<path d="${kid}"/>`, { fill: p.fig, rim: p.rim, offsets: [[1.3, -0.7], [0.5, -1.3]], rimOp: 1, shade: 0.45, edge: 0.32, halo: 0.4 });
     // a sun painted on the shield, its boss catching the light
     const [bx, by] = [kx(124), ky(152)];
-    s.add(`<g stroke="#6b5233" stroke-width="1.2" fill="none" opacity=".9"><ellipse cx="${f1(bx)}" cy="${f1(by)}" rx="${f1(11.5 * K)}" ry="${f1(14.5 * K)}"/>${
+    s.add(`<g stroke="#6b5233" stroke-width="1.4" fill="none" opacity=".9"><ellipse cx="${f1(bx)}" cy="${f1(by)}" rx="${f1(11.5 * K)}" ry="${f1(14.5 * K)}"/>${
       Array.from({ length: 8 }, (_, i) => { const a = (i * Math.PI) / 4; return `<path d="M${f1(bx + Math.cos(a) * 4.5 * K)},${f1(by + Math.sin(a) * 5.6 * K)}L${f1(bx + Math.cos(a) * 8.5 * K)},${f1(by + Math.sin(a) * 10.6 * K)}"/>`; }).join('')}</g>`);
-    s.glow(bx, by, 10, '#ffd77a', 0.75, 'breathe');
-    s.add(`<circle cx="${f1(bx)}" cy="${f1(by)}" r="2.8" fill="#ffe8a8"/>`);
-    s.add(particles({ seed: 502, n: 16, x: [40, 260], y: [50, 180], r: [0.5, 1.2], fill: '#fff6d8', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
+    s.glow(bx, by, 16, '#ffd77a', 0.8, 'breathe');
+    s.bloom(`<circle cx="${f1(bx)}" cy="${f1(by)}" r="${f1(2.8 * K)}" fill="#ffefb8"/><path d="${glint(bx, by, 9)}" fill="#fffbea"/>`, { sd: 1.6, k: 1.5, box: [bx - 40, by - 40, 80, 80] });
+    s.motes({ seed: 502, n: 20, x: [40, 280], y: [40, 190], r: [0.4, 1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 0.9] });
     return s.svg();
   },
 
@@ -198,11 +220,11 @@ export const radiant = {
     s.rect(s.lin([[0, '#2f3a5a'], [0.38, '#6b7a95'], [0.7, '#d2bb8f'], [0.86, '#f6d699'], [1, '#efb97b']]));
     s.add(particles({ seed: 511, n: 18, x: [0, W], y: [0, 70], r: [0.3, 0.8], fill: '#f3ecff', cls: 'twinkle', op: [0.3, 0.8], t: [2.5, 6] }));
     s.glow(66, 152, 150, '#ffe3a6', 0.7);
-    s.add(rays({ cx: 66, cy: 152, from: -172, to: -18, n: 10, len: 300, spread: 2, color: '#fff3d0', op: 0.13, seed: 512 }));
-    s.add('<circle cx="66" cy="152" r="15" fill="#fff4d6"/>');
-    s.path(ridge({ seed: 513, base: 156, amp: 12, freq: 2 }), '#8a7c6c');
-    s.path(U(taper([[250, 154], [249, 140], [244, 133]], [3, 2, 1.2]), taper([[249.5, 142], [256, 134]], [1.8, 1]),
-      ell(236, 134, 9, 6), ell(246, 128, 11, 8), ell(259, 131, 10, 6.5), ell(252, 136, 12, 5), ell(240, 137, 8, 4.5)), '#8a7c6c');
+    s.shafts({ cx: 66, cy: 152, from: -172, to: -18, n: 10, len: 300, spread: 2, color: '#fff3d0', op: 0.24, seed: 512, sd: 2.4 });
+    s.bloom('<circle cx="66" cy="152" r="15" fill="#fff6dc"/>', { sd: 3.5, k: 1.1, box: [10, 96, 112, 112] });
+    s.layer(ridge({ seed: 513, base: 156, amp: 12, freq: 2 }) + U(taper([[250, 154], [249, 140], [244, 133]], [3, 2, 1.2]), taper([[249.5, 142], [256, 134]], [1.8, 1]),
+      ell(236, 134, 9, 6), ell(246, 128, 11, 8), ell(259, 131, 10, 6.5), ell(252, 136, 12, 5), ell(240, 137, 8, 4.5)), '#8a7c6c', { blur: 0.6 });
+    s.haze(132, 160, '#ffe9bc', 0.3, 5);
     s.path(ridge({ seed: 514, base: 163, amp: 7, freq: 3 }), '#5d5142');
     // the field, furrows running to the horizon
     s.path('M-10,214L-10,160L310,160L310,214Z', s.lin([[0, '#4d4232'], [1, '#231c14']]));
@@ -211,7 +233,7 @@ export const radiant = {
     s.add(`<path d="${fur}" stroke="#7a6748" stroke-width=".8" fill="none" opacity=".45"/>`);
     // where they were born
     s.glow(162, 177, 30, '#fff0c0', 0.85, 'breathe');
-    s.add('<ellipse cx="162" cy="178" rx="22" ry="3.6" fill="#ffe7a8" opacity=".6"/>');
+    let spirits = '<ellipse cx="162" cy="178" rx="22" ry="3.6" fill="#ffe7a8" opacity=".6"/>';
     // the two spirits: a double helix of light
     const cx = 162, y0 = 176, hgt = 126, turns = 1.25;
     const strand = (ph, t1) => Array.from({ length: 31 }, (_, i) => {
@@ -224,15 +246,15 @@ export const radiant = {
     const heads = [];
     for (const [ph, t1] of [[Math.PI, 0.93], [0, 1]]) {
       const pts = strand(ph, t1);
-      s.path(taper(pts, [0.5, 3, 7, 11], { per: 3 }), halo);
-      s.path(taper(pts, [0.3, 1.2, 2.6, 4.2], { per: 3 }), trail);
+      spirits += `<path d="${taper(pts, [0.5, 3, 7, 11], { per: 3 })}" fill="${halo}"/><path d="${taper(pts, [0.3, 1.2, 2.6, 4.2], { per: 3 })}" fill="${trail}"/>`;
       heads.push(pts[pts.length - 1]);
     }
     for (const [x, y] of heads) {
-      s.glow(x, y, 22, '#fff1c2', 0.95, 'breathe');
+      s.glow(x, y, 24, '#fff1c2', 0.95, 'breathe');
       const wing = (d) => taper([[x + d * 1.5, y - 1], [x + d * 6, y - 6], [x + d * 11, y - 9.5], [x + d * 14, y - 9]], [3.4, 4.4, 2.6, 0.4]);
-      s.path(U(ell(x, y - 4.5, 2.9, 3), taper([[x, y - 1.5], [x, y + 4], [x, y + 10]], [4.4, 3.2, 0.4]), wing(-1), wing(1)), '#fffbea');
+      spirits += `<path d="${U(ell(x, y - 4.5, 2.9, 3), taper([[x, y - 1.5], [x, y + 4], [x, y + 10]], [4.4, 3.2, 0.4]), wing(-1), wing(1))}" fill="#fffbea"/>`;
     }
+    s.bloom(spirits, { sd: 1.8, k: 1.3, box: [96, 20, 132, 180] });
     // wheat in the foreground, taller at the edges
     const R = rng(515);
     const wheat = [];
@@ -243,7 +265,7 @@ export const radiant = {
       if (R() < 0.55) wheat.push(taper([[top[0] - ux, top[1] - uy], [top[0] + ux * 4, top[1] + uy * 4], [top[0] + ux * 9, top[1] + uy * 9]], [1.4, 2.6, 0.3], { per: 4 }));
     }
     s.path(U(wheat), '#1d1610');
-    s.add(particles({ seed: 516, n: 22, x: [128, 198], y: [60, 178], r: [0.5, 1.4], fill: '#fff1c4', cls: 'rise', t: [4, 8], op: [0.5, 1] }));
+    s.motes({ seed: 516, n: 24, x: [128, 198], y: [60, 178], r: [0.4, 1.1], fill: '#ffe9b0', hot: '#ffffff', cls: 'rise', t: [4, 8], op: [0.5, 1] });
     return s.svg();
   },
 
@@ -253,11 +275,12 @@ export const radiant = {
     const p = PAL.radiant;
     s.rect(s.lin([[0, '#90a9be'], [0.45, '#dbca9e'], [0.8, '#f6d595'], [1, '#ecb877']]));
     s.glow(150, 66, 180, '#fff0c2', 0.8);
-    s.add(rays({ cx: 150, cy: 66, from: -180, to: 180, n: 22, len: 320, spread: 2.4, color: '#fff8de', op: 0.2, seed: 521 }));
-    s.path(ridge({ seed: 522, base: 172, amp: 16, freq: 2.2 }), '#c6ad85');
+    s.shafts({ cx: 150, cy: 66, from: -180, to: 180, n: 22, len: 320, spread: 2.4, color: '#fff8de', op: 0.27, seed: 521, sd: 2.4 });
+    s.layer(ridge({ seed: 522, base: 172, amp: 16, freq: 2.2 }), '#c6ad85', { blur: 0.6 });
+    s.haze(148, 178, '#fff0c8', 0.3, 8);
     s.path(ridge({ seed: 523, base: 186, amp: 12, freq: 2.8 }), '#937a57');
     // the rock she stands on
-    s.path(poly([[112, 214], ...spline([[118, 186], [128, 166], [146, 155], [168, 151], [192, 148], [212, 152], [228, 164], [240, 186]], 6), [246, 214]]), '#3d3022');
+    s.path(poly([[112, 214], ...spline([[118, 186], [128, 166], [146, 155], [168, 151], [192, 148], [212, 152], [228, 164], [240, 186]], 6), [246, 214]]), s.lin([[0, '#45362a'], [1, '#2a2017']]));
     // the gonfalon, lit through by the sun
     const gon = poly([[122, 33], [166, 33], [165.5, 58], [162, 84], [158, 103], [155, 112], [146, 98], [137, 123], [129, 98], [114, 113], [118, 88], [120.5, 60]]);
     s.path(gon, s.rad([[0, '#fff4d0'], [0.55, '#f5c766'], [1, '#d48d3c']], { cx: 0.5, cy: 0.4, r: 0.65 }), 'opacity=".96"');
@@ -287,9 +310,9 @@ export const radiant = {
       poly([[142, 31], [144.5, 20], [147, 31]]),
       taper([[120, 31], [169, 31]], 2.2), ell(119, 31, 2, 2), ell(170, 31, 2, 2),
     );
-    s.figure(`<path d="${cap}"/>`, { fill: p.fig, rim: p.rim, offsets: [[-1.2, -0.8], [1.2, -0.8], [0, -1.4]], rimOp: 0.95 });
-    s.glow(193, 18, 14, '#fff6d6', 0.9, 'breathe');
-    s.path(glint(193, 18, 8), '#fffbea');
+    s.figure(`<path d="${cap}"/>`, { fill: p.fig, rim: p.rim, offsets: [[-1.2, -0.8], [1.2, -0.8], [0, -1.4]], rimOp: 0.95, shade: 0.45, edge: 0.3, halo: 0.35 });
+    s.glow(193, 18, 16, '#fff6d6', 0.95, 'breathe');
+    s.bloom(`<path d="${glint(193, 18, 8)}" fill="#fffbea"/>`, { sd: 1.6, k: 1.6, box: [163, -12, 60, 60] });
     // the army below: fists and spears
     const R = rng(524);
     const crowd = [];
@@ -306,65 +329,69 @@ export const radiant = {
       }
     }
     s.figure(`<path d="${U(crowd)}"/>`, { fill: '#1d150e', rim: '#f0d9a0', offsets: [[0, -1.1]], rimOp: 0.55 });
-    s.add(particles({ seed: 525, n: 18, x: [40, 260], y: [20, 170], r: [0.5, 1.3], fill: '#fff6d8', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
+    s.motes({ seed: 525, n: 18, x: [40, 260], y: [20, 170], r: [0.4, 1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 0.9] });
     return s.svg();
   },
 
-  // An old man leaning into the wind on a hilltop, the standard streaming
-  // out over his head with the low sun burning through its tails.
+  // An old man braced on a hilltop against the wind, both hands on the
+  // pole; the standard streams out over him with the low sun behind it.
   'standard-keeper'(s) {
     const p = PAL.radiant;
-    s.rect(s.lin([[0, '#7c96ab'], [0.4, '#c6c1a5'], [0.75, '#f0d49b'], [1, '#e4b677']]));
-    s.glow(236, 78, 160, '#fff1c4', 0.75);
-    s.add(rays({ cx: 236, cy: 78, from: -180, to: 180, n: 16, len: 300, spread: 2, color: '#fff8de', op: 0.15, seed: 531 }));
-    s.add('<circle cx="236" cy="78" r="14" fill="#fff6dc"/>');
+    s.rect(s.lin([[0, '#7893aa'], [0.4, '#c7c1a4'], [0.72, '#f2d59c'], [1, '#e5b373']]));
+    const sx = 206, sy = 80;
+    s.glow(sx, sy, 175, '#fff1c4', 0.8);
+    s.shafts({ cx: sx, cy: sy, from: -180, to: 180, n: 16, len: 300, spread: 2, color: '#fff8de', op: 0.24, seed: 531, sd: 2.4 });
+    s.bloom(`<circle cx="${sx}" cy="${sy}" r="16" fill="#fff8e6"/>`, { sd: 4, k: 1.1, box: [130, 4, 152, 152] });
     // cloud streaks racing with the wind
     s.add(`<g fill="#f8eed2">${[[58, 40, 46, 4.5, 0.45], [196, 26, 56, 4, 0.4], [128, 112, 40, 3, 0.35], [262, 120, 44, 3.5, 0.4], [30, 96, 34, 2.6, 0.3]].map(([x, y, rx, ry, o]) =>
       `<ellipse class="drift" cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" opacity="${o}"/>`).join('')}</g>`);
-    s.path(ridge({ seed: 532, base: 168, amp: 16, freq: 2.3 }), '#c6ab84');
-    s.path(ridge({ seed: 533, base: 184, amp: 10, freq: 3 }), '#9a815e');
-    // the standard, streaming right, tattered at the end
+    s.layer(ridge({ seed: 532, base: 168, amp: 16, freq: 2.3 }), '#c4a982', { blur: 0.6 });
+    s.haze(140, 172, '#fff0c8', 0.3, 8);
+    s.path(ridge({ seed: 533, base: 184, amp: 10, freq: 3 }), '#94795a');
+    // the standard, streaming right, tattered at the end; the sun burns through it
     const topE = spline([[73, 24], [100, 18], [130, 28], [160, 20], [190, 30], [216, 24], [238, 33]], 5);
     const botE = spline([[75, 66], [102, 62], [132, 74], [162, 66], [190, 78], [214, 72]], 5);
     const flag = poly([...topE, [258, 37], [233, 46], [254, 57], [227, 59], [246, 74], ...botE.reverse()]);
-    s.path(flag, s.lin([[0, '#e2a94f'], [0.55, '#f6cd76'], [1, '#fff0c6']], { x1: 0, y1: 0, x2: 1, y2: 0 }), 'opacity=".97"');
+    s.path(flag, s.lin([[0, '#dfa04a'], [0.55, '#f6cb74'], [1, '#fff3d0']], { x1: 0, y1: 0, x2: 1, y2: 0 }), 'opacity=".9"');
     s.add(`<path d="${taper([[131, 29], [131, 51], [132, 73]], [7, 10, 7])}" fill="#9b5c22" opacity=".2"/>` +
-      `<path d="${taper([[191, 31], [190, 54], [190, 77]], [7, 10, 7])}" fill="#9b5c22" opacity=".16"/>`);
+      `<path d="${taper([[191, 31], [190, 54], [190, 77]], [7, 10, 7])}" fill="#9b5c22" opacity=".14"/>`);
     s.add(`<g stroke="#9a6326" stroke-width="1.5" fill="none" opacity=".55"><circle cx="106" cy="43" r="6.5"/><path d="${
       Array.from({ length: 8 }, (_, i) => { const a = (i * Math.PI) / 4; return `M${f1(106 + Math.cos(a) * 9)},${f1(43 + Math.sin(a) * 9)}L${f1(106 + Math.cos(a) * 12.5)},${f1(43 + Math.sin(a) * 12.5)}`; }).join('')}"/></g>`);
-    // the hill
+    // the hill, its grass flattened by the wind
     const hill = spline([[-10, 198], [30, 190], [70, 181], [102, 178], [136, 179], [176, 186], [226, 196], [310, 206]], 6);
-    s.path(poly([...hill, [310, 214], [-10, 214]]), '#2e2318');
+    s.path(poly([...hill, [310, 214], [-10, 214]]), '#2a2016');
     const R = rng(534);
     const grass = [];
     for (let x = -6; x < 310; x += 4 + R() * 5) {
       const y = yAt(hill, x) + 1, h = 4 + R() * 7;
       grass.push(taper([[x, y], [x + h * 0.5, y - h * 0.7], [x + h * 1.1, y - h * 0.9]], [1.8, 1, 0.3]));
     }
-    s.path(U(grass), '#2e2318');
-    // the keeper
+    s.path(U(grass), '#2a2016');
+    // the keeper, facing into the wind: legs braced wide, both hands on the
+    // pole, beard swept back, hood blown down, cloak streaming off downwind
     const keeper = U(
-      taper([[106, 145], [97, 160], [89, 174]], [8.5, 6.8, 5.6]),
-      taper([[113, 145], [119, 160], [123, 175]], [8.5, 6.8, 5.6]),
-      ell(86, 176.5, 6.4, 2.6), ell(126, 177, 6, 2.6),
-      taper([[99, 118], [105, 132], [110, 147]], [15, 16, 14]),
-      // cowl, its point blown back; a nose and a beard out front
-      blob([[85, 112], [84.5, 104], [80, 97], [85, 91], [94, 87], [104, 88], [112, 93], [119, 101], [113, 105], [112, 113], [104, 119], [93, 118]], 5),
-      taper([[86.5, 110], [83, 117.5], [80.5, 126]], [8.5, 5.5, 0.6]),
-      // both hands on the pole, below the beard
-      taper([[99, 124], [89, 134], [78, 140]], [6, 5, 4.4]),
-      taper([[102, 132], [92, 148], [80, 154]], [6, 5, 4.4]),
-      // cloak billowing off his back, hem above the knees
-      blob([[104, 112], [120, 107], [138, 111], [156, 119], [167, 127], [157, 130], [160, 136], [146, 137], [136, 143], [124, 141], [114, 138], [108, 124]], 5),
-      taper([[80, 184], [77, 100], [73, 22]], [2.8, 2.5, 2.2]),
-      poly([[70.8, 23], [72.8, 10], [75.2, 23]]),
+      taper([[111, 147], [101, 163], [91, 179]], [9, 7.4, 6]),
+      taper([[117, 147], [127, 164], [135, 180]], [9, 7.4, 6]),
+      ell(88, 180.5, 6.4, 2.6), ell(138, 181.5, 6.2, 2.6),
+      taper([[115, 149], [109, 131], [102, 115]], [16, 16, 14]),
+      taper([[100, 112], [96, 105]], [6, 5.4]),
+      ell(93, 99, 6.2, 7, -12),
+      poly([[87.5, 97], [83.6, 100.2], [87.6, 102]]),
+      taper([[89, 104], [86, 111], [86, 118], [89, 121.5]], [6.6, 6, 4, 0.8]),
+      taper([[102, 115], [96, 127], [83, 125]], [6, 5.2, 4.6]),
+      taper([[100, 120], [96, 137], [84, 142]], [6, 5.2, 4.6]),
+      ell(81, 124.5, 3.6, 3.4), ell(82.4, 141.6, 3.6, 3.4),
+      blob([[99, 106], [104, 101], [111, 101], [114, 107], [108, 112], [101, 112]], 5),
     );
-    s.figure(`<path d="${keeper}"/>`, { fill: p.fig, rim: p.rim, offsets: [[1.3, -0.8], [0.4, -1.3]], rimOp: 0.95 });
-    s.glow(72.8, 14, 9, '#ffe6a6', 0.8);
+    const cloak = poly([[104, 106], [118, 101], [134, 100], [150, 104], [164, 105], [178, 110], [190, 108], [183, 114], [195, 120], [178, 121], [185, 128], [168, 124], [163, 132], [151, 126], [141, 131], [128, 127], [117, 127], [109, 122]]);
+    const pole = taper([[81, 186], [77, 100], [73, 22]], [2.8, 2.5, 2.2]) + poly([[70.8, 23], [72.8, 10], [75.2, 23]]);
+    s.figure(`<g transform="translate(112 182) scale(1.15) translate(-112 -182)"><path d="${keeper}"/><path d="${cloak}"/></g><path d="${pole}"/>`,
+      { fill: p.fig, rim: p.rim, offsets: [[1.3, -0.8], [0.4, -1.3]], rimOp: 0.95, shade: 0.45, edge: 0.3, halo: 0.35 });
+    s.glow(72.8, 14, 10, '#ffe6a6', 0.85);
     // wind
     s.add(`<g stroke="#fff6dc" stroke-width=".7" fill="none" opacity=".55">${[[20, 132, 40], [150, 150, 52], [214, 120, 36], [36, 72, 30]].map(([x, y, l]) =>
       `<path class="drift" d="M${x},${y}q${l / 2},-3 ${l},0"/>`).join('')}</g>`);
-    s.add(particles({ seed: 535, n: 16, x: [40, 270], y: [40, 175], r: [0.5, 1.2], fill: '#fff6d8', cls: 'float', t: [4, 7], op: [0.4, 0.9] }));
+    s.motes({ seed: 535, n: 16, x: [40, 270], y: [40, 175], r: [0.4, 1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [4, 7], op: [0.5, 0.9] });
     return s.svg();
   },
 
@@ -374,7 +401,7 @@ export const radiant = {
     const p = PAL.radiant;
     s.rect(s.lin([[0, '#7d8794'], [0.4, '#cdc2a3'], [0.7, '#efd79e'], [1, '#c99c64']]));
     s.glow(170, 14, 170, '#fff1c4', 0.9);
-    s.add(rays({ cx: 170, cy: 4, from: 52, to: 128, n: 12, len: 260, spread: 3, color: '#fff4cc', op: 0.3, seed: 541 }));
+    s.shafts({ cx: 170, cy: 4, from: 52, to: 128, n: 12, len: 260, spread: 3, color: '#fff4cc', op: 0.32, seed: 541, sd: 2.4 });
     // the storm breaking: two banks of cloud pulled apart, lit along the tear
     const puffs = (list) => U(list.map(([x, y, r]) => ell(x, y, r * 1.25, r)));
     const left = puffs([[40, -20, 64], [-4, 52, 22], [24, 60, 17], [50, 54, 19], [78, 58, 16], [104, 46, 17], [126, 30, 15], [140, 12, 13]]);
@@ -382,17 +409,18 @@ export const radiant = {
     s.figure(`<path d="${left}"/>`, { fill: '#4d5565', rim: '#ffe2a6', offsets: [[1.8, 0.6], [0.6, 1.8]], rimOp: 0.85 });
     s.figure(`<path d="${right}"/>`, { fill: '#4d5565', rim: '#ffe2a6', offsets: [[-1.8, 0.6], [-0.6, 1.8]], rimOp: 0.85 });
     s.glow(170, 10, 34, '#fffaf0', 0.9, 'breathe');
-    s.path(ridge({ seed: 542, base: 154, amp: 10, freq: 2.4 }), '#8d887c');
+    s.layer(ridge({ seed: 542, base: 154, amp: 10, freq: 2.4 }), '#8d887c', { blur: 0.6 });
+    s.haze(134, 156, '#fff0c8', 0.3, 4);
     s.path('M-10,214L-10,154L310,154L310,214Z', s.lin([[0, '#6c604b'], [1, '#2e251a']]));
     s.add('<ellipse cx="176" cy="158" rx="80" ry="7" fill="#f6dc9e" opacity=".55"/>');
     // the wall: each knight's shield overlapping the next
     const row = [[74, 196, 1], [108, 186, 0.84], [137, 178, 0.71], [161, 171, 0.6], [181, 166, 0.51], [198, 162, 0.43], [212, 159, 0.37], [224, 157, 0.32], [234, 155.5, 0.28], [243, 154.5, 0.24]];
     const wall = U(row.map(([x, y, k]) => knight(x, y, k)));
-    s.figure(`<path d="${wall}"/>`, { fill: p.fig, rim: p.rim, offsets: [[0, -1.5], [-0.8, -1], [0.8, -1]], rimOp: 0.95 });
-    s.path(dots(row.map(([x, y, k]) => [x - 6 * k, y - 56 * k, 2.6 * k])), '#e9c779');
+    s.figure(`<path d="${wall}"/>`, { fill: p.fig, rim: p.rim, offsets: [[0, -1.5], [-0.8, -1], [0.8, -1]], rimOp: 0.95, shade: 0.4, edge: 0.28, halo: 0.3 });
+    s.bloom(`<path d="${dots(row.map(([x, y, k]) => [x - 6 * k, y - 56 * k, 2.6 * k]))}" fill="#f2d388"/>`, { sd: 1.4, k: 1.5, box: [40, 60, 220, 120] });
     s.glow(68, 140, 9, '#ffd77a', 0.6);
     s.path('M-10,214L-10,200C70,197 150,199 220,201C260,202 290,200 310,201L310,214Z', '#241b12');
-    s.add(particles({ seed: 543, n: 18, x: [120, 230], y: [40, 160], r: [0.5, 1.2], fill: '#fff6d8', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
+    s.motes({ seed: 543, n: 20, x: [110, 240], y: [30, 160], r: [0.4, 1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 0.9] });
     return s.svg();
   },
 
@@ -402,9 +430,10 @@ export const radiant = {
     const p = PAL.radiant;
     s.rect(s.lin([[0, '#7d98b3'], [0.4, '#d6c8a3'], [0.7, '#f7d797'], [1, '#efb672']]));
     s.glow(150, 132, 180, '#fff1c4', 0.85);
-    s.add(rays({ cx: 150, cy: 132, from: -180, to: 0, n: 18, len: 300, spread: 2.2, color: '#fff8de', op: 0.2, seed: 561 }));
-    s.add('<circle cx="150" cy="132" r="36" fill="#fff6dc"/>');
-    s.path(poly([...spline([[-10, 112], [20, 96], [48, 110], [76, 104], [104, 128], [126, 150], [150, 160], [176, 150], [198, 126], [226, 100], [256, 108], [284, 92], [310, 100]], 6), [310, 214], [-10, 214]]), '#8b7b6a');
+    s.shafts({ cx: 150, cy: 132, from: -180, to: 0, n: 18, len: 300, spread: 2.2, color: '#fff8de', op: 0.3, seed: 561, sd: 2.2 });
+    s.bloom('<circle cx="150" cy="132" r="36" fill="#fff8e4"/>', { sd: 4, k: 1, box: [60, 40, 180, 180] });
+    s.layer(poly([...spline([[-10, 112], [20, 96], [48, 110], [76, 104], [104, 128], [126, 150], [150, 160], [176, 150], [198, 126], [226, 100], [256, 108], [284, 92], [310, 100]], 6), [310, 214], [-10, 214]]), s.lin([[0, '#93836f'], [1, '#6e6050']]), { blur: 0.7 });
+    s.haze(120, 172, '#fff1c4', 0.45);
     const ridgeL = spline([[-10, 196], [40, 188], [90, 182], [124, 172], [150, 167], [176, 172], [210, 182], [260, 190], [310, 196]], 6);
     s.path(poly([...ridgeL, [310, 214], [-10, 214]]), '#3a2d20');
     // the spirits, forming out of motes
@@ -415,8 +444,8 @@ export const radiant = {
     const sp = spL + mirror(spL);
     s.path(sp, ghost);
     s.add(`<path d="${sp}" fill="none" stroke="${edge}" stroke-width=".8"/>`);
-    s.add(particles({ seed: 562, n: 14, x: [58, 112], y: [100, 190], r: [0.5, 1.4], fill: '#fff4cc', cls: 'float', t: [4, 7], op: [0.5, 1] }));
-    s.add(particles({ seed: 563, n: 14, x: [188, 242], y: [100, 190], r: [0.5, 1.4], fill: '#fff4cc', cls: 'float', t: [4, 7], op: [0.5, 1] }));
+    s.motes({ seed: 562, n: 14, x: [58, 112], y: [100, 190], r: [0.4, 1.1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [4, 7], op: [0.5, 1] });
+    s.motes({ seed: 563, n: 14, x: [188, 242], y: [100, 190], r: [0.4, 1.1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [4, 7], op: [0.5, 1] });
     // the captain, sword planted
     const cap = U(
       taper([[145, 128], [142, 148], [140, 165]], [10, 8, 6.4]),
@@ -436,10 +465,10 @@ export const radiant = {
       taper([[150, 129], [150, 150], [150, 167]], [3.6, 3, 0.6]),
       taper([[159, 88], [174, 102], [186, 124], [192, 150]], [8, 16, 19, 11]),
     );
-    s.figure(`<path d="${cap}"/>`, { fill: p.fig, rim: p.rim, offsets: [[-1.3, -0.6], [1.3, -0.6], [0, -1.4]], rimOp: 1 });
+    s.figure(`<path d="${cap}"/>`, { fill: p.fig, rim: p.rim, offsets: [[-1.3, -0.6], [1.3, -0.6], [0, -1.4]], rimOp: 1, shade: 0.4, edge: 0.3, halo: 0.35 });
     // gold trim
     s.add('<path d="M132.5,93Q139,86 146.5,89M153.5,89Q161,86 167.5,93M143.5,72.5Q151,70 158.5,72.5M150,93V112M139.5,117.5H160.5" stroke="#ffd77a" stroke-width="1" fill="none" stroke-linecap="round"/>');
-    s.add(particles({ seed: 564, n: 14, x: [40, 260], y: [30, 120], r: [0.5, 1.1], fill: '#fff6d8', cls: 'float', t: [5, 9], op: [0.4, 0.8] }));
+    s.motes({ seed: 564, n: 16, x: [40, 260], y: [30, 120], r: [0.4, 1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 0.9] });
     return s.svg();
   },
 
@@ -447,7 +476,7 @@ export const radiant = {
   'a-thousand-lights'(s) {
     s.rect(s.lin([[0, '#0e1330'], [0.45, '#1e2647'], [0.75, '#3b3c58'], [1, '#6e5e55']]));
     s.add(particles({ seed: 571, n: 36, x: [0, W], y: [0, 120], r: [0.3, 0.9], fill: '#eef0ff', cls: 'twinkle', op: [0.3, 0.9], t: [2.5, 6] }));
-    s.path(poly([...spline([[-10, 92], [22, 78], [52, 96], [84, 116], [116, 142], [146, 160], [168, 166], [192, 158], [222, 134], [252, 108], [278, 84], [310, 76]], 6), [310, 214], [-10, 214]]), '#262a46');
+    s.layer(poly([...spline([[-10, 92], [22, 78], [52, 96], [84, 116], [116, 142], [146, 160], [168, 166], [192, 158], [222, 134], [252, 108], [278, 84], [310, 76]], 6), [310, 214], [-10, 214]]), '#262a46', { blur: 0.6 });
     s.glow(168, 172, 110, '#ffcf7a', 0.45);
     s.add('<ellipse cx="170" cy="110" rx="64" ry="100" fill="' + s.rad([[0, '#ffe2a0', 0.3], [1, '#ffe2a0', 0]]) + '"/>');
     // the lights: a river of them, thinning as they climb
@@ -461,10 +490,9 @@ export const radiant = {
       const y = 186 - 150 * Math.pow(R(), 1.2), up = 186 - y;
       big.push([168 + Math.sin(up / 26) * 10 + (R() + R() - 1) * (10 + up * 0.45), y, 1.1 + R() * 1]);
     }
-    s.path(dots(small), '#ffe6a8', 'opacity=".85"');
-    s.path(dots(big), '#fff6dc');
-    s.glow(168, 160, 40, '#fff0c0', 0.5, 'breathe');
-    s.add(particles({ seed: 573, n: 30, x: [118, 222], y: [60, 190], r: [0.6, 1.6], fill: '#fff1c4', cls: 'rise', t: [5, 10], op: [0.5, 1] }));
+    s.bloom(`<path d="${dots(small)}" fill="#ffe6a8" opacity=".85"/><path d="${dots(big)}" fill="#fff6dc"/>`, { sd: 1.5, k: 1.3, box: [60, 0, 220, 210] });
+    s.glow(168, 160, 44, '#fff0c0', 0.55, 'breathe');
+    s.motes({ seed: 573, n: 30, x: [118, 222], y: [60, 190], r: [0.5, 1.2], fill: '#ffe2a0', hot: '#ffffff', cls: 'rise', t: [5, 10], op: [0.5, 1] });
     s.path(poly([...spline([[-10, 140], [40, 146], [92, 166], [130, 182], [168, 190], [206, 182], [246, 162], [280, 150], [310, 144]], 6), [310, 214], [-10, 214]]), '#171a2c');
     // the crag and the one who watches
     s.path(poly([[-10, 214], [-10, 150], [30, 148], [66, 152], [92, 150], [104, 156], [110, 166], [106, 182], [118, 214]]), '#0c0b13');
@@ -481,7 +509,7 @@ export const radiant = {
       taper([[95, 153], [94, 110], [93, 84]], [2, 1.8, 1.6]),
       taper([[87, 105], [92, 113], [94, 118]], [3.8, 3.2, 3]),
     );
-    s.figure(`<path d="${watcher}"/>`, { fill: '#0c0b13', rim: '#ffe2a0', offsets: [[1.2, -0.4], [0.6, -1]], rimOp: 0.9 });
+    s.figure(`<path d="${watcher}"/>`, { fill: '#0c0b13', rim: '#ffe2a0', offsets: [[1.2, -0.4], [0.6, -1]], rimOp: 0.9, shade: 0.45, edge: 0.3, halo: 0.35 });
     return s.svg();
   },
-};
+});

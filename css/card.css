@@ -66,6 +66,23 @@
     linear-gradient(100deg, var(--f) 0%, var(--f) 36%, var(--f2) 64%, var(--f2) 100%);
 }
 
+/* Legendary: a gold edge and a slow foil shimmer across the frame. */
+.card.legendary .card-face {
+  background: linear-gradient(135deg, #6b5221, #f3d98a 22%, #8a6a2a 40%, #f7e7b0 62%, #6b5221 84%, #caa651);
+  box-shadow:
+    0 0 0 .25cqw rgba(255, 236, 170, .35) inset,
+    0 0 3cqw rgba(255, 210, 120, .35),
+    0 1.4cqw 3.6cqw rgba(0, 0, 0, .5);
+}
+.card.legendary .card-face::after {
+  background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, .0) 35%, rgba(255, 246, 214, .28) 45%, rgba(190, 230, 255, .18) 50%, rgba(255, 200, 240, .14) 55%, transparent 68%);
+  background-size: 260% 100%;
+  animation: foil 6s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+@keyframes foil { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0% 0; } }
+@media (prefers-reduced-motion: reduce) { .card.legendary .card-face::after { animation: none; } }
+
 /* ── title ───────────────────────────────────────────────────────── */
 .c-head {
   display: flex;

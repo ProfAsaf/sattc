@@ -1,7 +1,7 @@
 // Bot vs bot across the starter decks: a rough balance read.
 //   node tools/simulate.mjs 40        40 games per pairing (each side goes first half the time)
 
-import { newGame, apply } from '../js/engine.js';
+import { newGame, apply, actor } from '../js/engine.js';
 import { chooseAction } from '../js/ai.js';
 import { STARTERS } from '../js/cards.js';
 import { cardList } from '../js/decks.js';
@@ -17,8 +17,8 @@ function game(a, b, seed) {
   let x = seed >>> 0;
   const rand = () => (x = (Math.imul(x, 1103515245) + 12345) >>> 0) / 4294967296;
   let steps = 0;
-  while (s.phase !== 'over' && steps < 3000) {
-    const p = s.phase === 'mulligan' ? s.players.findIndex((P) => !P.mull) : s.active;
+  while (s.phase !== 'over' && steps < 4000) {
+    const p = s.phase === 'mulligan' ? s.players.findIndex((P) => !P.mull) : actor(s);
     const r = apply(s, chooseAction(s, p, { rand }));
     if (r.error) throw new Error(r.error);
     s = r.state;

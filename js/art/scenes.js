@@ -30,8 +30,12 @@
 // 10. Only light and air move. Particle classes: rise (embers, bubbles),
 //     float (motes, pages), twinkle (stars), drift (smoke, fog), breathe
 //     (glows), fall (drops). Motion only runs on cards shown large.
-// 11. No SVG filters, no <image>, no text, under ~150 elements. Seeded helpers
-//     (ridge, canopy, pines, ruins, particles, rays) get a seed unique to the card.
+// 11. At most ~6 filter uses (the finish's grain included), never on or around
+//     an animated element; no <image>, no text; at most ~200 elements. Light
+//     comes from the kit (bloom, shafts, haze, figure shade/edge/halo) and
+//     every card gets its faction's finish once (faction() in shared.js, or
+//     s.finish()). Seeded helpers (ridge, canopy, pines, ruins, particles,
+//     rays, motes) get a seed unique to the card.
 // 12. Check every scene at card size in art-lab.html?sheet: the subject must be
 //     recognisable on a 160px-wide card.
 
@@ -41,7 +45,10 @@ import { tide } from './scenes/tide.js';
 import { umbral } from './scenes/umbral.js';
 import { radiant } from './scenes/radiant.js';
 import { multi } from './scenes/multi.js';
+import { new_a } from './scenes/new-a.js';
+import { new_b } from './scenes/new-b.js';
+import { new_c } from './scenes/new-c.js';
 
 export { PAL } from './scenes/shared.js';
 
-export const SCENES = { ...ember, ...verdant, ...tide, ...umbral, ...radiant, ...multi };
+export const SCENES = { ...ember, ...verdant, ...tide, ...umbral, ...radiant, ...multi, ...new_a, ...new_b, ...new_c };

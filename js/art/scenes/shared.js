@@ -10,6 +10,10 @@ export const PAL = {
   radiant: { fig: '#2a1f15', rim: '#fff0c2', glow: '#ffd77a', hot: '#fff7dc' },
 };
 
+// Give every scene in a faction file that faction's finish (colour grade,
+// vignette; see Scene.finish in kit.js). A scene can still override it.
+export const faction = (name, scenes) => Object.fromEntries(Object.entries(scenes).map(([id, fn]) => [id, (s) => fn(s.finish({ faction: name }))]));
+
 export const mirror = (d) => d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_, x, y) => `${(W - Number(x)).toFixed(1)},${y}`);
 
 // A drifting sheet of paper with a few lines of writing.

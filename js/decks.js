@@ -29,14 +29,14 @@ export function curve(counts) {
 
 export function split(counts) {
   let creatures = 0, spells = 0;
-  for (const [id, n] of Object.entries(counts)) (BY_ID[id].type === 'creature' ? (creatures += n) : (spells += n));
+  for (const [id, n] of Object.entries(counts)) (BY_ID[id]?.type === 'creature' ? (creatures += n) : (spells += n));
   return { creatures, spells };
 }
 
 // Can one more copy go in? Returns a reason when it can't.
 export function canAdd(counts, id) {
   const card = BY_ID[id];
-  if ((counts[id] || 0) >= RULES.maxCopies) return { ok: false, reason: 'Only 2 copies of each card exist.' };
+  if ((counts[id] || 0) >= RULES.maxCopies) return { ok: false, reason: 'You own one of each card, and it is already in.' };
   const fs = factionsOf(counts);
   for (const f of card.factions) fs.add(f);
   if (fs.size > RULES.maxFactions) return { ok: false, reason: 'That would make 4 factions. Decks can use at most 3.' };
@@ -52,7 +52,7 @@ export function validate(counts) {
   if (fs.size > RULES.maxFactions) errors.push(`${fs.size} factions; the limit is ${RULES.maxFactions}.`);
   for (const [id, c] of Object.entries(counts)) {
     if (!BY_ID[id] || BY_ID[id].token) errors.push(`Unknown card: ${id}.`);
-    else if (c > RULES.maxCopies) errors.push(`${BY_ID[id].name}: at most ${RULES.maxCopies} copies.`);
+    else if (c > RULES.maxCopies) errors.push(`${BY_ID[id].name}: you own only one.`);
   }
   return { ok: errors.length === 0, errors };
 }

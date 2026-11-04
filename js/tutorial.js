@@ -28,8 +28,9 @@ const BOT = [
   'the-culling', 'heartwood-totem', 'death-is-a-door', 'something-beneath', 'the-forest-remembers',
 ];
 
-const me = (cid) => `.g-side.me .tcard[data-cid="${cid}"]`;
-const bot = (cid) => `.g-side.opp .tcard[data-cid="${cid}"]`;
+// Creatures are found wherever they are: in their row or in the battle zone.
+const me = (cid) => `.tcard.on-board:not(.foe)[data-cid="${cid}"]`;
+const bot = (cid) => `.tcard.on-board.foe[data-cid="${cid}"]`;
 const hand = (cid) => `.g-hand .tcard[data-cid="${cid}"]`;
 const BOT_LIFE = '.pbar[data-p="1"] .pb-life';
 const MY_LIFE = '.pbar[data-p="0"] .pb-life';
@@ -57,7 +58,7 @@ export const TUTORIAL = {
       say: 'Play Spark Runner. It has Rush: it can attack the turn it arrives.',
       sheet: 'Spark Runner costs 2: all your Energy. Tap Play.' },
     { expect: { t: 'attack', att: ['cinderling', 'spark-runner'], target: 1 }, show: [me('cinderling'), me('spark-runner'), '.atk-btn'],
-      say: 'Time to attack! Tap Cinderling and Spark Runner to send them in, then tap Attack. The bot then decides which of its creatures block.' },
+      say: 'Time to attack! Tap Cinderling and Spark Runner: they step into the middle of the table. Then tap Attack! (bottom right). The bot decides which of its creatures block.' },
     { bot: [{ t: 'block', blocks: [['street-recruit', 'cinderling']] }], say: 'The bot decides how to block…' },
     { next: true, show: [BOT_LIFE],
       say: 'The bot blocked Cinderling with Street Recruit. Blocked creatures hit each other: both died. Cinderling’s Last Breath burned the bot for 1, and unblocked Spark Runner hit for 3. The bot is at 16.' },
@@ -85,7 +86,7 @@ export const TUTORIAL = {
 
     { bot: [{ t: 'play', cid: 'spark-runner' }, { t: 'attack', att: ['spark-runner'], target: 0 }], say: 'The bot is taking its turn…' },
     { expect: { t: 'block', blocks: [['spirit', 'spark-runner']] }, show: [me('spirit'), bot('spark-runner'), '.blk-btn'],
-      say: 'The bot attacks you with its own Spark Runner (3 Power, 1 Vitality)! Yours is exhausted, so it can’t help. Block with your Spirit: tap the Spirit, tap the attacker, then tap Done.' },
+      say: 'The bot attacks you with its own Spark Runner (3 Power, 1 Vitality)! Yours is exhausted, so it can’t help. Block with your Spirit: tap it and it steps in front of the attacker. Then tap Done.' },
     { next: true, show: [MY_LIFE],
       say: 'Your Spirit and its Runner traded, and you took no damage. That’s blocking. Unblocked attackers hit you; blocked ones fight your creature instead.' },
     { bot: [{ t: 'end' }], say: 'The bot ends its turn…' },

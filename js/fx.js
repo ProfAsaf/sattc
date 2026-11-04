@@ -1,6 +1,7 @@
 // The physical layer of the table: small real-looking cards (.tcard), the
-// fanned hand, drag physics, FLIP moves between renders, and the combat and
-// spell effects. Styles live in css/table.css.
+// fanned hand, drag physics, FLIP moves between renders, cards falling onto
+// the table, discard piles, and the combat and spell effects. Styles live in
+// css/table.css.
 //
 // House rules:
 //  · Only transform and opacity animate. Things in flight live in one fixed
@@ -12,7 +13,7 @@
 //  · setSpeed() scales every duration. With prefers-reduced-motion, motion is
 //    near-instant; a card or banner that has to be read still shows briefly.
 
-import { KEYWORDS } from './cards.js';
+import { BY_ID, KEYWORDS } from './cards.js';
 import { artTag, cardBackHTML, esc, factionVars, glyph } from './render.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -22,6 +23,15 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const lerp = (a, b, t) => a + (b - a) * t;
 const centre = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
 const normDeg = (d) => ((((d + 180) % 360) + 360) % 360) - 180;
+
+// A stable number in [-1, 1] from a string: the same card always rests the
+// same way, so a re-render never reshuffles the table.
+function hashUnit(str, salt = 0) {
+  let h = (2166136261 ^ Math.imul(salt + 1, 0x9e3779b1)) >>> 0;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15;
+  return ((h >>> 0) / 4294967295) * 2 - 1;
+}
 
 // ── speed and reduced motion ────────────────────────────────────────
 let SPEED = 1;
@@ -136,14 +146,18 @@ function measure(el, r = el.getBoundingClientRect()) {
 }
 
 // Values for translate/rotate/scale that put an element's centre at
-// (b.cx + dx, b.cy + dy), turned by dAng and scaled by s relative to where its
-// own transform puts it. (They are applied around the same origin as the
-// transform, so its translation has to be turned and scaled too.)
+// (b.cx + dx, b.cy + dy), turned by dAng and scaled by s (or [sx, sy])
+// relative to where its own transform puts it. (They are applied around the
+// same origin as the transform, so its translation has to be turned and
+// scaled too.)
 function pose(b, dx, dy, dAng = 0, s = 1, extra) {
+  const [sx, sy] = Array.isArray(s) ? s : [s, s];
   const rad = (dAng * Math.PI) / 180, cos = Math.cos(rad), sin = Math.sin(rad);
-  const rx = b.e * cos - b.f * sin, ry = b.e * sin + b.f * cos;
-  const tx = dx + b.e - s * rx, ty = dy + b.f - s * ry;
-  return { translate: `${tx.toFixed(2)}px ${ty.toFixed(2)}px`, rotate: `${dAng.toFixed(2)}deg`, scale: s.toFixed(4), ...extra };
+  const ex = (b.e || 0) * sx, fy = (b.f || 0) * sy;
+  const rx = ex * cos - fy * sin, ry = ex * sin + fy * cos;
+  const tx = dx + (b.e || 0) - rx, ty = dy + (b.f || 0) - ry;
+  const scale = Math.abs(sx - sy) < 1e-4 ? sx.toFixed(4) : `${sx.toFixed(4)} ${sy.toFixed(4)}`;
+  return { translate: `${tx.toFixed(2)}px ${ty.toFixed(2)}px`, rotate: `${dAng.toFixed(2)}deg`, scale, ...extra };
 }
 
 // A damped spring from 1 to 0 over t in [0, 1] (about 5% overshoot).
@@ -186,7 +200,9 @@ const KW = {
   lastBreath: { name: 'Last Breath', c: '#dcc9ff', svg: '<path d="M12 1.8l2.3 7.9 7.9 2.3-7.9 2.3L12 22.2l-2.3-7.9L1.8 12l7.9-2.3z"/>' },
   leaving:    { name: 'Leaves at the end of the turn', c: '#d8cfbd', svg: HOURGLASS },
 };
-const SPENT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.6 12.4a7.6 7.6 0 1 1-2.3-6.1" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/><path d="M20.7 3.2v6.6h-6.6z" fill="currentColor"/></svg>';
+const SPENT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.6 12.4a7.6 7.6 0 1 1-2.3-6.1" fill="none" stroke="currentColor" stroke-width="2.9" stroke-linecap="round"/><path d="M20.9 2.9v7.1h-7.1z" fill="currentColor"/></svg>';
+// "zZ": just arrived, not awake enough to attack
+const DOZE = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 10.4h8.4L2.8 20.6h8.4" stroke-width="2.7"/><path d="M14.2 3.4h6.4l-6.4 7.8h6.4" stroke-width="2.3"/></svg>';
 
 /** The keyword ids that have a badge. */
 export const KEYWORD_BADGES = Object.keys(KW).filter((k) => k !== 'leaving');
@@ -228,12 +244,17 @@ function typeText(card) {
  *   zone       'board' (default) or 'hand' (adds cost hex and type line)
  *   states     array or space-separated classes: ready exhausted attacking blocking
  *              target selected hurt buffed sick can dim foe (see table.css)
+ *              ready = gold glow (can attack now); sick = zZ chip (just arrived:
+ *              can block, can't attack yet); exhausted = tilted, darkened, SPENT
+ *              stamp (attacked: can't attack or block until its next turn)
  *   power, vitality   current values (vitality = what is left after damage)
  *   dmg        damage marked this turn (> 0 colours vitality red)
  *   cost       current cost in hand (greener when cheaper, redder when dearer)
  *   keywords   keyword ids to badge (default card.keywords)
  *   leaving    true → hourglass badge (leaves at the end of the turn)
  *   foe        true → it belongs to an opponent (pushes forward downwards)
+ *   rest       false → no resting jitter (board cards otherwise lie a little
+ *              askew, the same way every time for the same uid)
  *   w          width in px (sets --w; otherwise --w-board / --w-hand)
  *   legendary  override for card.legendary
  *   cls        extra classes
@@ -261,11 +282,18 @@ export function tcardHTML(card, state = {}) {
   const costCls = cost < card.cost ? ' cheaper' : cost > card.cost ? ' pricier' : '';
   const badges = kws.map(keywordBadge).join('') + (s.leaving ? keywordBadge('leaving') : '');
   const art = artTag(card.id) || `<div class="tc-ph">${glyph((card.factions || [])[0] || 'neutral')}</div>`;
-  const label = creature ? `${card.name}, ${p} power, ${v} vitality` : `${card.name}, ${typeText(card)}`;
-  const style = factionVars(card) + (s.w ? `;--w:${s.w}px` : '');
+  const readiness = cls.includes('exhausted') ? ', spent until its next turn' : cls.includes('sick') ? ', just arrived: cannot attack yet' : cls.includes('ready') ? ', ready' : '';
+  const label = (creature ? `${card.name}, ${p} power, ${v} vitality` : `${card.name}, ${typeText(card)}`) + readiness;
+  let style = factionVars(card) + (s.w ? `;--w:${s.w}px` : '');
+  if (!hand && s.rest !== false) {
+    // put down by hand, not snapped to a grid: a small tilt and offset that belong to this card
+    const key = String(s.uid ?? card.id);
+    style += `;--jx:${(hashUnit(key, 1) * 2).toFixed(2)}px;--jy:${(hashUnit(key, 2) * 3).toFixed(2)}px;--jr:${(hashUnit(key, 3) * 3).toFixed(2)}deg`;
+  }
   const tier = nameTier(card.name, hand);
   if (tier === ' n2') cls.push('name2');
   return `<div class="${cls.join(' ')}"${s.uid != null ? ` data-uid="${esc(s.uid)}"` : ''} data-cid="${esc(card.id)}" style="${style}" role="img" aria-label="${esc(label)}">`
+    + '<i class="tc-shadow"></i>'
     + '<div class="tc-body"><div class="tc-face"><div class="tc-frame">'
     + (cls.includes('legendary') ? '<i class="tc-sheen"></i>' : '')
     + `<div class="tc-art">${art}</div>`
@@ -275,7 +303,8 @@ export function tcardHTML(card, state = {}) {
     + (hand ? `<div class="tc-cost${costCls}"><span>${cost}</span></div>` : '')
     + (creature ? `<b class="tc-p${pCls}">${p}</b><b class="tc-v${vCls}">${v}</b>` : '')
     + (badges ? `<div class="tc-kws">${badges}</div>` : '')
-    + `<i class="tc-ex">${SPENT}</i>`
+    + `<i class="tc-ex">${SPENT}<b>Spent</b></i>`
+    + `<i class="tc-zz">${DOZE}</i>`
     + '</div></div>';
 }
 
@@ -415,6 +444,7 @@ function cardAtX(hand, x) {
 // ══════════════════════════════════════════════════════════════════
 
 let ACTIVE = null;                     // the pointer interaction in progress (one at a time)
+const DRAGS = new WeakMap();           // dragged card → its physics state (capture() reads the momentum)
 const preventTouch = (e) => { if (e.cancelable) e.preventDefault(); };
 
 /** True while a finger is down on a hand card or aiming an arrow; put off re-renders until it is false. */
@@ -462,7 +492,8 @@ const damp = (k, zeta) => 2 * zeta * Math.sqrt(k);
  *
  * info = { el, uid, cid, x, y, dx, dy, vx, vy, rect, handRect, overHand, back() }
  * After an accepted drop the card stays where it was let go (class .dragging)
- * until you re-render; flip() then carries it from there to its new place.
+ * until you re-render; flip() then lets it fall from there onto its place on
+ * the board, carrying the momentum it was released with.
  */
 export function drag(target, o = {}) {
   const sel = o.selector || null;
@@ -576,6 +607,7 @@ function startDrag(S) {
   S.mode = 'drag';
   el.classList.remove('touched');
   el.classList.add('dragging');
+  DRAGS.set(el, S);
   applyDrag(S);
   if (S.hand) layoutHand(S.hand);                    // the rest close ranks
   addEventListener('touchmove', preventTouch, { passive: false });
@@ -822,14 +854,15 @@ export function arrow(fromEl, toEl, o = {}) {
 //  4. FLIP: capture before a render, flip after it
 // ══════════════════════════════════════════════════════════════════
 
-const SEL = '[data-uid]:not(button):not([data-act]), [data-p]:not(button):not([data-act])';
+const SEL = '[data-uid]:not(button):not([data-act]), [data-p]:not(button):not([data-act]), [data-pile]';
 const INFO = new WeakMap();      // DOMRect from capture() → what else we saw
 
-/** The key capture() uses: the data-uid ("12"), or "p" + data-p for player bars ("p0"). */
+/** The key capture() uses: the data-uid ("12"), "p" + data-p for player bars ("p0"), "pile" + data-pile for discard piles ("pile0"). */
 export function keyOf(el) {
   if (!el || !el.dataset) return null;
   if (el.dataset.uid != null) return String(el.dataset.uid);
   if (el.dataset.p != null) return `p${el.dataset.p}`;
+  if (el.dataset.pile != null) return `pile${el.dataset.pile}`;
   return null;
 }
 
@@ -838,17 +871,22 @@ function snap(el, r) {
   const zone = el.classList.contains('in-hand') ? 'hand' : el.classList.contains('tcard') ? 'board' : 'other';
   const p = el.querySelector?.(':scope > .tc-body > .tc-p'), v = el.querySelector?.(':scope > .tc-body > .tc-v');
   const life = el.querySelector?.('.pb-life');
+  const S = DRAGS.get(el);
   return {
     el, zone, ...m, cs: undefined,
     vw: m.cs.getPropertyValue('--w').trim(),
     pv: p || v ? [p?.textContent ?? '', v?.textContent ?? ''] : null,
     life: life ? life.textContent : null,
+    pile: el.dataset?.pile != null ? el.dataset.count : null,
+    dragging: el.classList.contains('dragging'),
+    vel: S && (S.mode === 'drag' || S.mode === 'hold') ? { x: S.vx, y: S.vy } : null,
   };
 }
 
 /**
- * Remember where every card ([data-uid]) and player bar ([data-p]) is.
- * Returns a Map of key → DOMRect (see keyOf). Call it just before a render.
+ * Remember where every card ([data-uid]), player bar ([data-p]) and discard
+ * pile ([data-pile]) is. Returns a Map of key → DOMRect (see keyOf). Call it
+ * just before a render.
  */
 export function capture(root = document) {
   const map = new Map();
@@ -865,12 +903,15 @@ export function capture(root = document) {
 
 /**
  * After a render: everything that existed before glides from where it was to
- * where it is now (a card played from the hand is tossed onto the board,
- * creatures slide over when one leaves, a creature that attacked tilts).
- * New elements enter: hand cards are drawn in from the deck, tokens
- * materialise, other creatures drop onto the table.
+ * where it is now. A card that left the hand for the board falls onto the
+ * table (from where it was let go, keeping its momentum; a tapped play is
+ * lifted out of the hand first). Creatures slide over when one leaves, a
+ * creature that attacked tilts. New elements enter: hand cards are drawn in
+ * from the deck, tokens materialise, other creatures drop onto the table,
+ * and a creature showCard() already put down (toRect) takes over from its
+ * stand-in without landing twice.
  *
- * opts: duration, delay (old positions are held meanwhile),
+ * opts: duration (slides), fallDuration, delay (old positions are held meanwhile),
  *       enter: 'auto' | 'none' | 'draw' | 'drop' | 'materialize' | 'fade' | (el) => one of those,
  *       exclude: elements or keys to leave alone, drawFrom: DOMRect where drawn cards come from.
  * Elements with .fx-hidden (e.g. waiting for showCard) are skipped.
@@ -890,12 +931,18 @@ export function flip(root, before, o = {}) {
     it.m = measure(it.el, it.r);
     it.m.zone = it.el.classList.contains('in-hand') ? 'hand' : it.el.classList.contains('tcard') ? 'board' : 'other';
     if (it.old) it.a = INFO.get(it.old) || { cx: it.old.left + it.old.width / 2, cy: it.old.top + it.old.height / 2, w: it.old.width, h: it.old.height, ang: 0, sc: 1 };
+    else if (it.m.zone === 'board') {
+      const pk = takeParked(it.el);
+      if (pk) { it.a = pk.info; it.parked = pk; }
+    }
   }
   const jobs = [];
   let drawn = 0;
   for (const it of items) {
-    if (it.a) jobs.push(moveFrom(it, o));
-    else if (before.size) jobs.push(enter(it.el, it.m, o, it.el.classList.contains('in-hand') ? drawn++ : 0));
+    if (it.a) {
+      jobs.push(moveFrom(it, o));
+      if (it.parked) it.parked.el.remove();   // the real card now shows where its stand-in was
+    } else if (before.size) jobs.push(enter(it.el, it.m, o, it.el.classList.contains('in-hand') ? drawn++ : 0));
   }
   return Promise.all(jobs).then(noop);
 }
@@ -904,6 +951,11 @@ function moveFrom({ el, a, m: b }, o) {
   const s = clamp((a.w * a.sc) / ((b.w || 1) * (b.sc || 1)), 0.15, 6);
   const dx = a.cx - b.cx, dy = a.cy - b.cy, dAng = normDeg(a.ang - b.ang);
   const pops = () => popChanges(el, a);
+  if (a.zone === 'hand' && b.zone === 'board' && el.classList.contains('on-board')) {
+    // played: it falls from the hand (or from where the drag let go of it) onto the table
+    return runFall(el, { cx: a.cx, cy: a.cy, w: a.w * a.sc, ang: a.ang }, b,
+      { lift: !a.dragging, velocity: a.vel, delay: o.delay, duration: o.fallDuration }).then(pops);
+  }
   if (Math.abs(dx) < 0.6 && Math.abs(dy) < 0.6 && Math.abs(dAng) < 0.4 && Math.abs(s - 1) < 0.015) { pops(); return Promise.resolve(); }
   const dist = Math.hypot(dx, dy);
   const toss = (a.zone && b.zone && a.zone !== b.zone) || dist > 170;
@@ -926,7 +978,7 @@ function moveFrom({ el, a, m: b }, o) {
   return done(anim).then(() => { el.classList.remove('fx-air'); pops(); });
 }
 
-// Pop the P/V coins (or a player's life) when their numbers changed.
+// Pop the P/V coins (or a player's life, or a pile's count) when their numbers changed.
 function popChanges(el, a) {
   if (a.pv) {
     const p = el.querySelector(':scope > .tc-body > .tc-p'), v = el.querySelector(':scope > .tc-body > .tc-v');
@@ -937,9 +989,13 @@ function popChanges(el, a) {
     const l = el.querySelector('.pb-life');
     if (l && l.textContent !== a.life) pop(l);
   }
+  if (a.pile != null && el.dataset.count !== a.pile) {
+    const n = el.querySelector(':scope > .tc-pile-n');
+    if (n) pop(n);
+  }
 }
 function pop(node) {
-  if (isReduced()) return;
+  if (!node || isReduced()) return;
   node.classList.remove('fx-pop');
   void node.offsetWidth;
   node.classList.add('fx-pop');
@@ -972,24 +1028,217 @@ function drawIn(el, b, from, delay) {
   ], { duration: 620, delay, easing: 'linear', fill: 'backwards' }).then(() => el.classList.remove('fx-air'));
 }
 
+// A creature that appears without coming from the hand drops a short way.
 function dropIn(el, b, delay) {
-  setTimeout(() => { if (el.isConnected) dust(el); }, D(delay + 300));
-  return play(el, [
-    { ...pose(b, 0, -24, 0, 1.32), opacity: 0, offset: 0, easing: 'cubic-bezier(.5,0,.8,.6)' },
-    { ...pose(b, 0, 2, 0, 0.95), opacity: 1, offset: 0.55, easing: 'cubic-bezier(.3,.7,.4,1)' },
-    { ...pose(b, 0, -1.5, 0, 1.015), opacity: 1, offset: 0.78 },
-    { ...pose(b, 0, 0, 0, 1), opacity: 1, offset: 1 },
-  ], { duration: 540, delay, easing: 'linear', fill: 'backwards' });
+  const restW = (b.w || 1) * (b.sc || 1);
+  play(el, [{ opacity: 0 }, { opacity: 1, offset: 0.22 }, { opacity: 1 }], { duration: 620, delay, fill: 'backwards' });
+  return runFall(el, { cx: b.cx + rand(-6, 6), cy: b.cy - 30, w: restW * 1.4, ang: b.ang + rand(-9, 9) }, b,
+    { delay, duration: 620, flutter: 4.5 });
 }
 
 // A puff of dust where a card lands.
-function dust(el) {
-  if (isReduced()) return;
-  const r = el.getBoundingClientRect();
-  const y = r.bottom - 3;
-  particles(r.left + 4, y, { n: 5, kind: 'ash', dir: 180, spread: 50, vmin: 30, vmax: 80, gravity: -20, life: 520, size: [3, 6] });
-  particles(r.right - 4, y, { n: 5, kind: 'ash', dir: 0, spread: 50, vmin: 30, vmax: 80, gravity: -20, life: 520, size: [3, 6] });
-  shake(0.5);
+function dust(el) { landFx(el, 'dust'); }
+
+// ══════════════════════════════════════════════════════════════════
+//  Falling and landing
+// ══════════════════════════════════════════════════════════════════
+//
+// A card let go above the table keeps the momentum it was released with and
+// drifts, shrinks from held size to table size as gravity takes it (slowly,
+// then fast), flutters (a small wobble that dies away, with a hint of the card
+// tipping), and its shadow tightens as it nears the cloth. It touches down a
+// few px short, squashes, skids in and settles at its resting angle.
+//
+// fallPlan() samples that path relative to the resting pose: x, y are screen px
+// from the resting centre, ang degrees from the resting angle, sx/sy a factor of
+// the resting size, h the height (1 = held, 0 = on the table). The samples are
+// then written as keyframes for a card on the table (restFrames, which stack on
+// the card's own transform) or for a stand-in in the overlay (overlayFrames).
+
+function fallPlan(a, b, o = {}) {
+  // lift: true = tossed up out of the hand first; a number = how much it rises
+  // before it falls (1 = not at all, 1.25 = a little: a card let go from high up)
+  const lift = o.lift === true ? 2.2 : typeof o.lift === 'number' && o.lift > 1 ? o.lift : 0;
+  const restW = Math.max(1, (b.w || 1) * (b.sc || 1));
+  const s0 = clamp(a.w / restW, 0.3, 8);
+  const P0x = a.cx - b.cx, P0y = a.cy - b.cy;
+  const dist = Math.hypot(P0x, P0y);
+  const v = o.velocity || { x: 0, y: 0 };
+  const speed = Math.hypot(v.x, v.y);
+  // which way it is moving when it touches down: toward its place, bent by the throw
+  let ux = -P0x + v.x * 0.15, uy = -P0y + v.y * 0.15;
+  const ul = Math.hypot(ux, uy);
+  if (ul < 1) { ux = 0; uy = 1; } else { ux /= ul; uy /= ul; }
+  const skid = o.skid ?? clamp(2.5 + dist * 0.012 + speed * 0.002, 2.5, 7);
+  const Lx = -ux * skid, Ly = -uy * skid;          // touch down a little short of the place, then skid in
+  // the start of the path: the throw, or (a tap) up and out of the hand
+  let m0x, m0y;
+  if (lift >= 2) { m0x = -P0x * 0.1; m0y = -Math.max(110, Math.abs(P0y) * 0.55 + 50); }
+  else if (lift) { m0x = -P0x * 0.15; m0y = -P0y * 0.15 - 24; }
+  else {
+    m0x = v.x * 0.3; m0y = v.y * 0.3;
+    const ml = Math.hypot(m0x, m0y);
+    if (ml > 120) { m0x *= 120 / ml; m0y *= 120 / ml; }
+  }
+  const m1x = ux * skid * 3, m1y = uy * skid * 3;
+  const dA = normDeg(a.ang - b.ang);
+  const resid = clamp(ux * 2.5 + Math.sign(dA || 1) * 0.8, -3.5, 3.5);   // lands a touch askew, then settles
+  const wob = o.flutter ?? clamp(3.5 + speed * 0.004 + dist * 0.008, 3.5, 8.5);
+  const ph = rand(0, Math.PI * 2), ph2 = rand(0, Math.PI * 2);
+  const tLand = o.tLand ?? (lift ? 0.78 : 0.74);
+  const samples = [];
+  const N1 = 26, N2 = 12;
+  for (let i = 0; i <= N1 + N2; i++) {
+    const t = i <= N1 ? (tLand * i) / N1 : tLand + ((1 - tLand) * (i - N1)) / N2;
+    let x, y, ang, sx, sy, h;
+    if (i <= N1) {
+      const u = t / tLand, u2 = u * u, u3 = u2 * u;
+      const h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2;
+      x = h00 * P0x + h10 * m0x + h01 * Lx + h11 * m1x;
+      y = h00 * P0y + h10 * m0y + h01 * Ly + h11 * m1y;
+      h = lift ? (1 - u) * (1 + lift * u) : 1 - u2;  // a toss rises first; a drop just falls
+      const s = 1 + (s0 - 1) * h;
+      const ramp = Math.min(1, u / 0.12), fade = (1 - u) ** 1.4;
+      ang = dA + (resid - dA) * (u2 * (3 - 2 * u)) + wob * Math.sin(2 * Math.PI * 1.45 * u + ph) * fade * ramp;
+      const tip = 1 - 0.07 * Math.abs(Math.sin(2 * Math.PI * 1.05 * u + ph2)) * fade * ramp;
+      sx = s * tip; sy = s;
+    } else {
+      const u = (t - tLand) / (1 - tLand);
+      const k = 1 - (1 - u) ** 3;                    // skid, slowing with friction
+      x = Lx * (1 - k); y = Ly * (1 - k);
+      const squash = u < 0.3 ? -0.05 * Math.sin((Math.PI * u) / 0.3) : u < 0.62 ? 0.014 * Math.sin((Math.PI * (u - 0.3)) / 0.32) : 0;
+      sx = sy = 1 + squash;
+      ang = resid * springAt(u, 0.45);
+      h = 0;
+    }
+    samples.push({ t, x, y, ang, sx, sy, h });
+  }
+  samples[samples.length - 1] = { t: 1, x: 0, y: 0, ang: 0, sx: 1, sy: 1, h: 0 };
+  return { samples, tLand, dir: { x: ux, y: uy }, lift: lift >= 2, dist };
+}
+
+const within = (samples, from, to) => samples.filter((s) => s.t >= from - 1e-9 && s.t <= to + 1e-9);
+const offsetIn = (t, from, to) => clamp((t - from) / Math.max(1e-6, to - from), 0, 1);
+
+// Keyframes for a card resting at b (they stack on its own transform).
+function restFrames(b, samples, from = 0, to = 1) {
+  return within(samples, from, to).map((s) => ({ ...pose(b, s.x, s.y, s.ang, [s.sx, s.sy]), offset: offsetIn(s.t, from, to) }));
+}
+
+// Keyframes for an untransformed element in the overlay whose layout box is
+// centred at (lay.cx, lay.cy) with width lay.w, landing on dest {cx, cy, ang, w}.
+function overlayFrames(dest, lay, samples, from = 0, to = 1) {
+  const k = dest.w / Math.max(1, lay.w);
+  return within(samples, from, to).map((s) => ({
+    translate: `${(dest.cx + s.x - lay.cx).toFixed(2)}px ${(dest.cy + s.y - lay.cy).toFixed(2)}px`,
+    rotate: `${(dest.ang + s.ang).toFixed(2)}deg`,
+    scale: `${(k * s.sx).toFixed(4)} ${(k * s.sy).toFixed(4)}`,
+    offset: offsetIn(s.t, from, to),
+  }));
+}
+
+// The shadow under a falling card: soft and well below it while it is high,
+// tight and dark as it touches down, then gone (the card's own shadow stays).
+function shadowFrames(w, samples, from = 0, to = 1, tLand = 0.75) {
+  return within(samples, from, to).map((s) => {
+    const after = s.t > tLand ? offsetIn(s.t, tLand, 1) : 0;
+    const h = Math.max(0, s.h);
+    return {
+      transform: `translateY(${(w * (0.03 + 0.2 * h) * (1 - after)).toFixed(2)}px) scale(${(1 + 0.1 * h).toFixed(3)})`,
+      opacity: ((0.95 - 0.35 * Math.min(1, h)) * (1 - after)).toFixed(3),
+      offset: offsetIn(s.t, from, to),
+    };
+  });
+}
+
+// Run a fall on a card that already sits in its resting place.
+function runFall(el, a, b, o = {}) {
+  const plan = fallPlan(a, b, o);
+  const dur = o.duration ?? (plan.lift ? 840 : clamp(660 + plan.dist * 0.25, 660, 800));
+  const delay = o.delay || 0;
+  el.classList.add('fx-fall');
+  const anim = run(el, restFrames(b, plan.samples), { duration: dur, delay, easing: 'linear', fill: 'backwards' });
+  const sh = el.querySelector?.(':scope > .tc-shadow');
+  if (sh) run(sh, shadowFrames(el.offsetWidth || b.w, plan.samples, 0, 1, plan.tLand), { duration: dur, delay, easing: 'linear', fill: 'backwards' });
+  if (o.puff !== false) setTimeout(() => { if (el.isConnected) landFx(el, o.puff || 'dust', plan.dir); }, D(delay + dur * plan.tLand));
+  return done(anim).then(() => { el.classList.remove('fx-fall'); });
+}
+
+/**
+ * Drop a card onto the table. `el` is the card already in its new place (after
+ * the render); `fromRect` is where it starts (a hand card, the point a drag let
+ * go of it, a player bar). It falls the way flip() lets played cards fall.
+ * opts: velocity {x, y} (px/s, the throw it keeps), angle (start angle, deg),
+ *       width (start width, default fromRect.width), lift (toss it up first, like
+ *       a tapped play), duration (default 660-840ms), delay, flutter (deg),
+ *       puff ('dust' | 'light' | false).
+ */
+export function fall(el, fromRect, o = {}) {
+  if (!el || !fromRect) return Promise.resolve();
+  const b = measure(el);
+  const a = { cx: fromRect.left + fromRect.width / 2, cy: fromRect.top + fromRect.height / 2, w: o.width ?? fromRect.width, ang: o.angle ?? 0 };
+  return runFall(el, a, b, o);
+}
+
+// Touch-down: the air under the card puffs out its outline, dust skips away
+// from the edges (mostly ahead of the skid), the table takes a small knock.
+function landFx(el, kind = 'dust', dir = { x: 0, y: -1 }, o = {}) {
+  if (!kind || isReduced() || !el) return;
+  const isRect = typeof el.getBoundingClientRect !== 'function';
+  const r = isRect ? el : el.getBoundingClientRect(), c = centre(r);
+  const bw = (!isRect && el.offsetWidth) || r.width, bh = (!isRect && el.offsetHeight) || r.height;
+  const light = kind === 'light';
+  const puff = add(`fx-puff${light ? ' light' : ''}`, `left:${(c.x - bw / 2).toFixed(1)}px;top:${(c.y - bh / 2).toFixed(1)}px;width:${bw.toFixed(1)}px;height:${bh.toFixed(1)}px;border-radius:${(bw * 0.09).toFixed(1)}px`);
+  play(puff, [{ transform: 'scale(.94)', opacity: 0.75 }, { transform: 'scale(1.3)', opacity: 0 }], { duration: 460, easing: 'cubic-bezier(.15,.7,.3,1)' }).then(() => puff.remove());
+  const n = o.n ?? 4, kindP = light ? 'dot' : 'ash', col = light ? ['#fff6dc', '#ffd98a'] : '#e9dcc0';
+  particles(r.left + 3, r.bottom - 4, { n, kind: kindP, color: col, dir: 180, spread: 60, vmin: 25, vmax: 70, gravity: -25, life: 560, size: [3, 6] });
+  particles(r.right - 3, r.bottom - 4, { n, kind: kindP, color: col, dir: 0, spread: 60, vmin: 25, vmax: 70, gravity: -25, life: 560, size: [3, 6] });
+  particles(c.x + dir.x * bw * 0.5, c.y + dir.y * bh * 0.5, { n: Math.max(2, n - 1), kind: kindP, color: col, dir: (Math.atan2(dir.y, dir.x) * 180) / Math.PI, spread: 70, vmin: 20, vmax: 60, gravity: -20, life: 520, size: [3, 5] });
+  if (light) particles(c.x, c.y, { n: 10, color: ['#fff6dc', '#ffd27a'], dir: -90, spread: 120, vmin: 20, vmax: 80, gravity: -60, life: 800, jitter: [bw * 0.4, bh * 0.3], size: [3, 5] });
+  if (o.shake !== false) shake(0.55);
+}
+
+// ── stand-ins: a card showCard() put down before the table was redrawn ──
+const PARKED = new Set();
+
+function parkCard(card, rect, o = {}) {
+  const host = document.createElement('div');
+  host.innerHTML = tcardHTML(card, { zone: 'board', foe: !!o.foe, rest: false, w: rect.width });
+  const el = host.firstElementChild;
+  el.classList.add('fx-ghost', 'fx-parked', 'fx-hidden');
+  el.style.position = 'absolute';
+  el.style.left = `${rect.left.toFixed(1)}px`;
+  el.style.top = `${(rect.top + rect.height / 2 - (rect.width * 1.33) / 2).toFixed(1)}px`;
+  layer().appendChild(el);
+  return el;
+}
+
+function park(el, cid) {
+  const pk = { el, cid };
+  // if the table never draws it (the play was canceled), let it go
+  pk.timer = setTimeout(() => {
+    if (!PARKED.delete(pk)) return;
+    play(el, [{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).then(() => el.remove());
+  }, 6000);
+  PARKED.add(pk);
+}
+
+// The stand-in for this freshly drawn card, if there is one (same card, close by).
+function takeParked(el) {
+  const cid = el.dataset?.cid;
+  if (!cid || !PARKED.size) return null;
+  const c = centre(el.getBoundingClientRect());
+  let best = null, bd = Infinity;
+  for (const pk of PARKED) {
+    if (pk.cid !== cid || !pk.el.isConnected) continue;
+    const r = pk.el.getBoundingClientRect(), d = Math.hypot(r.left + r.width / 2 - c.x, r.top + r.height / 2 - c.y);
+    if (d < bd) { bd = d; best = pk; }
+  }
+  if (!best || bd > 320) return null;
+  PARKED.delete(best);
+  clearTimeout(best.timer);
+  best.info = snap(best.el, best.el.getBoundingClientRect());
+  return best;
 }
 
 /**
@@ -1011,7 +1260,7 @@ export function ghost(src, key) {
   if (!info || !info.el) return null;
   const g = info.el.cloneNode(true);
   g.removeAttribute('id');
-  g.classList.remove('target', 'aim', 'aiming', 'touched', 'dragging', 'returning', 'drop-ok', 'fx-air', 'fx-lunge', 'fx-hidden', 'fx-nofx');
+  g.classList.remove('target', 'aim', 'aiming', 'touched', 'dragging', 'returning', 'drop-ok', 'fx-air', 'fx-lunge', 'fx-hidden', 'fx-nofx', 'fx-fall', 'fx-parked');
   g.classList.add('fx-ghost');
   g.querySelectorAll('.fx-flash, .fx-cracks').forEach((n) => n.remove());
   const st = g.style;
@@ -1561,6 +1810,175 @@ async function dissolve(g, o) {
   ]);
 }
 
+// ── discard piles ───────────────────────────────────────────────────
+// A pile is a small messy stack: the top three cards, each a little off and
+// turned (the same way every time: it depends on the player, the card's place
+// in the pile and the card), the top one face up. Its count sits in a badge.
+
+// a card object, a card id, or { cid }
+function cardOf(x) {
+  if (typeof x === 'string') return BY_ID[x] || null;
+  if (x && typeof x === 'object') return x.id && x.name ? x : BY_ID[x.cid] || null;
+  return null;
+}
+
+function pileRest(p, i, cid) {
+  const key = `${p}|${i}|${cid || ''}`;
+  return { x: hashUnit(key, 11) * 3.2, y: hashUnit(key, 12) * 2.6, r: hashUnit(key, 13) * 14 };
+}
+
+function pileCardHTML(card, rest, top) {
+  const inner = card
+    ? `<div class="tc-pc-face"><div class="tc-pc-art">${artTag(card.id) || glyph((card.factions || [])[0] || 'neutral')}</div><i class="tc-pc-plate"></i></div>`
+    : '<div class="tc-pc-face tc-pc-back"></div>';
+  return `<div class="tc-pcard${top ? ' top' : ''}"${card ? ` data-cid="${esc(card.id)}"` : ''} style="${card ? `${factionVars(card)};` : ''}--px:${rest.x.toFixed(2)}px;--py:${rest.y.toFixed(2)}px;--pr:${rest.r.toFixed(2)}deg">${inner}</div>`;
+}
+
+const pileThick = (n) => (n >= 14 ? 3 : n >= 8 ? 2 : n >= 4 ? 1 : 0);
+
+/**
+ * A discard pile: `cards` bottom to top (card objects, card ids, or {cid}),
+ * all of them or just the top few; opts.count is the full size (default
+ * cards.length). Returns a .tc-pile with data-pile="<p>", which capture() and
+ * flip() track ("pile<p>"). Size: --pile-w (default 44px) or opts.w.
+ * opts.act adds data-act="<act>" data-of="<p>" so a tap can open the pile.
+ */
+export function pileHTML(cards = [], o = {}) {
+  const p = o.p ?? 0;
+  const list = (cards || []).map(cardOf).filter(Boolean);
+  const count = Math.max(o.count ?? list.length, list.length);
+  const top = list.slice(-3);
+  const first = count - top.length;
+  const last = top[top.length - 1];
+  const label = count ? `Discard pile, ${count} card${count === 1 ? '' : 's'}${last ? `, ${last.name} on top` : ''}` : 'Discard pile, empty';
+  const thick = pileThick(count);
+  const cls = `tc-pile${count ? '' : ' empty'}${thick ? ` thick-${thick}` : ''}${o.cls ? ` ${o.cls}` : ''}`;
+  const act = o.act ? ` data-act="${esc(o.act)}" data-of="${esc(p)}" role="button"` : ' role="img"';
+  return `<div class="${cls}" data-pile="${esc(p)}" data-count="${count}"${act} aria-label="${esc(label)}"${o.w ? ` style="--pile-w:${o.w}px"` : ''}>`
+    + '<i class="tc-pile-slot"></i>'
+    + top.map((c, k) => pileCardHTML(c, pileRest(p, first + k, c.id), k === top.length - 1)).join('')
+    + `<b class="tc-pile-n">${count}</b></div>`;
+}
+
+// Put a card on top of a pile element (what pileHTML would draw next).
+function addToPile(pile, cid, index) {
+  const card = cardOf(cid);
+  const rest = pileRest(pile.dataset.pile, index, card?.id);
+  pile.querySelectorAll(':scope > .tc-pcard.top').forEach((n) => n.classList.remove('top'));
+  const badge = pile.querySelector(':scope > .tc-pile-n');
+  const holder = document.createElement('div');
+  holder.innerHTML = pileCardHTML(card, rest, true);
+  const el = holder.firstElementChild;
+  pile.insertBefore(el, badge);
+  const shown = pile.querySelectorAll(':scope > .tc-pcard');
+  for (let i = 0; i < shown.length - 3; i++) shown[i].remove();
+  const count = Math.max(index + 1, Number(pile.dataset.count || 0));
+  pile.dataset.count = count;
+  if (badge) badge.textContent = count;
+  pile.classList.remove('empty', 'thick-1', 'thick-2', 'thick-3');
+  if (pileThick(count)) pile.classList.add(`thick-${pileThick(count)}`);
+  return el;
+}
+
+const livePile = (pile) => (pile?.isConnected ? pile : pile?.dataset ? document.querySelector(`[data-pile="${CSS.escape(pile.dataset.pile)}"]`) : null);
+
+// Fly an overlay element (layout box `lay`, currently looking like `from`)
+// down onto the top of a pile, then hand over to the pile's new top card.
+async function pileDrop(fly, lay, from, pileEl, o = {}) {
+  const pile = livePile(pileEl);
+  if (!pile) { await play(fly, [{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' }); return; }
+  const n = Number(pile.dataset.count || 0);
+  const rest = pileRest(pile.dataset.pile, n, o.cid);
+  const pr = pile.getBoundingClientRect();
+  const pw = parseFloat(getComputedStyle(pile).getPropertyValue('--pile-w')) || 44;
+  const dest = { cx: pr.left + pr.width / 2 + rest.x, cy: pr.top + pr.height / 2 + rest.y, ang: rest.r, w: pw };
+  const plan = fallPlan(from, { cx: dest.cx, cy: dest.cy, ang: dest.ang, w: pw, sc: 1, e: 0, f: 0 }, { flutter: 8, skid: 3, velocity: o.velocity });
+  const dur = o.duration ?? clamp(700 + plan.dist * 0.2, 700, 900);
+  fly.classList.add('falling');
+  const sh = o.shadowW ? showShadow(fly) : null;
+  const anim = run(fly, overlayFrames(dest, lay, plan.samples, 0, plan.tLand), { duration: dur * plan.tLand, easing: 'linear', fill: 'forwards' });
+  if (sh) run(sh, shadowFrames(o.shadowW, plan.samples, 0, plan.tLand, plan.tLand), { duration: dur * plan.tLand, easing: 'linear', fill: 'forwards' });
+  if (o.fadeIn) run(fly, [{ opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 1 }], { duration: dur * plan.tLand, easing: 'linear', fill: 'forwards' });
+  o.base?.cancel();
+  await done(anim);
+  // touch-down: the pile's new top card takes over
+  const live = livePile(pile);
+  let top = null;
+  if (live) {
+    const now = Number(live.dataset.count || 0);
+    const already = now > n && live.querySelector(':scope > .tc-pcard.top');
+    top = already || addToPile(live, o.cid, n);
+  }
+  fly.style.visibility = 'hidden';
+  if (!top) return;
+  const tb = measure(top);
+  landFx(top, 'dust', plan.dir, { n: 2, shake: false });
+  pop(live.querySelector(':scope > .tc-pile-n'));
+  await play(top, restFrames(tb, plan.samples, plan.tLand, 1), { duration: dur * (1 - plan.tLand), easing: 'linear', fill: 'none' });
+}
+
+function showShadow(wrap) {
+  if (isReduced()) return null;
+  const sh = document.createElement('i');
+  sh.className = 'fx-show-shadow';
+  wrap.prepend(sh);
+  return sh;
+}
+
+/**
+ * A card flutters down onto a discard pile and lands on top, a little askew.
+ * source: a card element (it is ghosted and hidden), a ghost, or card HTML
+ *         (cardHTML / tcardHTML; it appears at opts.fromRect, or just above the pile).
+ * opts: fromRect, cid (which card, if the source does not say), velocity,
+ *       duration (default 700-900ms).
+ * The pile element is updated in place (new top card, count), so the next
+ * pileHTML render of the same pile looks the same.
+ */
+export async function toPile(source, pileEl, o = {}) {
+  if (!pileEl || !source) return;
+  let fly = null, lay, from, fadeIn = false;
+  let cid = o.cid || null;
+  try {
+    if (typeof source === 'string') {
+      fly = add('fx-pilefly', 'visibility:hidden');
+      fly.innerHTML = source;
+      const inner = fly.firstElementChild;
+      cid ||= inner?.dataset?.cid || inner?.dataset?.id || null;
+      const pr = livePile(pileEl)?.getBoundingClientRect();
+      const fr = o.fromRect && o.fromRect.width ? o.fromRect
+        : pr ? new DOMRect(pr.left + pr.width / 2 - pr.width * 0.8, pr.top - pr.height * 1.4, pr.width * 1.6, pr.height * 1.6) : null;
+      if (!fr) { fly.remove(); return; }
+      if (inner?.classList.contains('card')) inner.style.setProperty('--cw', `${fr.width}px`);
+      if (inner?.classList.contains('tcard')) inner.style.setProperty('--w', `${fr.width}px`);
+      fly.style.width = `${fr.width}px`;
+      const h = inner?.offsetHeight || fr.width * 1.4;
+      fly.style.left = `${fr.left.toFixed(1)}px`;
+      fly.style.top = `${(fr.top + fr.height / 2 - h / 2).toFixed(1)}px`;
+      fly.style.visibility = '';
+      lay = { cx: fr.left + fr.width / 2, cy: fr.top + fr.height / 2, w: fr.width };
+      from = { ...lay, ang: o.angle ?? rand(-6, 6) };
+      fadeIn = true;
+    } else {
+      if (source.classList?.contains('fx-ghost')) fly = source;
+      else { fly = ghost(source); source.classList?.add('fx-hidden'); }
+      if (!fly) return;
+      cid ||= fly.dataset?.cid || fly.querySelector?.('[data-cid]')?.dataset.cid || null;
+      const gi = GHOST.get(fly) || { ang: 0, sc: 1 };
+      const w = fly.offsetWidth, h = fly.offsetHeight;
+      const left = parseFloat(fly.style.left) || 0, top = parseFloat(fly.style.top) || 0;
+      fly.style.transform = 'none';                // its turn and scale move into the keyframes
+      lay = { cx: left + w / 2, cy: top + h / 2, w };
+      from = { cx: lay.cx, cy: lay.cy, w: w * gi.sc, ang: gi.ang };
+    }
+    if (isReduced()) { const pile = livePile(pileEl); if (pile) addToPile(pile, cid, Number(pile.dataset.count || 0)); return; }
+    await pileDrop(fly, lay, from, pileEl, { cid, fadeIn, velocity: o.velocity, duration: o.duration });
+  } catch (err) {
+    console.warn('fx: toPile', err);
+  } finally {
+    fly?.remove();
+  }
+}
+
 // ── the big card in the middle ──────────────────────────────────────
 
 function holdFor(ms, el, skippable) {
@@ -1575,13 +1993,21 @@ function holdFor(ms, el, skippable) {
 /**
  * Show a played card big: it flies from `fromRect` to the middle of the stage,
  * grows to ~70% of its width, holds (`hold` ms, default 1100; a tap skips),
- * then flies down onto `toEl` / `toRect` and lands with a flare, or fades.
+ * then falls onto the table like a dropped card, or flutters onto a discard
+ * pile, or fades.
  *
  * html: usually cardHTML(card, { cls: 'anim' }).
- * opts: fromRect, toRect, toEl (hidden until the card lands on it; if it has
- *       been re-rendered meanwhile, it is found again by data-uid),
+ * opts: fromRect,
+ *       toEl   the card on the table it becomes (hidden until it lands; if it has
+ *              been re-rendered meanwhile, it is found again by data-uid),
+ *       toRect where it will sit when the table is next drawn: it lands there; a
+ *              creature leaves a stand-in until flip() hands over to the real card
+ *              (anything else, e.g. a Relic, lands and fades),
+ *       toPile a discard pile element (see pileHTML): it flutters onto the pile,
+ *       during () => Promise: run while it is shown (an effect); it leaves after,
  *       hold, flip (start face down, turn over on the way: an opponent's card),
- *       width (fraction of the stage, default .7), dim (default true), skippable.
+ *       width (fraction of the stage, default .7), dim (default true), skippable,
+ *       card (the card object, when html is not from cardHTML), foe, puff.
  */
 export async function showCard(html, o = {}) {
   const st = stageRect();
@@ -1604,6 +2030,7 @@ export async function showCard(html, o = {}) {
     inner.appendChild(flipper);
   } else inner.innerHTML = html;
   for (const c of inner.querySelectorAll('.card')) c.style.setProperty('--cw', `${W}px`);
+  const card = o.card || BY_ID[inner.querySelector('.card[data-id]')?.dataset.id] || null;
 
   try {
     const fr = o.fromRect;
@@ -1626,7 +2053,8 @@ export async function showCard(html, o = {}) {
     }
     const holdMs = HOLD(o.hold ?? 1100);
     const float = isReduced() ? null : run(inner, [{ translate: '0px 0px' }, { translate: '0px -4px', offset: 0.5 }, { translate: '0px 0px' }], { duration: Math.max(600, holdMs), easing: 'ease-in-out', fill: 'none' });
-    await holdFor(holdMs, wrap, o.skippable !== false);
+    const during = o.during ? Promise.resolve().then(o.during).catch((err) => console.error(err)) : null;
+    await Promise.all([holdFor(holdMs, wrap, o.skippable !== false), during]);
     float?.cancel();
     wrap.classList.remove('skippable');
 
@@ -1634,36 +2062,42 @@ export async function showCard(html, o = {}) {
       toEl = document.querySelector(`[data-uid="${CSS.escape(uid)}"]:not(.fx-ghost)`);
       toEl?.classList.add('fx-hidden');
     }
-    const tr = toEl ? toEl.getBoundingClientRect() : o.toRect;
-    const dimOut = dim ? run(dim, [{ opacity: 1 }, { opacity: 0 }], { duration: 420, fill: 'forwards' }) : null;
+    const dimOut = dim ? run(dim, [{ opacity: 1 }, { opacity: 0 }], { duration: 520, fill: 'forwards' }) : null;
     dimIn?.cancel();
-    if (tr && tr.width) {
-      const tc = centre(tr), ts = tr.width / W;
-      const tAng = toEl ? measure(toEl, tr).ang : 0;
-      const dur = 500;
-      const out = run(wrap, [
-        { translate: '0px 0px', scale: 1, rotate: '0deg', opacity: 1, easing: 'cubic-bezier(.4,0,.7,.4)' },
-        { translate: '0px -12px', scale: 1.04, rotate: '-1.5deg', opacity: 1, offset: 0.16, easing: 'cubic-bezier(.35,0,.65,1)' },
-        { translate: `${(tc.x - cx).toFixed(1)}px ${(tc.y - cy).toFixed(1)}px`, scale: ts * 1.04, rotate: `${tAng.toFixed(1)}deg`, opacity: 1, offset: 0.86 },
-        { translate: `${(tc.x - cx).toFixed(1)}px ${(tc.y - cy).toFixed(1)}px`, scale: ts, rotate: `${tAng.toFixed(1)}deg`, opacity: 0 },
-      ], { duration: dur, fill: 'forwards' });
+    const lay = { cx, cy, w: W };
+    if (o.toPile) {
+      await pileDrop(wrap, lay, { cx, cy, w: W, ang: 0 }, o.toPile, { cid: card?.id, base: flyIn, shadowW: W });
+    } else if (toEl || (o.toRect && o.toRect.width && card?.type === 'creature')) {
+      // it falls onto the table; at touch-down the real card (or a stand-in creature) takes over
+      const parked = toEl ? null : parkCard(card, o.toRect, o);
+      const target = toEl || parked;
+      const b = measure(target);
+      const plan = fallPlan({ cx, cy, w: W, ang: 0 }, b, { lift: 1.25, flutter: 5, skid: 4 });
+      const dur = 900;
+      wrap.classList.add('falling');
+      const sh = showShadow(wrap);
+      const out = run(wrap, overlayFrames({ cx: b.cx, cy: b.cy, ang: b.ang, w: b.w * b.sc }, lay, plan.samples, 0, plan.tLand), { duration: dur * plan.tLand, easing: 'linear', fill: 'forwards' });
+      if (sh) run(sh, shadowFrames(W, plan.samples, 0, plan.tLand, plan.tLand), { duration: dur * plan.tLand, easing: 'linear', fill: 'forwards' });
       flyIn?.cancel();
-      // cross-fade into the real card at the end of the flight
-      await sleep(D(dur * 0.8));
-      if (toEl) {
-        toEl.classList.remove('fx-hidden');
-        play(toEl, [{ opacity: 0 }, { opacity: 1 }], { duration: dur * 0.2, fill: 'backwards' });
-      }
       await done(out);
-      if (o.flare !== false) {
-        const sz = Math.max(tr.width, tr.height);
-        if (toEl) jolt(toEl, 1);
-        glow(tc.x, tc.y, { white: true, size: sz * 3, duration: 620, peak: 0.95 });
-        ring(tc.x, tc.y, { color: '#ffe7b0', size: sz * 1.7, duration: 520, width: 2 });
-        particles(tc.x, tc.y, { n: 12, color: ['#fff6dc', '#ffd27a'], vmin: 60, vmax: 160, gravity: 60, life: 650, size: [3, 6] });
-        shake(1);
-        await sleep(D(260));
-      }
+      target.classList.remove('fx-hidden');
+      wrap.style.visibility = 'hidden';
+      landFx(target, o.puff || 'dust', plan.dir);
+      const tail = run(target, restFrames(b, plan.samples, plan.tLand, 1), { duration: dur * (1 - plan.tLand), easing: 'linear' });
+      const tsh = target.querySelector(':scope > .tc-shadow');
+      if (tsh) run(tsh, shadowFrames(target.offsetWidth || b.w, plan.samples, plan.tLand, 1, plan.tLand), { duration: dur * (1 - plan.tLand), easing: 'linear' });
+      if (parked) park(parked, card.id);   // flip() swaps it for the real card when the table is drawn
+      await done(tail);
+    } else if (o.toRect && o.toRect.width) {
+      // not a creature (a Relic going to its bar): fall onto the spot and fade there
+      const tr = o.toRect;
+      const b = { cx: tr.left + tr.width / 2, cy: tr.top + tr.height / 2, ang: 0, w: tr.width, sc: 1, e: 0, f: 0 };
+      const plan = fallPlan({ cx, cy, w: W, ang: 0 }, b, { lift: 1.25, flutter: 5 });
+      const out = run(wrap, overlayFrames(b, lay, plan.samples, 0, plan.tLand), { duration: 900 * plan.tLand, easing: 'linear', fill: 'forwards' });
+      flyIn?.cancel();
+      await done(out);
+      landFx(tr, o.puff || 'light', plan.dir);
+      await play(wrap, [{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: 'forwards' });
     } else {
       const out = run(wrap, [{ opacity: 1, scale: 1, translate: '0px 0px' }, { opacity: 0, scale: 1.1, translate: '0px -24px' }], { duration: 400, easing: 'ease-in', fill: 'forwards' });
       flyIn?.cancel();

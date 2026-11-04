@@ -134,13 +134,15 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 .banner .btn.small { min-height: 32px; padding: 4px 10px; }
 .banner.fight { background: linear-gradient(180deg, #3b2617, #2a1a10); border-color: #e07a48; }
 .banner.fight.foe { background: linear-gradient(180deg, #451b14, #2a100c); border-color: #ff7a5a; }
-.busy .g-mid .banner .btn, .busy .g-actions .btn { visibility: hidden; }
+.busy .g-actions .btn { opacity: .45; pointer-events: none; } /* dimmed, never hidden: nothing jumps */
 .banner-sub { flex-basis: 100%; text-align: center; font-size: 13px; color: #f0dcc0; line-height: 1.35; }
 .banner-sub b { color: #ffb08a; }
 .atk-btn.on { box-shadow: 0 0 0 2px #fff1c4; }
 
 /* ── my bar and hand ─────────────────────────────────────────────── */
-.g-actions { display: flex; gap: 8px; align-items: center; padding: 2px 10px; min-height: 40px; }
+.g-actions { display: flex; gap: 8px; align-items: center; padding: 2px 10px; min-height: 46px; }
+.g-actions .btn.primary { min-width: 112px; }
+.g-actions .btn { transition: opacity .2s; }
 .g-actions .grow { flex: 1; }
 .end-btn { min-width: 112px; }
 .end-btn.nudge { animation: glow 1.6s ease-in-out infinite; }
@@ -230,3 +232,51 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 
 /* taps land on the card itself, never on the picture or a badge inside it */
 .tcard svg, .tcard .tc-ph, .relic svg, .relic img { pointer-events: none; }
+
+
+/* ── the battle zone: fighters meet in the middle ───────────────────── */
+.g-duel { --w-battle: 60px; }
+.g-ffa { --w-battle: 46px; }
+.g-duel.lesson { --w-battle: 52px; }
+@media (min-height: 780px) { .g-duel { --w-battle: 64px; } .g-duel.lesson { --w-battle: 54px; } .g-ffa { --w-battle: 50px; } }
+@media (max-height: 720px) { .g-duel { --w-battle: 50px; } .g-ffa { --w-battle: 44px; } }
+.g-battle {
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 4px 6px 2px; border-radius: 16px;
+  background: radial-gradient(70% 90% at 50% 50%, rgba(255, 120, 60, .10), transparent 75%);
+}
+.g-battle.many { --w-battle: 46px; }
+.gb-label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #f0b48a; }
+.gb-cols { display: flex; justify-content: center; align-items: stretch; gap: 10px; }
+.gb-col { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 2px 3px; border-radius: 12px; transition: background .2s, box-shadow .2s; }
+.gb-slot { min-height: calc(var(--w-battle) * 1.33); display: grid; place-items: center; }
+.g-battle .tcard { --w: var(--w-battle); }
+.gb-vs { height: 14px; font-size: 13px; line-height: 14px; color: #ffcfa8; text-shadow: 0 0 8px rgba(255, 120, 60, .8); }
+.gb-empty {
+  width: var(--w-battle); height: calc(var(--w-battle) * 1.33); border-radius: calc(var(--w-battle) * .09);
+  border: 1.5px dashed rgba(240, 220, 190, .28); display: grid; place-items: center; text-align: center;
+  font-size: 10px; line-height: 1.15; color: rgba(240, 220, 190, .7); padding: 2px;
+}
+.gb-empty.gb-hit { border-color: rgba(255, 120, 80, .45); color: #ffb08a; font-size: 11px; }
+.gb-empty.open { border-color: #cfeaff; color: #e6f5ff; background: rgba(150, 210, 255, .12); animation: pulse 1.1s ease-in-out infinite; }
+.gb-empty.gb-also { font-size: 9px; }
+
+/* the pair that is fighting right now; everything else steps back */
+#game.spotlight .tcard, #game.spotlight .pbar, #game.spotlight .gb-empty { transition: opacity .25s, filter .25s; }
+#game.spotlight .tcard:not(.focus), #game.spotlight .pbar:not(.focus), #game.spotlight .gb-empty { opacity: .38; filter: saturate(.6); }
+#game.spotlight .gb-col.focus { background: rgba(255, 140, 80, .12); box-shadow: 0 0 0 1px rgba(255, 160, 110, .35); }
+
+/* while a fight is on screen the hand sinks a little to make room
+   (the cards slide down, partly below the screen edge) */
+#game.fighting { --hand-h: 116px; --hand-sink: 54px; }
+#game.g-ffa.fighting { --hand-h: 104px; --hand-sink: 48px; }
+.tc-hand { transition: height .3s ease; }
+/* the buttons are never covered by the hand */
+.g-actions { position: relative; z-index: 8; }
+
+/* how the last fight ended */
+.fight-note {
+  font-size: 13px; color: #ffe2c8; text-align: center; padding: 6px 10px; border-radius: 10px;
+  background: rgba(70, 30, 18, .55); border: 1px solid rgba(255, 140, 90, .3);
+}
+.fight-note b { color: #ffb08a; }

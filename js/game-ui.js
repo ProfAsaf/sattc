@@ -22,20 +22,22 @@ const store = {
 };
 const SPEED_KEY = 'collective.fast';
 const fastOn = () => { try { return localStorage.getItem(SPEED_KEY) === '1'; } catch { return false; } };
-const SPEEDS = { normal: 1.25, fast: 2.2 };
+const SPEEDS = { normal: 1, fast: 1.7 };
 FX.setSpeed(fastOn() ? SPEEDS.fast : SPEEDS.normal);
 
 const ICON = {
   heart: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.6 4.5c2.2 0 3.6 1.3 4.4 2.5.8-1.2 2.2-2.5 4.4-2.5 3.6 0 5.7 3.8 4.2 7.2C19.5 16.4 12 21 12 21z"/></svg>',
   hand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="11" height="15" rx="1.5"/><path d="M9 3h9.5A1.5 1.5 0 0 1 20 4.5V17"/></svg>',
   deck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 8h6M9 12h6"/></svg>',
-  grave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 21V10a6 6 0 0 1 12 0v11z"/><path d="M4 21h16M12 9v6M9.5 11.5h5"/></svg>',
   trap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg>',
 };
 const COLORS = { ember: '#ff7a2e', verdant: '#b4e06a', tide: '#8fe0ee', umbral: '#b07cff', radiant: '#ffd77a' };
 const colorOf = (cid) => COLORS[BY_ID[cid]?.factions[0]] || '#ffd77a';
 
 let G = null; // the game being shown
+
+// For performance checks from the console or a test script.
+if (typeof window !== 'undefined') window.collectiveDebug = { redraw: () => redraw(), get G() { return G; } };
 
 // ── play page ───────────────────────────────────────────────────────
 function deckChoices() {
@@ -415,6 +417,7 @@ function commit(a) {
 function clearSelections() {
   if (!G) return;
   G.recap = null;
+  G.fightNote = null;
   G.atk = null;
   G.blk = null;
   G.flow = null;
@@ -455,7 +458,7 @@ function schedule() {
     G.timer = setTimeout(() => {
       if (!G || G.sched !== id || G.state !== s) return;
       dispatch(chooseAction(G.state, who, { noise }));
-    }, s.phase === 'mulligan' ? 200 : s.phase === 'combat' ? 450 : 650);
+    }, s.phase === 'mulligan' ? 200 : s.phase === 'combat' ? 700 : 950);
   });
 }
 
@@ -733,14 +736,14 @@ function pbarHTML(s, P, hl) {
     <div class="pb-meta">
       <span title="cards in hand">${ICON.hand}${P.hand.length}</span>
       <span title="cards in deck">${ICON.deck}${P.deck.length}</span>
-      <button data-act="discards" data-of="${P.i}" title="discard pile">${ICON.grave}${P.discard.length}</button>
       ${P.traps.length ? `<span class="trap-chip" title="${P.traps.length} face-down Trap${P.traps.length > 1 ? 's' : ''}">${ICON.trap}${P.traps.length}</span>` : ''}
     </div>
+    ${FX.pileHTML(P.discard.slice(-3).map((u) => ({ cid: s.cards[u].cid })), { p: P.i, count: P.discard.length, act: 'discards', w: 30 })}
     ${P.relics.length ? `<div class="pb-relics">${P.relics.map((u) => relicHTML(s, s.cards[u], hl)).join('')}</div>` : ''}
   </div>`;
 }
 
-function creatureHTML(s, c, hl) {
+function creatureHTML(s, c, hl, inBattle = false) {
   const d = BY_ID[c.cid];
   const mine = c.ctrl === G.me;
   const st = [];
@@ -761,7 +764,56 @@ function creatureHTML(s, c, hl) {
   return FX.tcardHTML(d, {
     uid: c.uid, states: st, power: power(s, c), vitality: vitality(s, c) - (c.dmg || 0), dmg: c.dmg,
     keywords: kws, leaving: !!(c.sacEnd || c.stolen), foe: !mine,
+    ...(inBattle ? { cls: 'in-battle', rest: false } : {}),
   });
+}
+
+// ── the battle zone ─────────────────────────────────────────────────
+// While a fight is on (or while you pick attackers), the creatures in it
+// leave their rows and meet in the middle: each attacker in a column, its
+// blocker straight across from it.
+function battleView(s) {
+  const C = s.combat;
+  let att, blk = {}, a, d;
+  if (C) {
+    att = C.att.filter((u) => s.cards[u].zone === 'board');
+    a = C.a; d = C.d;
+    if (C.step === 'block' && C.d === G.me && G.blk) for (const [b, x] of G.blk.pairs) blk[x] = b;
+    else blk = { ...C.blk };
+  } else if (G.atk && myMain()) {
+    att = [...G.atk.att];
+    a = G.me; d = G.atk.target;
+  } else return null;
+  if (!att.length) return null;
+  // You are always at the bottom; otherwise the attacker is on top.
+  const attTop = a !== G.me;
+  const placed = new Set();
+  const cols = att.map((u) => {
+    const b = blk[u] != null && s.cards[blk[u]]?.zone === 'board' ? blk[u] : null;
+    const twice = b != null && placed.has(b); // a Guard blocking two is shown once
+    if (b != null) placed.add(b);
+    return { a: u, b, twice };
+  });
+  return { a, d, attTop, cols, inZone: new Set([...att, ...placed]) };
+}
+
+function battleHTML(s, bv, hl) {
+  const card = (u) => creatureHTML(s, s.cards[u], hl, true);
+  const blocking = iBlock();
+  const target = bv.d != null ? s.players[bv.d] : null;
+  const short = (P) => (P.i === G.me ? 'you' : P.name.replace(/^Bot · /, ''));
+  const cols = bv.cols.map(({ a, b, twice }) => {
+    let other;
+    if (b != null && !twice) other = card(b);
+    else if (b != null) other = `<div class="gb-empty gb-also">blocked by ${esc(nameOf(b))}</div>`;
+    else if (blocking) other = `<div class="gb-empty${G.blk?.sel != null && canAssign(G.blk.sel, a) ? ' open' : ''}" data-att="${a}">block<br>here</div>`;
+    else other = `<div class="gb-empty gb-hit">→ ${target ? esc(short(target)) : '?'}</div>`;
+    const top = bv.attTop ? card(a) : other, bottom = bv.attTop ? other : card(a);
+    return `<div class="gb-col" data-key="col-${a}"><div class="gb-slot">${top}</div><div class="gb-vs">${b != null ? '⚔' : ''}</div><div class="gb-slot">${bottom}</div></div>`;
+  }).join('');
+  const who = bv.a === G.me ? 'You' : s.players[bv.a].name;
+  const at = target ? (target.i === G.me ? 'you' : target.name) : 'who?';
+  return `<div class="g-battle${bv.cols.length > 4 ? ' many' : ''}" data-key="battle">${tutStep() ? '' : `<div class="gb-label">⚔ ${esc(who)} → ${esc(at)}</div>`}<div class="gb-cols">${cols}</div></div>`;
 }
 
 function handHTML(s) {
@@ -789,44 +841,28 @@ function statusHTML() {
 function midHTML() {
   const s = S();
   const coached = !!tutStep(); // the coach box says what to do; keep banners short
+  const tight = coached || s.players.length > 2; // three players leave less room in the middle
   const st = G.flow?.steps[G.flow.i];
-  if (st && ['sac', 'fighter', 'target', 'targets'].includes(st.kind)) {
-    const n = st.kind === 'targets' ? G.flow.multi.length : 0;
-    return `<div class="banner"><span>${esc(st.prompt)}</span>
-      ${st.optional ? '<button class="btn small" data-act="skip">Skip</button>' : ''}
-      ${st.kind === 'targets' && n ? `<button class="btn small primary" data-act="done-targets">Done (${n})</button>` : ''}
-      <button class="btn small ghost" data-act="cancel">Cancel</button></div>`;
-  }
+  if (st && ['sac', 'fighter', 'target', 'targets'].includes(st.kind)) return `<div class="banner"><span>${esc(st.prompt)}</span></div>`;
   if (G.atk && myMain()) {
-    const n = G.atk.att.length;
-    const opps = opponents(s, G.me);
     const hunter = hunterWithoutPrey();
-    const hint = hunter ? `<div class="banner-sub">${esc(nameOf(hunter))} can Hunt: tap the enemy creature it must fight (optional).</div>` : '';
-    const buttons = opps.length === 1
-      ? `<button class="btn small primary atk-btn" data-act="attack" data-p="${opps[0].i}">Attack!</button>`
-      : opps.map((Q) => `<button class="btn small primary atk-btn${G.atk.target === Q.i ? ' on' : ''}" data-act="attack" data-p="${Q.i}">Attack ${esc(Q.name)}</button>`).join('');
-    return `<div class="banner fight"><span>⚔ ${n} attacker${n === 1 ? '' : 's'}${coached ? '' : ' chosen · tap more, or'}</span>${buttons}
-      <button class="btn small ghost" data-act="cancel">Cancel</button>${hint}</div>`;
+    if (hunter) return `<div class="banner fight"><span>${esc(nameOf(hunter))} can Hunt: tap the enemy creature it must fight (optional).</span></div>`;
+    if (tight) return '';
+    return `<div class="banner fight"><span>Tap more creatures to add them, or tap one again to keep it home.</span></div>`;
   }
   if (iBlock()) {
-    const C = s.combat;
     const pairs = G.blk?.pairs || [];
     const preview = outcome(s, playOut(s, { t: 'block', p: G.me, blocks: pairs }));
-    const sel = G.blk?.sel != null ? `Now tap the attacker ${esc(nameOf(G.blk.sel))} should block.` : 'Tap one of your creatures, then the attacker it blocks (or drag onto it).';
-    return `<div class="banner fight foe"><span><b>${esc(name(C.a))} attacks you</b> with ${esc(listNames(C.att.map(nameOf)))}.</span>
-      ${coached ? '' : `<div class="banner-sub">${sel}</div>`}
-      <div class="banner-sub">If no one plays a Trick: ${preview}</div>
-      <button class="btn small primary blk-btn" data-act="block">${pairs.length ? `Done: block with ${pairs.length}` : 'Don’t block'}</button>
-      ${pairs.length ? '<button class="btn small ghost" data-act="clear-blocks">Clear</button>' : ''}</div>`;
+    const sel = G.blk?.sel != null ? `Now tap the attacker ${esc(nameOf(G.blk.sel))} should block.` : 'Tap one of your creatures to put it in front of an attacker.';
+    return `<div class="banner fight foe">${tight ? '' : `<span>${sel}</span>`}<div class="banner-sub">If no one plays a Trick: ${preview}</div></div>`;
   }
   if (iTrick()) {
-    const C = s.combat;
+    if (coached) return '';
     const preview = outcome(s, playOut(s, { t: 'pass', p: G.me }));
-    const role = C.a === G.me ? 'Blockers are set.' : `${esc(name(C.a))} played a Trick.`;
-    return `<div class="banner fight"><span>${coached ? 'Your Trick window.' : `${role} Play a Trick from your hand, or let the fight happen.`}</span>
-      ${coached ? '' : `<div class="banner-sub">As things stand: ${preview}</div>`}
-      <button class="btn small primary fight-btn" data-act="pass">Fight!</button></div>`;
+    const role = s.combat.a === G.me ? 'Blockers are set.' : `${esc(name(s.combat.a))} played a Trick.`;
+    return `<div class="banner fight">${tight ? '' : `<span>${role} Play a Trick, or tap Fight!</span>`}<div class="banner-sub">As things stand: ${preview}</div></div>`;
   }
+  if (G.fightNote && s.phase === 'main' && !tutStep()) return `<div class="fight-note">${G.fightNote}</div>${hintText() ? `<div class="hint">${hintText()}</div>` : ''}`;
   const lesson = tutStep();
   if (lesson && !lesson.bot) return ''; // the coach is all there is to read
   const recap = !lesson && G.recap === s.turn && myMain() ? recapLines() : [];
@@ -882,14 +918,44 @@ function anythingToDo() {
   return phoenixReady(s, G.me).length > 0 && P.energy >= 2;
 }
 
+// The buttons under the table. The main one is always bottom right.
+function actionsHTML() {
+  const s = S();
+  const btn = (cls, act, label, extra = '') => `<button class="btn ${cls}" data-act="${act}" ${extra}>${label}</button>`;
+  const left = [], right = [];
+  const st = G.flow?.steps[G.flow.i];
+  if (st && ['sac', 'fighter', 'target', 'targets'].includes(st.kind)) {
+    left.push(btn('small ghost', 'cancel', 'Cancel'));
+    if (st.kind === 'targets' && G.flow.multi.length) right.push(btn('primary', 'done-targets', `Done (${G.flow.multi.length})`));
+    else if (st.optional) right.push(btn('primary', 'skip', 'Skip'));
+  } else if (G.atk && myMain()) {
+    left.push(btn('small ghost', 'cancel', 'Cancel'));
+    const opps = opponents(s, G.me);
+    if (opps.length === 1) right.push(btn('primary atk-btn', 'attack', 'Attack!', `data-p="${opps[0].i}"`));
+    else for (const Q of opps) right.push(btn(`primary atk-btn${G.atk.target === Q.i ? ' on' : ''}`, 'attack', `Attack ${esc(Q.name.replace(/^Bot · /, ''))}`, `data-p="${Q.i}"`));
+  } else if (iBlock()) {
+    const n = G.blk?.pairs.length || 0;
+    if (n && G.blk.pairs.some(([b, a]) => !isForced(b, a))) left.push(btn('small ghost', 'clear-blocks', 'Clear'));
+    right.push(btn('primary blk-btn', 'block', n ? `Done: block with ${n}` : 'Don’t block'));
+  } else if (iTrick()) {
+    right.push(btn('primary fight-btn', 'pass', 'Fight!'));
+  } else {
+    const phoenix = phoenixReady(s, G.me);
+    if (phoenix.length && myMain()) left.push(btn('small', 'phoenix', 'Return Phoenix (2)', `data-uid="${phoenix[0]}"`));
+    const mine = myMain();
+    right.push(btn(`primary end-btn${mine && !anythingToDo() ? ' nudge' : ''}`, 'end', mine ? 'End turn' : 'Waiting…', mine && !G.flow ? '' : 'disabled'));
+  }
+  return `${left.join('')}<span class="grow"></span>${right.join('')}`;
+}
+
 function tableHTML() {
   const s = S(), me = s.players[G.me];
   const hl = highlights();
   const others = [];
   for (let k = 1; k < s.players.length; k++) others.push(s.players[(G.me + k) % s.players.length]);
-  const phoenix = phoenixReady(s, G.me);
   const st = tutStep();
-  const row = (P) => `<div class="tc-row">${P.board.map((u) => creatureHTML(s, s.cards[u], hl)).join('')}</div>`;
+  const bv = battleView(s);
+  const row = (P) => `<div class="tc-row">${P.board.filter((u) => !bv?.inZone.has(u)).map((u) => creatureHTML(s, s.cards[u], hl)).join('')}</div>`;
   return `
     <div class="g-top">
       <button class="g-icon" data-act="menu" aria-label="Menu">☰</button>
@@ -899,27 +965,99 @@ function tableHTML() {
     </div>
     <div class="g-table">
       ${others.map((P) => `<section class="g-side opp${s.active === P.i ? ' active' : ''}${P.out ? ' out' : ''}" data-side="${P.i}">${pbarHTML(s, P, hl)}${row(P)}</section>`).join('')}
-      <div class="g-mid">${st ? coachHTML(st) : ''}${midHTML()}</div>
+      <div class="g-mid">${st ? coachHTML(st) : ''}${bv ? battleHTML(s, bv, hl) : ''}${midHTML()}</div>
       <section class="g-side me${s.active === G.me ? ' active' : ''}" data-side="${G.me}">${row(me)}${pbarHTML(s, me, hl)}</section>
     </div>
-    <div class="g-actions">
-      ${phoenix.length && myMain() ? `<button class="btn small" data-act="phoenix" data-uid="${phoenix[0]}">Return Phoenix (2)</button>` : ''}
-      <span class="grow"></span>
-      ${s.phase === 'combat' ? '' : `<button class="btn primary end-btn${myMain() && !anythingToDo() && !G.atk ? ' nudge' : ''}" data-act="end" ${myMain() && !G.flow ? '' : 'disabled'}>End turn</button>`}
-    </div>
+    <div class="g-actions">${actionsHTML()}</div>
     <div class="tc-hand g-hand${myMove() ? '' : ' wait'}">${handHTML(s)}</div>
     <svg class="g-lines" aria-hidden="true"></svg>
     ${s.phase === 'over' ? overHTML() : ''}
     ${G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div></div>` : ''}`;
 }
 
+// ── updating the page in place ──────────────────────────────────────
+// Rebuilding the whole table on every move made phones re-lay-out and
+// repaint every card. Instead the new markup is merged into what is there:
+// cards keep their elements (pictures, running animations, the hand's fan),
+// and only what changed is touched.
+const keyOf = (n) => (n.nodeType === 1 ? n.getAttribute('data-uid') ?? n.getAttribute('data-side') ?? n.getAttribute('data-key') : null);
+// Classes the animation layer puts on cards itself; a redraw leaves them alone.
+const FX_CLASS = /^(fx-|dragging$|returning$|touched$|aim$|aiming$|drop-ok$)/;
+const tplProps = new WeakMap(); // element -> style properties that came from the markup
+
+function morphChildren(parent, html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  syncChildren(parent, tpl.content);
+}
+
+function syncChildren(from, to) {
+  const old = [...from.childNodes];
+  const keyed = new Map();
+  for (const n of old) { const k = keyOf(n); if (k != null) keyed.set(`${n.nodeName}|${k}`, n); }
+  const loose = old.filter((n) => keyOf(n) == null);
+  const used = new Set();
+  let u = 0, i = 0;
+  for (const nn of [...to.childNodes]) {
+    const k = keyOf(nn);
+    let match = null;
+    if (k != null) match = keyed.get(`${nn.nodeName}|${k}`) || null;
+    else {
+      while (u < loose.length && used.has(loose[u])) u++;
+      if (loose[u] && loose[u].nodeName === nn.nodeName) match = loose[u++];
+    }
+    if (match && !used.has(match)) {
+      used.add(match);
+      syncNode(match, nn);
+      if (from.childNodes[i] !== match) from.insertBefore(match, from.childNodes[i] || null);
+    } else {
+      from.insertBefore(document.importNode(nn, true), from.childNodes[i] || null);
+    }
+    i++;
+  }
+  while (from.childNodes.length > i) from.removeChild(from.lastChild);
+}
+
+function syncNode(a, b) {
+  if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
+  if (a.isEqualNode(b)) return;
+  for (const { name } of [...a.attributes]) if (name !== 'class' && name !== 'style' && !b.hasAttribute(name)) a.removeAttribute(name);
+  for (const { name, value } of [...b.attributes]) {
+    if (name === 'class' || name === 'style') continue;
+    if (a.getAttribute(name) !== value) a.setAttribute(name, value);
+  }
+  syncClass(a, b.getAttribute('class') || '');
+  syncStyle(a, b.getAttribute('style') || '');
+  syncChildren(a, b);
+}
+
+function syncClass(a, cls) {
+  const want = new Set(cls.split(/\s+/).filter(Boolean));
+  for (const c of [...a.classList]) if (!want.has(c) && !FX_CLASS.test(c)) a.classList.remove(c);
+  for (const c of want) if (!a.classList.contains(c)) a.classList.add(c);
+}
+
+// Only the properties written in the markup are synced; the animation layer's own
+// inline properties (fan slots, FLIP offsets) are left as they are.
+function syncStyle(a, style) {
+  const want = new Map();
+  for (const decl of style.split(';')) {
+    const at = decl.indexOf(':');
+    if (at > 0) want.set(decl.slice(0, at).trim(), decl.slice(at + 1).trim());
+  }
+  const had = tplProps.get(a) || new Set();
+  for (const p of had) if (!want.has(p)) a.style.removeProperty(p);
+  for (const [p, v] of want) if (a.style.getPropertyValue(p).trim() !== v) a.style.setProperty(p, v);
+  tplProps.set(a, new Set(want.keys()));
+}
+
 // Draw the position in G.view. No animation here.
 function draw(root) {
   const s = S(), me = s.players[G.me];
   syncBlocks();
-  if (s.phase === 'mulligan' && !me.mull) { root.className = 'g-mull'; root.innerHTML = mulliganHTML(); return; }
-  root.className = (s.players.length === 2 ? 'g-duel' : 'g-ffa') + (G.busy ? ' busy' : '');
-  root.innerHTML = tableHTML();
+  if (s.phase === 'mulligan' && !me.mull) { root.className = 'g-mull'; morphChildren(root, mulliganHTML()); return; }
+  root.className = (s.players.length === 2 ? 'g-duel' : 'g-ffa') + (G.busy ? ' busy' : '') + (s.combat || G.atk ? ' fighting' : '') + (tutStep() ? ' lesson' : '');
+  morphChildren(root, tableHTML());
   FX.layoutHand(root.querySelector('.tc-hand'));
   // ring whatever the lesson is talking about
   const st = tutStep();
@@ -950,10 +1088,8 @@ function drawLines(root) {
   const C = s.combat;
   if (C) {
     const blk = C.step === 'block' && C.d === G.me && G.blk ? Object.fromEntries(G.blk.pairs.map(([b, a]) => [a, b])) : C.blk;
-    for (const a of C.att) {
-      const b = blk[a];
-      lines.push(b != null ? [card(a), card(b), 'block'] : [card(a), bar(C.d), 'attack']);
-    }
+    // blocked pairs face each other in the battle zone; the rest head for the player
+    for (const a of C.att) if (blk[a] == null) lines.push([card(a), bar(C.d), 'attack']);
   } else if (G.atk) {
     for (const a of G.atk.att) if (G.atk.target != null) lines.push([card(a), bar(G.atk.target), 'attack']);
     for (const [a, p] of G.atk.hunt) lines.push([card(a), card(p), 'hunt']);
@@ -979,8 +1115,9 @@ async function present(events, after, quick = false) {
   G.busy = true;
   root.classList.add('busy');
   try {
-    if (events.length && root.querySelector('.g-table')) await capped(animateOld(root, events), 20000);
+    if (events.length && root.querySelector('.g-table')) await capped(animateOld(root, events, after), 20000);
   } catch (e) { console.error(e); }
+  if (events.some((e) => e.k === 'fight')) G.fightNote = fightNoteText(events);
   const before = FX.capture(root);
   G.view = after;
   G.dirty = false;
@@ -1001,7 +1138,7 @@ const barEl = (root, p) => root.querySelector(`.pbar[data-p="${p}"]`);
 const DMG = new Set(['strike', 'dmg', 'hitPlayer', 'life', 'buff']);
 
 // On the old table: show what happens, in order.
-async function animateOld(root, events) {
+async function animateOld(root, events, after = G.state) {
   const s0 = S();
   let i = 0;
   const lifeShown = new Set();
@@ -1015,11 +1152,26 @@ async function animateOld(root, events) {
       const html = d ? cardHTML(d, { cls: 'anim' }) : cardBackHTML();
       if (e.p === G.me) root.querySelector(`.tcard[data-uid="${e.uid}"]`)?.classList.add('fx-hidden');
       const target = e.target ? (e.target.p != null ? barEl(root, e.target.p) : el(root, e.target.uid)) : e.sac != null ? el(root, e.sac) : null;
-      // An opponent's creature or Relic is put down where it will sit; spells just fade.
-      const toRect = e.p !== G.me && d && d.type !== 'spell' ? landingRect(root, e.p, d.type) : undefined;
-      await FX.showCard(html, { fromRect: from, toRect, hold: e.p === G.me ? 350 : d ? 1050 : 650, flip: e.p !== G.me && !!d, width: e.p === G.me ? 0.55 : 0.7 });
-      const ar = target && FX.arrow(barEl(root, e.p), target, { duration: 600, color: colorOf(e.cid) });
-      if (ar) await ar.finished;
+      const look = { fromRect: from, hold: e.p === G.me ? 350 : d ? 1050 : 650, flip: e.p !== G.me && !!d, width: e.p === G.me ? 0.55 : 0.7 };
+      if (d && d.type === 'spell') {
+        // what the spell does is everything up to the next move
+        let j = i;
+        while (j < events.length && !['play', 'attack', 'turn', 'fight'].includes(events[j].k)) j++;
+        const effects = events.slice(i, j);
+        i = j;
+        const effect = async () => {
+          const ar = target && FX.arrow(barEl(root, e.p), target, { duration: 600, color: colorOf(e.cid) });
+          if (ar) await ar.finished;
+          await animateOld(root, effects, after);
+        };
+        // it lands on its owner's discard pile (tokens vanish, Echo cards leave the game)
+        const pile = after.cards[e.uid]?.zone === 'discard' ? root.querySelector(`.tc-pile[data-pile="${s0.cards[e.uid]?.owner ?? e.p}"]`) : null;
+        await FX.showCard(html, { ...look, ...(pile ? { toPile: pile } : {}), during: effect });
+        continue;
+      }
+      // An opponent's creature or Relic is put down where it will sit.
+      const toRect = e.p !== G.me && d ? landingRect(root, e.p, d.type) : undefined;
+      await FX.showCard(html, { ...look, toRect });
       continue;
     }
     if (e.k === 'attack') {
@@ -1059,7 +1211,7 @@ async function animateOld(root, events) {
         const node = el(root, g.uid);
         return node ? FX.death(node, { style: BY_ID[g.cid]?.token ? 'light' : 'crumble', color: colorOf(g.cid) }) : null;
       });
-      await Promise.race([Promise.all(deaths), FX.wait(550)]);
+      await Promise.race([Promise.all(deaths), FX.wait(1000)]);
       continue;
     }
     if (e.k === 'dmg' || e.k === 'hitPlayer' || e.k === 'buff' || e.k === 'life') {
@@ -1129,10 +1281,13 @@ function landingRect(root, p, type) {
 }
 
 // Every strike in one damage step at once: pairs that hit each other clash.
+// One pair at a time, in the spotlight: the rest of the table dims, the two
+// creatures fight (or the attacker charges the player), the numbers stay up
+// long enough to read, then the next pair.
 async function strikeAll(root, strikes) {
   const done = new Set();
-  const jobs = [];
   const hit = (target, n) => { if (target && n) FX.number(target, `−${n}`, { kind: 'damage' }); };
+  root.classList.add('spotlight');
   for (const sk of strikes) {
     if (done.has(sk)) continue;
     done.add(sk);
@@ -1140,14 +1295,29 @@ async function strikeAll(root, strikes) {
     const toPlayer = sk.to && typeof sk.to === 'object';
     const b = toPlayer ? barEl(root, sk.to.p) : el(root, sk.to);
     const back = !toPlayer && strikes.find((t) => !done.has(t) && t.from === sk.to && t.to === sk.from);
-    if (back && a && b) {
-      done.add(back);
-      jobs.push(FX.clash(a, b, { strength: Math.max(sk.n, back.n), onHit: () => { hit(b, sk.n); hit(a, back.n); } }));
-    } else if (a && b) {
-      jobs.push(FX.lunge(a, b, { strength: sk.n, color: toPlayer ? '#ff6a3d' : undefined, onHit: () => hit(b, sk.n) }));
-    }
+    if (back) done.add(back);
+    if (!a || !b) continue;
+    const lit = [a, b, a.closest('.gb-col')].filter(Boolean);
+    lit.forEach((x) => x.classList.add('focus'));
+    await FX.wait(160);
+    if (back) await FX.clash(a, b, { strength: Math.max(sk.n, back.n), onHit: () => { hit(b, sk.n); hit(a, back.n); } });
+    else await FX.lunge(a, b, { strength: sk.n, color: toPlayer ? '#ff6a3d' : undefined, onHit: () => hit(b, sk.n) });
+    await FX.wait(420);
+    lit.forEach((x) => x.classList.remove('focus'));
   }
-  await Promise.all(jobs);
+  root.classList.remove('spotlight');
+}
+
+// One line saying how a fight ended, shown until the next move.
+function fightNoteText(events) {
+  const s0 = S();
+  const lost = new Map();
+  for (const e of events) if (e.k === 'hitPlayer') lost.set(e.p, (lost.get(e.p) || 0) + e.n);
+  const bits = [...lost].map(([p, n]) => `${p === G.me ? 'You' : esc(s0.players[p].name)} took <b>${n}</b>`);
+  const died = events.filter((e) => e.k === 'die' && BY_ID[e.cid]?.type === 'creature')
+    .map((e) => `${e.ctrl === G.me ? 'your' : 'their'} ${esc(BY_ID[e.cid].name)}`);
+  if (died.length) bits.push(`${listNames(died)} ${died.length === 1 ? 'died' : 'died'}`);
+  return bits.length ? `⚔ ${bits.join(' · ')}` : '⚔ Nobody was hurt.';
 }
 
 // On the new table: turn banners.
@@ -1316,9 +1486,12 @@ function helpSheet() {
       <div><b>Top: your opponents.</b> Name, Life ❤, Energy (gold hexagons), cards in hand, in deck, and in the discard pile (tap it to look). Relics sit under the name; ⊠ is a face-down Trap.</div>
       <div><b>Creatures</b>: theirs above, yours below. Left number = <b>Power</b> (damage it deals), right = <b>Vitality</b> (damage it can take). Small badges are keywords; tap any card to read it.</div>
       <div><b>Play a card</b>: drag it from your hand up onto the table, or tap it and tap Play. Glowing cards can be played now.</div>
-      <div><b>Attack</b> (once a turn): tap your glowing creatures, then <b>Attack</b>. Or drag from a creature onto an opponent’s name. Attackers tilt (exhausted) and can’t block until your next turn.</div>
-      <div><b>Block</b>: when you are attacked, tap one of your creatures and then the attacker it should stop (or drag onto it), then Done. The banner tells you what will happen.</div>
-      <div><b>Tricks</b> can be played during a fight. After blockers are set, you get a chance; tap <b>Fight!</b> when you are done.</div>
+      <div><b>Attack</b> (once a turn): tap your glowing creatures and they step into the middle of the table, then tap <b>Attack!</b> (bottom right). Attackers are exhausted afterwards: they can’t block until your next turn.</div>
+      <div><b>Block</b>: when you are attacked, the attackers come to the middle. Tap one of your creatures and it steps in front of an attacker (if it could stop several, tap the one you want). Then <b>Done</b>. The line above tells you what will happen.</div>
+      <div><b>The fight</b> plays out one pair at a time, in the middle. <b>Tricks</b> can be played before it starts; tap <b>Fight!</b> when you are done.</div>
+      <div>The main button (End turn, Attack!, Done, Fight!) is always at the bottom right.</div>
+      <div><b>Is it ready?</b> A <b>gold glow</b> means it can act now. <b>zZ</b> means it just arrived: it can block, but it can’t attack until your next turn. Turned sideways and stamped <b>SPENT</b> means it attacked: it can’t attack or block until its owner’s next turn.</div>
+      <div><b>Discard piles</b> sit at the end of each player’s bar. Spells land there when they’re done; tap a pile to look through it.</div>
       <div><b>End turn</b> when you’re finished. Energy you don’t spend waits for your next turn, so you can answer attacks with Tricks.</div>
     </div>
     <div class="btn-col">
@@ -1443,12 +1616,23 @@ function onClick(e) {
   if (inHand) { G.sheet = cardSheet(Number(card.dataset.uid)); redraw(); return; }
   if (relic) { G.sheet = cardSheet(target.uid); redraw(); return; }
 
+  // an empty "block here" slot in the battle zone
+  const slot = t.closest('.gb-empty[data-att]');
+  if (iBlock() && slot) {
+    if (G.blk.sel != null) assignBlock(G.blk.sel, Number(slot.dataset.att));
+    else flash('First tap the creature of yours that should block.');
+    return;
+  }
+
   if (iBlock() && target?.uid != null) {
     const c = s.cards[target.uid];
     if (c.ctrl === G.me) {
       const paired = G.blk.pairs.find(([b]) => b === c.uid);
       if (paired && !isForced(paired[0], paired[1])) { G.blk.pairs = G.blk.pairs.filter(([b, a]) => !(b === c.uid && !isForced(b, a))); G.blk.sel = null; redraw(); return; }
-      if (canBlockSomething(c.uid)) { G.blk.sel = G.blk.sel === c.uid ? null : c.uid; redraw(); return; }
+      const fits = s.combat.att.filter((a) => canAssign(c.uid, a));
+      // only one attacker it could stop: it steps in front of it straight away
+      if (fits.length === 1 && !G.blk.pairs.some(([, a]) => a === fits[0])) { assignBlock(c.uid, fits[0]); return; }
+      if (fits.length) { G.blk.sel = G.blk.sel === c.uid ? null : c.uid; redraw(); return; }
     } else if (s.combat.att.includes(c.uid) && G.blk.sel != null) { assignBlock(G.blk.sel, c.uid); return; }
     G.sheet = cardSheet(target.uid);
     redraw();

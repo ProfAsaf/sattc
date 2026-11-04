@@ -61,17 +61,17 @@ export function artURL(card) {
   return ART[card.id] || null;
 }
 
-// Small static art as an <img>, or the live SVG where it animates.
+// Small views show the baked picture (art/<id>.webp, see tools/bake-art.mjs);
+// the big view draws the live SVG, where the light and air move.
 export function artTag(id, live = false) {
   if (live) return artSVG(id) || '';
-  const src = artImage(id);
+  const src = ART[id] || artImage(id);
   return src ? `<img class="art-img" src="${src}" alt="" loading="lazy" decoding="async">` : (artSVG(id) || '');
 }
 
-// A painting in art/ (if one is ever added) wins over the drawn art.
 function artHTML(card, live = false) {
   const url = artURL(card);
-  if (!url && artSVG(card.id)) return `<div class="c-art">${artTag(card.id, live)}</div>`;
+  if (artSVG(card.id) && (live || !url)) return `<div class="c-art">${artTag(card.id, live)}</div>`;
   const main = card.factions[0] || 'neutral';
   return `<div class="c-art">
       <div class="c-art-ph">${glyph(main)}</div>

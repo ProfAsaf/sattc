@@ -38,6 +38,7 @@
     color: var(--ink);
     -webkit-user-select: none; user-select: none;
     touch-action: manipulation;
+    --pile-w: 38px;
   }
   .lab-top { display: flex; align-items: center; gap: 6px; padding: 4px 10px; }
   .lab-title { flex: 1; font: 600 14px 'EB Garamond', Georgia, serif; letter-spacing: .26em; color: var(--gold); white-space: nowrap; }
@@ -47,14 +48,15 @@
   }
   .chip.on { color: #1d150b; background: linear-gradient(180deg, #ddbd75, var(--gold-2)); border-color: transparent; }
   .g-side { margin: 0 4px; }
-  .pbar { min-height: 34px; }
+  .pbar { min-height: 34px; flex-wrap: nowrap; }
+  .pbar .tc-pile { margin: -4px -2px -4px 2px; }
   .tc-row { padding-bottom: 16px; }
-  .lab-mid { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 2px 10px; }
+  .lab-mid { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 7px; padding: 2px 10px; }
   .lab-note { font-size: 12.5px; line-height: 1.35; color: var(--muted); text-align: center; min-height: 2.7em; }
   .lab-note b { color: var(--gold); font-weight: 600; }
   .lab-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .lab-btns button {
-    all: unset; cursor: pointer; text-align: center; padding: 8px 2px; border-radius: 10px;
+    all: unset; cursor: pointer; text-align: center; padding: 7px 2px; border-radius: 10px;
     font-size: 13px; font-weight: 600; color: var(--ink);
     background: linear-gradient(180deg, rgba(58, 46, 33, .95), rgba(36, 29, 21, .95));
     border: 1px solid rgba(214, 180, 106, .22);
@@ -62,6 +64,7 @@
   }
   .lab-btns button:active { transform: translateY(1px); filter: brightness(1.2); }
   .lab-btns button.auto { color: #1d150b; background: linear-gradient(180deg, #ddbd75, var(--gold-2)); border-color: transparent; }
+  .lab-btns button.new { border-color: rgba(143, 195, 223, .5); }
   .lab-tag {
     position: absolute; left: 50%; top: calc(100% + 3px); transform: translateX(-50%);
     font: 600 9px/1 -apple-system, 'Segoe UI', sans-serif; letter-spacing: .04em; white-space: nowrap;
@@ -74,6 +77,7 @@
   }
   .lab-sheet[hidden] { display: none; }
   .lab-sheet .card { --cw: min(78vw, 300px); }
+  .lab-sheet .btn-row { justify-content: center; }
 </style>
 </head>
 <body>
@@ -95,15 +99,19 @@
   <div class="lab-mid">
     <div class="lab-note" id="note"></div>
     <div class="lab-btns">
-      <button data-demo="play">Play</button>
-      <button data-demo="oppPlay">Opp play</button>
+      <button data-demo="toss" class="new">Toss</button>
+      <button data-demo="drop" class="new">Drop</button>
+      <button data-demo="oppPlay" class="new">Opp play</button>
+      <button data-demo="show" class="new">Show</button>
+      <button data-demo="spell" class="new">Spell</button>
+      <button data-demo="discard" class="new">Discard</button>
+      <button data-demo="states" class="new">States</button>
+      <button data-demo="death">Death</button>
       <button data-demo="attack">Attack</button>
       <button data-demo="clash">Clash</button>
-      <button data-demo="death">Death</button>
-      <button data-demo="spell">Spell</button>
       <button data-demo="wave">Wave</button>
-      <button data-demo="banner">Banner</button>
       <button data-demo="arrow">Arrow</button>
+      <button data-demo="banner">Banner</button>
       <button data-demo="draw">Draw</button>
       <button data-demo="token">Token</button>
       <button data-demo="auto" class="auto">Run all</button>
@@ -118,7 +126,7 @@
   <div class="tc-hand" id="hand"></div>
 </div>
 
-<div class="lab-sheet" id="sheet" hidden><div id="sheet-card"></div><button class="btn small" data-close>Close</button></div>
+<div class="lab-sheet" id="sheet" hidden><div id="sheet-card"></div><div class="btn-row" id="sheet-btns"></div></div>
 
 <script type="module">
 import { BY_ID } from './js/cards.js';
@@ -132,13 +140,12 @@ FX.setStage(stage);
 const q = new URLSearchParams(location.search);
 if (q.has('speed')) FX.setSpeed(Number(q.get('speed')));
 if (q.has('rm')) FX.setReducedMotion(q.get('rm') !== '0');
-let labels = q.get('labels') !== '0';
+const labels = q.get('labels') !== '0';
 
 const ICON = {
   heart: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.6 4.5c2.2 0 3.6 1.3 4.4 2.5.8-1.2 2.2-2.5 4.4-2.5 3.6 0 5.7 3.8 4.2 7.2C19.5 16.4 12 21 12 21z"/></svg>',
   hand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="11" height="15" rx="1.5"/><path d="M9 3h9.5A1.5 1.5 0 0 1 20 4.5V17"/></svg>',
   deck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 8h6M9 12h6"/></svg>',
-  grave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 21V10a6 6 0 0 1 12 0v11z"/><path d="M4 21h16M12 9v6M9.5 11.5h5"/></svg>',
 };
 
 // ── a tiny table state, rendered the way game-ui.js renders ─────────
@@ -150,9 +157,10 @@ const mk = (cid, o = {}) => ({ uid: seq++, cid, states: [], ...o });
 function initial() {
   seq = 1;
   return {
-    energy: 4, life: [20, 18], deck: [21, 19],
+    energy: 5, life: [20, 18], deck: [21, 19],
+    discard: [['second-thought', 'curious-wisp'], ['grave-rat', 'wildfire', 'rally', 'not-yet', 'spark-runner', 'feed-the-flame']],
     opp: [
-      mk('reckless-initiate', { states: ['exhausted'], tag: 'exhausted' }),
+      mk('reckless-initiate', { states: ['exhausted'], tag: 'spent' }),
       mk('shieldbearer', { states: ['target'], tag: 'target · guard' }),
       mk('apex-predator', { states: ['attacking'], keywords: ['overrun', 'venom'], tag: 'attacking' }),
       mk('patient-giant', { dmg: 2, keywords: ['watchful'], tag: 'hurt' }),
@@ -160,10 +168,10 @@ function initial() {
     ],
     me: [
       mk('cinderling', { states: ['ready'], tag: 'ready' }),
-      mk('spark-runner', { states: ['ready', 'selected'], keywords: ['rush', 'swift'], tag: 'selected' }),
+      mk('street-recruit', { states: ['sick'], leaving: true, tag: 'just arrived' }),
+      mk('spark-runner', { states: ['exhausted'], keywords: ['rush', 'swift'], tag: 'spent' }),
       mk('mossback', { states: ['blocking'], keywords: ['reach'], tag: 'blocking' }),
       mk('little-gardener', { power: 2, vitality: 4, tag: 'buffed' }),
-      mk('street-recruit', { states: ['sick'], leaving: true, tag: 'sick' }),
     ],
     hand: ['cinderling', 'wildfire', 'memory-diver', 'twin-souls', 'shieldbearer', 'phoenix-of-the-last-spark', 'worldtree-stag'].map((cid) => mk(cid)),
   };
@@ -176,6 +184,7 @@ const left = (c) => maxV(c) - (c.dmg || 0);
 const canPlay = (c) => BY_ID[c.cid].cost <= S.energy;
 const elOf = (c) => stage.querySelector(`.tcard[data-uid="${c.uid}"]`);
 const bar = (p) => stage.querySelector(`.pbar[data-p="${p}"]`);
+const pileEl = (p) => stage.querySelector(`.tc-pile[data-pile="${p}"]`);
 
 function boardHTML(list, foe) {
   return list.map((c) => FX.tcardHTML(def(c), {
@@ -188,7 +197,8 @@ function barHTML(p) {
   const pips = Array.from({ length: 5 }, (_, i) => `<span class="pip${i < en ? ' on' : ''}"></span>`).join('');
   return `<div class="pb-name">${name}</div><div class="pb-life${S.life[p] <= 5 ? ' low' : ''}">${ICON.heart}${S.life[p]}</div>
     <div class="pb-energy">${pips}<span class="pb-en-n">${en}/5</span></div>
-    <div class="pb-meta"><span class="pb-hand">${ICON.hand}${p ? 4 : S.hand.length}</span><span class="pb-deck">${ICON.deck}${S.deck[p]}</span><span>${ICON.grave}3</span></div>`;
+    <div class="pb-meta"><span class="pb-hand">${ICON.hand}${p ? 4 : S.hand.length}</span><span class="pb-deck">${ICON.deck}${S.deck[p]}</span></div>
+    ${FX.pileHTML(S.discard[p].map((cid) => BY_ID[cid]), { p })}`;
 }
 function render() {
   oppRow.innerHTML = boardHTML(S.opp, true);
@@ -211,9 +221,11 @@ async function step(mutate, opts) {
 function note(html) { noteEl.innerHTML = html; }
 const untag = (...cs) => cs.forEach((c) => { if (c) c.tag = null; });
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
+const ownerOf = (c) => (S.opp.includes(c) ? 1 : 0);
 
 // Apply damage, then let the dead crumble while the survivors wait, then slide.
-async function resolveDamage(hits) {
+// The dead go to their owner's discard pile (file: false leaves that to the caller).
+async function resolveDamage(hits, { file = true } = {}) {
   const before = FX.capture(stage);
   const dead = [];
   for (const [c, n] of hits) {
@@ -222,53 +234,147 @@ async function resolveDamage(hits) {
     if (left(c) <= 0) dead.push(c);
   }
   const ghosts = dead.map((c) => FX.ghost(before, c.uid));
+  if (file) for (const c of dead) S.discard[ownerOf(c)].push(c.cid);
   S.opp = S.opp.filter((c) => !dead.includes(c));
   S.me = S.me.filter((c) => !dead.includes(c));
   render();
   await Promise.all([FX.flip(stage, before, { delay: dead.length ? 520 : 0 }), ...ghosts.map((g) => FX.death(g))]);
 }
 
+// Where a card the bot is about to play will sit: the end of its row (game-ui's landingRect).
+function landingRect(row) {
+  const cards = row.querySelectorAll('.tcard');
+  const last = cards[cards.length - 1]?.getBoundingClientRect();
+  const w = cards[cards.length - 1]?.offsetWidth || 66, h = w * 1.33;
+  const r = row.getBoundingClientRect();
+  const x = last ? Math.min(last.right + 6 + w / 2, r.right - w / 2) : r.left + r.width / 2;
+  return new DOMRect(x - w / 2, r.top + (r.height - h) / 2, w, h);
+}
+
+function firstPlayable(type) {
+  let c = S.hand.find((x) => (type ? (BY_ID[x.cid].type === 'creature') === (type === 'creature') : true) && canPlay(x));
+  if (!c || (type === 'creature' && S.me.length >= 7)) { S = initial(); render(); c = S.hand.find((x) => (BY_ID[x.cid].type === 'creature') === (type === 'creature') && canPlay(x)); }
+  return c;
+}
+
+// Play a card from the hand the way a tap does: the table re-renders and flip() lets it fall.
+async function playCreature(c) {
+  S.energy -= BY_ID[c.cid].cost;
+  await step(() => { S.hand = S.hand.filter((x) => x !== c); S.me.push({ ...c, states: ['sick'] }); });
+}
+
 // ── the demos ───────────────────────────────────────────────────────
 const demos = {
-  async banner() {
-    note('<b>banner()</b>: whose turn it is, impossible to miss.');
-    await FX.banner('Your turn', { sub: 'Draw · 4 Energy' });
-    await FX.banner('Bot is attacking!', { tone: 'foe' });
+  // A tapped play: lifted out of the hand, tossed up, falls onto the board.
+  async toss() {
+    const c = firstPlayable('creature');
+    note(`<b>flip()</b>, tapped play: ${BY_ID[c.cid].name} lifts out of the hand, rises and falls onto the table.`);
+    await playCreature(c);
   },
 
-  // My play: the card flies from the hand to the middle, holds, then lands on the board.
-  async play() {
-    let c = S.hand.find((x) => BY_ID[x.cid].type === 'creature' && canPlay(x));
-    if (!c || S.me.length >= 7) { S = initial(); render(); c = S.hand.find((x) => BY_ID[x.cid].type === 'creature' && canPlay(x)); }
-    note(`<b>showCard()</b> + <b>flip()</b>: ${BY_ID[c.cid].name} goes to the middle, then onto the board.`);
-    const fromRect = elOf(c).getBoundingClientRect();
+  // A drop from where a drag let go, with a flick to the right: fall(el, fromRect, { velocity }).
+  async drop() {
+    const c = firstPlayable('creature');
+    note(`<b>fall()</b>: ${BY_ID[c.cid].name} let go mid-air with a flick, it drifts, flutters and lands.`);
+    const st = stage.getBoundingClientRect();
+    const w = 104 * 1.12, h = w * 1.397;
+    const from = new DOMRect(st.left + 70 - w / 2, st.top + 470 - h / 2, w, h);
     const before = FX.capture(stage);
+    S.energy -= BY_ID[c.cid].cost;
     S.hand = S.hand.filter((x) => x !== c);
     S.me.push({ ...c, states: ['sick'] });
-    S.energy -= BY_ID[c.cid].cost;
     render();
-    const shown = FX.showCard(cardHTML(def(c), { cls: 'anim' }), { fromRect, toEl: elOf(c) }); // hides the new card first
+    const el = elOf(c);
+    await Promise.all([FX.fall(el, from, { velocity: { x: 520, y: -160 }, angle: 9 }), FX.flip(stage, before, { exclude: [el] })]);
+  },
+
+  // The bot's play, exactly as game-ui does it: shown big, then put down at toRect.
+  // The landed stand-in hands over to the real card when the table is drawn.
+  async oppPlay() {
+    const c = mk(pick(['bonepicker', 'kindly-undertaker', 'ash-collector', 'mirror-mage', 'grave-rat']));
+    if (S.opp.length >= 6) { S.opp.shift(); render(); }
+    note(`<b>showCard({ toRect, flip })</b>: the bot plays ${BY_ID[c.cid].name}; it falls onto its row.`);
+    await FX.showCard(cardHTML(def(c), { cls: 'anim' }), { fromRect: bar(1).querySelector('.pb-hand').getBoundingClientRect(), toRect: landingRect(oppRow), flip: true, hold: 1000, foe: true });
+    await step(() => { S.opp.push(c); });
+  },
+
+  // A play shown big that lands on its new element (toEl).
+  async show() {
+    const c = firstPlayable('creature');
+    note(`<b>showCard({ toEl })</b>: ${BY_ID[c.cid].name} is shown big, then dropped onto its place.`);
+    const fromRect = elOf(c).getBoundingClientRect();
+    const before = FX.capture(stage);
+    S.energy -= BY_ID[c.cid].cost;
+    S.hand = S.hand.filter((x) => x !== c);
+    S.me.push({ ...c, states: ['sick'] });
+    render();
+    const shown = FX.showCard(cardHTML(def(c), { cls: 'anim' }), { fromRect, toEl: elOf(c), hold: 700 });
     await Promise.all([shown, FX.flip(stage, before)]);
   },
 
-  // The opponent's play: face down from their bar, turned over on the way, held, then down.
-  async oppPlay() {
-    const c = mk(pick(['bonepicker', 'grave-rat', 'kindly-undertaker', 'ash-collector', 'mirror-mage']));
-    if (S.opp.length >= 6) S.opp.shift();
-    note(`<b>showCard({ flip })</b>: the bot plays ${BY_ID[c.cid].name}.`);
-    const fromRect = bar(1).querySelector('.pb-hand').getBoundingClientRect();
-    const before = FX.capture(stage);
-    S.opp.push(c);
-    render();
-    const shown = FX.showCard(cardHTML(def(c), { cls: 'anim' }), { fromRect, toEl: elOf(c), flip: true });
-    await Promise.all([shown, FX.flip(stage, before)]);
+  // A spell: shown, its effect plays meanwhile, then it flutters onto your pile.
+  async spell() {
+    const card = S.hand.find((x) => BY_ID[x.cid].type === 'spell') || mk('feed-the-flame');
+    const t = S.opp[Math.min(1, S.opp.length - 1)];
+    note(`<b>showCard({ during, toPile })</b>: ${BY_ID[card.cid].name} strikes for 3 while it is shown, then goes to your discard pile.`);
+    const fromRect = elOf(card)?.getBoundingClientRect() || handEl.getBoundingClientRect();
+    if (S.hand.includes(card)) await step(() => { S.hand = S.hand.filter((x) => x !== card); });
+    await FX.showCard(cardHTML(BY_ID[card.cid], { cls: 'anim' }), {
+      fromRect, hold: 500, toPile: pileEl(0),
+      during: async () => {
+        if (!t) return;
+        await FX.burst(elOf(t), { color: '#ff8a3c', strength: 3 });
+        FX.number(elOf(t), '-3');
+        await resolveDamage([[t, 3]]);
+      },
+    });
+    S.discard[0].push(card.cid);
+  },
+
+  // A card discarded from the hand flutters onto the pile.
+  async discard() {
+    const c = S.hand[S.hand.length - 1];
+    if (!c) { S = initial(); render(); return; }
+    note(`<b>toPile(el, pile)</b>: ${BY_ID[c.cid].name} is discarded.`);
+    await FX.toPile(elOf(c), pileEl(0));
+    S.discard[0].push(c.cid);
+    await step(() => { S.hand = S.hand.filter((x) => x !== c); });
+  },
+
+  // Readiness at 48px: seven in a row, ready / just arrived / spent.
+  async states() {
+    if (S.me.length === 7 && S.me[0].tag === 'ready') { S = initial(); render(); note('Back to five.'); return; }
+    note('Readiness at 48px: <b>gold</b> = ready to attack · <b>zZ</b> = just arrived, can block · <b>tilted SPENT</b> = attacked, out until your next turn.');
+    await step(() => {
+      S.me = [
+        mk('cinderling', { states: ['ready'], tag: 'ready' }),
+        mk('spark-runner', { states: ['ready'], keywords: ['rush'], tag: 'ready' }),
+        mk('street-recruit', { states: ['sick'], tag: 'new' }),
+        mk('memory-diver', { states: ['sick'], tag: 'new' }),
+        mk('mossback', { states: ['exhausted'], keywords: ['reach'], tag: 'spent' }),
+        mk('apex-predator', { states: ['exhausted'], tag: 'spent' }),
+        mk('little-gardener', { tag: 'idle' }),
+      ];
+    });
+  },
+
+  async death() {
+    const list = S.opp.length ? S.opp : S.me;
+    const c = list.find((x) => x.cid !== 'the-one-who-came-back') || list[0];
+    if (!c) { S = initial(); render(); return; }
+    note(`<b>death()</b>, then <b>toPile()</b>: ${BY_ID[c.cid].name} crumbles; its card goes to the discard pile.`);
+    const p = ownerOf(c);
+    const rect = elOf(c).getBoundingClientRect();
+    await resolveDamage([[c, left(c)]], { file: false });   // it arrives at the pile by air instead
+    await FX.toPile(FX.tcardHTML(def(c), { rest: false }), pileEl(p), { fromRect: rect });
+    S.discard[p].push(c.cid);
   },
 
   async attack(attacker, target) {
     const a = attacker || S.me.find((x) => x.states.includes('ready')) || S.me[0];
     const t = target || S.opp.find((x) => x.cid === 'patient-giant') || S.opp[S.opp.length - 1];
     if (!a || !t) { S = initial(); render(); return demos.attack(); }
-    note(`<b>lunge()</b> + <b>impact()</b> + <b>number()</b>: ${BY_ID[a.cid].name} attacks ${t.p != null ? 'the bot' : BY_ID[t.cid].name}.`);
+    note(`<b>lunge()</b> + <b>impact()</b> + <b>number()</b>: ${BY_ID[a.cid].name} attacks ${t.p != null ? 'the bot' : BY_ID[t.cid].name}; it is spent afterwards.`);
     const n = pow(a);
     const tEl = t.p != null ? bar(t.p) : elOf(t);
     await FX.lunge(elOf(a), tEl, { strength: n, onHit: (el) => FX.number(el, `-${n}`, { kind: 'damage' }) });
@@ -292,40 +398,11 @@ const demos = {
     await resolveDamage([[a, pb], [b, pa]]);
   },
 
-  async death() {
-    const list = S.opp.length ? S.opp : S.me;
-    const c = list.find((x) => x.cid !== 'the-one-who-came-back') || list[0];
-    if (!c) { S = initial(); render(); return; }
-    note(`<b>death()</b> on a <b>ghost()</b>: ${BY_ID[c.cid].name} cracks and crumbles; the rest close ranks.`);
-    await resolveDamage([[c, left(c)]]);
-  },
-
-  // A spell from the hand: shown big, then it hits.
-  async spell() {
-    const t = S.opp[Math.min(1, S.opp.length - 1)];
-    if (!t) { S = initial(); render(); return; }
-    note('<b>showCard()</b> then <b>burst()</b>: Feed the Flame hits for 3.');
-    await FX.showCard(cardHTML(BY_ID['feed-the-flame'], { cls: 'anim' }), { fromRect: handEl.getBoundingClientRect(), hold: 900 });
-    await FX.burst(elOf(t), { color: '#ff8a3c', strength: 3 });
-    FX.number(elOf(t), '-3');
-    await resolveDamage([[t, 3]]);
-  },
-
-  async buff() {
-    const t = S.me.find((x) => x.cid === 'little-gardener') || S.me[0];
-    if (!t) return;
-    note('<b>burst()</b> + <b>number(kind: buff)</b>: Wild Growth, +2/+2.');
-    await FX.showCard(cardHTML(BY_ID['wild-growth'], { cls: 'anim' }), { fromRect: handEl.getBoundingClientRect(), hold: 700 });
-    await FX.burst(elOf(t), { color: '#9be36a', strength: 1 });
-    FX.number(elOf(t), '+2/+2', { kind: 'buff' });
-    await step(() => { t.power = pow(t) + 2; t.vitality = maxV(t) + 2; untag(t); });
-  },
-
-  // A board-wide sweep: every creature it passes takes 2.
   async wave() {
     if (S.opp.length + S.me.length < 3) { S = initial(); render(); }
     note('<b>wave()</b>: Wildfire deals 2 damage to every creature.');
-    await FX.showCard(cardHTML(BY_ID.wildfire, { cls: 'anim' }), { fromRect: bar(1).getBoundingClientRect(), flip: true, hold: 800 });
+    await FX.showCard(cardHTML(BY_ID.wildfire, { cls: 'anim' }), { fromRect: bar(1).getBoundingClientRect(), flip: true, hold: 700, toPile: pileEl(1) });
+    S.discard[1].push('wildfire');
     const all = [...S.opp, ...S.me];
     await FX.wave(stage, {
       color: '#ff7a2e', dir: 'up', duration: 1000,
@@ -335,7 +412,6 @@ const demos = {
     await resolveDamage(all.map((c) => [c, 2]));
   },
 
-  // What did the opponent pick? An arrow first, then the blow.
   async arrow() {
     const a = S.opp.find((x) => x.cid === 'apex-predator') || S.opp[0];
     const t = S.me.find((x) => x.cid === 'mossback') || S.me[0];
@@ -346,6 +422,12 @@ const demos = {
     const ar = FX.arrow(elOf(a), elOf(t), { color: '#ff6b3d', duration: 1100 });
     await ar.finished;
     await demos.attack(a, t);
+  },
+
+  async banner() {
+    note('<b>banner()</b>: whose turn it is, impossible to miss.');
+    await FX.banner('Your turn', { sub: 'Draw · 5 Energy' });
+    await FX.banner('Bot is attacking!', { tone: 'foe' });
   },
 
   async draw() {
@@ -364,11 +446,11 @@ const demos = {
   },
 
   async auto() {
-    for (const k of ['banner', 'play', 'oppPlay', 'arrow', 'attack', 'clash', 'spell', 'buff', 'wave', 'token', 'draw', 'death']) {
+    for (const k of ['banner', 'toss', 'drop', 'oppPlay', 'spell', 'discard', 'attack', 'show', 'arrow', 'clash', 'death', 'wave', 'token', 'draw', 'states']) {
       await demos[k]();
-      await FX.wait(380);
+      await FX.wait(420);
     }
-    note('Done. Drag a glowing card up onto the board, or drag a glowing creature onto an enemy.');
+    note('Done. Drag a glowing card up and let go (flick it: it drifts), tap one to play it, or drag a glowing creature onto an enemy.');
   },
 };
 
@@ -396,11 +478,20 @@ stage.addEventListener('click', (e) => {
 function openSheet(el) {
   const c = [...S.hand, ...S.me, ...S.opp].find((x) => String(x.uid) === el.dataset.uid);
   if (!c) return;
-  const onBoard = !S.hand.includes(c);
-  $('#sheet-card').innerHTML = cardHTML(def(c), onBoard ? { cls: 'anim', power: pow(c), vitality: left(c) } : { cls: 'anim' });
+  const inHand = S.hand.includes(c);
+  $('#sheet-card').innerHTML = cardHTML(def(c), inHand ? { cls: 'anim' } : { cls: 'anim', power: pow(c), vitality: left(c) });
+  const playBtn = inHand && BY_ID[c.cid].type === 'creature' && canPlay(c) && S.me.length < 7;
+  $('#sheet-btns').innerHTML = (playBtn ? `<button class="btn primary" data-play="${c.uid}">Play · ${BY_ID[c.cid].cost} Energy</button>` : '') + '<button class="btn ghost" data-close>Close</button>';
   $('#sheet').hidden = false;
 }
-$('#sheet').addEventListener('click', () => { $('#sheet').hidden = true; });
+$('#sheet').addEventListener('click', (e) => {
+  const play = e.target.closest('[data-play]');
+  $('#sheet').hidden = true;
+  if (play) {
+    const c = S.hand.find((x) => String(x.uid) === play.dataset.play);
+    if (c) queue(() => { note(`Tapped <b>${BY_ID[c.cid].name}</b>: it lifts out of the hand and falls onto the table.`); return playCreature(c); });
+  }
+});
 
 // ── drag a hand card up to play it ──────────────────────────────────
 FX.drag(handEl, {
@@ -416,25 +507,19 @@ async function playDropped(i) {
   const d = BY_ID[c.cid];
   S.energy -= d.cost;
   if (d.type === 'creature') {
-    note(`Dropped <b>${d.name}</b>: flip() carries it from your finger onto the board.`);
+    note(`Dropped <b>${d.name}</b>: flip() lets it fall from your finger, with the momentum you gave it.`);
     await step(() => { S.hand = S.hand.filter((x) => x !== c); S.me.push({ ...c, states: ['sick'] }); });
     return;
   }
-  note(`Dropped <b>${d.name}</b>: shown big from where you let go.`);
+  note(`Dropped <b>${d.name}</b>: shown big from where you let go, then into your discard pile.`);
   const fromRect = elOf(c).getBoundingClientRect();
-  const before = FX.capture(stage);
-  S.hand = S.hand.filter((x) => x !== c);
-  render();
-  const slide = FX.flip(stage, before);
-  await FX.showCard(cardHTML(d, { cls: 'anim' }), { fromRect, hold: 800 });
-  await slide;
-  if (c.cid === 'wildfire') {
-    const all = [...S.opp, ...S.me];
-    await FX.wave(stage, { color: '#ff7a2e', dir: 'up', targets: all.map(elOf).filter(Boolean), onHit: (el) => FX.number(el, '-2') });
-    await resolveDamage(all.map((x) => [x, 2]));
-  } else if (c.cid === 'twin-souls') {
-    await step(() => { S.me.push(mk('spirit'), mk('spirit')); });
-  }
+  await step(() => { S.hand = S.hand.filter((x) => x !== c); });
+  const all = [...S.opp, ...S.me];
+  const effect = c.cid === 'wildfire'
+    ? async () => { await FX.wave(stage, { color: '#ff7a2e', dir: 'up', targets: all.map(elOf).filter(Boolean), onHit: (el) => FX.number(el, '-2') }); await resolveDamage(all.map((x) => [x, 2])); }
+    : c.cid === 'twin-souls' ? () => step(() => { S.me.push(mk('spirit'), mk('spirit')); }) : null;
+  await FX.showCard(cardHTML(d, { cls: 'anim' }), { fromRect, hold: 500, during: effect, toPile: pileEl(0) });
+  S.discard[0].push(c.cid);
 }
 
 // ── drag from a ready creature to attack ────────────────────────────
@@ -450,7 +535,7 @@ FX.dragArrow(myRow, {
 });
 
 render();
-note('Drag a glowing card up to play it · drag a glowing creature onto an enemy · or tap a button.');
+note('Drag a glowing card up and let go (flick it: it drifts) · tap one, then Play · or tap a button.');
 window.LAB = { FX, demos, render, step, get S() { return S; }, reset() { S = initial(); render(); } };
 if (q.get('auto') === '1') {
   const go = () => queue(() => FX.wait(300).then(() => demos.auto()));

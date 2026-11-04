@@ -9,11 +9,12 @@
 
    Transforms are layered so nothing fights:
      transform  = hand fan (--fx --fy --fr --fs, set by layoutHand)
+                + resting jitter (--jx --jy --jr, from the uid, board only)
                 + state pose (--sx --sy --sr --ss, set by state classes)
      translate / rotate / scale (the individual properties) = motion from
-                fx.js: FLIP, drag, lunges. They stack on top of the pose.
+                fx.js: FLIP, falls, drag, lunges. They stack on top.
    Shake and flash happen on the inner .tc-body, so they never fight a
-   lunge running on the card itself.
+   lunge running on the card itself. .tc-shadow is the card's lift shadow.
    ══════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -42,8 +43,8 @@
   border-radius: var(--r);
   transform-origin: 50% 50%;
   transform:
-    translate(calc(var(--fx, 0px) + var(--sx, 0px)), calc(var(--fy, 0px) + var(--sy, 0px)))
-    rotate(calc(var(--fr, 0deg) + var(--sr, 0deg)))
+    translate(calc(var(--fx, 0px) + var(--jx, 0px) + var(--sx, 0px)), calc(var(--fy, 0px) + var(--jy, 0px) + var(--sy, 0px)))
+    rotate(calc(var(--fr, 0deg) + var(--jr, 0deg) + var(--sr, 0deg)))
     scale(calc(var(--fs, 1) * var(--ss, 1)));
   transition: transform .34s cubic-bezier(.3, 1.4, .5, 1), opacity .25s;
   -webkit-user-select: none;
@@ -52,29 +53,29 @@
   touch-action: none;                 /* drags never scroll the page */
   cursor: pointer;
   isolation: isolate;
+  container: tcard / inline-size;     /* the SPENT stamp grows a word on wider cards */
   color: var(--ink-card, #1c1611);
 }
 .tcard.in-hand { --w: var(--w-hand); --ar: 1.397; }
 .tcard.foe { --fwd: 1; }
 .tcard img { pointer-events: none; -webkit-user-drag: none; -webkit-touch-callout: none; }
 
-/* lift shadow: grows as the card leaves the table */
-.tcard::before {
-  content: '';
+/* lift shadow: grows as the card leaves the table (falls animate it directly) */
+.tc-shadow {
   position: absolute;
   inset: 6% 5% 4%;
   z-index: -1;
   border-radius: var(--r);
-  box-shadow: 0 calc(var(--w) * .1) calc(var(--w) * .2) calc(var(--w) * .02) rgba(0, 0, 0, .75);
+  box-shadow: 0 0 calc(var(--w) * .2) calc(var(--w) * .02) rgba(0, 0, 0, .78);
   opacity: 0;
-  transform: translateY(0) scale(.94);
+  transform: translateY(calc(var(--w) * .03)) scale(.94);
   transition: opacity .25s, transform .3s;
   pointer-events: none;
 }
-.tcard.dragging::before, .tcard.returning::before, .tcard.touched::before, .tcard.selected::before,
-.tcard.attacking::before, .tcard.aiming::before, .tcard.fx-air::before, .fx-show-card::before {
+.tcard.dragging > .tc-shadow, .tcard.returning > .tc-shadow, .tcard.touched > .tc-shadow, .tcard.selected > .tc-shadow,
+.tcard.attacking > .tc-shadow, .tcard.aiming > .tc-shadow, .tcard.fx-air > .tc-shadow {
   opacity: 1;
-  transform: translateY(calc(var(--w) * .14)) scale(1.04);
+  transform: translateY(calc(var(--w) * .2)) scale(1.04);
 }
 
 /* glow halo for states (opacity and scale only, so it stays cheap) */
@@ -169,6 +170,18 @@
 
 .tcard { --plate: max(13px, calc(var(--w) * .205)); }
 .tcard.on-board.name2 { --plate: max(21px, calc(var(--w) * .33)); }
+/* in a crowded row (56px and 48px cards) every name gets two lines */
+.tc-row:has(> .tcard:nth-child(6)) > .tcard.on-board { --plate: max(21px, calc(var(--w) * .33)); }
+.tc-row:has(> .tcard:nth-child(6)) > .tcard.on-board .tc-name { font-size: max(9px, calc(var(--w) * .136)); letter-spacing: -.03em; padding: 0 1px; }
+.tc-row:has(> .tcard:nth-child(6)) > .tcard.on-board .tc-name span {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1;
+  -webkit-hyphens: auto;   /* one long word (Cinderling) breaks as Cinder-ling */
+  hyphens: auto;
+}
 .tc-name {
   position: relative;
   z-index: 1;
@@ -240,7 +253,7 @@
 /* Energy cost: the bronze hexagon from the full card */
 .tc-cost {
   position: absolute;
-  z-index: 3;
+  z-index: 6;
   top: calc(var(--w) * -.035);
   left: calc(var(--w) * -.035);
   width: calc(var(--w) * .25);
@@ -274,7 +287,7 @@
 .tc-p, .tc-v {
   --d: max(17px, calc(var(--w) * .29));
   position: absolute;
-  z-index: 3;
+  z-index: 6;
   bottom: calc(var(--plate) + var(--w) * .06);
   width: var(--d);
   height: var(--d);
@@ -323,7 +336,7 @@
 /* keyword badges: a column on the top-right of the art */
 .tc-kws {
   position: absolute;
-  z-index: 3;
+  z-index: 6;
   top: calc(var(--w) * .07);
   right: calc(var(--w) * .07);
   display: flex;
@@ -346,26 +359,73 @@
 .tcard.in-hand .tc-kw { --s: calc(var(--w) * .17); }
 .tc-kw:nth-child(n+4) { display: none; } /* three at most; the big view lists them all */
 
-/* "spent" marker for exhausted creatures */
+/* ── readiness: can it act? ───────────────────────────────────────
+   ready      gold glow                  can attack now
+   sick       zZ chip, a little dim      just arrived: can block, can't attack yet
+   exhausted  turned 22°, darkened,      it attacked: can't attack or block
+              SPENT stamp                until its controller's next turn
+   The chips sit above the dimming so they read on a 48px card. */
 .tc-ex {
-  --s: max(14px, calc(var(--w) * .215));
+  --s: max(21px, calc(var(--w) * .44));
   position: absolute;
-  z-index: 4;
-  top: calc(var(--w) * .05);
-  left: calc(var(--w) * .05);
+  z-index: 7;
+  left: 50%;
+  top: 31%;
+  width: var(--s);
+  height: var(--s);
+  margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--w) * .03);
+  border-radius: 999px;
+  color: #2a2016;
+  background: radial-gradient(circle at 40% 30%, #fffaf0, #eadbbd 62%, #c2ab7a);
+  box-shadow: 0 0 0 1.5px rgba(20, 14, 9, .9), 0 0 0 3px rgba(242, 230, 204, .4), 0 3px 8px rgba(0, 0, 0, .75);
+  opacity: 0;
+  transform: scale(.3) rotate(-120deg);
+  transition: opacity .25s, transform .4s cubic-bezier(.3, 1.5, .5, 1);
+  pointer-events: none;
+}
+.tc-ex svg { width: calc(var(--s) * .62); height: calc(var(--s) * .62); flex: none; display: block; }
+.tc-ex b {
+  display: none;
+  font-family: 'EB Garamond', Georgia, serif;
+  font-weight: 700;
+  font-style: normal;
+  font-size: calc(var(--w) * .13);
+  line-height: 1;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding-top: .1em;
+}
+/* wide enough for a word: the stamp becomes a SPENT pill */
+@container tcard (min-width: 60px) {
+  .tc-ex { --s: calc(var(--w) * .32); top: 38%; width: auto; margin: calc(var(--s) / -2) 0 0; translate: -50% 0; padding: 0 calc(var(--w) * .08) 0 calc(var(--w) * .05); }
+  .tc-ex svg { width: calc(var(--s) * .72); height: calc(var(--s) * .72); }
+  .tc-ex b { display: block; }
+}
+
+.tc-zz {
+  --s: max(18px, calc(var(--w) * .34));
+  position: absolute;
+  z-index: 7;
+  top: calc(var(--w) * .04);
+  left: calc(var(--w) * .04);
   width: var(--s);
   height: var(--s);
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: #e8dcc4;
-  background: rgba(14, 10, 7, .9);
-  box-shadow: 0 0 0 1px rgba(232, 220, 196, .5);
+  color: #d4e9ff;
+  background: radial-gradient(circle at 38% 30%, #44597d, #18202f 72%);
+  box-shadow: 0 0 0 1.5px rgba(212, 233, 255, .8), 0 2px 6px rgba(0, 0, 0, .65);
   opacity: 0;
   transform: scale(.4);
-  transition: opacity .25s, transform .3s cubic-bezier(.3, 1.6, .5, 1);
+  transition: opacity .25s, transform .35s cubic-bezier(.3, 1.6, .5, 1);
+  pointer-events: none;
 }
-.tc-ex svg { width: 66%; height: 66%; }
+.tc-zz svg { width: 70%; height: 70%; display: block; }
 
 /* Legendary: a foil sheen that crosses the frame (under the art and plate) */
 .tc-sheen {
@@ -412,9 +472,11 @@
 .tcard.ready { --ring: var(--tc-gold); --ring-w: 2px; --glow: rgba(236, 198, 108, .62); }
 .tcard.ready::after { opacity: 1; animation: tc-breathe 1.9s ease-in-out infinite; }
 
-.tcard.exhausted { --sr: 13deg; --shade: .32; }
-.tcard.foe.exhausted { --sr: -13deg; }
-.tcard.exhausted .tc-ex { opacity: 1; transform: scale(1); }
+.tcard.exhausted { --sr: 22deg; --ss: .92; --shade: .5; }
+.tcard.foe.exhausted { --sr: -22deg; }
+.tcard.exhausted .tc-art { filter: saturate(.35); }
+.tcard.exhausted .tc-ex { opacity: 1; transform: none; }
+.tcard.exhausted .tc-zz { display: none; }
 
 .tcard.attacking { --sy: calc(var(--fwd) * var(--w) * .2); --ss: 1.07; --ring: #ff8a5c; --ring-w: 2px; --glow: rgba(255, 96, 50, .7); }
 .tcard.attacking::after { opacity: 1; animation: tc-breathe .9s ease-in-out infinite; }
@@ -444,8 +506,10 @@
   transition: box-shadow .2s, background-color .2s;
 }
 
-.tcard.sick { --shade: .26; }
-.tcard.sick .tc-art { filter: saturate(.7); }
+.tcard.sick { --shade: .2; }
+.tcard.sick .tc-art { filter: saturate(.72); }
+.tcard.sick .tc-zz { opacity: 1; transform: none; animation: tc-doze 2.6s ease-in-out infinite; }
+@keyframes tc-doze { 0%, 100% { translate: 0 0; } 50% { translate: 0 -1.5px; } }
 
 .tcard.can { --ring: var(--tc-gold); --ring-w: 2px; --glow: rgba(236, 198, 108, .5); }
 .tcard.can::after { opacity: .9; animation: tc-breathe 2.4s ease-in-out infinite; }
@@ -456,6 +520,7 @@
 .tcard.drop-ok::after { opacity: 1; animation: none; }
 
 .tcard.touched, .tcard.dragging, .tcard.returning, .tcard.fx-air, .tcard.fx-lunge { z-index: 50; }
+.tcard.fx-fall { z-index: 60; }
 .tcard.dragging, .tcard.returning {
   transform: none !important;  /* translate/rotate/scale from fx.js carry the card */
   transition: none !important;
@@ -506,6 +571,88 @@
 }
 .tc-hand > .tcard.touched { --sy: 0px; transition-duration: .22s; }
 .tc-hand.wait > .tcard { --shade: .2; }
+
+/* ── discard pile: a small messy stack (pileHTML / toPile) ───────── */
+.tc-pile {
+  --pw: var(--pile-w, 44px);
+  position: relative;
+  flex: none;
+  width: calc(var(--pw) + 10px);
+  height: calc(var(--pw) * 1.397 + 10px);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.tc-pile-slot, .tc-pcard {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--pw);
+  height: calc(var(--pw) * 1.397);
+  margin: calc(var(--pw) * -.6985) 0 0 calc(var(--pw) * -.5);
+  border-radius: calc(var(--pw) * .09);
+}
+/* the place on the table: a worn outline while empty, the stack's edge after */
+.tc-pile-slot {
+  border: 1.5px dashed rgba(214, 180, 106, .3);
+  background: rgba(0, 0, 0, .2);
+}
+.tc-pile:not(.empty) .tc-pile-slot { border: 0; background: #15100b; box-shadow: 0 1px 2px rgba(0, 0, 0, .6); }
+.tc-pile.thick-1 .tc-pile-slot { box-shadow: 1px 1.5px 0 #2c231a, 2px 3px 2px rgba(0, 0, 0, .55); }
+.tc-pile.thick-2 .tc-pile-slot { box-shadow: 1px 1.5px 0 #2c231a, 2px 3px 0 #1a140f, 3px 4.5px 0 #2c231a, 4px 6px 3px rgba(0, 0, 0, .55); }
+.tc-pile.thick-3 .tc-pile-slot { box-shadow: 1px 1.5px 0 #2c231a, 2px 3px 0 #1a140f, 3px 4.5px 0 #2c231a, 4px 6px 0 #1a140f, 5px 7.5px 0 #2c231a, 6px 9px 4px rgba(0, 0, 0, .55); }
+.tc-pcard {
+  padding: max(1.5px, calc(var(--pw) * .04));
+  background: #120e0a;
+  transform: translate(var(--px, 0px), var(--py, 0px)) rotate(var(--pr, 0deg));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .65), inset 0 0 0 1px rgba(255, 255, 255, .05);
+}
+.tc-pcard:not(.top) { filter: brightness(.82); }
+.tc-pc-face {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--pw) * .04);
+  padding: calc(var(--pw) * .05);
+  border-radius: calc(var(--pw) * .06);
+  background:
+    var(--grain),
+    linear-gradient(180deg, color-mix(in srgb, var(--fl, #8b7b62) 42%, var(--f, #4a4033)) 0%, var(--f, #4a4033) 45%, color-mix(in srgb, var(--f, #4a4033) 76%, #000) 100%);
+}
+.tc-pc-art {
+  position: relative;
+  flex: 1;
+  border-radius: calc(var(--pw) * .03);
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 38%, var(--fl, #8b7b62), var(--f, #4a4033) 82%);
+  box-shadow: 0 0 0 1px rgba(15, 10, 6, .85);
+}
+.tc-pc-art > img, .tc-pc-art > svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.tc-pc-art > .glyph { position: absolute; inset: 25%; width: 50%; height: 50%; color: rgba(255, 245, 225, .55); }
+.tc-pc-plate {
+  flex: none;
+  height: calc(var(--pw) * .17);
+  border-radius: calc(var(--pw) * .03);
+  background: linear-gradient(180deg, #f4ebd7, #e2d4b6);
+  box-shadow: inset 0 0 0 1px rgba(30, 20, 10, .45);
+}
+.tc-pc-back { background: radial-gradient(circle at 50% 42%, #3b2d1d, #1e1711 60%, #100c09); box-shadow: inset 0 0 0 1.5px #8a6d3b; }
+.tc-pile-n {
+  position: absolute;
+  z-index: 2;
+  right: -2px;
+  bottom: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  font: 700 12px/1 'EB Garamond', Georgia, serif;
+  color: #f6ead2;
+  background: radial-gradient(circle at 35% 30%, #4a3a2c, #1e1711 72%);
+  box-shadow: 0 0 0 1px #cdb68d, 0 2px 4px rgba(0, 0, 0, .6);
+}
+.tc-pile.empty .tc-pile-n { display: none; }
 
 /* ══════════════════════════════════════════════════════════════════
    Effects layer
@@ -618,6 +765,26 @@
   box-shadow: 0 30px 60px rgba(0, 0, 0, .7), 0 0 70px rgba(255, 210, 130, .18);
   z-index: -1;
 }
+/* falling: its own shadow tightens under it instead of the held one */
+.fx-show.falling .fx-show-card::before { display: none; }
+.fx-show-shadow {
+  position: absolute;
+  inset: 5%;
+  z-index: -1;
+  border-radius: 6%;
+  box-shadow: 0 0 34px 6px rgba(0, 0, 0, .78);
+  opacity: 0;
+}
+.fx-pilefly > .card, .fx-pilefly > .tcard { margin: 0; }
+/* touch-down: the air under the card pushes its outline out */
+.fx-puff {
+  border: 2px solid rgba(236, 222, 192, .6);
+  box-shadow: 0 0 10px rgba(236, 222, 192, .35), inset 0 0 8px rgba(236, 222, 192, .25);
+}
+.fx-puff.light {
+  border-color: rgba(255, 226, 150, .8);
+  box-shadow: 0 0 16px rgba(255, 214, 120, .6), inset 0 0 10px rgba(255, 230, 170, .45);
+}
 .fx-flipper { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }
 .fx-flipper > .card { position: absolute; inset: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
 .fx-flipper > .card-back { transform: rotateY(180deg); }
@@ -720,6 +887,6 @@
 .fx-cracks path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
 @media (prefers-reduced-motion: reduce) {
-  .tcard::after, .tc-sheen::before, .fx-a-core, .fx-shine::before { animation: none !important; }
+  .tcard::after, .tc-sheen::before, .fx-a-core, .fx-shine::before, .tc-zz { animation: none !important; }
   .tcard, .tc-hand > .tcard { transition-duration: .01s !important; }
 }

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<!-- One card's art, full bleed, for tools/bake-art.mjs to photograph. -->
+<html><head><meta charset="utf-8"><title>bake</title>
+<style>html, body { margin: 0; background: #000; overflow: hidden; } #a, #a svg { display: block; width: 100vw; height: 100vh; }</style>
+</head><body><div id="a"></div>
+<script type="module">
+import { artSVG } from '../js/art/index.js';
+import { SCENES } from '../js/art/scenes.js';
+window.ids = Object.keys(SCENES);
+// Resolves once the picture is in the page and painted.
+window.show = (id) => new Promise((done) => {
+  document.getElementById('a').innerHTML = artSVG(id) || '';
+  requestAnimationFrame(() => requestAnimationFrame(done));
+});
+window.ready = true;
+</script>
+</body></html>

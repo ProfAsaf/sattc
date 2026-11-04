@@ -454,11 +454,19 @@
   color: #2a1704;
   background: linear-gradient(180deg, #ffe9a8, #e8b24a);
   box-shadow: 0 0 0 1px #fff1c4, 0 0 10px rgba(255, 200, 90, .75), 0 2px 4px rgba(0, 0, 0, .6);
-  animation: tc-ab-glow 1.6s ease-in-out infinite;
 }
 .tc-ab.on svg { color: #6d3c00; }
 .tc-ab.used { opacity: .4; }
 @keyframes tc-ab-glow { 50% { box-shadow: 0 0 0 1.5px #fff6d8, 0 0 16px rgba(255, 210, 110, .95), 0 2px 4px rgba(0, 0, 0, .6); } }
+
+/* Spent: the card lies sideways and dims; a small ↻ in its corner says why
+   (no stamp across the art: the tilt is the signal, as in other card games) */
+.tc-ex { --s: max(16px, calc(var(--w) * .3)); left: calc(var(--w) * .05); top: calc(var(--w) * .05); width: var(--s); height: var(--s); margin: 0; padding: 0; translate: none; }
+@container tcard (min-width: 60px) {
+  .tc-ex { --s: max(16px, calc(var(--w) * .3)); top: calc(var(--w) * .05); width: var(--s); margin: 0; padding: 0; translate: none; }
+  .tc-ex svg { width: calc(var(--s) * .66); height: calc(var(--s) * .66); }
+  .tc-ex b { display: none; }
+}
 
 /* Legendary: a foil sheen that crosses the frame (under the art and plate) */
 .tc-sheen {
@@ -503,7 +511,7 @@
 
 /* ── states ──────────────────────────────────────────────────────── */
 .tcard.ready { --ring: var(--tc-gold); --ring-w: 2px; --glow: rgba(236, 198, 108, .62); }
-.tcard.ready::after { opacity: 1; animation: tc-breathe 1.9s ease-in-out infinite; }
+.tcard.ready::after { opacity: 1; } /* a steady glow: the hand's playable cards are the one thing that pulses */
 
 .tcard.exhausted { --sr: 22deg; --ss: .92; --shade: .5; }
 .tcard.foe.exhausted { --sr: -22deg; }
@@ -512,10 +520,10 @@
 .tcard.exhausted .tc-zz { display: none; }
 
 .tcard.attacking { --sy: calc(var(--fwd) * var(--w) * .2); --ss: 1.07; --ring: #ff8a5c; --ring-w: 2px; --glow: rgba(255, 96, 50, .7); }
-.tcard.attacking::after { opacity: 1; animation: tc-breathe .9s ease-in-out infinite; }
+.tcard.attacking::after { opacity: 1; animation: tc-breathe 2.4s ease-in-out infinite; }
 
 .tcard.blocking { --sy: calc(var(--fwd) * var(--w) * .1); --ss: 1.04; --ring: #e6f5ff; --ring-w: 2px; --glow: rgba(140, 205, 255, .75); }
-.tcard.blocking::after { opacity: 1; animation: tc-breathe 1.3s ease-in-out infinite; }
+.tcard.blocking::after { opacity: 1; animation: tc-breathe 2.4s ease-in-out infinite; }
 
 .tcard.selected { --sy: calc(var(--w) * -.13); --ss: 1.08; --ring: #fff1c4; --ring-w: 2.5px; --glow: rgba(255, 220, 140, .75); }
 .tcard.selected::after { opacity: 1; }

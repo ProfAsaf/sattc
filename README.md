@@ -158,6 +158,28 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
   extra card at the end of each of their turns; hitting the holder in a fight
   takes it. If the holder is knocked out it goes to whoever's turn it is.
 
+## Keeping the table calm
+
+The rule of thumb, borrowed from how the best phone card games do it (three
+"reads": big shapes first, a few key numbers second, details only on request):
+
+- **At a glance:** the cards, everyone's Life, your Energy pips, and one main
+  button at the bottom right. Opponents show Life, Energy (one number) and
+  cards in hand; a deck count appears only when 5 or fewer cards are left.
+- **On a tap:** a player's bar opens their details (deck, discard pile,
+  Relics, the Crown); a card opens the card. The game log lives in the menu,
+  along with take-back.
+- **One line in the middle at most:** how the last fight went, or what you
+  can do now. No running log.
+- **The whole screen only for you:** "Your turn", attacks on or by you, the
+  first Crown and any Crown you win or lose. Someone else's turn, two others
+  fighting, or another player's ability get a small note in the middle that
+  fades by itself.
+- **Little motion:** your playable hand cards and fighting creatures pulse
+  together, slowly; ready creatures and ⚡ chips glow without pulsing. A spent
+  creature lies sideways with a small ↻, no stamp over its art. ⚡ chips show
+  on your own creatures only.
+
 ## Keeping it smooth on phones
 
 - The table is updated in place (`morphChildren` in `js/game-ui.js`): cards

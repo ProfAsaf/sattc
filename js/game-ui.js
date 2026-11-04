@@ -32,6 +32,7 @@ const ICON = {
   deck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 8h6M9 12h6"/></svg>',
   trap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg>',
   crown: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 7.5l4.6 4 4.4-7 4.4 7 4.6-4-1.9 11H4.9z"/><rect x="4.9" y="19.6" width="14.2" height="2.2" rx=".6"/></svg>',
+  bolt: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.2 1.5 4.5 13.6h6.3L9 22.5l10.5-12.9h-6.4z"/></svg>',
 };
 const COLORS = { ember: '#ff7a2e', verdant: '#b4e06a', tide: '#8fe0ee', umbral: '#b07cff', radiant: '#ffd77a' };
 const colorOf = (cid) => COLORS[BY_ID[cid]?.factions[0]] || '#ffd77a';
@@ -899,15 +900,20 @@ function pbarHTML(s, P, hl) {
   const C = s.combat;
   const fighting = C && (C.d === P.i ? ' defending' : C.a === P.i ? ' attacking' : '');
   const crown = s.crown === P.i ? `<button class="pb-crown" data-act="crown-info" aria-label="Holds the Crown">${ICON.crown}</button>` : '';
+  // A glance shows Life, Energy and cards in hand; the rest is a tap away (playerSheet).
+  // Your own Energy keeps its pips (you spend them); the others' is one number.
+  const mine = P.i === G.me;
+  const energy = mine
+    ? `<div class="pb-energy${s.players.length > 2 && Math.max(P.maxEnergy, P.energy) >= 6 ? ' many' : ''}">${pips(P)}<span class="pb-en-n">${P.energy}/${P.maxEnergy}</span></div>`
+    : `<div class="pb-en" title="Energy">${ICON.bolt}${P.energy}</div>`;
+  const meta = (mine ? '' : `<span title="cards in hand">${ICON.hand}${P.hand.length}</span>`)
+    + (P.deck.length <= 5 && !P.out ? `<span class="pb-low" title="cards left in the deck">${ICON.deck}${P.deck.length} left</span>` : '')
+    + (P.traps.length ? `<span class="trap-chip" title="${P.traps.length} face-down Trap${P.traps.length > 1 ? 's' : ''}">${ICON.trap}${P.traps.length}</span>` : '');
   return `<div class="pbar${isT ? ' target' : ''}${fighting || ''}${crown ? ' crowned' : ''}" data-p="${P.i}">
     <div class="pb-name">${crown}${esc(shortName(P.name))}</div>
     <div class="pb-life${P.life <= 5 ? ' low' : ''}">${ICON.heart}${P.out ? 'OUT' : P.life}</div>
-    <div class="pb-energy${s.players.length > 2 && Math.max(P.maxEnergy, P.energy) >= 6 ? ' many' : ''}">${pips(P)}<span class="pb-en-n">${P.energy}/${P.maxEnergy}</span></div>
-    <div class="pb-meta">
-      <span title="cards in hand">${ICON.hand}${P.hand.length}</span>
-      <span title="cards in deck">${ICON.deck}${P.deck.length}</span>
-      ${P.traps.length ? `<span class="trap-chip" title="${P.traps.length} face-down Trap${P.traps.length > 1 ? 's' : ''}">${ICON.trap}${P.traps.length}</span>` : ''}
-    </div>
+    ${energy}
+    ${meta ? `<div class="pb-meta">${meta}</div>` : ''}
     ${FX.pileHTML(P.discard.slice(-3).map((u) => ({ cid: s.cards[u].cid })), { p: P.i, count: P.discard.length, act: 'discards', w: s.players.length > 2 ? 22 : 26 })}
     ${P.relics.length ? `<div class="pb-relics">${P.relics.map((u) => relicHTML(s, s.cards[u], hl)).join('')}</div>` : ''}
   </div>`;
@@ -931,7 +937,8 @@ function creatureHTML(s, c, hl, inBattle = false) {
   if (hl.targets.some((t) => t.uid === c.uid)) st.push('target');
   if (hl.picked.includes(c.uid)) st.push('selected');
   const kws = FX.KEYWORD_BADGES.filter((k) => hasKw(s, c, k));
-  const ability = d.ability ? { cost: d.ability.cost, on: mine && !abilityBlocked(c.uid), used: c.usedOn === s.turn } : null;
+  // ⚡ chips only on your own creatures (theirs are a tap away, on the card)
+  const ability = d.ability && mine ? { cost: d.ability.cost, on: !abilityBlocked(c.uid), used: c.usedOn === s.turn } : null;
   return FX.tcardHTML(d, {
     uid: c.uid, states: st, power: power(s, c), vitality: vitality(s, c) - (c.dmg || 0), dmg: c.dmg,
     keywords: kws, leaving: !!(c.sacEnd || c.stolen), foe: !mine, ability,
@@ -1060,12 +1067,12 @@ function midInner() {
     const role = s.combat.a === G.me ? 'Blockers are set.' : 'Your chance to answer.';
     return `<div class="banner fight">${tight ? '' : `<span>${role} Play a Trick or use a ⚡ ability, or tap Fight!</span>`}<div class="banner-sub">As things stand: ${preview}</div></div>`;
   }
-  if (G.fightNote && s.phase === 'main' && !tutStep()) return `<div class="fight-note">${G.fightNote}</div>${hintText() ? `<div class="hint">${hintText()}</div>` : ''}`;
-  const lesson = tutStep();
-  if (lesson && !lesson.bot) return ''; // the coach is all there is to read
-  const lines = s.log.slice(-2).map((l) => `<div>${esc(speak(l.text))}</div>`).join('');
-  const hint = lesson ? '' : hintText();
-  return `<div class="ticker">${lines}</div>${hint ? `<div class="hint">${hint}</div>` : ''}`;
+  // One line at most: how the last fight went, or what you can do now.
+  // (The full story is in the game log, in the menu.)
+  if (G.fightNote && s.phase === 'main' && !tutStep()) return `<div class="fight-note">${G.fightNote}</div>`;
+  if (tutStep()) return ''; // the coach is all there is to read
+  const hint = hintText();
+  return hint ? `<div class="hint">${hint}</div>` : '';
 }
 
 // "Since your last turn": what happened to you first (the Life you lost, who
@@ -1117,27 +1124,23 @@ function recapHTML() {
 }
 
 // What can I do right now? Shown under the ticker in every game.
+// What can I do right now? One short line, only when it's my move: the status
+// line at the top already says whose turn it is and what the others are doing.
 function hintText() {
   const s = S();
-  if (s.phase === 'over' || s.phase === 'mulligan') return '';
-  const who = actor(s);
-  if (s.phase === 'combat') {
-    if (who === G.me) return '';
-    if (s.combat.d === G.me || s.combat.a === G.me) return `Waiting for ${esc(name(who))}…`;
-    return `${esc(name(s.combat.a))} is attacking ${esc(name(s.combat.d))}.`;
-  }
-  if (s.players[G.me].out) return 'You’re out of this game. The others play on; tap <b>Leave</b> whenever you like.';
-  if (s.active !== G.me) return G.bots.has(s.active) ? `${esc(name(s.active))} is playing. Its moves show up big in the middle.` : '';
+  if (s.phase !== 'main') return '';
+  if (s.players[G.me].out) return 'You’re out of this game; the others play on.';
+  if (s.active !== G.me) return '';
   const P = s.players[G.me];
   const canPlay = P.hand.some((u) => !playable(u));
   const canHit = canStartAttack();
   // three players: nobody has the Crown yet, so the first hit takes it
-  const crown = s.crownOn && s.crown == null && canHit ? ' The first to hit someone takes the 👑 Crown.' : '';
-  if (canPlay && canHit) return `Your move: drag a <b>glowing card</b> up to play it, or tap <b>glowing creatures</b> to attack.${crown}`;
-  if (canPlay) return 'Your move: drag a <b>glowing card</b> up onto the table to play it.';
-  if (canHit) return `Your move: tap your <b>glowing creatures</b> to send them into an attack.${crown}`;
-  if (P.board.some((u) => BY_ID[s.cards[u].cid].ability && !abilityBlocked(u))) return 'You can still use a glowing <b>⚡ ability</b>, or tap <b>End turn</b>.';
-  return 'Nothing else you can do this turn: tap <b>End turn</b>.';
+  const crown = s.crownOn && s.crown == null && canHit ? ' First hit takes the 👑.' : '';
+  if (canPlay && canHit) return `Play a <b>glowing card</b>, or tap <b>glowing creatures</b> to attack.${crown}`;
+  if (canPlay) return 'Drag a <b>glowing card</b> up to play it.';
+  if (canHit) return `Tap <b>glowing creatures</b> to attack.${crown}`;
+  if (P.board.some((u) => BY_ID[s.cards[u].cid].ability && !abilityBlocked(u))) return 'Use a glowing <b>⚡</b>, or <b>End turn</b>.';
+  return 'Nothing left to do: <b>End turn</b>.';
 }
 
 function anythingToDo() {
@@ -1199,10 +1202,9 @@ function tableHTML() {
   const row = (P) => `<div class="tc-row">${P.board.filter((u) => !bv?.inZone.has(u)).map((u) => creatureHTML(s, s.cards[u], hl)).join('')}</div>`;
   return `
     <div class="g-top">
-      <button class="g-icon" data-act="menu" aria-label="Menu">☰</button>
-      <button class="g-icon" data-act="help" aria-label="How the table works">?</button>
+      <button class="g-icon" data-act="menu" aria-label="Menu (take back a move, game log, leave)">☰</button>
       <div class="g-status">${statusHTML()}</div>
-      ${G.mode === 'practice' ? '<button class="g-icon" data-act="undo" aria-label="Take back">↶</button>' : '<span style="width:36px"></span>'}
+      <button class="g-icon" data-act="help" aria-label="How the table works">?</button>
     </div>
     <div class="g-table">
       ${others.map((P) => `<section class="g-side opp${s.active === P.i ? ' active' : ''}${P.out ? ' out' : ''}${s.combat && (s.combat.a === P.i || s.combat.d === P.i) ? ' in-fight' : ''}" data-side="${P.i}">${pbarHTML(s, P, hl)}${row(P)}</section>`).join('')}
@@ -1443,7 +1445,9 @@ async function animateOld(root, events, after = G.state) {
       const label = d === G.me ? `${name(atk)} attacks you!` : atk === G.me ? `You attack ${name(d)}` : `${name(atk)} attacks ${name(d)}`;
       const sub = group.length > 2 ? `with ${group.length} creatures` : `with ${listNames(group.map((g) => BY_ID[s0.cards[g.uid].cid].name))}`;
       const arrows = group.map((g) => FX.arrow(el(root, g.uid), barEl(root, d), { duration: 1000, color: '#ff6a3d' }));
-      await Promise.all([FX.banner(label, { sub, tone: d === G.me ? 'foe' : atk === G.me ? 'mine' : 'info' }), ...arrows.map((a) => a?.finished)]);
+      // the whole screen only when it's about you; two others fighting gets a note
+      const say = d === G.me || atk === G.me ? FX.banner(label, { sub, tone: d === G.me ? 'foe' : 'mine' }) : toast(`⚔ ${label}`);
+      await Promise.all([say, ...arrows.map((a) => a?.finished)]);
       continue;
     }
     if (e.k === 'block') {
@@ -1533,7 +1537,7 @@ async function animateOld(root, events, after = G.state) {
       case 'use': {
         // an ability (or the Bone Altar): a gold flash, the Energy paid, a line to its target
         const n = el(root, e.uid), d = BY_ID[e.cid], ab = d?.ability;
-        if (ab && e.p !== G.me) FX.banner(`⚡ ${d.name}`, { sub: `${name(e.p)} pays ${ab.cost} Energy: ${ab.short}`, tone: 'info', duration: 1100 });
+        if (ab && e.p !== G.me) toast(`⚡ ${name(e.p)}: ${d.name}, ${ab.short}`, 1600);
         if (n) { FX.burst(n, { color: ab ? '#ffd76a' : '#b07cff' }); if (ab) FX.number(n, `⚡${ab.cost}`, { kind: 'buff' }); }
         const t = e.target?.uid != null ? el(root, e.target.uid) : null;
         const ar = n && t && FX.arrow(n, t, { duration: 550, color: '#ffd76a' });
@@ -1543,8 +1547,10 @@ async function animateOld(root, events, after = G.state) {
       case 'crown': {
         const msg = e.p == null ? 'The Crown is back in the middle' : e.p === G.me ? 'You take the Crown!' : `${name(e.p)} takes the Crown!`;
         const sub = e.p == null ? 'Hit someone in a fight to take it' : e.p === G.me ? 'You draw an extra card at the end of each of your turns' : 'Hit them in a fight to take it';
+        // the first Crown, and any Crown you win or lose, get the whole screen; the rest a note
+        const big = e.p === G.me || e.from === G.me || e.from == null;
         await Promise.all([
-          FX.banner(msg, { sub, tone: e.p === G.me ? 'mine' : e.from === G.me ? 'foe' : 'info' }),
+          big ? FX.banner(msg, { sub, tone: e.p === G.me ? 'mine' : e.from === G.me ? 'foe' : 'info' }) : toast(`👑 ${msg}`),
           flyCrown(root, e.from != null ? barEl(root, e.from) : null, e.p != null ? barEl(root, e.p) : null),
         ]);
         break;
@@ -1554,6 +1560,25 @@ async function animateOld(root, events, after = G.state) {
       default: break;
     }
   }
+}
+
+// A quiet note at the top of the table for what doesn't need the whole screen
+// (someone else's turn, two others fighting). It lives outside the redrawn table.
+function toast(text, ms = 1300) {
+  document.querySelectorAll('.g-toast').forEach((x) => x.remove());
+  const box = document.createElement('div');
+  box.className = 'g-toast';
+  box.textContent = text;
+  document.body.appendChild(box);
+  const anim = box.animate([
+    { opacity: 0, transform: 'translate(-50%, -6px)' },
+    { opacity: 1, transform: 'translate(-50%, 0)', offset: 0.12 },
+    { opacity: 1, transform: 'translate(-50%, 0)', offset: 0.82 },
+    { opacity: 0, transform: 'translate(-50%, -4px)' },
+  ], { duration: ms, fill: 'forwards' });
+  // the game waits only for the first moment of it
+  anim.finished.catch(() => {}).then(() => box.remove());
+  return FX.wait(Math.min(ms, 700));
 }
 
 // The Crown flies from its old holder's name (or the middle) to the new one's.
@@ -1652,7 +1677,7 @@ async function animateNew(root, events) {
     const lost = recapInfo()?.lost || 0;
     if (lost > 0 && !tutStep()) FX.number(barEl(root, G.me), `−${lost}`, { kind: 'damage' });
   }
-  else FX.banner(`${poss(shortName(P.name))} turn`, { tone: 'info', duration: 800 });
+  else toast(`${poss(shortName(P.name))} turn`, 1100);
   await FX.wait(turn.p === G.me ? 250 : 450);
 }
 
@@ -1802,6 +1827,26 @@ function discardSheet(pi) {
     <div class="btn-col"><button class="btn ghost" data-act="close">Close</button></div>`;
 }
 
+// Tap a player's bar: everything about them, in words.
+function playerSheet(pi) {
+  const s = S(), P = s.players[pi], mine = pi === G.me;
+  const who = mine ? 'You' : esc(shortName(P.name));
+  const rows = [
+    ['Life', P.out ? 'out of the game' : P.life],
+    ['Energy', `${P.energy} now, ${P.maxEnergy} at the start of ${mine ? 'your' : 'their'} turn`],
+    ['Cards in hand', P.hand.length],
+    ['Cards left in the deck', P.deck.length],
+    ['Discard pile', `${P.discard.length} card${P.discard.length === 1 ? '' : 's'}`],
+    ...(P.traps.length ? [['Face-down Traps', P.traps.length]] : []),
+    ...(s.crownOn ? [['The Crown', s.crown === pi ? (mine ? 'yours: an extra card at the end of each of your turns' : 'theirs: hit them in a fight to take it') : 'no']] : []),
+  ];
+  const relics = P.relics.map((u) => BY_ID[s.cards[u].cid]).map((d) => `<div><b>${esc(d.name)}</b> — ${esc(d.text.replace(/^Relic\n/, ''))}</div>`).join('');
+  return `<h3>${who}</h3>
+    <div class="pl-rows">${rows.map(([k, v]) => `<div>${k}</div><div>${typeof v === 'number' ? v : esc(String(v))}</div>`).join('')}</div>
+    ${relics ? `<div class="kw-help"><div class="sheet-note" style="text-align:left;margin:0 0 4px">Relics</div>${relics}</div>` : ''}
+    <div class="btn-col">${P.discard.length ? `<button class="btn" data-act="discards" data-of="${pi}">Look at the discard pile</button>` : ''}<button class="btn ghost" data-act="close">Close</button></div>`;
+}
+
 function menuSheet() {
   return `<h3>Menu</h3><div class="btn-col">
     ${G.mode === 'practice' ? '<button class="btn" data-act="undo">↶ Take back my last move</button>' : ''}
@@ -1817,7 +1862,7 @@ function menuSheet() {
 function helpSheet() {
   return `<h3>How the table works</h3>
     <div class="help-list">
-      <div><b>Top: your opponents.</b> Name, Life ❤, Energy (gold hexagons), cards in hand, in deck, and in the discard pile (tap it to look). Relics sit under the name; ⊠ is a face-down Trap.</div>
+      <div><b>Top: your opponents.</b> Name, Life ❤, Energy ⚡ and cards in hand. <b>Tap anyone’s bar</b> for the rest: their deck, discard pile and Relics. ⊠ is a face-down Trap.</div>
       <div><b>Creatures</b>: theirs above, yours below. Left number = <b>Power</b> (damage it deals), right = <b>Vitality</b> (damage it can take). Small badges are keywords; tap any card to read it.</div>
       <div><b>Play a card</b>: drag it from your hand up onto the table, or tap it and tap Play. Glowing cards can be played now.</div>
       <div><b>Attack</b> (once a turn): tap your glowing creatures and they step into the middle of the table, then tap <b>Attack!</b> (bottom right). Attackers are exhausted afterwards: they can’t block until your next turn.</div>
@@ -1828,7 +1873,7 @@ function helpSheet() {
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
       <div>The main button (End turn, Attack!, Done, Fight!) is always at the bottom right.</div>
       <div><b>💡 Suggest</b> (bottom left) asks the bot what it would do in your place: it spells out the move and rings the cards. Tap <b>Do it</b> to make that move, or do something else.</div>
-      <div><b>Is it ready?</b> A <b>gold glow</b> means it can act now. <b>zZ</b> means it just arrived: it can block, but it can’t attack until your next turn. Turned sideways and stamped <b>SPENT</b> means it attacked: it can’t attack or block until its owner’s next turn.</div>
+      <div><b>Is it ready?</b> A <b>gold glow</b> means it can act now. <b>zZ</b> means it just arrived: it can block, but it can’t attack until your next turn. Turned sideways, with ↻ in its corner, means it attacked: it can’t attack or block until its owner’s next turn.</div>
       <div><b>Discard piles</b> sit at the end of each player’s bar. Spells land there when they’re done; tap a pile to look through it.</div>
       <div><b>End turn</b> when you’re finished. Energy you don’t spend waits for your next turn, so you can answer attacks with Tricks.</div>
     </div>
@@ -2000,7 +2045,10 @@ function onClick(e) {
     if (c.ctrl === G.me && myMain() && !attackedThisTurn() && canAttack(s, G.me, c)) { toggleAttacker(c.uid); return; }
     G.sheet = cardSheet(c.uid);
     redraw();
+    return;
   }
+  // a player's bar: their details, in words
+  if (pb) { G.sheet = playerSheet(Number(pb.dataset.p)); redraw(); }
 }
 
 function onAct(act, el) {

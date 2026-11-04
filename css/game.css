@@ -251,14 +251,12 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 
 
 /* the "what can I do" line */
+/* one plain line: no box, nothing to read twice */
 .hint {
-  font-size: 13px;
-  color: #f1e3bf;
+  font-size: 14px;
+  color: #e9dcbf;
   text-align: center;
-  background: rgba(214, 180, 106, .1);
-  border: 1px solid rgba(214, 180, 106, .25);
-  border-radius: 10px;
-  padding: 6px 10px;
+  padding: 2px 8px;
 }
 .hint b { color: var(--gold); }
 
@@ -377,8 +375,24 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 .hint-btn { min-width: 44px; color: #cfe6f5; border-color: rgba(143, 195, 223, .4); }
 
 /* how the last fight ended */
-.fight-note {
-  font-size: 13px; color: #ffe2c8; text-align: center; padding: 6px 10px; border-radius: 10px;
-  background: rgba(70, 30, 18, .55); border: 1px solid rgba(255, 140, 90, .3);
-}
+.fight-note { font-size: 14px; color: #ffe2c8; text-align: center; padding: 2px 8px; }
 .fight-note b { color: #ffb08a; }
+
+/* ── a calmer table ─────────────────────────────────────────────── */
+/* the others' Energy: one number */
+.pb-en { display: inline-flex; align-items: center; gap: 2px; flex: none; font-size: 16px; font-weight: 600; color: #f0d79c; }
+.pb-en svg { width: 13px; height: 13px; color: #e9b44c; }
+/* a deck about to run out is the one deck count worth showing */
+.pb-meta .pb-low { color: #ffb08a; }
+/* tap a bar: that player's details */
+.pbar { cursor: pointer; }
+.pl-rows { display: grid; grid-template-columns: 1fr auto; gap: 7px 14px; font-size: 15px; padding: 10px 14px; margin-bottom: 10px; background: var(--bg-2); border-radius: 12px; }
+.pl-rows > div:nth-child(odd) { color: var(--muted); }
+.pl-rows > div:nth-child(even) { text-align: right; }
+/* a quiet note at the top for what doesn't need the whole screen */
+.g-toast {
+  position: fixed; left: 50%; top: 46%; z-index: 70; /* the middle of the table, clear of everyone's numbers */
+  max-width: 92vw; padding: 6px 14px; border-radius: 999px; pointer-events: none;
+  background: rgba(24, 19, 14, .94); border: 1px solid rgba(214, 180, 106, .4); box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+  color: #f1e3bf; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}

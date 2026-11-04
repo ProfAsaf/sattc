@@ -12,11 +12,11 @@ no build step.
 | `js/cards.js` | Card data, rules constants, starter decks: the single source of truth |
 | `js/render.js` | Card frames, card back, deckbuilder rows (HTML/CSS, no images needed) |
 | `js/decks.js` | Deck rules (30 cards, 2 copies, 3 factions), local storage, `W1-…` share codes |
-| `js/app.js` | Router and views: home, gallery, decks, builder, rules |
+| `js/app.js` | Router and views: home (one screen: Learn to play, Play, and a quiet ☰ for the cards, decks and rules), gallery, decks, builder, rules |
 | `js/engine.js` | Rules engine: deterministic, event-sourced (`newGame` + `apply(state, action)`); fights, blocking, Tricks, Traps, Relics and every card's effect. `actor(s)` says whose move it is |
 | `js/ai.js` | Practice bot: tries every play and a handful of attacks, plays each fight out (guessing the defender's blocks) and scores the result; compares block plans and Tricks when attacked |
-| `js/game-ui.js` | The table (practice, lesson and online), the Play page, the online lobby, the hint line and the ? help. Each move is animated on the old table, then redrawn and FLIP-glided |
-| `js/fx.js` | The physical layer: table cards (`tcardHTML`), the fanned hand, drag-to-play, aiming arrows, FLIP, lunges, clashes, deaths, shown cards, banners |
+| `js/game-ui.js` | The table (practice, lesson and online), the Play page (Friends, then Bots, on one screen), the online lobby and the help in the ☰ menu. Each move is animated on the old table, then redrawn and FLIP-glided |
+| `js/fx.js` | The physical layer: table cards (`tcardHTML`), the hand carousel, drag-to-play, swipe physics (`velocity`, `glide`, `rubber`), aiming arrows, FLIP, lunges, clashes, deaths, shown cards, banners |
 | `js/tutorial.js` | The guided lesson: stacked decks, the coach's 28 steps, the bot's scripted first turns |
 | `js/net.js` | Online play over Firebase Realtime Database: rooms, seats, the shared move list, draft picks |
 | `js/draft.js` | Draft night's rules with no screen attached: the six piles, the 30 typed rounds, snake order, replay from the pick list, the draft bots |
@@ -147,8 +147,8 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
   one in snake order (A-B-C, then C-B-A), the rest go to the bottom of their
   pile. Everyone ends with 5 small, 6 medium, 4 big, 6 spells, 4 tricks, 2
   relics and 3 "last call" picks. With three players all 90 cards are dealt
-  once. Online: the Draft night switch when creating a room; practice: Draft
-  against bots on the Play page.
+  once. Online: the Draft night switch under Friends on the Play page;
+  practice: the "Draft my deck" switch under Bots, then 1 bot or 2 bots.
 - **💡 Suggest** (top right on the table, hidden during the lesson): asks the
   practice bot what it would do in your place, without peeking at face-down
   Traps. A play comes with "Do it"; an attack or a block is set up on the
@@ -186,6 +186,19 @@ and Asaf's own: if it isn't critical, less is more.
   together, slowly; ready creatures and ⚡ chips glow without pulsing. A spent
   creature lies sideways with a small ↻, no stamp over its art. ⚡ chips show
   on your own creatures only.
+
+## The first screens: less is more
+
+- **Home** is one screen with no scrolling: the title, the fan of three cards,
+  and two buttons low down: **Learn to play** (the guided lesson) and
+  **Play**. A quiet ☰ in the corner holds All 90 cards, Decks and Rules; those
+  pages start with a ‹ back to Home. No top bar, no tab bar.
+- **Play** is one screen too: **Friends** first (your name, the Draft night
+  switch, your deck while Draft night is off, New game for 2 or 3 players, and
+  a code to join), then **Bots** (1 bot, 2 bots, a "Draft my deck" switch, and
+  the deck choices folded away under Decks ▾). A saved game shows as one
+  Resume button. No explanations: the lesson teaches, and Draft night's lobby
+  keeps "How the draft works" a tap away.
 
 ## Your hand, and swipes instead of buttons
 

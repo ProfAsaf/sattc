@@ -668,7 +668,7 @@ export function createSwitchHTML(on = false) {
 
 export function modeSwitchHTML(on) {
   return `<label class="dr-switch"><input type="checkbox" data-act="draft-mode"${on ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span>
-      <span class="dr-switch-text"><b>Draft night</b><small>${on ? 'On: everyone drafts a deck here before the first game.' : 'Draft decks from the 90 cards instead of bringing one.'}</small></span></label>`;
+      <span class="dr-switch-text"><b>Draft night</b></span></label>`;
 }
 
 // The lobby of a draft room: seats with draft progress, then the next step.
@@ -708,7 +708,8 @@ export function roomPanelHTML(code, info) {
     next = `<p class="dr-stale">${STALE}</p><button class="btn primary" data-act="draft-reload">Reload this page</button>`;
   } else if (info.status === 'playing') next = '<button class="btn primary" data-act="rejoin-table">Back to the table</button>';
   else if (!started) {
-    next = `<p class="muted small dr-explain">${explain(info.seats)}</p>${host
+    // how it works is a tap away, for whoever hasn't drafted before
+    next = `<details class="dr-how"><summary>How the draft works</summary><p class="muted small">${explain(info.seats)}</p></details>${host
       ? `${modeSwitchHTML(true)}<button class="btn primary" data-act="draft-start" ${full ? '' : 'disabled'}>${full ? 'Start the draft' : 'Waiting for everyone to join'}</button>`
       : '<p class="muted small" style="margin:0">The host starts the draft when everyone is in.</p>'}`;
   } else if (!st) next = '<p class="muted small" style="margin:0">Loading the draft…</p>';
@@ -723,9 +724,7 @@ export function roomPanelHTML(code, info) {
       ${inDraft ? '<button class="btn" data-act="draft-open">See your deck</button>' : ''}
       ${host ? '<button class="btn ghost small" data-act="draft-again">Draft again from scratch</button>' : ''}`;
   }
-  return `<h3>Game ${esc(code)} · Draft night</h3>
-    <p class="muted small" style="margin:6px 0 10px">Friends join with the code <b style="color:var(--gold);letter-spacing:.1em">${esc(code)}</b>, or this link.</p>
-    <div class="btn-row"><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
+  return `<div class="pp-title"><h3>Game <b>${esc(code)}</b> · Draft night</h3><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
     <div class="deck-cards" style="margin-top:12px">${seats}</div>
     <div class="dr-room">${next}<button class="btn ghost" data-act="leave-room">Leave this game</button></div>`;
 }

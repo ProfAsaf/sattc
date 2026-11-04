@@ -327,7 +327,12 @@ body.in-draft .topbar, body.in-draft .tabbar, body.in-draft main { display: none
 /* ── Play page and lobby ─────────────────────────────────────────── */
 .panel.dr-panel { border-color: rgba(214, 180, 106, .3); }
 .dr-room { display: grid; gap: 8px; margin-top: 12px; }
-.dr-explain { margin: 0 0 4px; line-height: 1.45; }
+.dr-how { margin: 0 0 6px; }
+.dr-how summary { cursor: pointer; font-size: 13px; color: var(--muted); list-style: none; }
+.dr-how summary::-webkit-details-marker { display: none; }
+.dr-how summary::after { content: ' ▾'; }
+.dr-how[open] summary::after { content: ' ▴'; }
+.dr-how p { margin: 6px 0 0; line-height: 1.45; }
 .dr-switch {
   position: relative;
   display: grid;

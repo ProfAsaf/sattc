@@ -276,7 +276,6 @@ export function startTutorial() {
 }
 
 const tutDoneKey = 'collective.tutorialDone';
-export const tutorialDone = () => { try { return !!localStorage.getItem(tutDoneKey); } catch { return false; } };
 
 // The current lesson step, or null outside the lesson.
 const tutStep = () => (G && G.mode === 'tutorial' && G.tut && !G.tut.done ? TUTORIAL.steps[G.tut.i] : null);

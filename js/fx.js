@@ -320,8 +320,11 @@ export function tcardHTML(card, state = {}) {
 //  2. The hand
 // ══════════════════════════════════════════════════════════════════
 
-const SLOT = new WeakMap();       // hand card → its fan slot from the last layout
-const HAND_DIM = new WeakMap();   // hand → its card sizes and width, and what they depend on
+const SLOT = new WeakMap();       // hand card → where layoutHand put it
+const HAND_DIM = new WeakMap();   // hand → its card size and width, and what they depend on
+const HAND_POS = new WeakMap();   // hand → how far along it is scrolled (a card index, fractional while it moves)
+const HAND_FOCUS = new WeakMap(); // hand → the index of its focal card at the last layout
+const HAND_GLIDE = new WeakMap(); // hand → the glide carrying on after a swipe
 const HANDS = new Set();
 let RO = null;
 const PENDING = new Set();
@@ -350,17 +353,23 @@ function watchHand(h) {
   }
 }
 
+const handCards = (h) => [...h.children].filter((c) => c.classList?.contains('tcard') && !c.classList.contains('dragging'));
+// how far apart neighbours sit: a fuller hand overlaps more
+const handSpacing = (w, n) => w * (n <= 4 ? 0.74 : n <= 7 ? 0.64 : 0.56);
+
 /**
- * Fan the .tcard children of a hand container (.tc-hand) along a gentle arc.
- * Cards overlap but always show at least ~36px; with 9-10 cards they shrink
- * (down to --w-hand-min) to keep that. A card with .touched or .selected rises,
- * straightens and pushes its neighbours aside. Re-runs by itself when the
- * container resizes. Call it after every render of the hand.
+ * Lay out the .tcard children of a hand container (.tc-hand) as a carousel:
+ * the focal card (.selected, else .peek) in the middle, poking up, a bit
+ * bigger, its rules showing; the others fanned out to either side, further
+ * ones lower and more tilted, the far ones off the screen. While a finger or
+ * a glide moves the hand, the middle is wherever it has got to, in between
+ * cards. Re-runs by itself when the container resizes. Call it after every
+ * render of the hand.
  */
-export function layoutHand(container, o = {}) {
+export function layoutHand(container) {
   if (!container) return;
   watchHand(container);
-  const cards = [...container.children].filter((c) => c.classList?.contains('tcard') && !c.classList.contains('dragging'));
+  const cards = handCards(container);
   const n = cards.length;
   if (!n) return;
   // The sizes only change with the screen or the page's mode: read them once,
@@ -369,60 +378,25 @@ export function layoutHand(container, o = {}) {
   let dim = HAND_DIM.get(container);
   if (!dim || dim.key !== key) {
     const cs = getComputedStyle(container);
-    dim = { key, base: parseFloat(cs.getPropertyValue('--w-hand')) || 104, minW: parseFloat(cs.getPropertyValue('--w-hand-min')) || 82, W: container.clientWidth || 360 };
+    dim = { key, w: parseFloat(cs.getPropertyValue('--w-hand')) || 104 };
     HAND_DIM.set(container, dim);
   }
-  const { base, minW, W } = dim;
-  // a full hand shows a little more of each card, so a tap lands on the one you meant
-  const reveal = o.reveal ?? (n >= 8 ? 40 : 36);
-  const pad = o.pad ?? 4;
-  const avail = Math.max(base, W - 2 * pad);
-  // a fuller hand fans flatter
-  const R = o.radius ?? Math.max(560, W * 1.9) * (1 + Math.max(0, n - 6) * 0.18);
-  // the widest spacing (≤ a card and a gap) whose outermost top corners, where
-  // the cost sits, stay on screen once the end cards are turned
-  const fit = (cw) => {
-    if (n < 2) return 0;
-    const ch = cw * 1.397, half = avail / 2 + pad - 3;
-    let lo = 0, hi = cw + 8;
-    for (let k = 0; k < 16; k++) {
-      const sp = (lo + hi) / 2, t = (((n - 1) / 2) * sp) / R;
-      const edge = R * Math.sin(t) + (cw / 2) * Math.cos(t) + (ch / 2) * Math.sin(t) + cw * 0.035;
-      if (edge <= half) lo = sp; else hi = sp;
-    }
-    return lo;
-  };
-  let w = base;
-  let s = fit(w);
-  if (n > 1 && s < reveal) {
-    // shrink the cards (not below --w-hand-min) until each shows `reveal` px
-    let lo = minW, hi = base;
-    for (let k = 0; k < 14; k++) { const m = (lo + hi) / 2; if (fit(m) >= reveal) lo = m; else hi = m; }
-    w = lo;
-    s = fit(w);
-  }
-  const h = w * 1.397;
-  // The card under your finger (or being played) rises highest. Otherwise the
-  // hand's focal card (.peek) pokes up a little, a bit bigger, its rules showing.
-  let fi = cards.findIndex((c) => c.classList.contains('touched') || c.classList.contains('selected'));
-  const lift = fi >= 0 ? { y: 0.26, s: 1.15 } : { y: 0.2, s: 1.12 };
+  const { w } = dim, h = w * 1.397;
+  let fi = cards.findIndex((c) => c.classList.contains('selected'));
   if (fi < 0) fi = cards.findIndex((c) => c.classList.contains('peek'));
-  const mid = (n - 1) / 2;
-  const spread = fi < 0 ? 0 : clamp((w * lift.s - s) * 0.45, 0, 24);
+  if (fi < 0) fi = Math.min(HAND_FOCUS.get(container) ?? (n - 1) >> 1, n - 1);
+  HAND_FOCUS.set(container, fi);
+  const pos = HAND_POS.get(container) ?? fi;
+  const sp = handSpacing(w, n);
   const fresh = [];
   cards.forEach((c, i) => {
-    const arc0 = (i - mid) * s;
-    let arc = arc0;
-    if (fi >= 0 && i !== fi) arc += Math.sign(i - fi) * spread * Math.max(0.3, 1 - (Math.abs(i - fi) - 1) * 0.25);
-    const th = arc / R;
-    let x = R * Math.sin(th), y = R * (1 - Math.cos(th)), r = (th * 180) / Math.PI, sc = 1, z = i + 1;
-    if (i === fi) {
-      const lim = Math.max(0, avail / 2 - (w * lift.s) / 2);
-      x = clamp(R * Math.sin(arc0 / R), -lim, lim);
-      y = -h * lift.y;
-      r = 0; sc = lift.s; z = 60;
-    }
-    SLOT.set(c, { x, y, r, s: sc, x0: R * Math.sin(arc0 / R) });
+    const k = i - pos, ak = Math.abs(k);
+    const f = Math.max(0, 1 - ak), e = f * f * (3 - 2 * f); // 1 in the middle, 0 from a card away
+    const x = k * sp;
+    const y = ak * ak * 2.5 - e * h * 0.2;
+    const r = clamp(k * 4, -14, 14) * (1 - e);
+    const sc = 1 + 0.12 * e;
+    SLOT.set(c, { x, y, r, s: sc });
     if (!c.dataset.fan) { c.dataset.fan = '1'; c.classList.add('fx-nofx'); fresh.push(c); }
     const st = c.style;
     st.setProperty('--w', `${w.toFixed(1)}px`);
@@ -430,7 +404,7 @@ export function layoutHand(container, o = {}) {
     st.setProperty('--fy', `${y.toFixed(1)}px`);
     st.setProperty('--fr', `${r.toFixed(2)}deg`);
     st.setProperty('--fs', sc.toFixed(3));
-    st.setProperty('--z', z);
+    st.setProperty('--z', Math.round(100 - ak * 10));
   });
   if (fresh.length) {
     void container.offsetWidth; // place new cards without a transition
@@ -438,25 +412,45 @@ export function layoutHand(container, o = {}) {
   }
 }
 
-function setTouched(hand, el) {
-  if (!hand) return;
-  for (const c of hand.children) if (c !== el) c.classList?.remove('touched');
-  el?.classList.add('touched');
+// Where a hand is scrolled to right now. A finger landing on it while it is
+// still gliding stops it there, so you can catch it.
+function catchHand(hand) {
+  HAND_GLIDE.get(hand)?.stop();
+  HAND_GLIDE.delete(hand);
+  return HAND_POS.get(hand) ?? HAND_FOCUS.get(hand) ?? 0;
+}
+
+// Move the hand to a (fractional) position: the card nearest the middle
+// shows its rules as it passes. No transitions while it follows the finger.
+function scrollHandTo(hand, p) {
+  HAND_POS.set(hand, p);
+  hand.classList.add('fx-scrolling');
+  const cards = handCards(hand), near = clamp(Math.round(p), 0, cards.length - 1);
+  cards.forEach((c, i) => { if (c.classList.contains('peek') !== (i === near)) c.classList.toggle('peek', i === near); });
   layoutHand(hand);
 }
 
-// The hand card whose (unfocused) slot is nearest to a screen x.
-function cardAtX(hand, x) {
-  const r = hand.getBoundingClientRect(), cx = r.left + r.width / 2;
-  let best = null, bd = Infinity;
-  for (const c of hand.children) {
-    if (!c.classList?.contains('tcard') || c.classList.contains('dragging') || c.classList.contains('returning')) continue;
-    const sl = SLOT.get(c);
-    if (!sl) continue;
-    const d = Math.abs(cx + sl.x0 - x);
-    if (d < bd) { bd = d; best = c; }
-  }
-  return best;
+function stopScroll(hand) {
+  HAND_GLIDE.get(hand)?.stop();
+  HAND_GLIDE.delete(hand);
+  HAND_POS.delete(hand);
+  hand.classList.remove('fx-scrolling');
+}
+
+// Let go of the hand at speed v (cards a second): it carries on and settles
+// on a card, further the faster it was flicked. onDone(card) when it stops.
+function settleHand(hand, v, onDone) {
+  const n = handCards(hand).length;
+  const from = HAND_POS.get(hand) ?? HAND_FOCUS.get(hand) ?? 0;
+  const to = clamp(Math.round(from + v * 0.12), 0, n - 1); // a flick carries on about an eighth of a second's worth
+  HAND_GLIDE.set(hand, glide(from, to, v, (x) => scrollHandTo(hand, x), () => {
+    HAND_GLIDE.delete(hand);
+    HAND_POS.delete(hand);
+    hand.classList.remove('fx-scrolling');
+    const c = handCards(hand)[to];
+    if (c) onDone?.(c);
+    layoutHand(hand);
+  }));
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -495,11 +489,62 @@ function stepSpring(x, v, target, k, c, h) {
 const damp = (k, zeta) => 2 * zeta * Math.sqrt(k);
 
 /**
+ * How fast a finger is moving along one axis, in px per ms, judged from its
+ * last ~100 ms (a single step is too jumpy). A finger that stopped before
+ * letting go has no speed.
+ *   const v = velocity(); v.add(x) on every move; v.get() on release
+ */
+export function velocity() {
+  const pts = [];
+  return {
+    add(x, t = performance.now()) {
+      pts.push([x, t]);
+      while (pts.length > 2 && t - pts[0][1] > 100) pts.shift();
+    },
+    get(t = performance.now()) {
+      if (pts.length < 2) return 0;
+      const [x0, t0] = pts[0], [x1, t1] = pts[pts.length - 1];
+      return t - t1 > 90 ? 0 : (x1 - x0) / Math.max(8, t1 - t0);
+    },
+  };
+}
+
+/** Past the end of a row of cards, a finger pulls them less and less far. */
+export const rubber = (d) => (d * 0.55) / (1 + d * 1.1);
+
+/**
+ * Spring a value from `from` to `to`, starting at speed `v` (units a second),
+ * so a swipe's momentum carries on smoothly instead of stopping dead and then
+ * easing in. onFrame(x, v) every frame, onDone() once it settles.
+ * Returns { stop(), x } (x: where it has got to).
+ */
+export function glide(from, to, v, onFrame, onDone, { k = 230, zeta = 0.86 } = {}) {
+  const c = damp(k, zeta);
+  let x = from, vel = v || 0, raf = 0, last = performance.now(), live = true;
+  const finish = () => { live = false; x = to; onFrame(to, 0); onDone?.(); };
+  const g = { stop() { live = false; cancelAnimationFrame(raf); }, get x() { return x; } };
+  if (isReduced() || (Math.abs(from - to) < 0.002 && Math.abs(vel) < 0.03)) { finish(); return g; }
+  const tick = (now) => {
+    if (!live) return;
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    const n = Math.max(1, Math.ceil(dt / (1 / 240))), h = dt / n;
+    for (let i = 0; i < n; i++) [x, vel] = stepSpring(x, vel, to, k, c, h);
+    if (Math.abs(x - to) < 0.003 && Math.abs(vel) < 0.03) { finish(); return; }
+    onFrame(x, vel);
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+  return g;
+}
+
+/**
  * Make hand cards draggable. Press and move more than `threshold` px and the
  * card follows the finger on a stiff spring, tilting with its speed. A tap
  * (less movement) is left alone, so your click handler still opens the card.
- * Sliding sideways along the hand first "scrubs": the card under the finger
- * rises; pull up to take it.
+ * Sliding sideways moves the whole hand along under the finger; let go and it
+ * glides on (further the faster it was flicked) and settles on a card. Pull
+ * up while sliding to take the card under the finger.
  *
  *   drag(el or root, {
  *     selector,         // with a root: which elements drag (e.g. '.tc-hand > .tcard')
@@ -508,7 +553,7 @@ const damp = (k, zeta) => 2 * zeta * Math.sqrt(k);
  *     canDrop(info),    // true → releasing here plays it
  *     onDrop(info),     // return false (or a Promise of false) to send it back
  *     onStart(info), onMove(info), onBack(info),
- *     onScrub(el)       // a sideways slide along the hand ended on this card
+ *     onScrub(el)       // a slide along the hand settled on this card (now the focal card)
  *   }) → { destroy() }
  *
  * info = { el, uid, cid, x, y, dx, dy, vx, vy, rect, handRect, overHand, back() }
@@ -535,13 +580,15 @@ function beginPress(el, e, o) {
   const S = {
     id: e.pointerId, el, hand, o,
     x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, low: e.clientY,
-    mode: 'press',            // press → scrub | drag → hold | back
+    mode: 'press',            // press → scroll | drag → hold | back
     px: 0, py: 0, vx: 0, vy: 0, rot: 0, vr: 0, sc: 1, vs: 0,
     tx: 0, ty: 0, tr: 0, ts: 1,
     raf: 0, last: 0, ok: false, waiting: false,
   };
   const can = (c) => !o.enabled || o.enabled(c) !== false;
-  if (hand) setTouched(hand, el);
+  // a finger on a hand that is still gliding stops it where it is
+  if (hand) { S.caught = HAND_GLIDE.has(hand); S.pos0 = catchHand(hand); }
+  const spacing = () => handSpacing(HAND_DIM.get(hand)?.w || 104, handCards(hand).length);
 
   S.move = (ev) => {
     S.x = ev.clientX; S.y = ev.clientY;
@@ -549,15 +596,20 @@ function beginPress(el, e, o) {
     if (S.mode === 'press') {
       if (Math.hypot(dx, dy) < thr) return;
       const sideways = Math.abs(dx) > Math.abs(dy) * 1.15;
-      if (hand && (sideways || !can(S.el) || dy > 0)) { S.mode = 'scrub'; S.low = S.y; }
-      else if (can(S.el)) startDrag(S);
+      if (hand && (sideways || !can(S.el) || dy > 0)) { S.mode = 'scroll'; S.low = S.y; S.vel = velocity(); S.vel.add(S.x0); }
+      else if (can(S.el)) { if (hand) stopScroll(hand); startDrag(S); }
       else { S.mode = 'idle'; return; }
     }
-    if (S.mode === 'scrub') {
+    if (S.mode === 'scroll') {
+      // the hand follows the finger, and resists past either end
+      S.vel.add(S.x);
       S.low = Math.max(S.low, S.y);
-      const c = cardAtX(hand, S.x);
-      if (c && c !== S.el) { S.el = c; setTouched(hand, c); }
-      if (S.low - S.y > 22 && can(S.el)) startDrag(S);
+      const last = handCards(hand).length - 1;
+      let p = S.pos0 - dx / spacing();
+      if (p < 0) p = -rubber(-p); else if (p > last) p = last + rubber(p - last);
+      scrollHandTo(hand, p);
+      // pull up to take the card under your finger
+      if (S.low - S.y > 30 && can(S.el)) { stopScroll(hand); startDrag(S); }
       return;
     }
     if (S.mode === 'drag') {
@@ -570,20 +622,22 @@ function beginPress(el, e, o) {
     }
   };
 
+  // the hand stops on a card: that card is its focal card from now on
+  const focus = (c) => { if (o.onScrub) safeCall(o.onScrub, c); };
+
   S.up = (ev, cancelled) => {
     listen(false);
     ACTIVE = null;
     removeEventListener('touchmove', preventTouch, { passive: false });
     if (S.mode === 'press' || S.mode === 'idle') {
-      if (hand) setTimeout(() => { S.el.classList.remove('touched'); if (hand.isConnected) layoutHand(hand); }, 140);
-      return; // a tap: the click that follows is yours
+      // a tap that only caught a gliding hand settles it; otherwise the click that follows is yours
+      if (S.caught && hand) { suppressClick(); settleHand(hand, 0, focus); }
+      return;
     }
     suppressClick();
-    if (S.mode === 'scrub') {
-      S.el.classList.remove('touched');
-      // the card you slid to stays the hand's focal card
-      if (o.onScrub) safeCall(o.onScrub, S.el);
-      if (hand.isConnected) layoutHand(hand);
+    if (S.mode === 'scroll') {
+      if (!hand.isConnected) return;
+      settleHand(hand, (-S.vel.get() / spacing()) * 1000, focus);
       return;
     }
     if (S.mode !== 'drag' || !S.el.isConnected) return; // the table was redrawn under the finger: let it go

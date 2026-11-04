@@ -122,8 +122,9 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
   so you can hold it for Tricks.
 - Guard now means "can block two attackers". Attacks no longer target creatures.
 - On the table, fighting creatures meet in a battle zone in the middle and
-  fights resolve one pair at a time; the main button (Attack!, Done, Fight!,
-  End turn) is always bottom right.
+  fights resolve one pair at a time; the move that carries the game on
+  (End turn, Attack, Block, Fight) is a swipe right across the table (see
+  "Your hand, and swipes instead of buttons").
 
 ## More from Magic (2026-11-04)
 
@@ -148,10 +149,10 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
   relics and 3 "last call" picks. With three players all 90 cards are dealt
   once. Online: the Draft night switch when creating a room; practice: Draft
   against bots on the Play page.
-- **💡 Suggest** (bottom left on the table, hidden during the lesson): asks the
+- **💡 Suggest** (top right on the table, hidden during the lesson): asks the
   practice bot what it would do in your place, without peeking at face-down
   Traps. A play comes with "Do it"; an attack or a block is set up on the
-  table for you to confirm or change. The mulligan screen says whether the
+  table for you to confirm (swipe right) or change. The mulligan screen says whether the
   bot would keep the hand.
 - **👑 The Crown** (three or more players; `crown` in the setup turns it off).
   The first player to hit an opponent in a fight takes it; the holder draws an
@@ -161,16 +162,22 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
 ## Keeping the table calm
 
 The rule of thumb, borrowed from how the best phone card games do it (three
-"reads": big shapes first, a few key numbers second, details only on request):
+"reads": big shapes first, a few key numbers second, details only on request),
+and Asaf's own: if it isn't critical, less is more.
 
-- **At a glance:** the cards, everyone's Life, your Energy pips, and one main
-  button at the bottom right. Opponents show Life, Energy (one number) and
-  cards in hand; a deck count appears only when 5 or fewer cards are left.
+- **At a glance:** the cards, everyone's Life, your Energy pips. Opponents show
+  Life, Energy (one number) and cards in hand; a deck count appears only when 5
+  or fewer cards are left. The top line says whose turn it is and nothing else
+  (your Energy is on your bar). Whoever's turn it is has their name in gold.
+- **Nothing that says "nothing":** an empty row of creatures is just empty
+  table, and an empty discard pile isn't drawn.
 - **On a tap:** a player's bar opens their details (deck, discard pile,
-  Relics, the Crown); a card opens the card. The game log lives in the menu,
-  along with take-back.
-- **One line in the middle at most:** how the last fight went, or what you
-  can do now. No running log.
+  Relics, the Crown); a card opens the card. The menu (☰, top left) has help,
+  the game log and take-back. 💡 (top right, only when it's your move) asks
+  the bot what it would do.
+- **One line in the middle at most:** how the last fight went, or in a fight
+  what will happen if no one plays a Trick. No running log, no "what you can
+  do" hints (the glow says it; the lesson and 💡 teach the rest).
 - **The whole screen only for you:** "Your turn", attacks on or by you, the
   first Crown and any Crown you win or lose. Someone else's turn, two others
   fighting, or another player's ability get a small note in the middle that
@@ -186,11 +193,25 @@ Where a gesture is easy to guess, it replaces a button or a line of text.
 Things the thumb uses sit low on the screen, in the same place whatever the
 text above them says.
 
-- **The focal card:** one card in your hand pokes up, a little bigger, with its
-  rules in small print. Slide a finger along the hand to move the focus; it
-  stays where you leave it.
+- **Swipe right to move on:** no big End turn button. A faded line in the middle
+  of the table says what the move is ("End turn ›››", or Attack, Block,
+  Don't block, Fight) and you swipe right anywhere on the table to make it.
+  The line follows the finger and lights up gold past the mark; let go there
+  (or flick) to do it, or short of it and it slides back. It gets brighter, its
+  arrow running, when there is nothing else to do. A tap only nudges it (and
+  says "Swipe right"); a click from a keyboard or screen reader does it. Swipes
+  start away from the screen's left edge (the browser's back swipe), your hand,
+  buttons and your own creatures (you drag those to aim). With three players
+  you first tap whose name to attack.
+- **The hand is a carousel:** the focal card sits in the middle, poking up, a
+  little bigger, with its rules in small print; the others fan out to either
+  side, the far ones off the screen. Slide the hand sideways and it follows the
+  finger; let go and it glides on (further the faster the flick) and settles
+  on a card, which stays the focal card. A finger on a gliding hand catches it.
+  Only the focal card wears its Power and Vitality; the others show their cost.
 - **The whole hand, big:** tap a card to see your whole hand full size. Swipe
-  sideways to go through it (the cards shift and tilt like a hand of cards);
+  sideways to go through it (the cards shift and tilt like a hand of cards,
+  with the same glide: a normal swipe moves one card, a hard flick several);
   tap a side card to bring it to the middle. Details sit at the top; the
   cards, the Play button and the handle sit at the bottom.
 - **Swipe up to close:** every info screen (a card, a player, the menu, help,
@@ -200,6 +221,10 @@ text above them says.
 - **The 💡 tip** goes away when you tap it.
 - Choices (a target, a discard) keep their Cancel button: there, a stray
   gesture could be taken for a choice.
+- The physics: `FX.velocity()` judges a finger's speed from its last ~100 ms,
+  `FX.glide()` springs a position to where a flick would carry it (about an
+  eighth of a second's worth), starting at the finger's speed so nothing stops
+  dead, and `FX.rubber()` makes the ends of a row resist.
 
 ## Keeping it smooth on phones
 

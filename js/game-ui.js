@@ -332,6 +332,8 @@ function mount() {
     });
     // Your hand, big: swipe sideways to move along it.
     root.addEventListener('pointerdown', viewerSwipe);
+    // Swipe right across the table to end your turn (or attack, block, fight).
+    root.addEventListener('pointerdown', goSwipe);
     // Drag from your creature to aim: at an opponent to attack, at an attacker to block it.
     FX.dragArrow(root, {
       selector: '.g-side.me .tcard',
@@ -474,9 +476,9 @@ function startSuggest() {
       // it would go; you confirm with the usual button (or change it first).
       if (a.t === 'attack') {
         G.atk = { att: [...a.att], hunt: (a.hunt || []).map((h) => [...h]), target: a.target };
-        G.suggest.setUp = at.players.length === 2 ? 'Attack!' : `Attack ${at.players[a.target].name.replace(/^Bot · /, '')}`;
+        G.suggest.setUp = at.players.length === 2 ? 'Attack' : `Attack ${at.players[a.target].name.replace(/^Bot · /, '')}`;
       }
-      if (a.t === 'block' && G.blk) { G.blk.pairs = a.blocks.map((p) => [...p]); G.blk.sel = null; G.suggest.setUp = a.blocks.length ? 'Done' : 'Don’t block'; }
+      if (a.t === 'block' && G.blk) { G.blk.pairs = a.blocks.map((p) => [...p]); G.blk.sel = null; G.suggest.setUp = a.blocks.length ? 'Block' : 'Don’t block'; }
     } catch (e) { console.error(e); G.suggest = null; flash('No suggestion this time.'); }
     redraw();
   }, 40);
@@ -509,7 +511,7 @@ function describeMove(s, a) {
       for (const [b, x] of a.blocks) by.set(x, [...(by.get(x) || []), b]);
       return `${[...by].map(([x, bs]) => `${listNames(bs.map(card))} ${bs.length > 1 ? 'block' : 'blocks'} ${card(x)}`).join('; ')}.`;
     }
-    case 'pass': return 'Tap <b>Fight!</b> No Trick or ability is worth it here.';
+    case 'pass': return 'Swipe right to <b>Fight</b>: no Trick or ability is worth it here.';
     case 'use': {
       const c = s.cards[a.uid];
       if (c.zone === 'relic') return `Use the ${card(a.uid)}: sacrifice ${card(a.sac)} to draw a card.`;
@@ -528,11 +530,11 @@ function suggestRings(s, a) {
   switch (a.t) {
     case 'play': return [a.from === 'discard' ? `.tc-pile[data-pile="${G.me}"]` : `.g-hand .tcard[data-uid="${a.uid}"]`, ...t(a.target), ...[a.sac, a.fighter, ...(a.targets || [])].filter((u) => u != null).map(c)];
     case 'attack': return [...a.att.map(c), `.pbar[data-p="${a.target}"]`, ...(a.hunt || []).map(([, y]) => c(y))];
-    case 'block': return a.blocks.length ? a.blocks.flatMap(([b, x]) => [c(b), c(x)]) : ['.blk-btn'];
-    case 'pass': return ['.fight-btn'];
+    case 'block': return a.blocks.length ? a.blocks.flatMap(([b, x]) => [c(b), c(x)]) : ['.g-go'];
+    case 'pass': return ['.g-go'];
     case 'use': return [c(a.uid), ...t(a.target), ...(a.sac != null ? [c(a.sac)] : [])];
     case 'phoenix': return ['[data-act="phoenix"]'];
-    case 'end': return ['.end-btn'];
+    case 'end': return ['.g-go'];
   }
   return [];
 }
@@ -543,7 +545,7 @@ function suggestHTML() {
   if (!sg || sg.state !== G.state || !myMove()) return '';
   if (sg.thinking) return '<div class="suggest"><span class="suggest-t"><span class="suggest-h">💡 Thinking…</span></span></div>';
   if (sg.setUp) {
-    return `<div class="suggest" data-act="suggest-close"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text} It’s set up: tap <b>${esc(sg.setUp)}</b>, or change it.</span></div>`;
+    return `<div class="suggest" data-act="suggest-close"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text} It’s set up: swipe right to confirm (<b>${esc(sg.setUp)}</b>), or change it.</span></div>`;
   }
   return `<div class="suggest" data-act="suggest-close"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text}</span>
     <div class="suggest-row"><button class="btn small primary" data-act="suggest-do">Do it</button></div></div>`;
@@ -1020,7 +1022,7 @@ function battleHTML(s, bv, hl) {
   const who = bv.a === G.me ? 'You' : shortName(s.players[bv.a].name);
   const at = target ? (target.i === G.me ? 'you' : shortName(target.name)) : null;
   const across = bv.cols.reduce((n, c) => n + Math.max(1, c.bs.length + (c.also.length ? 0.6 : 0)), 0);
-  const label = at ? `⚔ ${esc(who)} → ${esc(at)}` : '⚔ Who do you attack? Tap a button below ↓';
+  const label = at ? `⚔ ${esc(who)} → ${esc(at)}` : '⚔ Who do you attack? Tap their name ↑';
   return `<div class="g-battle ${bv.attTop ? 'att-top' : 'att-bottom'}${bv.cols.length > 4 || across > 5 ? ' many' : ''}" data-key="battle">${tutStep() ? '' : `<div class="gb-label">${label}</div>`}<div class="gb-cols">${cols}</div></div>`;
 }
 
@@ -1053,45 +1055,42 @@ function statusHTML() {
   if (s.phase === 'mulligan') return 'Waiting for everyone to choose an opening hand…';
   const P = s.players[s.active];
   const who = actor(s);
-  if (s.phase === 'combat') return who === G.me ? `<b>${s.combat.step === 'block' ? 'Choose your blockers' : 'Your move: Trick, ⚡ or Fight!'}</b>` : `${esc(name(who))} is deciding…`;
-  if (s.active === G.me) return `<b>Your turn</b> · ${s.players[G.me].energy} Energy left`;
+  if (s.phase === 'combat') return who === G.me ? `<b>${s.combat.step === 'block' ? 'You’re attacked' : 'Your move'}</b>` : `${esc(name(who))} is deciding…`;
+  if (s.active === G.me) return '<b>Your turn</b>'; // your Energy is on your bar
   return G.bots.has(s.active) ? `${esc(shortName(P.name))} is thinking…` : `${esc(poss(shortName(P.name)))} turn`;
 }
 
 function midHTML() {
-  return suggestHTML() + midInner();
+  return suggestHTML() + midInner() + goHTML();
 }
 
 function midInner() {
   const s = S();
-  const coached = !!tutStep(); // the coach box says what to do; keep banners short
-  const tight = coached || s.players.length > 2; // three players leave less room in the middle
+  const coached = !!tutStep(); // the coach box says what to do
   const st = G.flow?.steps[G.flow.i];
   if (st && ['sac', 'fighter', 'target', 'targets'].includes(st.kind)) return `<div class="banner"><span>${esc(st.prompt)}</span></div>`;
   if (G.atk && myMain()) {
     const hunter = hunterWithoutPrey();
     if (hunter) return `<div class="banner fight"><span>${esc(nameOf(hunter))} can Hunt: tap the enemy creature it must fight (optional).</span></div>`;
-    if (tight) return '';
-    return `<div class="banner fight"><span>Tap more creatures to add them, or tap one again to keep it home.</span></div>`;
+    return '';
   }
+  // in a fight, the one line that matters: how it goes if no one plays a Trick
   if (iBlock()) {
+    if (coached) return ''; // the coach box explains it, and the fight needs the room
     const pairs = G.blk?.pairs || [];
     const preview = outcome(s, playOut(s, { t: 'block', p: G.me, blocks: pairs }));
-    const sel = G.blk?.sel != null ? `Now tap the attacker ${esc(nameOf(G.blk.sel))} should block.` : 'Tap one of your creatures to put it in front of an attacker.';
-    return `<div class="banner fight foe">${tight ? '' : `<span>${sel}</span>`}<div class="banner-sub">If no one plays a Trick: ${preview}</div></div>`;
+    const sel = G.blk?.sel != null ? `<span>Now tap the attacker ${esc(nameOf(G.blk.sel))} should block.</span>` : '';
+    return `<div class="banner fight foe">${sel}<div class="banner-sub">If no one plays a Trick: ${preview}</div></div>`;
   }
   if (iTrick()) {
     if (coached) return '';
     const preview = outcome(s, playOut(s, { t: 'pass', p: G.me }));
-    const role = s.combat.a === G.me ? 'Blockers are set.' : 'Your chance to answer.';
-    return `<div class="banner fight">${tight ? '' : `<span>${role} Play a Trick or use a ⚡ ability, or tap Fight!</span>`}<div class="banner-sub">As things stand: ${preview}</div></div>`;
+    return `<div class="banner fight"><div class="banner-sub">As things stand: ${preview}</div></div>`;
   }
-  // One line at most: how the last fight went, or what you can do now.
-  // (The full story is in the game log, in the menu.)
-  if (G.fightNote && s.phase === 'main' && !tutStep()) return `<div class="fight-note">${G.fightNote}</div>`;
-  if (tutStep()) return ''; // the coach is all there is to read
-  const hint = hintText();
-  return hint ? `<div class="hint">${hint}</div>` : '';
+  // how the last fight went (the full story is in the game log, in the menu)
+  if (G.fightNote && s.phase === 'main' && !coached) return `<div class="fight-note">${G.fightNote}</div>`;
+  if (s.players[G.me].out && s.phase !== 'over') return '<div class="hint">You’re out of this game; the others play on.</div>';
+  return '';
 }
 
 // "Since your last turn": what happened to you first (the Life you lost, who
@@ -1142,26 +1141,6 @@ function recapHTML() {
     <div class="recap-life">${head}</div>${lines.slice(0, 5).map((t) => `<div>${t}</div>`).join('')}<div class="recap-x">Tap to close</div></div>`;
 }
 
-// What can I do right now? Shown under the ticker in every game.
-// What can I do right now? One short line, only when it's my move: the status
-// line at the top already says whose turn it is and what the others are doing.
-function hintText() {
-  const s = S();
-  if (s.phase !== 'main') return '';
-  if (s.players[G.me].out) return 'You’re out of this game; the others play on.';
-  if (s.active !== G.me) return '';
-  const P = s.players[G.me];
-  const canPlay = P.hand.some((u) => !playable(u));
-  const canHit = canStartAttack();
-  // three players: nobody has the Crown yet, so the first hit takes it
-  const crown = s.crownOn && s.crown == null && canHit ? ' First hit takes the 👑.' : '';
-  if (canPlay && canHit) return `Play a <b>glowing card</b>, or tap <b>glowing creatures</b> to attack.${crown}`;
-  if (canPlay) return 'Drag a <b>glowing card</b> up to play it.';
-  if (canHit) return `Tap <b>glowing creatures</b> to attack.${crown}`;
-  if (P.board.some((u) => BY_ID[s.cards[u].cid].ability && !abilityBlocked(u))) return 'Use a glowing <b>⚡</b>, or <b>End turn</b>.';
-  return 'Nothing left to do: <b>End turn</b>.';
-}
-
 function anythingToDo() {
   const s = S(), P = s.players[G.me];
   if (!myMain()) return false;
@@ -1170,45 +1149,136 @@ function anythingToDo() {
   return phoenixReady(s, G.me).length > 0 && P.energy >= 2;
 }
 
-// The buttons under the table. The main one is always bottom right.
+// The few buttons under the table: Cancel, a choice's Skip or Done, and the
+// lesson's Next. The move that carries the game on (End turn, Attack, Block,
+// Fight) is the quiet line in the middle that you swipe: goHTML.
 function actionsHTML() {
   const s = S();
   const btn = (cls, act, label, extra = '') => `<button class="btn ${cls}" data-act="${act}" ${extra}>${label}</button>`;
   const left = [], right = [];
-  // In the lesson, "Next" is the main button: the coach box can be taller than the
+  // In the lesson, "Next" is a button here: the coach box can be taller than the
   // middle of a short phone, and the button must never be the part that's cut off.
   const lesson = tutStep();
   if (lesson?.next) return `<span class="grow"></span>${btn('primary coach-next-btn', 'coach-next', lesson.final ? 'Let’s play!' : 'Next')}`;
   const st = G.flow?.steps[G.flow.i];
-  // 💡 asks the bot what it would do (not during the lesson: the coach does that)
-  const hint = (short) => { if (myMove() && !tutStep()) left.push(btn('small ghost hint-btn', 'suggest', short ? '💡' : '💡 Suggest', 'aria-label="Suggest a move"')); };
   if (st && ['sac', 'fighter', 'target', 'targets'].includes(st.kind)) {
     left.push(btn('small ghost', 'cancel', 'Cancel'));
     if (st.kind === 'targets' && G.flow.multi.length) right.push(btn('primary', 'done-targets', `Done (${G.flow.multi.length})`));
     else if (st.optional) right.push(btn('primary', 'skip', 'Skip'));
   } else if (G.atk && myMain()) {
     left.push(btn('small ghost', 'cancel', 'Cancel'));
-    const opps = opponents(s, G.me);
-    if (opps.length === 1) { hint(true); right.push(btn('primary atk-btn', 'attack', 'Attack!', `data-p="${opps[0].i}"`)); }
-    // one short button per opponent, kept to one line ("⚔ Wild Hunt")
-    else for (const Q of opps) right.push(btn(`primary atk-btn atk-3${G.atk.target === Q.i ? ' on' : ''}`, 'attack', `⚔ ${esc(shortName(Q.name))}`, `data-p="${Q.i}" aria-label="Attack ${esc(shortName(Q.name))}"`));
   } else if (iBlock()) {
     const n = G.blk?.pairs.length || 0;
     if (n && G.blk.pairs.some(([b, a]) => !isForced(b, a))) left.push(btn('small ghost', 'clear-blocks', 'Clear'));
-    hint(n > 0);
-    right.push(btn('primary blk-btn', 'block', n ? `Done: block with ${n}` : 'Don’t block'));
-  } else if (iTrick()) {
-    hint(false);
-    right.push(btn('primary fight-btn', 'pass', 'Fight!'));
   } else {
     const phoenix = phoenixReady(s, G.me);
     if (phoenix.length && myMain()) left.push(btn('small', 'phoenix', 'Return Phoenix (2)', `data-uid="${phoenix[0]}"`));
-    hint(phoenix.length > 0);
-    const mine = myMain();
     if (s.players[G.me].out && s.phase !== 'over') right.push(btn('primary', 'leave', 'Leave'));
-    else right.push(btn(`primary end-btn${mine && !anythingToDo() ? ' nudge' : ''}`, 'end', mine ? 'End turn' : 'Waiting…', mine && !G.flow ? '' : 'disabled'));
   }
   return `${left.join('')}<span class="grow"></span>${right.join('')}`;
+}
+
+// ── moving the game on ──────────────────────────────────────────────
+// No big button: the move that carries the game on is a quiet line in the
+// middle of the table ("End turn ›››"), and you swipe right across the table
+// to make it. Choices (whom to attack with three players, a target) are taps.
+function goAction() {
+  const s = S();
+  if (G.flow || (s.phase !== 'main' && s.phase !== 'combat') || s.players[G.me].out) return null;
+  if (tutStep()?.next) return null; // the lesson's own Next comes first
+  if (G.atk && myMain()) {
+    const p = G.atk.target;
+    if (p == null) return null; // three players: tap whom to attack first
+    return { act: 'attack', p, label: s.players.length === 2 ? 'Attack' : `Attack ${shortName(s.players[p].name)}` };
+  }
+  if (iBlock()) return { act: 'block', label: G.blk?.pairs.length ? 'Block' : 'Don’t block' };
+  if (iTrick()) return { act: 'pass', label: 'Fight' };
+  if (myMain()) return { act: 'end', label: 'End turn', ready: !anythingToDo() };
+  return null;
+}
+
+function goHTML() {
+  const go = goAction();
+  if (!go) return '';
+  // a fresh element after every swipe, so the last one can fly off
+  return `<div class="g-go${go.ready ? ' ready' : ''}" data-key="go-${G.goN || 0}" data-go="${go.act}"${go.p != null ? ` data-p="${go.p}"` : ''} role="button" aria-label="${esc(go.label)} (swipe right)">`
+    + `<span class="go-t">${esc(go.label)}</span><span class="go-arrow" aria-hidden="true"><i></i><i></i><i></i></span></div>`;
+}
+
+function doGo(el) {
+  if (!G || G.busy) return;
+  onAct(el.dataset.go, el); // 'attack' reads data-p
+}
+
+// A tap only shows which way to swipe (a click from a keyboard or a screen reader does it).
+function nudgeGo(el) {
+  el.classList.remove('nudge');
+  void el.offsetWidth;
+  el.classList.add('nudge');
+  toast('Swipe right →', 1100);
+}
+
+function swallowClick() {
+  const kill = (k) => { k.stopPropagation(); k.preventDefault(); };
+  addEventListener('click', kill, { capture: true, once: true });
+  setTimeout(() => removeEventListener('click', kill, { capture: true }), 350);
+}
+
+// Swipe right anywhere on the table (not from your hand, a button or one of
+// your creatures, which you drag to aim): the line follows the finger and
+// lights up past the mark. Let go there, or flick, to do it; short of it, it
+// slides back.
+function goSwipe(e) {
+  if (!G || G.busy || G.sheet || FX.isDragging() || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  const t = e.target;
+  if (!t.closest?.('.g-table') || t.closest('button, [data-act], .relic, .g-side.me .tcard, .recap-pop')) return;
+  if (e.clientX < 24) return; // the screen's left edge belongs to the browser's back swipe
+  const el = document.querySelector('#game .g-go');
+  if (!el) return;
+  const x0 = e.clientX, y0 = e.clientY;
+  const mark = Math.min(150, innerWidth * 0.38);
+  const vel = FX.velocity();
+  let live = false, dx = 0;
+  const set = (x) => {
+    const p = Math.min(1, x / mark);
+    // the line moves a little slower than the finger, so it never leaves the screen
+    el.style.setProperty('--go-x', `${(0.6 * (x <= mark ? x : mark + FX.rubber((x - mark) / 120) * 120)).toFixed(1)}px`);
+    el.style.setProperty('--go-p', p.toFixed(3));
+    el.classList.toggle('armed', p >= 1);
+  };
+  const stop = () => {
+    removeEventListener('pointermove', move, true);
+    removeEventListener('pointerup', up, true);
+    removeEventListener('pointercancel', up, true);
+  };
+  const move = (ev) => {
+    if (ev.pointerId !== e.pointerId) return;
+    dx = ev.clientX - x0;
+    const dy = ev.clientY - y0;
+    if (!live) {
+      if (Math.hypot(dx, dy) < 10) return;
+      if (dx <= 0 || Math.abs(dy) > Math.abs(dx) * 0.8) { stop(); return; } // not a swipe right: leave it be
+      live = true;
+      el.classList.add('dragging');
+    }
+    vel.add(ev.clientX);
+    set(Math.max(0, dx));
+  };
+  const up = (ev) => {
+    if (ev.pointerId !== e.pointerId) return;
+    stop();
+    if (!live) return;
+    swallowClick();
+    el.classList.remove('dragging');
+    const flick = vel.get() > 0.7 && dx > mark * 0.35;
+    if (ev.type === 'pointercancel' || !(dx >= mark || flick) || !G || G.busy) { set(0); return; } // short of the mark: it slides back
+    el.classList.add('gone');
+    G.goN = (G.goN || 0) + 1;
+    setTimeout(() => doGo(el), 120);
+  };
+  addEventListener('pointermove', move, true);
+  addEventListener('pointerup', up, true);
+  addEventListener('pointercancel', up, true);
 }
 
 function tableHTML() {
@@ -1221,9 +1291,9 @@ function tableHTML() {
   const row = (P) => `<div class="tc-row">${P.board.filter((u) => !bv?.inZone.has(u)).map((u) => creatureHTML(s, s.cards[u], hl)).join('')}</div>`;
   return `
     <div class="g-top">
-      <button class="g-icon" data-act="menu" aria-label="Menu (take back a move, game log, leave)">☰</button>
+      <button class="g-icon" data-act="menu" aria-label="Menu (how the table works, game log, take back a move, leave)">☰</button>
       <div class="g-status">${statusHTML()}</div>
-      <button class="g-icon" data-act="help" aria-label="How the table works">?</button>
+      <button class="g-icon g-bulb${myMove() && !st && !G.flow ? '' : ' off'}${G.suggest ? ' on' : ''}" data-act="suggest" aria-label="Suggest a move">💡</button>
     </div>
     <div class="g-table">
       ${others.map((P) => `<section class="g-side opp${s.active === P.i ? ' active' : ''}${P.out ? ' out' : ''}${s.combat && (s.combat.a === P.i || s.combat.d === P.i) ? ' in-fight' : ''}" data-side="${P.i}">${pbarHTML(s, P, hl)}${row(P)}</section>`).join('')}
@@ -1768,7 +1838,7 @@ const GRAB = '<div class="g-grab" data-act="close" role="button" aria-label="Clo
 // neighbour) to move along; the cards slide over like a hand being fanned.
 function openViewer(uid) {
   const hand = S().players[G.me].hand;
-  G.viewer = { i: Math.max(0, hand.indexOf(uid)) };
+  G.viewer = { i: Math.max(0, hand.indexOf(uid)), pos: null };
   G.peek = hand[G.viewer.i];
   G.sheet = viewerHTML();
   redraw();
@@ -1803,9 +1873,7 @@ function sheetGrab(e, grab) {
     removeEventListener('pointerup', up, true);
     removeEventListener('pointercancel', up, true);
     if (y0 - ev.clientY < 30) return; // a tap: the click closes it
-    const kill = (k) => { k.stopPropagation(); k.preventDefault(); };
-    addEventListener('click', kill, { capture: true, once: true });
-    setTimeout(() => removeEventListener('click', kill, { capture: true }), 350);
+    swallowClick();
     if (G) { G.sheet = null; redraw(); }
   };
   try { grab.setPointerCapture(e.pointerId); } catch { /* fine */ }
@@ -1831,9 +1899,11 @@ function goViewer(i) {
   redraw();
 }
 
-// Swipes on the big hand. Sideways: the cards follow the finger, then settle
-// on the card you swiped to (a quick flick moves one card). Up or down (on
-// the cards or the handle): the hand follows, and far or fast enough puts it away.
+// Swipes on the big hand. Sideways: the cards follow the finger; let go and
+// they glide on (further the faster the flick) and settle on a card. A finger
+// on them while they glide catches them. Up or down (on the cards or the
+// handle): the hand follows, and far or fast enough puts it away.
+let VGLIDE = null;
 function viewerSwipe(e) {
   const grab = e.target.closest?.('.g-grab');
   if (grab && G?.sheet) { sheetGrab(e, grab); return; }
@@ -1841,18 +1911,39 @@ function viewerSwipe(e) {
   if (!zone || !G?.viewer) return;
   const hv = zone.closest('.hv'), track = hv?.querySelector('.hv-track');
   if (!track) return;
-  const x0 = e.clientX, y0 = e.clientY, t0 = performance.now();
-  const width = track.querySelector('.hv-card.on')?.offsetWidth || 260;
+  const x0 = e.clientX, y0 = e.clientY;
+  const sp = (track.querySelector('.hv-card.on')?.offsetWidth || 260) * 0.74; // one card along
   const cards = [...track.querySelectorAll('.hv-card')];
-  // every card follows the finger: its place, tilt, size and light, all fractional
-  const place = (shift) => {
+  const last = cards.length - 1;
+  // every card follows: its place, tilt, size and light, all fractional
+  const place = (p) => {
+    G.viewer.pos = p;
     for (const c of cards) {
-      const kk = Number(c.dataset.hvI) - G.viewer.i + shift;
+      const kk = Number(c.dataset.hvI) - p;
       c.style.setProperty('--kk', kk.toFixed(3));
       c.style.setProperty('--akk', Math.min(3, Math.abs(kk)).toFixed(3));
     }
   };
-  let dx = 0, dy = 0, mode = null, lastX = x0, lastY = y0, lastT = t0, vx = 0, vy = 0;
+  const tilt = (pxPerMs) => track.style.setProperty('--tilt', `${Math.max(-6, Math.min(6, pxPerMs * 4)).toFixed(2)}deg`);
+  // let go at v cards a second: glide on and settle on a card
+  const settle = (v) => {
+    const from = G.viewer.pos ?? G.viewer.i;
+    const to = Math.min(last, Math.max(0, Math.round(from + v * 0.12)));
+    hv.classList.add('dragging');
+    VGLIDE = FX.glide(from, to, v, (x, vx) => { place(x); tilt((-vx * sp) / 1000); }, () => {
+      VGLIDE = null;
+      if (!G?.viewer) return;
+      hv.classList.remove('dragging');
+      tilt(0);
+      G.viewer.pos = null;
+      if (to !== G.viewer.i) goViewer(to); else place(to);
+    });
+  };
+  const caught = !!VGLIDE;
+  if (VGLIDE) { VGLIDE.stop(); VGLIDE = null; }
+  const pos0 = G.viewer.pos ?? G.viewer.i;
+  const vel = FX.velocity(), velY = FX.velocity();
+  let dx = 0, dy = 0, mode = null;
   // nothing gets picked up and dragged away
   zone.addEventListener('dragstart', (d) => d.preventDefault(), { once: true });
   const move = (ev) => {
@@ -1867,12 +1958,13 @@ function viewerSwipe(e) {
       // a real swipe keeps the finger even off the cards (a tap stays a tap on its card)
       try { zone.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
     }
-    const now = performance.now(), dt = Math.max(1, now - lastT);
-    vx = (ev.clientX - lastX) / dt; vy = (ev.clientY - lastY) / dt;
-    lastX = ev.clientX; lastY = ev.clientY; lastT = now;
+    vel.add(ev.clientX);
+    velY.add(ev.clientY);
     if (mode === 'side') {
-      place(dx / (width * 0.74));
-      track.style.setProperty('--tilt', `${Math.max(-6, Math.min(6, vx * 4)).toFixed(2)}deg`);
+      let p = pos0 - dx / sp;
+      if (p < 0) p = -FX.rubber(-p); else if (p > last) p = last + FX.rubber(p - last);
+      place(p);
+      tilt(vel.get());
     } else {
       // the whole hand lifts (or drops) with the finger, fading as it goes
       track.style.setProperty('--lift', `${dy.toFixed(1)}px`);
@@ -1884,25 +1976,21 @@ function viewerSwipe(e) {
     removeEventListener('pointermove', move, true);
     removeEventListener('pointerup', up, true);
     removeEventListener('pointercancel', up, true);
-    if (!mode) return; // a tap: the click handler has it
-    // swallow the click that follows a swipe
-    const kill = (k) => { k.stopPropagation(); k.preventDefault(); };
-    addEventListener('click', kill, { capture: true, once: true });
-    setTimeout(() => removeEventListener('click', kill, { capture: true }), 350);
-    hv.classList.remove('dragging');
-    if (mode === 'away') {
-      if (Math.abs(dy) > 90 || Math.abs(vy) > 0.5) { closeViewer(dy < 0 ? 'up' : 'down'); return; }
-      track.style.setProperty('--lift', '0px'); // not far enough: it settles back
-      track.style.opacity = '';
+    if (!mode) {
+      // a tap that caught the cards mid-glide lets them settle; any other tap is the click handler's
+      if (caught) { swallowClick(); settle(0); }
       return;
     }
-    let step = Math.round(-dx / (width * 0.74));
-    if (!step && Math.abs(vx) > 0.35) step = vx < 0 ? 1 : -1;
-    track.style.setProperty('--tilt', '0deg');
-    const n = S().players[G.me].hand.length;
-    const to = Math.min(n - 1, Math.max(0, G.viewer.i + step));
-    if (to === G.viewer.i) place(0); // not far enough: everything swings back
-    else goViewer(to);
+    swallowClick();
+    if (mode === 'away') {
+      hv.classList.remove('dragging');
+      if (Math.abs(dy) > 90 || Math.abs(velY.get()) > 0.5) { closeViewer(dy < 0 ? 'up' : 'down'); return; }
+      track.style.setProperty('--lift', '0px'); // not far enough: it settles back
+      track.style.opacity = '';
+      if (caught) settle(0);
+      return;
+    }
+    settle((-vel.get() / sp) * 1000);
   };
   addEventListener('pointermove', move, true);
   addEventListener('pointerup', up, true);
@@ -2024,10 +2112,11 @@ function playerSheet(pi) {
 function menuSheet() {
   return `<h3>Menu</h3><div class="btn-col">
     ${G.mode === 'practice' ? '<button class="btn" data-act="undo">↶ Take back my last move</button>' : ''}
+    <button class="btn" data-act="help">How the table works</button>
     <button class="btn" data-act="log">Game log</button>
     <button class="btn" data-act="speed">${fastOn() ? 'Animations: fast (tap for normal)' : 'Animations: normal (tap for fast)'}</button>
     <button class="btn" data-act="fixes">Fix something</button>
-    <button class="btn" data-act="rules">How to play (leaves the table; resume from Play)</button>
+    <button class="btn" data-act="rules">All the rules (leaves the table)</button>
     <button class="btn danger" data-act="concede">${G.concedeArm && Date.now() - G.concedeArm < 4000 ? 'Tap again to concede' : 'Concede'}</button>
     <button class="btn ghost" data-act="leave">Leave (${G.mode === 'practice' ? 'you can resume later' : 'the game continues'})</button>
     </div>`;
@@ -2038,19 +2127,19 @@ function helpSheet() {
     <div class="help-list">
       <div><b>Top: your opponents.</b> Name, Life ❤, Energy ⚡ and cards in hand. <b>Tap anyone’s bar</b> for the rest: their deck, discard pile and Relics. ⊠ is a face-down Trap.</div>
       <div><b>Creatures</b>: theirs above, yours below. Left number = <b>Power</b> (damage it deals), right = <b>Vitality</b> (damage it can take). Small badges are keywords; tap any card to read it.</div>
-      <div><b>Your hand</b>: one card pokes up with its rules showing; slide your finger along the hand to move it. <b>Tap a card</b> to see your whole hand big, and swipe through it.</div>
+      <div><b>Your hand</b>: the card in the middle pokes up with its rules showing. Slide the hand sideways to bring another card to the middle (flick it to go further). <b>Tap a card</b> to see your whole hand big, and swipe through it.</div>
       <div><b>Play a card</b>: drag it from your hand up onto the table, or tap it and tap Play. Glowing cards can be played now.</div>
-      <div><b>Attack</b> (once a turn): tap your glowing creatures and they step into the middle of the table, then tap <b>Attack!</b> (bottom right). Attackers are exhausted afterwards: they can’t block until your next turn.</div>
-      <div><b>Block</b>: when you are attacked, the attackers come to the middle. Tap one of your creatures and it steps in front of an attacker (if it could stop several, tap the one you want). Then <b>Done</b>. The line above tells you what will happen.</div>
+      <div><b>Attack</b> (once a turn): tap your glowing creatures and they step into the middle of the table, then <b>swipe right</b> across the table (with three players, first tap whose name to attack). Attackers are exhausted afterwards: they can’t block until your next turn.</div>
+      <div><b>Block</b>: when you are attacked, the attackers come to the middle. Tap one of your creatures and it steps in front of an attacker (if it could stop several, tap the one you want). Then <b>swipe right</b>. The line in the middle tells you what will happen.</div>
       <div><b>Team up</b>: several of your creatures can block the same attacker. They all hit it, and it splits its damage among them, destroying the costliest ones it can.</div>
-      <div><b>The fight</b> plays out one pair at a time, in the middle. <b>Tricks</b> and abilities can be used before it starts; tap <b>Fight!</b> when you are done.</div>
+      <div><b>The fight</b> plays out one pair at a time, in the middle. <b>Tricks</b> and abilities can be used before it starts; <b>swipe right</b> to Fight when you are done.</div>
       <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
-      <div>The main button (End turn, Attack!, Done, Fight!) is always at the bottom right.</div>
-      <div><b>💡 Suggest</b> (bottom left) asks the bot what it would do in your place: it spells out the move and rings the cards. Tap <b>Do it</b> to make that move, or do something else.</div>
+      <div><b>Swipe right</b> across the table to move on: the faded line in the middle says what it does (End turn, Attack, Block, Fight).</div>
+      <div><b>💡</b> (top right) asks the bot what it would do in your place: it spells out the move and rings the cards. Tap <b>Do it</b> to make that move, or do something else.</div>
       <div><b>Is it ready?</b> A <b>gold glow</b> means it can act now. <b>zZ</b> means it just arrived: it can block, but it can’t attack until your next turn. Turned sideways, with ↻ in its corner, means it attacked: it can’t attack or block until its owner’s next turn.</div>
       <div><b>Discard piles</b> sit at the end of each player’s bar. Spells land there when they’re done; tap a pile to look through it.</div>
-      <div><b>End turn</b> when you’re finished. Energy you don’t spend waits for your next turn, so you can answer attacks with Tricks.</div>
+      <div><b>End turn</b> (swipe right) when you’re finished. Energy you don’t spend waits for your next turn, so you can answer attacks with Tricks.</div>
     </div>
     <div class="btn-col">
       ${G.mode === 'online' ? '' : '<button class="btn" data-act="tutorial">Play the guided lesson</button>'}
@@ -2142,6 +2231,8 @@ function onClick(e) {
   if (G.recap != null && !t.closest('.recap-pop')) { G.recap = null; if (!actEl) redraw(); }
   if (actEl && !t.closest('.relic')) { onAct(actEl.dataset.act, actEl); return; }
   if (G.busy) return;
+  const go = t.closest('.g-go');
+  if (go) { if (e.detail === 0) doGo(go); else nudgeGo(go); return; }
 
   if (G.sheet) {
     const ch = t.closest('[data-choice]');
@@ -2246,7 +2337,7 @@ function onAct(act, el) {
       break;
     }
     case 'use-ability': startAbility(uid); break;
-    case 'suggest': startSuggest(); break;
+    case 'suggest': if (G.suggest) { G.suggest = null; redraw(); } else startSuggest(); break;
     case 'suggest-close': G.suggest = null; redraw(); break;
     case 'suggest-do': {
       const a = G.suggest?.state === G.state ? G.suggest.a : null;
@@ -2303,7 +2394,7 @@ function onAct(act, el) {
     case 'fix-energy': dispatch({ t: 'fix', by: G.me, op: 'energy', p: G.me, n: Number(el.dataset.n) }); G.sheet = fixSheet(); redraw(); break;
     case 'undo': G.sheet = null; if (G.mode === 'practice') undo(); break;
     case 'coach-next': tutAdvance(); break;
-    case 'coach-skip': G.tut.done = true; flash('Lesson skipped. The hint line and the ? button are still there.'); redraw(); schedule(); break;
+    case 'coach-skip': G.tut.done = true; flash('Lesson skipped. 💡 (top right) suggests a move, and ☰ has help.'); redraw(); schedule(); break;
     case 'help': G.sheet = helpSheet(); redraw(); break;
     case 'tutorial': startTutorial(); break;
     case 'concede':

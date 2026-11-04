@@ -271,6 +271,9 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 #game.fighting { --hand-h: 116px; --hand-sink: 54px; }
 #game.g-ffa.fighting { --hand-h: 104px; --hand-sink: 48px; }
 .tc-hand { transition: height .3s ease; }
+/* a row emptied into the battle zone gets out of the way while the fight is on */
+#game.fighting .g-side .tc-row:empty { min-height: 20px; padding: 0; }
+#game.fighting .g-side .tc-row:empty::after { content: none; }
 /* the buttons are never covered by the hand */
 .g-actions { position: relative; z-index: 8; }
 

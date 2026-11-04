@@ -23,7 +23,7 @@ import * as Decks from './decks.js';
 import * as Net from './net.js';
 import {
   KINDS, KIND_INFO, PICKS, botChoice, byCost, deckCounts, deckName, factionCounts, kindCounts, lastPicks,
-  newSeed, poolKey, replay, roundPicks, tipFor,
+  newSeed, poolKey, replay, roundPicks, adviceFor,
 } from './draft.js';
 
 const SAVE = 'collective.draft.snake.v1';
@@ -32,8 +32,6 @@ const store = {
   set(v) { try { localStorage.setItem(SAVE, JSON.stringify(v)); } catch { /* fine without */ } },
   clear() { try { localStorage.removeItem(SAVE); } catch { /* fine */ } },
 };
-const TIPS = 'collective.draft.tips';
-const tipsOn = () => { try { return localStorage.getItem(TIPS) !== '0'; } catch { return true; } };
 const BOT_MS = 700; // practice bots pick after this long, so you see what they took
 
 // R: the draft of the online room this phone is in (kept while in the room,
@@ -209,7 +207,7 @@ function headHTML(d) {
   const top = `<div class="dr-top">
       <button class="dr-back" data-act="draft-close">‹ ${d.kind === 'online' ? 'Lobby' : 'Play'}</button>
       <span class="dr-kicker">Draft night</span>
-      <span class="dr-top-r">${d.kind === 'online' ? `Game ${esc(d.code)}` : 'Practice'}</span>
+      ${myDone(d) ? '<span></span>' : `<button class="g-icon g-bulb dr-bulb${adviceOpen(d) ? ' on' : ''}" data-act="draft-advice" aria-label="Advice for this round">💡</button>`}
     </div>`;
   if (myDone(d)) return `${top}<div class="dr-title">Your deck</div>`;
   const kind = KIND_INFO[st.kind];
@@ -236,17 +234,27 @@ function newsHTML(d) {
   return `${esc(who(d, e.p))} took ${card}.`;
 }
 
+// 💡 Advice for the round, a tap away in the top right corner (as in a game):
+// what this kind of card is for and how to tell a good one, what your deck
+// could use, and what is on the table. Never which card to take. It stays open
+// for the round; a tap on it (or on 💡 again) puts it away.
+const adviceOpen = (d) => !!V && V.advice === d.st?.round && !myDone(d);
+
+function adviceHTML(d) {
+  if (!adviceOpen(d)) return '';
+  const { kind, lines } = adviceFor(d.st, d.me);
+  return `<div class="suggest dr-advice" data-act="draft-advice" role="button" aria-label="Put the advice away"><span class="suggest-t">`
+    + `<span class="suggest-h">💡 ${esc(KIND_INFO[kind].name)}</span>${lines.map((l) => `<span class="dr-adv">${esc(l)}</span>`).join('')}</span></div>`;
+}
+
 function tableHTML(d) {
   const st = d.st;
   const picking = canPickNow(d);
   const taken = new Map(roundPicks(st).map((e) => [e.cid, e.p]));
   if (sending(d)) taken.set(d.sent.cid, d.me);
-  const tip = picking && tipsOn() ? tipFor(st, d.me) : null;
   const slots = st.dealt.map((cid, i) => (taken.has(cid)
     ? `<div class="dr-slot taken" data-cid="${esc(cid)}"><div class="dr-gone"><b>${esc(who(d, taken.get(cid)))}</b> took<span>${nameOf(cid)}</span></div></div>`
-    : `<div class="dr-slot${cid === tip ? ' tip' : ''}" style="--i:${i}" data-act="draft-look" data-cid="${esc(cid)}" role="button" tabindex="0" aria-label="${nameOf(cid)}">${cid === tip ? '<span class="dr-star">★ Good pick</span>' : ''}${cardHTML(BY_ID[cid])}</div>`)).join('');
-  const tips = picking
-    ? `<div class="dr-tips">${tipsOn() ? '<span>★ marks a good pick for your deck.</span><button class="dr-link" data-act="draft-tips">Hide tips</button>' : '<button class="dr-link" data-act="draft-tips">Show tips</button>'}</div>` : '';
+    : `<div class="dr-slot" style="--i:${i}" data-act="draft-look" data-cid="${esc(cid)}" role="button" tabindex="0" aria-label="${nameOf(cid)}">${cardHTML(BY_ID[cid])}</div>`)).join('');
   // the host can pick for a phone that went to sleep (the bot chooses)
   const away = d.kind === 'online' && d.info?.host === Net.clientId() && !st.done && st.who !== d.me && !stale(d)
     ? `<div class="dr-pickfor"><span>${esc(who(d, st.who))}’s phone asleep?</span><button class="btn small ghost" data-act="draft-pickfor">${d.armed === st.log.length ? `Tap again: pick for ${esc(who(d, st.who))}` : `Pick for ${esc(who(d, st.who))}`}</button></div>` : '';
@@ -254,9 +262,9 @@ function tableHTML(d) {
     const last = lastPicks(st, p, 3).map((e) => nameOf(e.cid));
     return `<div class="dr-other"><b>${esc(who(d, p))}</b><span>${plural(st.pools[p].length, 'card')}</span><em>${last.length ? last.join(' · ') : 'no picks yet'}</em></div>`;
   }).join('');
-  return `<div class="dr-news">${newsHTML(d)}</div>
+  return `${adviceHTML(d)}<div class="dr-news">${newsHTML(d)}</div>
     <div class="dr-grid">${slots}</div>
-    ${tips}${away}
+    ${away}
     <div class="dr-others">${others}</div>`;
 }
 
@@ -331,11 +339,9 @@ function zoomHTML(d) {
   const st = d.st;
   const table = z.list === 'table';
   const picking = table && canPickNow(d);
-  const tip = picking && tipsOn() ? tipFor(st, d.me) : null;
   const cards = list.map((cid, k) => {
     const dk = k - i, ak = Math.min(Math.abs(dk), 3);
-    return `<div class="hv-card${dk ? '' : ' on'}${ak >= 3 ? ' far' : ''}${cid === tip ? ' tip' : ''}" data-hv-i="${k}" style="--kk:${dk};--akk:${ak};--z:${10 - ak}">`
-      + `${cid === tip ? '<span class="dr-star">★ Good pick</span>' : ''}${cardHTML(BY_ID[cid])}</div>`;
+    return `<div class="hv-card${dk ? '' : ' on'}${ak >= 3 ? ' far' : ''}" data-hv-i="${k}" style="--kk:${dk};--akk:${ak};--z:${10 - ak}">${cardHTML(BY_ID[cid])}</div>`;
   }).join('');
   // dots for the few cards on the table, a count for a long deck
   const where = list.length < 2 ? '' : list.length <= 12
@@ -393,7 +399,7 @@ function onClick(e) {
     case 'draft-pick': pick(el.dataset.cid); break;
     case 'draft-pool': V.sheet = 'pool'; render(); break;
     case 'draft-sheet-close': V.sheet = null; V.zoom = null; render(); break;
-    case 'draft-tips': try { localStorage.setItem(TIPS, tipsOn() ? '0' : '1'); } catch { /* fine */ } render(); break;
+    case 'draft-advice': V.advice = d && adviceOpen(d) ? null : d?.st?.round ?? null; render(); break;
     case 'draft-pickfor': pickFor(d); break;
     case 'draft-close': backToPlay(); break;
     case 'draft-play': playPractice(); break;

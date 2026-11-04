@@ -149,6 +149,15 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
   relics and 3 "last call" picks. With three players all 90 cards are dealt
   once. Online: the Draft night switch under Friends on the Play page;
   practice: the "Draft my deck" switch under Bots, then 1 bot or 2 bots.
+- **💡 in the draft** (top right, as in a game): advice for the round, never
+  which card to take. Three short lines from `adviceFor` in `js/draft.js`: what
+  this kind of card is for and how to tell a good one (Power + Vitality for the
+  cost, keywords, removal), what your deck could use (a 1-Energy creature, a
+  way to get rid of enemy creatures, something that blocks Soar, a cheaper big
+  one...), and what kinds of cards are on the table (costs and keywords, or
+  what the spells and tricks do). `tools/test-draft.mjs` checks over 80
+  simulated drafts that it never names a card on the table. It stays open for
+  the round; a tap on it puts it away.
 - **💡 Suggest** (top right on the table, hidden during the lesson): asks the
   practice bot what it would do in your place, without peeking at face-down
   Traps. A play comes with "Do it"; an attack or a block is set up on the

@@ -9,7 +9,7 @@ import { decode, encode, validateDrafted } from '../js/decks.js';
 import {
   KINDS, PICKS, ROUNDS, TABLE, botChoice, botPick, botRand, byCost, canPick, cardValue, deckCounts, deckName,
   factionCounts, firstOrder, kindCounts, kindOf, lastPicks, makePiles, pickScore, poolKey, replay, rng, roundOrder,
-  roundPicks, tipFor,
+  roundPicks, tipFor, adviceFor,
 } from '../js/draft.js';
 
 let pass = 0, fail = 0;
@@ -272,6 +272,34 @@ test('bots: legal picks in many whole drafts', () => {
   ok(botPick([], [], Math.random) === null, 'no pick from an empty table');
   ok(cheap / decks > 0.9, `decks keep cheap cards: ${cheap}/${decks} with 12+ cards costing 3 or less`);
   console.log(`bot drafts: ${runs * 2} drafts, ${decks} decks; ${(100 * cheap / decks).toFixed(0)}% with 12+ cards costing 3 or less`);
+});
+
+// ── 💡 advice ───────────────────────────────────────────────────────
+// What to look for in the round, never which card to take: one to three
+// sentences, none naming a card on the table, and counts that add up.
+test('advice', () => {
+  let rounds = 0;
+  for (const n of [2, 3]) {
+    for (let seed = 1; seed <= 40; seed++) {
+      const picks = [];
+      let st = replay({ seed, n }, picks);
+      while (!st.done) {
+        for (let p = 0; p < n; p++) {
+          const { kind, lines } = adviceFor(st, p);
+          rounds++;
+          ok(kind === st.kind && lines.length >= 1 && lines.length <= 3 && lines.every((l) => typeof l === 'string' && l.length > 10), `advice ${seed}/${n} round ${st.round}: 1-3 sentences`);
+          const named = st.table.map((id) => BY_ID[id].name).filter((nm) => lines.some((l) => l.includes(nm)));
+          ok(!named.length, `advice ${seed}/${n} round ${st.round} names ${named.join(', ')}`);
+          const on = lines.find((l) => l.startsWith('On the table:'));
+          const counted = on ? [...on.matchAll(/(\d+) (?:creature|Relic|card|that|Trap|other|spell|Trick)/g)].reduce((s, m) => s + Number(m[1]), 0) : 0;
+          if (on && kind !== 'small' && kind !== 'medium' && kind !== 'big' && kind !== 'relics') ok(counted === st.table.length, `advice ${seed}/${n} round ${st.round}: "${on}" counts ${counted} of ${st.table.length}`);
+        }
+        picks.push({ p: st.who, k: st.round, cid: botChoice(st) });
+        st = replay({ seed, n }, picks);
+      }
+    }
+  }
+  ok(rounds > 1000, `advice checked in ${rounds} rounds`);
 });
 
 console.log(`draft checks: ${pass} passed, ${fail} failed`);

@@ -17,7 +17,7 @@
 // { p, k, cid }: seat p's pick in round k was card cid. Every phone replays
 // the same list and agrees on the table, like the game's move list.
 
-import { BY_ID, CARDS, FACTION_ORDER } from './cards.js';
+import { BY_ID, CARDS, FACTION_ORDER, KEYWORDS } from './cards.js';
 
 export const TABLE = 6; // cards laid out each round, at most
 export const KINDS = ['small', 'medium', 'big', 'spells', 'tricks', 'relics'];
@@ -277,3 +277,116 @@ export const botRand = (seed, round, p) => rng((seed ^ Math.imul(round + 1, 7919
 export const botChoice = (st, p = st.who) => botPick(st.table, st.pools[p], botRand(st.seed, st.round, p));
 // The tip for seat p: the bot's honest best for that deck.
 export const tipFor = (st, p) => botPick(st.table, st.pools[p], () => 0.5, 0);
+
+// ── 💡 advice for a round: what to look for, never which card to take ──
+// Three short lines at most: what this kind of card is for and how to tell a
+// good one, what your deck could use, and what kinds of cards are on the
+// table. It never names a card (tools/test-draft.mjs checks that).
+const ROUND_ADVICE = {
+  small: 'Cheap creatures fight in the first turns and block while your bigger ones arrive. A fair one has Power + Vitality of about 3 for 1 Energy, or 5 for 2; a keyword is worth about a point more.',
+  medium: 'Most of your fighters cost 3 or 4. A fair one has Power + Vitality of about 6 for 3 Energy, or 8 for 4; a keyword, or something that happens when it is played, makes it better.',
+  big: 'Big creatures win games, but each takes a whole turn to play, so two or three are plenty. The best are hard to stop: Soar, Venom, or a big effect when played.',
+  spells: 'Spells happen once, on your turn. The most useful get rid of an enemy creature (destroy it, damage it, make it fight); drawing cards comes next.',
+  tricks: 'Tricks are played in the middle of a fight, so they can turn one you would lose: more Power, Swift (strikes first) or a save. Traps wait face down and spring by themselves.',
+  relics: 'Relics stay on the table and work every turn, so a cheap one pays off over a long game.',
+  last: 'Last call: anything left over. Take what your deck is most short of.',
+};
+
+const kws = (c) => (c.keywords || []).filter((k) => k !== 'trick' && k !== 'trap');
+const removes = (c) => /\bdestroys? (a|an|every|each) (attacking )?creature|\bdeals? \d+ damage\b|\bfights?\b|take control|becomes a 1\/1 Fish/i.test(c.text || '');
+const draws = (c) => /\bdraws? (a|\d|two|three) cards?\b/i.test(c.text || '');
+const pumps = (c) => /\+\d+\/\+\d+|\bgets? \+\d/i.test(c.text || '');
+const saves = (c) => /return .* to (its owner's|your) hand|can'?t be (blocked|destroyed|targeted)|\bprevent/i.test(c.text || '');
+const blocksSoar = (c) => c.type === 'creature' && (kws(c).includes('soar') || kws(c).includes('reach'));
+const range = (xs) => { const a = Math.min(...xs), b = Math.max(...xs); return a === b ? `${a}` : `${a}–${b}`; };
+const kwName = (k) => KEYWORDS[k]?.name || k;
+const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+// What your deck could use, given the kind of round (null: nothing to say).
+function needFor(kind, pool, table) {
+  if (pool.length < 3) return 'Your deck is just starting: take what you like best and see where it leads.';
+  const cr = pool.filter((c) => c.type === 'creature');
+  const onTable = (f) => table.some(f);
+  const soarGap = !cr.some(blocksSoar) && cr.length >= 3 && onTable(blocksSoar)
+    ? 'None of your creatures can block Soar yet (Soar or Reach can).' : null;
+  const removal = pool.filter(removes).length;
+  switch (kind) {
+    case 'small':
+      if (!cr.some((c) => c.cost === 1) && cr.filter((c) => c.cost === 2).length >= 2 && onTable((c) => c.cost === 1)) {
+        return 'Your cheap creatures all cost 2: a 1-Energy one gives you something to do on your first turn.';
+      }
+      return soarGap;
+    case 'medium': {
+      const three = cr.filter((c) => c.cost === 3).length, four = cr.filter((c) => c.cost === 4).length;
+      if (three + four >= 3 && four - three >= 2 && onTable((c) => c.cost === 3)) return `Your medium creatures lean to 4 Energy (${four} of ${three + four}): a 3 would smooth out your turns.`;
+      if (three + four >= 3 && three - four >= 2 && onTable((c) => c.cost === 4)) return `Your medium creatures lean to 3 Energy (${three} of ${three + four}): a 4 hits harder later.`;
+      return soarGap;
+    }
+    case 'big': {
+      const big = cr.filter((c) => c.cost >= 5);
+      if (big.length >= 2 && big.every((c) => c.cost >= 6) && onTable((c) => c.cost === 5)) {
+        return `${big.length === 2 ? 'Both your big creatures cost' : `Your ${big.length} big creatures all cost`} 6 or more: a 5 comes down a turn sooner.`;
+      }
+      return soarGap;
+    }
+    case 'spells':
+      if (!removal) return 'Your deck has no way yet to get rid of an enemy creature: worth looking for one.';
+      if (removal >= 4) return `You already have ${removal} ways to deal with enemy creatures: drawing cards may help more now.`;
+      return `Your deck has ${plural(removal, 'way')} to get rid of an enemy creature so far.`;
+    case 'tricks': {
+      const tricks = pool.filter((c) => c.subtype === 'Trick').length;
+      return tricks ? `You have ${plural(tricks, 'Trick')}: cheap ones are the easiest to keep Energy for.`
+        : 'Your first Trick: in a game, keep an Energy or two unspent on your turn so you can play it in a fight.';
+    }
+    case 'last':
+      if (!removal) return 'Your deck has no way yet to get rid of an enemy creature.';
+      if (soarGap) return soarGap;
+      if (pool.filter((c) => c.cost <= 2).length < 6) return 'Your deck is short of cheap cards (1 or 2 Energy).';
+      return 'Your deck is in good shape: take the strongest card left.';
+  }
+  return null;
+}
+
+// What kinds of cards are on the table (null: none left).
+function tableSummary(kind, table) {
+  const n = table.length;
+  if (!n) return null;
+  if (kind === 'small' || kind === 'medium' || kind === 'big') {
+    const count = {};
+    for (const c of table) for (const k of kws(c)) count[k] = (count[k] || 0) + 1;
+    const list = Object.entries(count).sort((a, b) => b[1] - a[1]).map(([k, m]) => (m > 1 ? `${kwName(k)} ×${m}` : kwName(k)));
+    return `On the table: ${plural(n, 'creature')} for ${range(table.map((c) => c.cost))} Energy. `
+      + (list.length ? `Keywords: ${list.join(', ')}.` : 'No keywords among them: compare Power + Vitality.');
+  }
+  if (kind === 'relics') return `On the table: ${plural(n, 'Relic')} for ${range(table.map((c) => c.cost))} Energy.`;
+  if (kind === 'last') {
+    const k = { creature: 0, spell: 0, trick: 0, relic: 0 };
+    for (const c of table) k[c.type === 'creature' ? 'creature' : c.type === 'relic' ? 'relic' : kindOf(c) === 'tricks' ? 'trick' : 'spell']++;
+    const parts = [plural(k.creature, 'creature'), plural(k.spell, 'spell'), plural(k.trick, 'Trick or Trap', 'Tricks or Traps'), plural(k.relic, 'Relic')]
+      .filter((t) => !t.startsWith('0 '));
+    return `On the table: ${parts.join(', ')}.`;
+  }
+  // spells, tricks: what they do (Traps counted on their own)
+  const traps = kind === 'tricks' ? table.filter((c) => c.subtype === 'Trap') : [];
+  const rest = table.filter((c) => !traps.includes(c));
+  const rem = rest.filter(removes), drw = rest.filter((c) => !removes(c) && draws(c));
+  const pmp = rest.filter((c) => !removes(c) && !draws(c) && pumps(c));
+  const sav = rest.filter((c) => !removes(c) && !draws(c) && !pumps(c) && saves(c));
+  const parts = [];
+  if (rem.length) parts.push(`${rem.length} that ${rem.length === 1 ? 'gets' : 'get'} rid of a creature`);
+  if (drw.length) parts.push(`${drw.length} that ${drw.length === 1 ? 'draws' : 'draw'} cards`);
+  if (pmp.length) parts.push(`${pmp.length} that ${pmp.length === 1 ? 'makes' : 'make'} creatures stronger`);
+  if (sav.length) parts.push(`${sav.length} that ${sav.length === 1 ? 'saves or protects' : 'save or protect'}`);
+  const other = rest.length - rem.length - drw.length - pmp.length - sav.length;
+  if (traps.length) parts.push(plural(traps.length, 'Trap'));
+  if (other > 0 && parts.length) parts.push(plural(other, 'other'));
+  return parts.length ? `On the table: ${parts.join(', ')}.` : `On the table: ${plural(n, 'card')}.`;
+}
+
+/** 💡 advice for seat p in the round now on: { kind, lines } (lines: one to three plain sentences that name no card). */
+export function adviceFor(st, p) {
+  const kind = st.kind;
+  const pool = (st.pools[p] || []).map((id) => BY_ID[id]).filter(Boolean);
+  const table = (st.table || []).map((id) => BY_ID[id]).filter(Boolean);
+  return { kind, lines: [ROUND_ADVICE[kind], needFor(kind, pool, table), tableSummary(kind, table)].filter(Boolean) };
+}

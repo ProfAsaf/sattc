@@ -17,6 +17,7 @@ import { keepAwake } from './awake.js';
 import { TUTORIAL, botAction, matches } from './tutorial.js';
 import * as St from './stats.js';
 import * as Ins from './insights.js';
+import * as Fight from './fightview.js';
 
 const SAVE = 'collective.practice.v2';
 const store = {
@@ -1264,7 +1265,7 @@ function midInner() {
     return `<div class="banner fight"><span class="banner-how">${esc(fightHow(s))}</span><div class="banner-sub"><span class="pv-k">As things stand: </span>${outcome(s, fightPreview(s))}</div></div>`;
   }
   // how the last fight went (the full story is in the game log, in the menu)
-  if (G.fightNote && s.phase === 'main' && !coached) return `<div class="fight-note">${G.fightNote}</div>`;
+  if (G.fightNote && s.phase === 'main' && !coached) return `<div class="fight-note"${G.lastFight ? ' data-act="fight-replay" role="button"' : ''}>${G.fightNote}${G.lastFight ? ' <span class="fn-replay">▶ Replay</span>' : ''}</div>`;
   if (s.players[G.me].out && s.phase !== 'over') return '<div class="hint">You’re out of this game; the others play on.</div>';
   return '';
 }
@@ -1585,14 +1586,27 @@ function drawLines(root) {
 }
 
 // ── animation of a move ─────────────────────────────────────────────
+// Fights you are in come up big, step by step (js/fightview.js); the rest
+// play out on the table. 'collective.bigFights' = '0' turns it off (tests).
+const bigFights = () => { try { return localStorage.getItem('collective.bigFights') !== '0'; } catch { return true; } };
+
 async function present(events, after, quick = false) {
   const root = document.getElementById('game');
   if (!root || !G) return;
+  // every fight is kept as a story, so the note after it can play it again
+  let story = null;
+  if (events.some((e) => e.k === 'fight')) { try { story = Fight.fightStory(S(), after, events, G.me); } catch (e) { console.error(e); } }
+  if (story) G.lastFight = story;
   if (quick) { G.view = after; draw(root); drawLines(root); return; }
   G.busy = true;
   root.classList.add('busy');
   try {
-    if (events.length && root.querySelector('.g-table')) await capped(animateOld(root, events, after), 20000);
+    if (events.length && root.querySelector('.g-table')) {
+      if (story?.mine && bigFights()) {
+        await capped(animateOld(root, events.slice(0, events.findIndex((e) => e.k === 'fight')), after), 20000);
+        await Fight.playStory(story, { stage: root });
+      } else await capped(animateOld(root, events, after), 20000);
+    }
   } catch (e) { console.error(e); }
   if (events.some((e) => e.k === 'fight')) G.fightNote = fightNoteText(events);
   G.showBlk = null;
@@ -2167,7 +2181,7 @@ function helpSheet() {
       <div><b>Block</b>: when you are attacked, the attackers come to the middle. <b>Tap one of your creatures</b> and it steps in front of an attacker; tap it again to move it to the next attacker, or back home. ☠ marks what would be destroyed if no one plays a Trick, and the line in the middle says what you would lose. Then tap <b>Block</b>.</div>
       <div><b>Can’t block?</b> An exhausted creature (it attacked) can’t, and only creatures with Soar or Reach can block one with Soar. Tap it to see why.</div>
       <div><b>Team up</b>: several of your creatures can block the same attacker. They all hit it, and it splits its damage among them, destroying the costliest ones it can.</div>
-      <div><b>The fight</b> plays out one pair at a time, in the middle. <b>Tricks</b> and abilities can be used before it starts; tap <b>Fight</b> when you are done.</div>
+      <div><b>The fight</b>: <b>Tricks</b> and abilities can be used before it starts; tap <b>Fight</b> when you are done. When you are in it, it comes up big, a pair at a time, with what happened and why: tap to go on, hold to pause, Skip to close. The note under the table afterwards plays it again.</div>
       <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
       <div><b>The button at the bottom right</b> moves the game on: End turn, Attack, Block, Fight. While you could still play a card or attack, End turn asks for a second tap.</div>
@@ -2384,6 +2398,19 @@ function onAct(act, el) {
       break;
     case 'close': if (G.viewer) { closeViewer('up'); break; } G.sheet = null; redraw(); break;
     case 'recap-close': G.recap = null; redraw(); break;
+    case 'fight-replay': {
+      // the last fight again, big, in turn with whatever else is being shown
+      const story = G.lastFight, g = G;
+      if (!story) break;
+      G.chain = G.chain.then(async () => {
+        const root = document.getElementById('game');
+        if (G !== g || !root) return;
+        G.busy = true;
+        root.classList.add('busy');
+        try { await Fight.playStory(story, { stage: root }); } finally { if (G === g) { G.busy = false; root.classList.remove('busy'); redraw(); } }
+      }).catch((e) => console.error(e));
+      break;
+    }
     case 'cancel': clearSelections(); G.sheet = null; redraw(); break;
     case 'keep': dispatch({ t: 'mulligan', p: G.me, redraw: false }); break;
     case 'redraw': dispatch({ t: 'mulligan', p: G.me, redraw: true }); break;

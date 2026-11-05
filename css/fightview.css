@@ -1,0 +1,68 @@
+/* A fight, big (js/fightview.js): the creatures come up big and it goes
+   step by step, like stories on a phone, with a few words under each step.
+   Under the effects layer (#fx-layer, 75), so hits, numbers and deaths show
+   on top of it; over the table and its sheets. */
+
+.bf {
+  position: fixed; inset: 0; z-index: 66;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  background: radial-gradient(120% 70% at 50% 42%, rgba(46, 27, 15, .97), rgba(9, 7, 5, .98));
+  color: var(--ink);
+  user-select: none; -webkit-user-select: none; touch-action: none;
+  animation: fade .18s ease-out;
+}
+.bf.closing { opacity: 0; transition: opacity .15s; }
+
+/* one bar per step, filling as it goes */
+.bf-bars { display: flex; gap: 4px; }
+.bf-bars i { flex: 1; height: 3px; border-radius: 2px; background: rgba(239, 230, 210, .18); overflow: hidden; }
+.bf-bars b { display: block; height: 100%; width: 0; background: #f1dca8; }
+
+.bf-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; }
+.bf-title { font-family: 'EB Garamond', Georgia, serif; font-size: 20px; font-weight: 600; color: #f4e2b0; }
+.bf-skip {
+  flex: none; min-height: 34px; padding: 4px 14px; border-radius: 999px;
+  border: 1px solid var(--line); background: rgba(23, 18, 13, .9); color: var(--ink); font-size: 14px; cursor: pointer;
+}
+
+/* the creatures meeting: theirs on top, yours below (as on the table) */
+.bf-stage { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; overflow: hidden; }
+.bf-side { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bf-who { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.bf-row { display: flex; justify-content: center; align-items: flex-end; gap: 10px; }
+.bf-vs { font-size: 22px; line-height: 1; color: #f0b48a; }
+.bf-lost { opacity: .85; }
+.bf .tcard.bf-dead { opacity: .62; filter: grayscale(.55); transition: opacity .35s, filter .35s; }
+
+/* a player's Life, for hits that nobody blocked, and at the end */
+.bf-plate {
+  display: flex; align-items: baseline; gap: 12px; padding: 10px 18px; border-radius: 14px;
+  border: 1px solid rgba(239, 230, 210, .18); background: rgba(29, 24, 19, .85); font-size: 18px;
+}
+.bf-plate.me { border-color: rgba(214, 180, 106, .5); }
+.bf-plate > b { font-family: 'EB Garamond', Georgia, serif; font-size: 20px; }
+.bf-life { color: #e9877a; }
+.bf-life i { font-style: normal; font-weight: 700; font-size: 26px; color: #fff3d6; }
+
+/* what happened, and why */
+.bf-text { min-height: 7.5em; text-align: center; font-size: 15px; line-height: 1.45; max-width: 34em; margin: 0 auto; }
+.bf-text p { margin: 0 0 6px; }
+.bf-setup { color: #f1e3c4; }
+.bf-result { color: #ffe2cc; opacity: 0; transition: opacity .3s; }
+.bf-result.on { opacity: 1; }
+.bf-rule, .bf-also { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
+.bf-hint { text-align: center; font-size: 12px; color: var(--muted); }
+.bf.paused .bf-hint::after { content: ' · paused'; color: #f1dca8; }
+
+/* short phones: smaller words, so the cards keep their room */
+@media (max-height: 600px) {
+  .bf { gap: 5px; }
+  .bf-title { font-size: 17px; }
+  .bf-text { font-size: 13.5px; min-height: 6.5em; }
+  .bf-hint { display: none; }
+}
+
+/* the note after a fight, under the table: tap it to see the fight again */
+.fight-note[data-act] { cursor: pointer; }
+.fn-replay { white-space: nowrap; font-size: 12px; color: #f1dca8; margin-left: 4px; }

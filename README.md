@@ -25,6 +25,8 @@ no build step.
 | `js/stats.js` | Insights, the numbers: a finished game replayed and counted, the bot's review of your decisions, a draft's picks graded, tonight's results in a room, the summaries for the Insights page, and the games and drafts saved on the phone |
 | `js/insights.js` | Insights, the words and pictures: the Insights page (`#/insights`), a game's review, a draft's review, the end screen's lines and the lobby's board for tonight |
 | `css/insights.css` | Insights' look |
+| `js/fightview.js` | A fight you are in, big and step by step: `fightStory` turns a move's events into steps with words on what happened and why, `playStory` plays them over the table |
+| `css/fightview.css` | The big fight's look |
 | `tools/test-stats.mjs` | Insights checks over bot games and drafts, and how the grades come out for careful, noisy and random players (`node tools/test-stats.mjs`) |
 | `css/draft.css` | Draft night's look |
 | `tools/test-draft.mjs` | Draft checks: seeds, snake order, the recipe, replay, bots, Pick for (`node tools/test-draft.mjs`) |
@@ -319,6 +321,38 @@ itself on the table.
   players, both opponents fold to their bars, the hand sinks lower, the fight's
   cards are a little smaller and its banner compact, so the attackers, your
   blockers and the banner all fit an iPhone SE without covering each other.
+
+## Fights, big (2026-11-04)
+
+Asaf's idea: when creatures fight, the cards come up big and you move
+through what happens step by step, with words saying what happened and why.
+
+- **When:** every fight you are in (attacking or blocking), in place of the
+  small fight on the table. A fight between two others plays on the table as
+  before; tapping the note it leaves under the table ("⚔ … ▶ Replay") plays it
+  big too, as it does for your own.
+- **The steps** (`fightStory` in `js/fightview.js`, from the move's events and
+  the table before and after it): one per attacker that was blocked (its
+  blockers below it, yours always at the bottom), one for the attackers nobody
+  blocked (charging the player's Life), and one at the end (everyone's Life,
+  what each side lost, and anything else that happened, in the game's words).
+- **The words** say what happened and why: who blocks whom with their Power
+  and Vitality; who strikes first (Swift) and "Then …"; how an attacker splits
+  its damage among creatures that team up (the costliest first); Overrun
+  carrying the rest through; and for each creature, destroyed or surviving
+  with its damage against its Vitality (counting a Guard's two attackers and a
+  burst like Smoldering Golem's; Venom destroys with any damage). The first
+  time, a line says the rule: a creature is destroyed once its damage reaches
+  its Vitality. Repeats are counted ("your two Spirits", "both your
+  Spirits"). Numbers that couldn't tell the whole story are left out.
+- **Moving through it**, the way phone stories work: bars at the top, one per
+  step. Tap to go on, tap the left edge to go back, hold to pause, Skip to
+  close. Each step also moves on by itself once there has been time to read
+  it (longer for more words), so an online game never waits on a tap. The hits
+  play on the big cards (clashes, lunges, the numbers, Vitality going down);
+  the destroyed crumble and stay dimmed under a ☠.
+- `collective.bigFights` = `0` in local storage turns it off (the older phone
+  tests do this; `tools`-side tests of the big view leave it on).
 
 ## Your hand, and gestures
 

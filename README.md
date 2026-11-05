@@ -318,6 +318,26 @@ players do waits for your tap (`tapToGoOn` in game-ui.js):
 - Online, each phone goes at its own pace: moves that arrive meanwhile queue
   up, and a phone that was put away shows them when it's back.
 
+## Three players, two sides at a time (2026-11-05)
+
+Asaf found the duel table "much better than the mess that is 3 player games",
+and asked for the same screen "just focusing on whichever two players are
+interacting", with a way to open and fold the others. So with three players
+the table is laid out, and sized, as a duel (`openSides` in game-ui.js):
+
+- On your turn: you and one opponent; the other folds to a slim bar at the
+  top ("4 creatures ▾"). Tap it, or swipe sideways across the top, to swap.
+  Picking whom to attack brings that player up.
+- Whoever moves comes up, so their card lands on an open side. An attack on
+  you opens you and the attacker; two others fighting open the two of them
+  (attacker on top) and fold your side to its bar.
+- In a fight the opponents' other creatures step out of view (they can't
+  join it); yours stay for their ⚡ abilities.
+- A move that touches a folded side opens it first, all three for one that
+  touches everyone, then the table folds back. A tap on a folded bar
+  mid-fight opens everyone until the fight is over. Choosing a target opens
+  every side with something to pick.
+
 ## Fights, step by step (2026-11-04)
 
 Asaf found blocking "super hard to follow" and the swipe that confirmed a move

@@ -321,8 +321,19 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 #game.spotlight .tc-hand { opacity: .38; filter: saturate(.6); }
 #game.spotlight .gb-col.focus { background: rgba(255, 140, 80, .12); box-shadow: 0 0 0 1px rgba(255, 160, 110, .35); }
 
-/* Three players: during a fight, the player who is not in it folds to just their bar */
-#game.g-ffa.in-combat .g-side.opp:not(.in-fight) > .tc-row { display: none; }
+/* ── three players: two sides at a time, laid out as a duel (game-ui.js openSides);
+   the side not in play folds to its bar, which says how many creatures it has: a tap opens it */
+.g-side.folded { padding-top: 0; padding-bottom: 0; }
+.g-side.folded .pbar { padding-top: 2px; padding-bottom: 2px; background: rgba(42, 34, 26, .5); border-color: rgba(214, 180, 106, .16); }
+.g-side.folded .pb-life { font-size: 18px; }
+.g-side.folded .tc-pile { display: none; } /* (open the side for its discard pile) */
+.pb-fold { flex: none; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.pb-fold::after { content: ' ▾'; color: var(--gold); }
+/* two others in play: the one under the middle has its row first and its bar under it, as yours */
+.g-side.low { display: flex; flex-direction: column-reverse; }
+/* in a fight the opponents' other creatures step out of view (they can't join it) and the
+   fight has the room; yours stay, for their ⚡ abilities (`quiet`: off for a move that touches them) */
+#game.g-three.quiet .g-side.opp .tc-row { display: none; }
 /* an unblocked attacker gets a small "→ name" label instead of a card-sized slot */
 .gb-slot.label { min-height: 0; }
 .gb-slot.label .gb-empty.gb-hit { width: auto; height: auto; border: 0; padding: 0 2px; background: none; }
@@ -360,17 +371,16 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 /* short phones (an iPhone SE, or Safari with its toolbars) in a three-player fight
    (after the rules above, so its smaller hand wins) */
 @media (max-height: 720px) {
-  #game.g-ffa.fighting { --hand-h: 76px; --hand-sink: 64px; }
-  #game.g-ffa { --w-battle: 36px; }
-  #game.g-ffa .gb-label { display: none; }
-  #game.g-ffa .banner-how { display: block; }
-  #game.g-ffa .banner.only-small { display: flex; }
-  /* a fight needs the room: both opponents fold to their bars (their other creatures can't join it), and the banner is compact */
-  #game.g-ffa.fighting .g-side.opp .tc-row { display: none; }
-  #game.g-ffa .g-mid .banner { padding: 4px 9px; gap: 0 8px; font-size: 12.5px; line-height: 1.3; }
-  #game.g-ffa .g-mid .banner-sub { font-size: 12px; line-height: 1.3; }
-  #game.g-ffa .pv-k { display: none; } /* "If no one plays a Trick:": the ☠ and the numbers say it */
-  #game.g-ffa.fighting .g-side .tc-row { padding: 2px 0; min-height: 0; --w-board-max: 40px; --w-board: 40px; }
+  /* three players (a folded bar more): a fight's cards are smaller, and its banner compact */
+  #game.g-three.fighting { --hand-h: 76px; --hand-sink: 64px; }
+  #game.g-three { --w-battle: 36px; }
+  #game.g-three .gb-label { display: none; }
+  #game.g-three .banner-how { display: block; }
+  #game.g-three .banner.only-small { display: flex; }
+  #game.g-three .g-mid .banner { padding: 4px 9px; gap: 0 8px; font-size: 12.5px; line-height: 1.3; }
+  #game.g-three .g-mid .banner-sub { font-size: 12px; line-height: 1.3; }
+  #game.g-three .pv-k { display: none; } /* "If no one plays a Trick:": the ☠ and the numbers say it */
+  #game.g-three.fighting .g-side .tc-row { padding: 2px 0; min-height: 0; --w-board-max: 40px; --w-board: 40px; }
   .coach { font-size: 13.5px; line-height: 1.34; padding: 8px 11px 7px; }
   .g-table > .coach { padding-top: 12px; }
   .g-table > .coach::before { left: 11px; right: 11px; top: 5px; }
@@ -382,6 +392,9 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
   .g-ffa { --w-board-max: 40px; --w-board: 40px; --w-hand: 74px; --w-hand-min: 66px; --hand-h: 96px; }
   .g-ffa .g-side .tc-row { padding: 2px 0; }
   .g-mid { min-height: 6px; }
+  /* three players laid out as a duel have a folded bar more to fit */
+  .g-three.g-duel { --w-board-max: 50px; --w-board: 48px; --w-hand: 84px; --hand-h: 112px; }
+  .g-three.g-duel .g-side .tc-row { padding: 3px 0; }
 }
 
 .tc-hand { transition: height .3s ease, opacity .25s, filter .25s; }

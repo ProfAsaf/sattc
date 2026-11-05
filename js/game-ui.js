@@ -446,6 +446,8 @@ function mount() {
     });
     // Your hand, big: swipe sideways to move along it.
     root.addEventListener('pointerdown', viewerSwipe);
+    // Three players: swipe sideways across the opponent at the top for the other one.
+    root.addEventListener('pointerdown', focusSwipe);
     // Drag from your creature to aim: at an opponent to attack, at an attacker to block it.
     FX.dragArrow(root, {
       selector: '.g-side.me .tcard',
@@ -1204,8 +1206,11 @@ function relicHTML(s, r, hl) {
     <span class="relic-art">${artTag(r.cid) || ''}</span>${note}</button>`;
 }
 
-function pbarHTML(s, P, hl) {
+function pbarHTML(s, P, hl, folded = false) {
   const isT = hl.targets.some((t) => t.p === P.i);
+  // a folded side (three players) says how many creatures it has; a tap opens it
+  const n = P.board.length;
+  const fold = folded && !P.out ? `<span class="pb-fold">${n ? `${n} creature${n > 1 ? 's' : ''}` : 'no creatures'}</span>` : '';
   const C = s.combat;
   const fighting = C && (C.d === P.i ? ' defending' : C.a === P.i ? ' attacking' : '');
   const crown = s.crown === P.i ? `<button class="pb-crown" data-act="crown-info" aria-label="Holds the Crown">${ICON.crown}</button>` : '';
@@ -1223,6 +1228,7 @@ function pbarHTML(s, P, hl) {
     <div class="pb-life${P.life <= 5 ? ' low' : ''}">${ICON.heart}${P.out ? 'OUT' : P.life}</div>
     ${energy}
     ${meta ? `<div class="pb-meta">${meta}</div>` : ''}
+    ${fold}
     ${FX.pileHTML(P.discard.slice(-3).map((u) => ({ cid: s.cards[u].cid })), { p: P.i, count: P.discard.length, act: 'discards', w: s.players.length > 2 ? 22 : 26 })}
     ${P.relics.length ? `<div class="pb-relics">${P.relics.map((u) => relicHTML(s, s.cards[u], hl)).join('')}</div>` : ''}
   </div>`;
@@ -1549,6 +1555,116 @@ function goTap(el) {
   onAct(act, el); // 'attack' reads data-p
 }
 
+// ── three players: two sides at a time ────────────────────────────
+// The table is laid out as in a duel: the two sides in play (whoever is
+// fighting; otherwise you and the opponent in focus), and the third folds to
+// its bar. Whoever moves comes up, a move that touches a folded side opens it
+// first (all three for one that touches everyone), and a tap on a folded bar
+// (or a sideways swipe across the top) opens it.
+const focusOf = (s) => {
+  const opp = s.players.filter((P) => P.i !== G.me);
+  const live = opp.filter((P) => !P.out);
+  return (live.find((P) => P.i === G.focus) || live[0] || opp[0]).i;
+};
+
+function openSides(s) {
+  const all = new Set(s.players.map((P) => P.i));
+  if (all.size < 3 || G.showAll) return all;
+  if (G.reveal) return G.reveal.size >= 3 ? all : new Set(G.reveal);
+  const C = s.combat || (G.atk && G.atk.target != null && myMain() ? { a: G.me, d: G.atk.target } : null);
+  if (C) return new Set([C.a, C.d]);
+  const open = new Set([G.me, focusOf(s)]);
+  // choosing a target: every side with something to pick opens
+  const st = G.flow?.steps[G.flow.i];
+  for (const o of st?.options || []) if (o.uid != null && s.cards[o.uid]?.zone === 'board') open.add(s.cards[o.uid].ctrl);
+  return open.size >= 3 ? all : open;
+}
+
+// Folded bars go to the top; with you folded (two others in play) the one
+// acting is on top, then the middle, then the other, as in a duel.
+function sideOrder(s, open) {
+  if (open.size === s.players.length) return null;
+  const ord = {};
+  for (const P of s.players) if (!open.has(P.i)) ord[P.i] = 0;
+  if (open.has(G.me)) {
+    for (const p of open) if (p !== G.me) ord[p] = 1;
+    ord.mid = 2; ord[G.me] = 3;
+  } else {
+    const C = s.combat;
+    const top = C && open.has(C.a) ? C.a : G.revealTop != null && open.has(G.revealTop) ? G.revealTop : [...open][0];
+    for (const p of open) ord[p] = p === top ? 1 : 3;
+    ord.mid = 2; ord[G.me] = 4;
+  }
+  return ord;
+}
+
+// Whose rows a move touches (where a card lands, whose creature is hit), and which creatures.
+function involved(events, s0, after) {
+  const who = new Set(), uids = new Set();
+  const ctrl = (u) => (s0.cards[u]?.zone === 'board' ? s0.cards[u].ctrl : after.cards[u]?.ctrl);
+  const touch = (u) => { uids.add(u); who.add(ctrl(u)); };
+  for (const e of events) {
+    if (e.k === 'play' && e.cid && BY_ID[e.cid]?.type === 'creature') who.add(e.p);
+    if (e.k === 'play' && e.target?.uid != null) touch(e.target.uid);
+    if (e.k === 'die' && e.uid != null) { uids.add(e.uid); who.add(e.ctrl); }
+    if (['strike', 'dmg', 'buff', 'clash', 'bounce', 'transform', 'freeze', 'steal', 'chime', 'use', 'attack', 'block'].includes(e.k) && e.uid != null) touch(e.uid);
+    if ((e.k === 'clash' || e.k === 'strike') && typeof e.to === 'number') touch(e.to);
+    if (e.k === 'breath') who.add(e.p);
+  }
+  who.delete(undefined);
+  return { who, uids };
+}
+
+// Before a move plays out on the table: whoever made it comes up, and the
+// sides it touches open. Returns true when the open sides changed.
+function revealFor(events, a, s0, after) {
+  if (s0.players.length < 3) return false;
+  const was = [...openSides(s0)].sort().join();
+  if (a && a.p !== G.me && ['play', 'use', 'attack', 'phoenix'].includes(a.t)) G.focus = a.p;
+  const open = openSides(s0);
+  const { who: need, uids } = involved(events, s0, after);
+  if (![...need].every((p) => open.has(p))) {
+    const want = new Set(need);
+    if (a?.p != null) want.add(a.p);
+    if (want.size < 2) want.add(G.me);
+    G.reveal = want;
+    G.revealTop = a?.p;
+  }
+  // in a fight the opponents' other creatures are out of view: one the move touches brings them back
+  const C = s0.combat;
+  if (C && !G.reveal) {
+    const inFight = new Set([...C.att, ...Object.values(blockersOf(s0)).flat()]);
+    if ([...uids].some((u) => !inFight.has(u) && s0.cards[u]?.zone === 'board' && s0.cards[u].ctrl !== G.me)) { G.reveal = new Set(open); G.revealTop = C.a; return true; }
+  }
+  return [...openSides(s0)].sort().join() !== was;
+}
+
+// A tap on a folded bar opens that side (in a fight: everyone, until it's over).
+function unfold(p) {
+  const s = S();
+  if (s.combat || (G.atk && G.atk.target != null)) G.showAll = true;
+  else if (p !== G.me) G.focus = p;
+  redraw();
+}
+
+// A sideways swipe across the opponent at the top brings up the other one.
+function focusSwipe(e) {
+  if (!G || G.sheet || S().players.length < 3 || !e.target.closest?.('.g-side.opp')) return;
+  const x0 = e.clientX, y0 = e.clientY;
+  const up = (ev) => {
+    removeEventListener('pointerup', up, true);
+    const dx = ev.clientX - x0, dy = ev.clientY - y0;
+    if (!G || Math.abs(dx) < 60 || Math.abs(dy) > 45 || S().combat) return;
+    const opp = S().players.filter((P) => P.i !== G.me && !P.out);
+    if (opp.length < 2) return;
+    const cur = focusOf(S());
+    G.focus = opp.find((P) => P.i !== cur).i;
+    G.tapAt = performance.now(); // the swipe isn't also a tap on a card
+    redraw();
+  };
+  addEventListener('pointerup', up, true);
+}
+
 function tableHTML() {
   const s = S(), me = s.players[G.me];
   const hl = highlights();
@@ -1556,7 +1672,12 @@ function tableHTML() {
   for (let k = 1; k < s.players.length; k++) others.push(s.players[(G.me + k) % s.players.length]);
   const st = tutStep();
   const bv = battleView(s);
-  const row = (P) => `<div class="tc-row">${P.board.filter((u) => !bv?.inZone.has(u)).map((u) => creatureHTML(s, s.cards[u], hl)).join('')}</div>`;
+  const open = openSides(s), ord = sideOrder(s, open);
+  const folded = (P) => !open.has(P.i);
+  const order = (k) => (ord ? ` style="order: ${ord[k] ?? 0}"` : '');
+  // (the opponent under the middle, when you are folded, has its row first and its bar under it, as yours)
+  const low = (P) => (ord && ord[P.i] === 3 && !open.has(G.me) ? ' low' : '');
+  const row = (P) => (folded(P) ? '' : `<div class="tc-row">${P.board.filter((u) => !bv?.inZone.has(u)).map((u) => creatureHTML(s, s.cards[u], hl)).join('')}</div>`);
   return `
     <div class="g-top">
       <button class="g-icon" data-act="menu" aria-label="Menu (how the table works, game log, take back a move, leave)">☰</button>
@@ -1564,9 +1685,9 @@ function tableHTML() {
       <button class="g-icon g-bulb${myMove() && !st && !G.flow ? '' : ' off'}${G.suggest ? ' on' : ''}" data-act="suggest" aria-label="Suggest a move">💡</button>
     </div>
     <div class="g-table">
-      ${others.map((P) => `<section class="g-side opp${s.active === P.i ? ' active' : ''}${P.out ? ' out' : ''}${s.combat && (s.combat.a === P.i || s.combat.d === P.i) ? ' in-fight' : ''}" data-side="${P.i}">${pbarHTML(s, P, hl)}${row(P)}</section>`).join('')}
-      <div class="g-mid">${bv ? battleHTML(s, bv, hl) : ''}<div class="g-say" data-key="say">${midHTML()}</div></div>
-      <section class="g-side me${s.active === G.me ? ' active' : ''}${me.out ? ' out' : ''}" data-side="${G.me}">${row(me)}${pbarHTML(s, me, hl)}</section>
+      ${others.map((P) => `<section class="g-side opp${s.active === P.i ? ' active' : ''}${P.out ? ' out' : ''}${s.combat && (s.combat.a === P.i || s.combat.d === P.i) ? ' in-fight' : ''}${folded(P) ? ' folded' : ''}${low(P)}" data-side="${P.i}"${order(P.i)}>${pbarHTML(s, P, hl, folded(P))}${row(P)}</section>`).join('')}
+      <div class="g-mid"${order('mid')}>${bv ? battleHTML(s, bv, hl) : ''}<div class="g-say" data-key="say">${midHTML()}</div></div>
+      <section class="g-side me${s.active === G.me ? ' active' : ''}${me.out ? ' out' : ''}${folded(me) ? ' folded' : ''}" data-side="${G.me}"${order(G.me)}>${row(me)}${pbarHTML(s, me, hl, folded(me))}</section>
       ${st ? coachHTML(st) : ''}${recapHTML()}
     </div>
     <div class="g-actions">${actionsHTML()}</div>
@@ -1678,7 +1799,12 @@ function draw(root) {
     morphChildren(root, mulliganHTML() + (G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div>${GRAB}</div>` : '') + (G.stale ? STALE_GAME : ''));
     return;
   }
-  const cls = (s.players.length === 2 ? 'g-duel' : 'g-ffa') + (G.busy ? ' busy' : '') + (s.combat || G.atk ? ' fighting' : '') + (s.combat ? ' in-combat' : '') + (tutStep() ? ' lesson' : '');
+  // three players with a side folded are laid out (and sized) as a duel
+  if (G.showAll && !s.combat && !(G.atk && G.atk.target != null)) G.showAll = false; // that fight is over
+  const duel = s.players.length === 2 || openSides(s).size === 2;
+  // (`quiet`: in a fight the opponents' other creatures step out of view, unless a move touches one)
+  const quiet = s.players.length > 2 && s.combat && !G.reveal && !G.showAll;
+  const cls = (duel ? 'g-duel' : 'g-ffa') + (s.players.length > 2 ? ' g-three' : '') + (G.busy ? ' busy' : '') + (s.combat || G.atk ? ' fighting' : '') + (s.combat ? ' in-combat' : '') + (quiet ? ' quiet' : '') + (tutStep() ? ' lesson' : '');
   if (root.className !== cls) root.className = cls; // an unchanged class costs nothing to restyle
   morphChildren(root, tableHTML());
   FX.layoutHand(root.querySelector('.tc-hand'));
@@ -1755,6 +1881,13 @@ async function present(events, after, quick = false, a = null) {
   const line = tap ? moveLine(S(), a, events) : '';
   G.busy = true;
   root.classList.add('busy');
+  // three players: whoever moved comes up, and the sides the move touches open first
+  if (revealFor(events, a, S(), after)) {
+    const was = FX.capture(root);
+    draw(root);
+    drawLines(root);
+    await capped(FX.flip(root, was, { duration: 260, enter: 'fade' }), 900);
+  }
   try {
     if (events.length && root.querySelector('.g-table')) {
       // a fight comes up big: yours always, two others' too when moves wait for your tap
@@ -1782,6 +1915,8 @@ async function present(events, after, quick = false, a = null) {
   if (!G) return;
   G.busy = false;
   root.classList.remove('busy');
+  // the sides opened for this move fold again
+  if (G.reveal) { G.reveal = null; G.revealTop = null; G.dirty = true; }
   if (G.skipping && (myMove() || S().phase === 'over')) G.skipping = false;
   if (G.dirty) redraw();
 }
@@ -2346,6 +2481,7 @@ function helpSheet() {
   return `<h3>How the table works</h3>
     <div class="help-list">
       <div><b>Top: your opponents.</b> Name, Life ❤, Energy ⚡ and cards in hand. <b>Tap anyone’s bar</b> for the rest: their deck, discard pile and Relics. ⊠ is a face-down Trap.</div>
+      ${S().players.length > 2 ? '<div><b>Three players</b>: the table shows two sides at a time, as in a duel: whoever is in play. The third folds to its bar (“3 creatures ▾”): <b>tap it</b>, or swipe sideways across the top, to open it.</div>' : ''}
       <div><b>Creatures</b>: theirs above, yours below. Left number = <b>Power</b> (damage it deals), right = <b>Vitality</b> (damage it can take). Small badges are keywords; tap any card to read it.</div>
       <div><b>Your hand</b>: the card in the middle pokes up with its rules showing. Slide the hand sideways to bring another card to the middle (flick it to go further). <b>Tap a card</b> to see your whole hand big, and swipe through it.</div>
       <div><b>Play a card</b>: drag it from your hand up onto the table, or tap it and tap Play. Glowing cards can be played now.</div>
@@ -2520,7 +2656,7 @@ function onClick(e) {
   }
 
   if (myMain() && G.atk && target) {
-    if (target.p != null && target.p !== G.me) { if (S().players.length === 2) sendAttack(target.p); else { G.atk.target = target.p; redraw(); } return; }
+    if (target.p != null && target.p !== G.me) { if (S().players.length === 2) sendAttack(target.p); else { G.atk.target = G.focus = target.p; redraw(); } return; }
     const c = target.uid != null ? s.cards[target.uid] : null;
     const hunter = hunterWithoutPrey();
     if (c && c.ctrl !== G.me && hunter && preyFor(hunter, null).includes(c.uid)) {
@@ -2538,7 +2674,8 @@ function onClick(e) {
     redraw();
     return;
   }
-  // a player's bar: their details, in words
+  // a folded side (three players) opens; any other player's bar: their details, in words
+  if (pb && pb.closest('.g-side.folded')) { unfold(Number(pb.dataset.p)); return; }
   if (pb) { G.sheet = playerSheet(Number(pb.dataset.p)); redraw(); }
 }
 

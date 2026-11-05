@@ -369,7 +369,7 @@ function mount() {
     });
     // Your hand, big: swipe sideways to move along it.
     root.addEventListener('pointerdown', viewerSwipe);
-    // Swipe right across the table to end your turn (or attack, block, fight).
+    // Swipe across the table, either way, to end your turn (or attack, block, fight).
     root.addEventListener('pointerdown', goSwipe);
     // Drag from your creature to aim: at an opponent to attack, at an attacker to block it.
     FX.dragArrow(root, {
@@ -552,7 +552,7 @@ function describeMove(s, a) {
       for (const [b, x] of a.blocks) by.set(x, [...(by.get(x) || []), b]);
       return `${[...by].map(([x, bs]) => `${listNames(bs.map(card))} ${bs.length > 1 ? 'block' : 'blocks'} ${card(x)}`).join('; ')}.`;
     }
-    case 'pass': return 'Swipe right to <b>Fight</b>: no Trick or ability is worth it here.';
+    case 'pass': return 'Swipe to <b>Fight</b>: no Trick or ability is worth it here.';
     case 'use': {
       const c = s.cards[a.uid];
       if (c.zone === 'relic') return `Use the ${card(a.uid)}: sacrifice ${card(a.sac)} to draw a card.`;
@@ -586,7 +586,7 @@ function suggestHTML() {
   if (!sg || sg.state !== G.state || !myMove()) return '';
   if (sg.thinking) return '<div class="suggest"><span class="suggest-t"><span class="suggest-h">💡 Thinking…</span></span></div>';
   if (sg.setUp) {
-    return `<div class="suggest" data-act="suggest-close"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text} It’s set up: swipe right to confirm (<b>${esc(sg.setUp)}</b>), or change it.</span></div>`;
+    return `<div class="suggest" data-act="suggest-close"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text} It’s set up: swipe to confirm (<b>${esc(sg.setUp)}</b>), or change it.</span></div>`;
   }
   return `<div class="suggest" data-act="suggest-close"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text}</span>
     <div class="suggest-row"><button class="btn small primary" data-act="suggest-do">Do it</button></div></div>`;
@@ -1102,7 +1102,7 @@ function statusHTML() {
 }
 
 function midHTML() {
-  return suggestHTML() + midInner() + goHTML();
+  return suggestHTML() + midInner();
 }
 
 function midInner() {
@@ -1190,17 +1190,19 @@ function anythingToDo() {
   return phoenixReady(s, G.me).length > 0 && P.energy >= 2;
 }
 
-// The few buttons under the table: Cancel, a choice's Skip or Done, and the
-// lesson's Next. The move that carries the game on (End turn, Attack, Block,
-// Fight) is the quiet line in the middle that you swipe: goHTML.
+// The strip under the table: Cancel, a choice's Skip or Done, the lesson's
+// Next, and between them the quiet line you swipe to carry the game on (End
+// turn, Attack, Block, Fight): goHTML. Nothing on the table can cover it or
+// push it out of view there, and it never moves.
 function actionsHTML() {
   const s = S();
   const btn = (cls, act, label, extra = '') => `<button class="btn ${cls}" data-act="${act}" ${extra}>${label}</button>`;
   const left = [], right = [];
+  const row = () => `<span class="ga-side">${left.join('')}</span>${goHTML()}<span class="ga-side end">${right.join('')}</span>`;
   // In the lesson, "Next" is a button here: the coach box can be taller than the
   // middle of a short phone, and the button must never be the part that's cut off.
   const lesson = tutStep();
-  if (lesson?.next) return `<span class="grow"></span>${btn('primary coach-next-btn', 'coach-next', lesson.final ? 'Let’s play!' : 'Next')}`;
+  if (lesson?.next) { right.push(btn('primary coach-next-btn', 'coach-next', lesson.final ? 'Let’s play!' : 'Next')); return row(); }
   const st = G.flow?.steps[G.flow.i];
   if (st && ['sac', 'fighter', 'target', 'targets'].includes(st.kind)) {
     left.push(btn('small ghost', 'cancel', 'Cancel'));
@@ -1216,12 +1218,12 @@ function actionsHTML() {
     if (phoenix.length && myMain()) left.push(btn('small', 'phoenix', 'Return Phoenix (2)', `data-uid="${phoenix[0]}"`));
     if (s.players[G.me].out && s.phase !== 'over') right.push(btn('primary', 'leave', 'Leave'));
   }
-  return `${left.join('')}<span class="grow"></span>${right.join('')}`;
+  return row();
 }
 
 // ── moving the game on ──────────────────────────────────────────────
-// No big button: the move that carries the game on is a quiet line in the
-// middle of the table ("End turn ›››"), and you swipe right across the table
+// No big button: the move that carries the game on is a quiet line under
+// the table ("‹‹‹ End turn ›››"), and you swipe across the table, either way,
 // to make it. Choices (whom to attack with three players, a target) are taps.
 function goAction() {
   const s = S();
@@ -1242,8 +1244,9 @@ function goHTML() {
   const go = goAction();
   if (!go) return '';
   // a fresh element after every swipe, so the last one can fly off
-  return `<div class="g-go${go.ready ? ' ready' : ''}" data-key="go-${G.goN || 0}" data-go="${go.act}"${go.p != null ? ` data-p="${go.p}"` : ''} role="button" aria-label="${esc(go.label)} (swipe right)">`
-    + `<span class="go-t">${esc(go.label)}</span><span class="go-arrow" aria-hidden="true"><i></i><i></i><i></i></span></div>`;
+  const arrows = (side) => `<span class="go-arrow ${side}" aria-hidden="true"><i></i><i></i><i></i></span>`;
+  return `<div class="g-go${go.ready ? ' ready' : ''}" data-key="go-${G.goN || 0}" data-go="${go.act}"${go.p != null ? ` data-p="${go.p}"` : ''} role="button" aria-label="${esc(go.label)} (swipe left or right)">`
+    + `${arrows('l')}<span class="go-t">${esc(go.label)}</span>${arrows('r')}</div>`;
 }
 
 function doGo(el) {
@@ -1251,12 +1254,12 @@ function doGo(el) {
   onAct(el.dataset.go, el); // 'attack' reads data-p
 }
 
-// A tap only shows which way to swipe (a click from a keyboard or a screen reader does it).
+// A tap only shows that it's a swipe (a click from a keyboard or a screen reader does it).
 function nudgeGo(el) {
   el.classList.remove('nudge');
   void el.offsetWidth;
   el.classList.add('nudge');
-  toast('Swipe right →', 1100);
+  toast('Swipe it left or right', 1100);
 }
 
 function swallowClick() {
@@ -1265,15 +1268,15 @@ function swallowClick() {
   setTimeout(() => removeEventListener('click', kill, { capture: true }), 350);
 }
 
-// Swipe right anywhere on the table (not from your hand, a button or one of
-// your creatures, which you drag to aim): the line follows the finger and
-// lights up past the mark. Let go there, or flick, to do it; short of it, it
-// slides back.
+// Swipe left or right anywhere on the table, or on the line itself (not from
+// your hand, a button or one of your creatures, which you drag to aim): the
+// line follows the finger and lights up past the mark. Let go there, or
+// flick, to do it; short of it, it slides back.
 function goSwipe(e) {
   if (!G || G.busy || G.sheet || FX.isDragging() || (e.pointerType === 'mouse' && e.button !== 0)) return;
   const t = e.target;
-  if (!t.closest?.('.g-table') || t.closest('button, [data-act], .relic, .g-side.me .tcard, .recap-pop')) return;
-  if (e.clientX < 24) return; // the screen's left edge belongs to the browser's back swipe
+  if (!t.closest?.('.g-table, .g-go') || t.closest('button, [data-act], .relic, .g-side.me .tcard, .recap-pop')) return;
+  if (e.clientX < 24 || e.clientX > innerWidth - 24) return; // the screen's edges belong to the browser's back and forward swipes
   const el = document.querySelector('#game .g-go');
   if (!el) return;
   const x0 = e.clientX, y0 = e.clientY;
@@ -1281,9 +1284,9 @@ function goSwipe(e) {
   const vel = FX.velocity();
   let live = false, dx = 0;
   const set = (x) => {
-    const p = Math.min(1, x / mark);
+    const d = Math.abs(x), p = Math.min(1, d / mark);
     // the line moves a little slower than the finger, so it never leaves the screen
-    el.style.setProperty('--go-x', `${(0.6 * (x <= mark ? x : mark + FX.rubber((x - mark) / 120) * 120)).toFixed(1)}px`);
+    el.style.setProperty('--go-x', `${(Math.sign(x) * 0.6 * (d <= mark ? d : mark + FX.rubber((d - mark) / 120) * 120)).toFixed(1)}px`);
     el.style.setProperty('--go-p', p.toFixed(3));
     el.classList.toggle('armed', p >= 1);
   };
@@ -1298,12 +1301,12 @@ function goSwipe(e) {
     const dy = ev.clientY - y0;
     if (!live) {
       if (Math.hypot(dx, dy) < 10) return;
-      if (dx <= 0 || Math.abs(dy) > Math.abs(dx) * 0.8) { stop(); return; } // not a swipe right: leave it be
+      if (Math.abs(dy) > Math.abs(dx) * 0.8) { stop(); return; } // not a sideways swipe: leave it be
       live = true;
       el.classList.add('dragging');
     }
     vel.add(ev.clientX);
-    set(Math.max(0, dx));
+    set(dx);
   };
   const up = (ev) => {
     if (ev.pointerId !== e.pointerId) return;
@@ -1311,8 +1314,10 @@ function goSwipe(e) {
     if (!live) return;
     swallowClick();
     el.classList.remove('dragging');
-    const flick = vel.get() > 0.7 && dx > mark * 0.35;
-    if (ev.type === 'pointercancel' || !(dx >= mark || flick) || !G || G.busy) { set(0); return; } // short of the mark: it slides back
+    const v = vel.get();
+    const flick = Math.abs(v) > 0.7 && Math.sign(v) === Math.sign(dx) && Math.abs(dx) > mark * 0.35;
+    if (ev.type === 'pointercancel' || !(Math.abs(dx) >= mark || flick) || !G || G.busy) { set(0); return; } // short of the mark: it slides back
+    el.style.setProperty('--go-dir', dx < 0 ? -1 : 1); // it flies off the way it was swiped
     el.classList.add('gone');
     G.goN = (G.goN || 0) + 1;
     setTimeout(() => doGo(el), 120);
@@ -2083,17 +2088,17 @@ function helpSheet() {
       <div><b>Creatures</b>: theirs above, yours below. Left number = <b>Power</b> (damage it deals), right = <b>Vitality</b> (damage it can take). Small badges are keywords; tap any card to read it.</div>
       <div><b>Your hand</b>: the card in the middle pokes up with its rules showing. Slide the hand sideways to bring another card to the middle (flick it to go further). <b>Tap a card</b> to see your whole hand big, and swipe through it.</div>
       <div><b>Play a card</b>: drag it from your hand up onto the table, or tap it and tap Play. Glowing cards can be played now.</div>
-      <div><b>Attack</b> (once a turn): tap your glowing creatures and they step into the middle of the table, then <b>swipe right</b> across the table (with three players, first tap whose name to attack). Attackers are exhausted afterwards: they can’t block until your next turn.</div>
-      <div><b>Block</b>: when you are attacked, the attackers come to the middle. Tap one of your creatures and it steps in front of an attacker (if it could stop several, tap the one you want). Then <b>swipe right</b>. The line in the middle tells you what will happen.</div>
+      <div><b>Attack</b> (once a turn): tap your glowing creatures and they step into the middle of the table, then <b>swipe</b> across the table (with three players, first tap whose name to attack). Attackers are exhausted afterwards: they can’t block until your next turn.</div>
+      <div><b>Block</b>: when you are attacked, the attackers come to the middle. Tap one of your creatures and it steps in front of an attacker (if it could stop several, tap the one you want). Then <b>swipe</b> across. The line in the middle tells you what will happen.</div>
       <div><b>Team up</b>: several of your creatures can block the same attacker. They all hit it, and it splits its damage among them, destroying the costliest ones it can.</div>
-      <div><b>The fight</b> plays out one pair at a time, in the middle. <b>Tricks</b> and abilities can be used before it starts; <b>swipe right</b> to Fight when you are done.</div>
+      <div><b>The fight</b> plays out one pair at a time, in the middle. <b>Tricks</b> and abilities can be used before it starts; <b>swipe</b> to Fight when you are done.</div>
       <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
-      <div><b>Swipe right</b> across the table to move on: the faded line in the middle says what it does (End turn, Attack, Block, Fight).</div>
+      <div><b>Swipe</b> across the table, left or right, to move on: the faded line just above your hand says what it does (End turn, Attack, Block, Fight).</div>
       <div><b>💡</b> (top right) asks the bot what it would do in your place: it spells out the move and rings the cards. Tap <b>Do it</b> to make that move, or do something else.</div>
       <div><b>Is it ready?</b> A <b>gold glow</b> means it can act now. <b>zZ</b> means it just arrived: it can block, but it can’t attack until your next turn. Turned sideways, with ↻ in its corner, means it attacked: it can’t attack or block until its owner’s next turn.</div>
       <div><b>Discard piles</b> sit at the end of each player’s bar. Spells land there when they’re done; tap a pile to look through it.</div>
-      <div><b>End turn</b> (swipe right) when you’re finished. Energy you don’t spend waits for your next turn, so you can answer attacks with Tricks.</div>
+      <div><b>End turn</b> (swipe) when you’re finished. Energy you don’t spend waits for your next turn, so you can answer attacks with Tricks.</div>
     </div>
     <div class="btn-col">
       ${G.mode === 'online' ? '' : '<button class="btn" data-act="tutorial">Play the guided lesson</button>'}

@@ -125,7 +125,7 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 .pbar.attacking .pb-name { color: #ffb08a; }
 
 /* ── middle: banner and ticker ───────────────────────────────────── */
-.g-mid { flex: 1; min-height: 44px; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 12px; }
+.g-mid { flex: 1; min-height: 16px; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 12px; }
 /* centred when there is room, scrollable from the top when there is not */
 .g-mid > :first-child { margin-top: auto; }
 .g-mid > :last-child { margin-bottom: auto; }
@@ -153,10 +153,16 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 .g-actions .btn.atk-3 { min-width: 0; max-width: 40vw; padding-inline: 10px; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── my bar and hand ─────────────────────────────────────────────── */
-.g-actions { display: flex; gap: 8px; align-items: center; padding: 2px 10px; min-height: 46px; }
+/* buttons at the sides, the line you swipe in the middle; all at the top of
+   the strip, so the middle card of your hand can poke up into the rest of it */
+.g-actions { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; column-gap: 6px; padding: 0 10px; min-height: 52px; }
+.ga-side { grid-row: 1; grid-column: 1; display: flex; gap: 8px; align-items: center; min-width: 0; }
+.ga-side.end { grid-column: 3; justify-content: flex-end; }
 .g-actions .btn.primary { min-width: 112px; }
 .g-actions .btn { transition: opacity .2s; }
-.g-actions .grow { flex: 1; }
+/* the strip itself lets touches through to the top of a raised hand card */
+.g-actions { pointer-events: none; }
+.g-actions .btn, .g-actions .g-go { pointer-events: auto; }
 .g-hand { flex: none; margin: 0 6px; z-index: 5; }
 
 /* ── sheets (card details, choices, menus) ───────────────────────── */
@@ -315,6 +321,9 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 /* what to decide (the preview, the 💡 tip) is never the part of the middle that's cut off */
 .g-say { position: sticky; bottom: 0; z-index: 3; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .g-say:empty { display: none; }
+/* a 💡 tip taller than the middle (a small phone) grows up over the row above it instead of being cut off
+   (in a fight the middle keeps scrolling under the tip and the preview, as the fighters are in it) */
+#game:not(.fighting) .g-mid:has(> .g-say .suggest) { overflow: visible; justify-content: flex-end; }
 
 /* "Since your last turn": over the table, never clipped; a tap closes it */
 .recap-pop {
@@ -346,6 +355,14 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
   .coach-row { margin-top: 3px; }
   .coach .btn.small { min-height: 30px; }
 }
+/* an iPhone SE in Safari (about 550px tall): smaller cards, so the whole
+   table still fits above the strip and your hand instead of spilling over them */
+@media (max-height: 600px) {
+  .g-duel { --w-board-max: 56px; --w-board: 52px; }
+  .g-ffa { --w-board-max: 40px; --w-board: 40px; --w-hand: 74px; --w-hand-min: 66px; --hand-h: 96px; }
+  .g-ffa .g-side .tc-row { padding: 2px 0; }
+  .g-mid { min-height: 6px; }
+}
 
 /* while a fight is on screen the hand sinks a little to make room
    (the cards slide down, partly below the screen edge) */
@@ -355,8 +372,8 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 /* a row emptied into the battle zone gets out of the way while the fight is on */
 #game.fighting .g-side .tc-row:empty { min-height: 20px; padding: 0; }
 #game.fighting .g-side .tc-row:empty::after { content: none; }
-/* the buttons are never covered by the hand */
-.g-actions { position: relative; z-index: 8; }
+/* the buttons and the line are never covered by the hand (or the "since your last turn" note) */
+.g-actions { position: relative; z-index: 10; }
 
 /* 💡 a suggested move */
 .suggest {
@@ -485,36 +502,42 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 /* the 💡 tip: tap it to put it away */
 .suggest { cursor: pointer; }
 
-/* ── the move that carries the game on: swipe right across the table ──
-   A quiet line in the middle ("End turn ›››", or Attack, Block, Fight). It
-   follows the finger and lights up past the mark; brighter, its arrow
-   running, when there is nothing else to do. A tap nudges it to show which
-   way to swipe. */
+/* ── the move that carries the game on: swipe across the table, either way ──
+   A quiet line in the strip above your hand ("‹‹‹ End turn ›››", or Attack,
+   Block, Fight), where nothing on the table can cover it and it never moves.
+   It follows the finger and lights up past the mark; brighter, its arrows
+   running outward, when there is nothing else to do. A tap nudges it to
+   show that it's a swipe. */
 .g-go {
   --go-x: 0px; --go-p: 0;
-  display: inline-flex; align-items: center; gap: 12px;
-  margin: 2px auto 0; padding: 8px 20px;
-  font: 600 18px/1 'EB Garamond', Georgia, serif; letter-spacing: .06em;
+  grid-column: 2; grid-row: 1;
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 6px 12px;
+  font: 600 18px/1 'EB Garamond', Georgia, serif; letter-spacing: .06em; white-space: nowrap;
   color: rgba(236, 220, 186, calc(.42 + var(--go-p) * .58));
+  text-shadow: 0 1px 6px rgba(0, 0, 0, .9); /* readable over the top of a raised hand card */
   transform: translateX(var(--go-x));
   transition: transform .55s cubic-bezier(.2, 1.35, .4, 1), color .25s, opacity .25s, text-shadow .25s;
   cursor: grab; touch-action: pan-y;
 }
+.go-t { max-width: 50vw; overflow: hidden; text-overflow: ellipsis; }
 .g-go.ready { color: rgba(244, 222, 166, calc(.8 + var(--go-p) * .2)); }
 .g-go.dragging { transition: color .15s, text-shadow .15s; }
 .g-go.armed { color: #ffd98c; text-shadow: 0 0 16px rgba(255, 196, 92, .6); }
-.g-go.gone { transform: translateX(75vw); opacity: 0; transition: transform .26s cubic-bezier(.5, 0, .9, .5), opacity .26s ease-in; }
+.g-go.gone { transform: translateX(calc(var(--go-dir, 1) * 75vw)); opacity: 0; transition: transform .26s cubic-bezier(.5, 0, .9, .5), opacity .26s ease-in; }
 .busy .g-go { opacity: .35; }
 .go-arrow { display: inline-flex; gap: 3px; margin-top: 1px; }
 .go-arrow i { width: 8px; height: 8px; border: solid currentColor; border-width: 2px 2px 0 0; transform: rotate(45deg); opacity: calc(.5 + var(--go-p) * .5); }
+.go-arrow.l i { transform: rotate(-135deg); }
 .g-go.ready .go-arrow i { animation: go-run 2.4s ease-in-out infinite; }
-.g-go.ready .go-arrow i:nth-child(2) { animation-delay: .14s; }
-.g-go.ready .go-arrow i:nth-child(3) { animation-delay: .28s; }
+.g-go.ready .go-arrow.r i:nth-child(2), .g-go.ready .go-arrow.l i:nth-child(2) { animation-delay: .14s; }
+.g-go.ready .go-arrow.r i:nth-child(3), .g-go.ready .go-arrow.l i:nth-child(1) { animation-delay: .28s; }
 @keyframes go-run { 0%, 55%, 100% { opacity: .45; } 18% { opacity: 1; } }
-.g-go.nudge { animation: go-nudge .7s cubic-bezier(.3, 1.6, .5, 1); }
-@keyframes go-nudge { 25% { transform: translateX(34px); } 100% { transform: translateX(0); } }
-/* sideways swipes on the table are ours; it can still scroll up and down when it must */
-.g-table { touch-action: pan-y; }
+.g-go.nudge { animation: go-nudge .8s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes go-nudge { 22% { transform: translateX(24px); } 55% { transform: translateX(-24px); } 100% { transform: translateX(0); } }
+/* sideways swipes on the table are ours; it can still scroll up and down when it must
+   (the middle scrolls by itself, so it says so too, or the browser takes the swipe) */
+.g-table, .g-mid { touch-action: pan-y; }
 
 /* an empty discard pile shows nothing (it keeps its place for the first card to land in) */
 .pbar .tc-pile.empty { visibility: hidden; }

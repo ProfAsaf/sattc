@@ -141,7 +141,7 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
 - Guard now means "can block two attackers". Attacks no longer target creatures.
 - On the table, fighting creatures meet in a battle zone in the middle and
   fights resolve one pair at a time; the move that carries the game on
-  (End turn, Attack, Block, Fight) is a swipe right across the table (see
+  (End turn, Attack, Block, Fight) is a swipe across the table, either way (see
   "Your hand, and swipes instead of buttons").
 
 ## More from Magic (2026-11-04)
@@ -179,7 +179,7 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
 - **💡 Suggest** (top right on the table, hidden during the lesson): asks the
   practice bot what it would do in your place, without peeking at face-down
   Traps. A play comes with "Do it"; an attack or a block is set up on the
-  table for you to confirm (swipe right) or change. The mulligan screen says whether the
+  table for you to confirm (swipe) or change. The mulligan screen says whether the
   bot would keep the hand.
 - **👑 The Crown** (three or more players; `crown` in the setup turns it off).
   The first player to hit an opponent in a fight takes it; the holder draws an
@@ -233,16 +233,24 @@ Where a gesture is easy to guess, it replaces a button or a line of text.
 Things the thumb uses sit low on the screen, in the same place whatever the
 text above them says.
 
-- **Swipe right to move on:** no big End turn button. A faded line in the middle
-  of the table says what the move is ("End turn ›››", or Attack, Block,
-  Don't block, Fight) and you swipe right anywhere on the table to make it.
-  The line follows the finger and lights up gold past the mark; let go there
-  (or flick) to do it, or short of it and it slides back. It gets brighter, its
-  arrow running, when there is nothing else to do. A tap only nudges it (and
-  says "Swipe right"); a click from a keyboard or screen reader does it. Swipes
-  start away from the screen's left edge (the browser's back swipe), your hand,
-  buttons and your own creatures (you drag those to aim). With three players
-  you first tap whose name to attack.
+- **Swipe either way to move on:** no big End turn button. A faded line says
+  what the move is ("‹‹‹ End turn ›››", or Attack, Block, Don't block, Fight)
+  and you swipe left or right anywhere on the table, or on the line itself, to
+  make it. The line lives in the strip between your bar and your hand, with
+  the Cancel/Skip/Done buttons at its sides: nothing on the table (the 💡 tip,
+  a fight's preview, "Since your last turn", a crowded table on a small phone)
+  can cover it or push it out of view, and it never moves. It sits at the top
+  of the strip, clear of the middle card of your hand, which pokes up into the
+  rest. The line follows the finger and lights up gold past the mark; let go
+  there (or flick) to do it, or short of it and it slides back; it flies off
+  the way you swiped. It gets brighter, its arrows running outward, when there
+  is nothing else to do. A tap only nudges it (and says "Swipe it left or
+  right"); a click from a keyboard or screen reader does it. Swipes start away
+  from the screen's edges (the browser's back and forward swipes), your hand,
+  buttons and your own creatures (you drag those to aim). The table and its
+  middle are `touch-action: pan-y`: the middle scrolls by itself, and without
+  that the browser takes a sideways swipe there and cancels it. With three
+  players you first tap whose name to attack.
 - **The hand is a carousel:** the focal card sits in the middle, poking up, a
   little bigger, with its rules in small print; the others fan out to either
   side, the far ones off the screen. Slide the hand sideways and it follows the
@@ -295,6 +303,11 @@ text above them says.
 - Three players on a short phone: in a fight, the player who isn't in it
   folds to just their bar, unblocked attackers get a small label instead of
   an empty slot, and the line saying what will happen is pinned in view.
+- An iPhone SE in Safari (about 550px tall, `max-height: 600px`): smaller
+  creatures on the table (and a smaller hand with three players), so the
+  whole table fits above the strip and the hand instead of spilling over
+  them. The middle of the table can shrink to almost nothing there; a 💡 tip
+  taller than it grows up over the row above instead of being cut off.
 
 ## Rule changes from the first draft
 

@@ -1,11 +1,12 @@
-// Fights, big. When a fight you are in plays out, its creatures come up big
-// and it goes pair by pair, like stories on a phone: who meets whom, the
-// hits, and a few words on what happened and why (a creature is destroyed
-// when its damage reaches its Vitality; Swift strikes first; Overrun carries
-// the rest through; Venom destroys with any damage; creatures teaming up
-// split the attacker's damage). Tap to go on, tap the left edge to go back,
-// hold to pause, Skip to close. Each step also moves on by itself once there
-// has been time to read it, so an online game never waits on a tap.
+// Fights, big. When a fight plays out (yours, or two others'), its creatures
+// come up big and it goes pair by pair, like stories on a phone: who meets
+// whom, the hits, and a few words on what happened and why (a creature is
+// destroyed when its damage reaches its Vitality; Swift strikes first; Overrun
+// carries the rest through; Venom destroys with any damage; creatures teaming
+// up split the attacker's damage). Tap to go on, tap the left edge to go back,
+// Skip to close. With `tap` (the table's default) each step waits for your
+// tap; without it, each step moves on by itself once there has been time to
+// read it, and holding pauses.
 //
 // game-ui.js builds the story from a move's events (fightStory) and plays it
 // (playStory) in place of the small fight on the table; the note under the
@@ -219,7 +220,7 @@ const READ_MIN = 2800, READ_MAX = 7500;
 const readMs = (html) => Math.min(READ_MAX, Math.max(READ_MIN, 1600 + html.replace(/<[^>]+>/g, '').length * 40)) / FX.getSpeed();
 
 /** Play a story over the table. Resolves when it closes (Skip, the last step, or Escape). */
-export function playStory(story, { stage = null } = {}) {
+export function playStory(story, { stage = null, tap = false } = {}) {
   return new Promise((resolve) => {
     const me = story.me;
     const box = document.createElement('div');
@@ -230,7 +231,7 @@ export function playStory(story, { stage = null } = {}) {
       <div class="bf-head"><span class="bf-title">${story.title}</span><button class="bf-skip" type="button">Skip</button></div>
       <div class="bf-stage"></div>
       <div class="bf-text"><p class="bf-setup"></p><p class="bf-result"></p></div>
-      <div class="bf-hint">Tap to go on · hold to pause</div>`;
+      <div class="bf-hint">${tap ? 'Tap to go on' : 'Tap to go on · hold to pause'}</div>`;
     document.body.appendChild(box);
     FX.setStage(box);
     const $ = (sel) => box.querySelector(sel);
@@ -343,6 +344,7 @@ export function playStory(story, { stage = null } = {}) {
         if (g !== gen || closed || res.classList.contains('on')) return;
         res.classList.add('on');
         left = readMs(`${b.setup} ${b.result}`);
+        if (tap) { fill(); return; } // it waits for your tap
         if (!paused) run();
       };
       const late = setTimeout(words, 6500 / FX.getSpeed());
@@ -362,6 +364,13 @@ export function playStory(story, { stage = null } = {}) {
       clearTimeout(timer);
       timer = setTimeout(() => show(i + 1), left);
     }
+    // tap to go on (`tap`): the step's bar fills once its words are up, and the story waits there
+    function fill() {
+      const bar = bars[i];
+      if (!bar) return;
+      bar.style.transition = 'width .35s ease-out';
+      bar.style.width = '100%';
+    }
     function pause() {
       if (paused) return;
       paused = true;
@@ -375,7 +384,7 @@ export function playStory(story, { stage = null } = {}) {
       if (!paused) return;
       paused = false;
       box.classList.remove('paused');
-      if ($('.bf-result').classList.contains('on')) run();
+      if (!tap && $('.bf-result').classList.contains('on')) run();
     }
     function close() {
       if (closed) return;

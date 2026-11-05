@@ -501,6 +501,23 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
   color: #f1e3bf; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
+/* another player's move waits for your tap: what happened, low down where the thumb is */
+.g-beat {
+  position: fixed; z-index: 80; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  max-width: 420px; margin: 0 auto; padding: 10px 14px 4px; border-radius: 14px;
+  background: rgba(22, 17, 12, .96); border: 1px solid rgba(214, 180, 106, .55); box-shadow: 0 10px 30px rgba(0, 0, 0, .55);
+  color: #f1e3bf; font-size: 15px; line-height: 1.35; animation: coachIn .2s ease-out;
+}
+.g-beat b { color: #ffe2a8; }
+.g-beat-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--muted); }
+.g-beat-go { animation: beatPulse 1.8s ease-in-out infinite; }
+.g-beat-go::after { content: ' ›'; }
+.g-beat-skip { all: unset; cursor: pointer; padding: 8px 0 8px 12px; color: #d9c08a; }
+.g-beat.going { opacity: 0; transition: opacity .15s; }
+@keyframes beatPulse { 50% { opacity: .5; } }
+/* a sheet (☰) opened meanwhile sits on top of it */
+body:has(#game .g-sheet) .g-beat { display: none; }
+
 /* every sheet closes the same way: swipe this handle up, or tap it (or tap outside) */
 /* the handle always sits at the bottom of the screen, as in the big hand,
    on a soft full-width fade that long sheets scroll under */

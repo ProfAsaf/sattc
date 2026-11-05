@@ -2223,6 +2223,7 @@ function holdFor(ms, el, skippable) {
  *              (anything else, e.g. a Relic, lands and fades),
  *       toPile a discard pile element (see pileHTML): it flutters onto the pile,
  *       during () => Promise: run while it is shown (an effect); it leaves after,
+ *       until  () => Promise: hold until it resolves, instead of `hold` ms,
  *       hold, flip (start face down, turn over on the way: an opponent's card),
  *       width (fraction of the stage, default .7), dim (default true), skippable,
  *       card (the card object, when html is not from cardHTML), foe, puff.
@@ -2270,9 +2271,11 @@ export async function showCard(html, o = {}) {
       glow(cx, cy, { white: true, size: W * 1.5, duration: 700, peak: 0.35 });
     }
     const holdMs = HOLD(o.hold ?? 1100);
-    const float = isReduced() ? null : run(inner, [{ translate: '0px 0px' }, { translate: '0px -4px', offset: 0.5 }, { translate: '0px 0px' }], { duration: Math.max(600, holdMs), easing: 'ease-in-out', fill: 'none' });
+    const float = isReduced() ? null : run(inner, [{ translate: '0px 0px' }, { translate: '0px -4px', offset: 0.5 }, { translate: '0px 0px' }], { duration: o.until ? 1800 : Math.max(600, holdMs), iterations: o.until ? Infinity : 1, easing: 'ease-in-out', fill: 'none' });
     const during = o.during ? Promise.resolve().then(o.during).catch((err) => console.error(err)) : null;
-    await Promise.all([holdFor(holdMs, wrap, o.skippable !== false), during]);
+    // `until`: it stays up until that says so (another player's card waits for your tap)
+    const hold = o.until ? Promise.resolve().then(o.until).catch((err) => console.error(err)) : holdFor(holdMs, wrap, o.skippable !== false);
+    await Promise.all([hold, during]);
     float?.cancel();
     wrap.classList.remove('skippable');
 

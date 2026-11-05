@@ -297,6 +297,27 @@ middle. Its bottom row is gone: Next is the button at the bottom right, a gold
 line along the top of the box shows how far through the lesson you are, and
 Skip the lesson is in ☰.
 
+## One move at a time (2026-11-05)
+
+Asaf wanted to tap to see the next thing happen, "even when it is bots
+fighting each other or other users fighting each other": then it doesn't
+matter if it moves fast or slow, or if you look away. So what the other
+players do waits for your tap (`tapToGoOn` in game-ui.js):
+
+- A card someone else plays stays up big until you tap anywhere, with a line
+  low down saying who played it and on what. A Trap springing does the same.
+- An attack or a block between the other two, and an ability someone uses,
+  wait on the table with their line.
+- Every fight comes up big, yours and two others', and each step waits for
+  your tap instead of moving on by itself.
+- No extra tap when the game waits for you anyway: an attack on you goes
+  straight to your block, a block of your attack to your Trick window.
+- "Skip to your move" passes over the rest; "Since your last turn" only comes
+  up after a Skip. ☰ has "Others’ moves: automatic" for moves that play by
+  themselves (`collective.tapThrough` = '0'; the older tests use it).
+- Online, each phone goes at its own pace: moves that arrive meanwhile queue
+  up, and a phone that was put away shows them when it's back.
+
 ## Fights, step by step (2026-11-04)
 
 Asaf found blocking "super hard to follow" and the swipe that confirmed a move

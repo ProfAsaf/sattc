@@ -461,6 +461,7 @@ function mount() {
 
 function begin(rec) {
   clearTimeout(G?.timer);
+  endGate?.(false);
   const state = replay(rec.setup, rec.actions);
   state.events = [];
   G = { ...rec, bots: new Set(rec.bots), state, view: state, lastShown: state, flow: null, atk: null, blk: null, sheet: null, timer: null, busy: false, chain: Promise.resolve(), sched: 0 };
@@ -477,6 +478,7 @@ function beginOnline(info, seat) {
   const setup = { seed: info.seeds[round], players: info.players.map((p) => ({ name: p.name, deck: Decks.cardList(Decks.decode(p.deck) || {}) })) };
   clearTimeout(G?.timer);
   G?.unsubActions?.();
+  endGate?.(false);
   const state = newGame(setup);
   state.events = [];
   G = { mode: 'online', code: L.code, created: info.created || 0, round, setup, actions: [], me: seat, bots: new Set(), state, view: state, lastShown: state, flow: null, atk: null, blk: null, sheet: null, timer: null, busy: false, chain: Promise.resolve(), sched: 0 };
@@ -488,7 +490,7 @@ function beginOnline(info, seat) {
     if (!G || G.mode !== 'online' || G.round !== round) return;
     if (atEnd && actions.length === G.actions.length + 1) {
       const r = apply(G.state, actions[actions.length - 1]);
-      if (!r.error) { G.state = r.state; G.actions = actions; show(r.state.events); return; }
+      if (!r.error) { G.state = r.state; G.actions = actions; show(r.state.events, actions[actions.length - 1]); return; }
     }
     G.state = replay(setup, actions);
     G.state.events = [];
@@ -502,6 +504,7 @@ function beginOnline(info, seat) {
 function leave(goTo = '#/play') {
   clearTimeout(G?.timer);
   G?.unsubActions?.();
+  endGate?.(false);
   if (G && G.mode === 'practice' && G.state.phase === 'over') store.clear();
   G = null;
   keepAwake('game', false);
@@ -586,7 +589,7 @@ function commit(a) {
     if (atk.att.length) G.atk = atk;
   }
   save();
-  show(r.state.events);
+  show(r.state.events, a);
   return true;
 }
 
@@ -699,10 +702,11 @@ function suggestHTML() {
     <div class="suggest-row"><button class="btn small primary" data-act="suggest-do">Do it</button></div></div>`;
 }
 
-// Queue the animation of a move, then the redraw of the position after it.
-// A hidden page (the phone was put away) or a pile of moves catching up
-// skips straight to the result.
-function show(events) {
+// Queue the animation of a move (`a`, when known), then the redraw of the
+// position after it. When moves wait for your tap, a phone that was put away
+// shows them when it's back; otherwise a hidden page or a pile of moves
+// catching up skips straight to the result.
+function show(events, a = null) {
   const after = G.state;
   noteGameOver();
   // Remember the table as your turn ended, for "Since your last turn".
@@ -712,14 +716,114 @@ function show(events) {
   }
   G.lastShown = after;
   G.backlog = (G.backlog || 0) + 1;
+  const g = G;
   G.chain = G.chain.then(async () => {
-    const quick = document.hidden || G.backlog > 2;
-    try { await present(quick ? [] : events || [], after, quick); } finally { if (G) G.backlog--; }
+    if (tapThrough() && document.hidden && !g.skipping) await whenVisible();
+    if (G !== g) return;
+    const quick = document.hidden || (!tapThrough() && G.backlog > 2);
+    try { await present(quick ? [] : events || [], after, quick, a); } finally { if (G) G.backlog--; }
   }).catch((e) => console.error(e));
   return G.chain;
 }
-// Animations wait on the screen; never let one hold the game up for long.
-const capped = (p, ms) => Promise.race([p, FX.wait(ms)]);
+const whenVisible = () => new Promise((r) => {
+  const f = () => { if (!document.hidden) { document.removeEventListener('visibilitychange', f); r(); } };
+  document.addEventListener('visibilitychange', f);
+});
+// Animations wait on the screen; never let one hold the game up for long
+// (the time a move waits for your tap doesn't count).
+function capped(p, ms) {
+  let t = 0;
+  const cap = new Promise((done) => {
+    let left = ms;
+    const tick = () => { if (!gates) left -= 250; if (left <= 0) done(); else t = setTimeout(tick, 250); };
+    t = setTimeout(tick, 250);
+  });
+  return Promise.race([p, cap]).finally(() => clearTimeout(t));
+}
+
+// ── one move at a time ──────────────────────────────────────────────
+// What the other players do waits on the screen until you tap: a card they
+// play stays up big, an attack between the other two stays on the table, and
+// every fight goes step by step. Nothing goes by too fast or while you look
+// away. A line at the bottom says what happened; Skip passes over the rest
+// until it's your move. 'collective.tapThrough' = '0' lets it all play by
+// itself (the ☰ switch; the older tests).
+const tapThrough = () => { try { return localStorage.getItem('collective.tapThrough') !== '0'; } catch { return true; } };
+let gates = 0, endGate = null;
+
+function tapToGoOn(line) {
+  if (!G || !tapThrough() || G.skipping) return Promise.resolve();
+  const g = G;
+  endGate?.(false);
+  gates++;
+  return new Promise((resolve) => {
+    const box = document.createElement('div');
+    box.className = 'g-beat';
+    box.innerHTML = `<div class="g-beat-t">${line}</div><div class="g-beat-row"><span class="g-beat-go">Tap to go on</span><button class="g-beat-skip" type="button">Skip to your move</button></div>`;
+    document.body.appendChild(box);
+    const t0 = performance.now();
+    const finish = (skip) => {
+      if (endGate !== finish) return;
+      endGate = null;
+      removeEventListener('pointerup', up, true);
+      removeEventListener('keydown', key, true);
+      gates--;
+      if (G === g) { G.tapAt = performance.now(); if (skip) G.skipping = G.skipped = true; }
+      box.classList.add('going');
+      setTimeout(() => box.remove(), 180);
+      resolve();
+    };
+    const up = (e) => {
+      if (performance.now() - t0 < 250) return; // a finger still lifting from the last tap
+      if (e.target.closest?.('.g-beat-skip')) { finish(true); return; }
+      if (e.target.closest?.('[data-act="menu"], .g-sheet')) return; // ☰ works as usual meanwhile
+      finish(false);
+    };
+    const key = (e) => { if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight') { e.preventDefault(); finish(false); } };
+    endGate = finish;
+    addEventListener('pointerup', up, true);
+    addEventListener('keydown', key, true);
+  });
+}
+
+// The line under a card another player plays: who, what, and on what.
+function playLine(s0, e, d) {
+  const by = `<b>${esc(name(e.p))}</b>`;
+  if (!d) return `${by} sets a Trap, face down.`;
+  const t = e.target;
+  let on = '';
+  if (t?.p != null) on = ` on ${t.p === G.me ? 'you' : t.p === e.p ? 'themselves' : `<b>${esc(name(t.p))}</b>`}`;
+  else if (t?.uid != null && s0.cards[t.uid]) {
+    const c = s0.cards[t.uid];
+    on = ` on ${c.ctrl === G.me ? 'your' : c.ctrl === e.p ? 'their' : esc(poss(name(c.ctrl)))} <b>${esc(BY_ID[c.cid].name)}</b>`;
+  }
+  return `${by} plays <b>${esc(d.name)}</b>${on}.`;
+}
+
+// The line under another player's move that waits on the new table (their
+// cards wait big instead, in animateOld). None when the game waits for you
+// next anyway (they attack you; they block your attack) or a fight plays big.
+function moveLine(s0, a, events) {
+  if (!a || a.p === G.me || events.some((e) => e.k === 'fight')) return '';
+  const by = `<b>${esc(name(a.p))}</b>`;
+  const card = (u) => `<b>${esc(BY_ID[s0.cards[u]?.cid]?.name || 'a creature')}</b>`;
+  switch (a.t) {
+    case 'attack': return a.target === G.me ? '' : `${by} attacks <b>${esc(name(a.target))}</b> with ${listNames(a.att.map(card))}.`;
+    case 'block': {
+      if (s0.combat?.a === G.me) return '';
+      if (!a.blocks.length) return `${by} doesn’t block.`;
+      const by2 = new Map();
+      for (const [b, x] of a.blocks) by2.set(x, [...(by2.get(x) || []), b]);
+      return `${by} blocks ${[...by2].map(([x, bs]) => `${card(x)} with ${listNames(bs.map(card))}`).join(', and ')}.`;
+    }
+    case 'use': {
+      const ab = BY_ID[s0.cards[a.uid]?.cid]?.ability;
+      return `${by} uses ${card(a.uid)}${ab ? `: ${esc(ab.short)}` : ''}.`;
+    }
+    case 'phoenix': return `${by} brings the Phoenix back to their hand.`;
+  }
+  return '';
+}
 
 // The bot (or the lesson script) moves once the table has caught up.
 function schedule() {
@@ -738,10 +842,12 @@ function schedule() {
       : (G.bots.has(actor(s)) ? actor(s) : undefined);
     if (who == null) return;
     const noise = G.mode === 'tutorial' ? 3 : 0.4;
+    // when moves wait for your tap the bot needn't leave a gap first (you just tapped); Skip hurries it
+    const pace = G.skipping ? 0.05 : tapThrough() ? 0.4 : 1;
     G.timer = setTimeout(() => {
       if (!G || G.sched !== id || G.state !== s) return;
       dispatch(chooseAction(G.state, who, { noise }));
-    }, s.phase === 'mulligan' ? 200 : s.phase === 'combat' ? 700 : 950);
+    }, Math.round((s.phase === 'mulligan' ? 200 : s.phase === 'combat' ? 700 : 950) * pace));
   });
 }
 
@@ -1587,7 +1693,8 @@ function draw(root) {
 function redraw() {
   const root = document.getElementById('game');
   if (!root || !G) return;
-  if (G.busy) { G.dirty = true; return; }
+  // (while a move waits for your tap the table holds still, so ☰ and its sheets can open over it)
+  if (G.busy && !gates) { G.dirty = true; return; }
   const before = FX.capture(root);
   draw(root);
   drawLines(root);
@@ -1631,24 +1738,33 @@ function drawLines(root) {
 // play out on the table. 'collective.bigFights' = '0' turns it off (tests).
 const bigFights = () => { try { return localStorage.getItem('collective.bigFights') !== '0'; } catch { return true; } };
 
-async function present(events, after, quick = false) {
+async function present(events, after, quick = false, a = null) {
   const root = document.getElementById('game');
   if (!root || !G) return;
   // every fight is kept as a story, so the note after it can play it again
   let story = null;
   if (events.some((e) => e.k === 'fight')) { try { story = Fight.fightStory(S(), after, events, G.me); } catch (e) { console.error(e); } }
   if (story) G.lastFight = story;
-  if (quick) { G.view = after; draw(root); drawLines(root); return; }
+  // Skip: straight to the result until it's your move
+  if (quick || G.skipping) {
+    G.view = after; draw(root); drawLines(root);
+    if (G.skipping && (myMove() || after.phase === 'over')) G.skipping = false;
+    return;
+  }
+  const tap = tapThrough();
+  const line = tap ? moveLine(S(), a, events) : '';
   G.busy = true;
   root.classList.add('busy');
   try {
     if (events.length && root.querySelector('.g-table')) {
-      if (story?.mine && bigFights()) {
+      // a fight comes up big: yours always, two others' too when moves wait for your tap
+      if (story && bigFights() && (story.mine || tap)) {
         await capped(animateOld(root, events.slice(0, events.findIndex((e) => e.k === 'fight')), after), 20000);
-        await Fight.playStory(story, { stage: root });
+        if (G && !G.skipping) await Fight.playStory(story, { stage: root, tap });
       } else await capped(animateOld(root, events, after), 20000);
     }
   } catch (e) { console.error(e); }
+  if (!G) return;
   if (events.some((e) => e.k === 'fight')) G.fightNote = fightNoteText(events);
   G.showBlk = null;
   const before = FX.capture(root);
@@ -1661,8 +1777,12 @@ async function present(events, after, quick = false) {
     drawLines(root);
     await capped(animateNew(root, events), 2500);
   } catch (e) { console.error(e); }
+  // another player's move waits on the new table for your tap (an attack between the other two, say)
+  if (line && G && !G.skipping) await tapToGoOn(line);
+  if (!G) return;
   G.busy = false;
   root.classList.remove('busy');
+  if (G.skipping && (myMove() || S().phase === 'over')) G.skipping = false;
   if (G.dirty) redraw();
 }
 
@@ -1686,6 +1806,8 @@ async function animateOld(root, events, after = G.state) {
       if (e.p === G.me) root.querySelector(`.tcard[data-uid="${e.uid}"]`)?.classList.add('fx-hidden');
       const target = e.target ? (e.target.p != null ? barEl(root, e.target.p) : el(root, e.target.uid)) : e.sac != null ? el(root, e.sac) : null;
       const look = { fromRect: from, hold: e.p === G.me ? 350 : d ? 1050 : 650, flip: e.p !== G.me && !!d, width: e.p === G.me ? 0.55 : 0.7 };
+      // another player's card stays up big until you tap
+      if (e.p !== G.me && tapThrough()) look.until = () => tapToGoOn(playLine(s0, e, d));
       if (d && d.type === 'spell') {
         // what the spell does is everything up to the next move
         let j = i;
@@ -1716,7 +1838,8 @@ async function animateOld(root, events, after = G.state) {
       const sub = group.length > 2 ? `with ${group.length} creatures` : `with ${listNames(group.map((g) => BY_ID[s0.cards[g.uid].cid].name))}`;
       const arrows = group.map((g) => FX.arrow(el(root, g.uid), barEl(root, d), { duration: 1000, color: '#ff6a3d' }));
       // the whole screen only when it's about you; two others fighting gets a note
-      const say = d === G.me || atk === G.me ? FX.banner(label, { sub, tone: d === G.me ? 'foe' : 'mine' }) : toast(`⚔ ${label}`);
+      // (or, when moves wait for your tap, the line under the table afterwards)
+      const say = d === G.me || atk === G.me ? FX.banner(label, { sub, tone: d === G.me ? 'foe' : 'mine' }) : tapThrough() ? null : toast(`⚔ ${label}`);
       await Promise.all([say, ...arrows.map((a) => a?.finished)]);
       continue;
     }
@@ -1788,8 +1911,10 @@ async function animateOld(root, events, after = G.state) {
     switch (e.k) {
       case 'trap': {
         const d = BY_ID[e.cid];
+        // a Trap springing is a surprise: it waits for your tap whoever set it
+        const until = tapThrough() ? () => tapToGoOn(`${e.p === G.me ? 'Your' : `<b>${esc(poss(name(e.p)))}</b>`} Trap springs: <b>${esc(d.name)}</b>.`) : undefined;
         await Promise.all([FX.banner('Trap!', { sub: `${name(e.p)}: ${d.name}`, tone: e.p === G.me ? 'mine' : 'foe' }),
-          FX.showCard(cardHTML(d), { fromRect: barEl(root, e.p)?.getBoundingClientRect(), hold: 900, flip: true })]);
+          FX.showCard(cardHTML(d), { fromRect: barEl(root, e.p)?.getBoundingClientRect(), hold: 900, flip: true, until })]);
         break;
       }
       case 'breath': {
@@ -1807,7 +1932,7 @@ async function animateOld(root, events, after = G.state) {
       case 'use': {
         // an ability (or the Bone Altar): a gold flash, the Energy paid, a line to its target
         const n = el(root, e.uid), d = BY_ID[e.cid], ab = d?.ability;
-        if (ab && e.p !== G.me) toast(`⚡ ${name(e.p)}: ${d.name}, ${ab.short}`, 1600);
+        if (ab && e.p !== G.me && !tapThrough()) toast(`⚡ ${name(e.p)}: ${d.name}, ${ab.short}`, 1600);
         if (n) { FX.burst(n, { color: ab ? '#ffd76a' : '#b07cff' }); if (ab) FX.number(n, `⚡${ab.cost}`, { kind: 'buff' }); }
         const t = e.target?.uid != null ? el(root, e.target.uid) : null;
         const ar = n && t && FX.arrow(n, t, { duration: 550, color: '#ffd76a' });
@@ -1940,12 +2065,16 @@ async function animateNew(root, events) {
   // a new turn's banner replaces any that is still on screen (bots can be quick)
   document.querySelectorAll('#fx-layer .fx-banner').forEach((b) => b.remove());
   if (turn.p === G.me) {
-    G.recap = S().turn;
+    // "Since your last turn" sums up what you didn't see: with every move
+    // waiting for your tap that's nothing, unless you skipped
+    const sum = !tapThrough() || G.skipped;
+    G.skipped = false;
+    if (sum) G.recap = S().turn;
     redraw();
     FX.banner('Your turn', { sub: `${P.energy} Energy`, tone: 'mine' });
     // what the others did to you meanwhile, in one number on your bar
     const lost = recapInfo()?.lost || 0;
-    if (lost > 0 && !tutStep()) FX.number(barEl(root, G.me), `−${lost}`, { kind: 'damage' });
+    if (sum && lost > 0 && !tutStep()) FX.number(barEl(root, G.me), `−${lost}`, { kind: 'damage' });
   }
   else toast(`${poss(shortName(P.name))} turn`, 1100);
   await FX.wait(turn.p === G.me ? 250 : 450);
@@ -2205,6 +2334,7 @@ function menuSheet() {
     <button class="btn" data-act="help">How the table works</button>
     <button class="btn" data-act="log">Game log</button>
     <button class="btn" data-act="speed">${fastOn() ? 'Animations: fast (tap for normal)' : 'Animations: normal (tap for fast)'}</button>
+    <button class="btn" data-act="pace">${tapThrough() ? 'Others’ moves: wait for your tap (tap for automatic)' : 'Others’ moves: automatic (tap to wait for your tap)'}</button>
     <button class="btn" data-act="fixes">Fix something</button>
     <button class="btn" data-act="rules">All the rules (leaves the table)</button>
     <button class="btn danger" data-act="concede">${G.concedeArm && Date.now() - G.concedeArm < 4000 ? 'Tap again to concede' : 'Concede'}</button>
@@ -2223,7 +2353,8 @@ function helpSheet() {
       <div><b>Block</b>: when you are attacked, the attackers come to the middle. <b>Tap one of your creatures</b> and it steps in front of an attacker; tap it again to move it to the next attacker, or back home. ☠ marks what would be destroyed if no one plays a Trick, and the line in the middle says what you would lose. Then tap <b>Block</b>.</div>
       <div><b>Can’t block?</b> An exhausted creature (it attacked) can’t, and only creatures with Soar or Reach can block one with Soar. Tap it to see why.</div>
       <div><b>Team up</b>: several of your creatures can block the same attacker. They all hit it, and it splits its damage among them, destroying the costliest ones it can.</div>
-      <div><b>The fight</b>: <b>Tricks</b> and abilities can be used before it starts; tap <b>Fight</b> when you are done. When you are in it, it comes up big, a pair at a time, with what happened and why: tap to go on, hold to pause, Skip to close. The note under the table afterwards plays it again.</div>
+      <div><b>The fight</b>: <b>Tricks</b> and abilities can be used before it starts; tap <b>Fight</b> when you are done. It comes up big, a pair at a time, with what happened and why: tap to go on, Skip to close. The note under the table afterwards plays it again.</div>
+      <div><b>The others’ moves wait for you</b>: a card someone plays stays up big, and an attack between the other two stays on the table, until you <b>tap anywhere</b>. <b>Skip to your move</b> passes over the rest. In ☰ you can let them play by themselves instead.</div>
       <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
       <div><b>The button at the bottom right</b> moves the game on: End turn, Attack, Block, Fight. While you could still play a card or attack, End turn asks for a second tap.</div>
@@ -2315,6 +2446,8 @@ function flash(msg) {
 
 function onClick(e) {
   if (!G) return;
+  // the tap that let another player's move go on doesn't also count on the table
+  if (G.tapAt && performance.now() - G.tapAt < 400) return;
   const s = S();
   const t = e.target;
   const actEl = t.closest('[data-act]');
@@ -2411,7 +2544,7 @@ function onClick(e) {
 
 function onAct(act, el) {
   const uid = Number(el.dataset.uid);
-  const busyOk = ['menu', 'help', 'close', 'log', 'leave', 'speed', 'rules', 'coach-skip', 'crown-info', 'reload'].includes(act);
+  const busyOk = ['menu', 'help', 'close', 'log', 'leave', 'speed', 'pace', 'rules', 'coach-skip', 'crown-info', 'reload'].includes(act);
   if (G.busy && !busyOk) return;
   // While choosing a target, the small chips on cards and bars are part of what you tap.
   const choosing = G.flow || G.atk || (G.blk && G.blk.sel != null);
@@ -2486,6 +2619,12 @@ function onAct(act, el) {
       const fast = !fastOn();
       try { localStorage.setItem(SPEED_KEY, fast ? '1' : '0'); } catch { /* fine */ }
       FX.setSpeed(fast ? SPEEDS.fast : SPEEDS.normal);
+      G.sheet = menuSheet();
+      redraw();
+      break;
+    }
+    case 'pace': {
+      try { localStorage.setItem('collective.tapThrough', tapThrough() ? '0' : '1'); } catch { /* fine */ }
       G.sheet = menuSheet();
       redraw();
       break;

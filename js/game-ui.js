@@ -15,6 +15,8 @@ import * as Net from './net.js';
 import * as Draft from './draft-ui.js';
 import { keepAwake } from './awake.js';
 import { TUTORIAL, botAction, matches } from './tutorial.js';
+import * as St from './stats.js';
+import * as Ins from './insights.js';
 
 const SAVE = 'collective.practice.v2';
 const store = {
@@ -40,8 +42,15 @@ const colorOf = (cid) => COLORS[BY_ID[cid]?.factions[0]] || '#ffd77a';
 
 let G = null; // the game being shown
 
-// For performance checks from the console or a test script.
-if (typeof window !== 'undefined') window.collectiveDebug = { redraw: () => redraw(), get G() { return G; } };
+// For performance checks from the console or a test script. botMove() has
+// the bot make this phone's move, if it is this phone's move (whole games
+// in tests).
+if (typeof window !== 'undefined') {
+  window.collectiveDebug = {
+    redraw: () => redraw(), get G() { return G; },
+    botMove: () => (!!G && !G.busy && G.state.phase !== 'over' && actor(G.state) === G.me && dispatch(chooseAction(G.state, G.me, { noise: 0.4 }))),
+  };
+}
 
 // ── play page ───────────────────────────────────────────────────────
 // Friends first (a new game for 2 or 3 players, or join one by its code),
@@ -65,7 +74,7 @@ function deckSelect(id, choices, chosen) {
 function onlinePanelHTML(choices, chosen) {
   if (!Net.isConfigured()) return '<div class="pp-in"><h3>Friends</h3><p class="muted small" style="margin:0">Online play is not set up yet.</p></div>';
   if (L && L.info) {
-    if (L.info.draft) return Draft.roomPanelHTML(L.code, L.info); // Draft night has its own lobby
+    if (L.info.draft) return Draft.roomPanelHTML(L.code, L.info, tonightHTML()); // Draft night has its own lobby
     const info = L.info;
     const meSeat = (info.players || []).findIndex((p) => p && p.id === Net.clientId());
     const host = info.host === Net.clientId();
@@ -89,6 +98,7 @@ function onlinePanelHTML(choices, chosen) {
           : `<p class="muted small pp-wait">${esc(hostName)} starts the game.</p>`;
     return `<div class="pp-in">
       <div class="pp-title"><h3>Game <b>${esc(L.code)}</b></h3><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
+      ${tonightHTML()}
       <div class="deck-cards">${seats}</div>
       ${Draft.versionNoteHTML(info)}
       ${host && info.status === 'lobby' ? Draft.modeSwitchHTML(false) : ''}
@@ -144,8 +154,31 @@ function botsPanelHTML(choices, chosen) {
   </div>`;
 }
 
+// Tonight in this room (every game's result, from every phone), and the
+// way back into the review of your last game here.
+function tonightHTML() {
+  if (!L) return '';
+  const meName = (L.info?.players || []).find((p) => p && p.id === Net.clientId())?.name || Net.myName();
+  const last = L.lastRec ? `<button class="btn small ghost tn-last" data-act="last-review">Your last game: the bot’s review${L.lastRec.review?.acc != null ? ` · ${L.lastRec.review.acc}%` : ''} ›</button>` : '';
+  return Ins.tonightHTML(L.results, meName, last) || last;
+}
+
+function watchTonight(info) {
+  if (!L || L.resFor === info?.created || !info?.created) return;
+  L.resUnsub?.();
+  L.resFor = info.created;
+  const room = L;
+  Net.watchResults(L.code, info.created, (results) => {
+    if (L !== room) return;
+    L.results = results;
+    if (playView && location.hash === '#/play' && !G) playPage(playView);
+    if (G && G.mode === 'online' && G.state.phase === 'over') redraw();
+  }).then((unsub) => { if (L === room) room.resUnsub = unsub; else unsub(); }, (e) => console.warn(e));
+}
+
 async function enterRoom(code) {
   if (L?.unsub) L.unsub();
+  L?.resUnsub?.();
   L = { code, info: null, unsub: null };
   keepAwake('room', true);
   L.unsub = await Net.watchRoom(code, (info) => {
@@ -156,6 +189,7 @@ async function enterRoom(code) {
     if (mine && mine.v !== Net.version() && !L.marking) { L.marking = true; Net.markVersion(code).catch(() => {}).finally(() => { if (L) L.marking = false; }); }
     Draft.onRoomInfo(code, info, () => { if (playView && location.hash === '#/play' && !G) playPage(playView); });
     if (!info) { flash('That game no longer exists.'); Net.setLastRoom(''); exitRoom(); return; }
+    watchTonight(info);
     const seat = (info.players || []).findIndex((p) => p && p.id === Net.clientId());
     if (seat < 0 && info.status !== 'lobby') { Net.setLastRoom(''); exitRoom(); return; }
     if (info.status === 'playing' && seat >= 0 && !(G && G.mode === 'online' && G.round === info.round)) beginOnline(info, seat);
@@ -174,6 +208,7 @@ export async function autoRejoin() {
 
 function exitRoom() {
   if (L?.unsub) L.unsub();
+  L?.resUnsub?.();
   L = null;
   keepAwake('room', false);
   if (playView && location.hash === '#/play' && !G) playPage(playView);
@@ -247,6 +282,7 @@ export function playPage(view) {
       return;
     }
     if (['create', 'join', 'rejoin', 'start', 'leave-room', 'rejoin-table', 'copy-link'].includes(act)) { onlineAct(act, el, choices); return; }
+    if (act === 'last-review') { if (L?.lastRec) Ins.openSheet(Ins.reviewHTML(L.lastRec)); return; }
     const ctx = { play: startPractice, refresh: () => playPage(view), code: L?.code };
     if (act === 'bots') {
       if (PF.botDraft) { Draft.onPlayAct('draft-practice', el, ctx); return; } // data-n is the number of bots
@@ -389,6 +425,7 @@ function begin(rec) {
   const state = replay(rec.setup, rec.actions);
   state.events = [];
   G = { ...rec, bots: new Set(rec.bots), state, view: state, lastShown: state, flow: null, atk: null, blk: null, sheet: null, timer: null, busy: false, chain: Promise.resolve(), sched: 0 };
+  noteGameOver();
   mount();
   redraw();
   schedule();
@@ -403,7 +440,7 @@ function beginOnline(info, seat) {
   G?.unsubActions?.();
   const state = newGame(setup);
   state.events = [];
-  G = { mode: 'online', code: L.code, round, setup, actions: [], me: seat, bots: new Set(), state, view: state, lastShown: state, flow: null, atk: null, blk: null, sheet: null, timer: null, busy: false, chain: Promise.resolve(), sched: 0 };
+  G = { mode: 'online', code: L.code, created: info.created || 0, round, setup, actions: [], me: seat, bots: new Set(), state, view: state, lastShown: state, flow: null, atk: null, blk: null, sheet: null, timer: null, busy: false, chain: Promise.resolve(), sched: 0 };
   // a game remembers the version it started with: on another one this phone would not see the same game
   G.stale = !!info.v && info.v !== Net.version();
   mount();
@@ -438,7 +475,38 @@ function leave(goTo = '#/play') {
 
 function save() {
   if (G.mode !== 'practice') return;
-  store.set({ mode: G.mode, setup: G.setup, actions: G.actions, me: G.me, bots: [...G.bots], over: G.state.phase === 'over' });
+  store.set({ mode: G.mode, setup: G.setup, actions: G.actions, me: G.me, bots: [...G.bots], over: G.state.phase === 'over', takebacks: G.takebacks || 0 });
+}
+
+// ── a finished game goes into Insights ──────────────────────────────
+// Counted at once (stats.js), saved on this phone, and in an online room
+// also summed up for tonight's scoreboard; then the bot reviews your moves
+// in the background and the end screen fills in its tip.
+function noteGameOver() {
+  if (!G || G.rec || G.mode === 'tutorial' || G.state.phase !== 'over') return;
+  let rec;
+  try { rec = St.analyzeGame(G.setup, G.actions, { me: G.me }); } catch (e) { console.error(e); return; }
+  Object.assign(rec, {
+    id: G.mode === 'online' ? `o:${G.code}:${G.created || 0}:${G.round}` : `p:${G.setup.seed}`,
+    at: Date.now(), mode: G.mode === 'online' ? 'online' : 'practice', takebacks: G.takebacks || 0,
+  });
+  G.rec = rec;
+  St.saveGame(rec);
+  if (G.mode === 'online' && L && L.code === G.code) L.lastRec = rec;
+  if (G.mode === 'online' && G.created) Net.sendResult(G.code, G.created, G.round, St.roomResult(rec)).catch((e) => console.warn(e));
+  if (G.mode !== 'online') {
+    const vs = St.summarize(St.loadGames(), [], 'bots');
+    G.scoreLine = vs.n > 1 ? `You’re ${vs.w}–${vs.l} against the bots` : '';
+  }
+  const g = G;
+  St.reviewPlay(G.setup, G.actions, G.me).then((review) => {
+    rec.review = review;
+    St.saveGame(rec);
+    if (L?.lastRec === rec && playView && location.hash === '#/play' && !G) playPage(playView);
+    if (G !== g || G.rec !== rec) return;
+    if (G.sheet?.startsWith('<div class="rv">')) G.sheet = Ins.reviewHTML(rec);
+    redraw();
+  }).catch((e) => console.error(e));
 }
 
 // ── moves ───────────────────────────────────────────────────────────
@@ -597,6 +665,7 @@ function suggestHTML() {
 // skips straight to the result.
 function show(events) {
   const after = G.state;
+  noteGameOver();
   // Remember the table as your turn ended, for "Since your last turn".
   const prev = G.lastShown;
   if (prev && prev.active === G.me && prev.phase !== 'mulligan' && (after.active !== G.me || after.turn !== prev.turn)) {
@@ -648,6 +717,8 @@ function undo() {
   G.view = G.state;
   G.lastShown = G.state;
   G.mark = null;
+  G.takebacks = (G.takebacks || 0) + 1;
+  G.rec = null;
   clearSelections();
   G.sheet = null;
   save();
@@ -1840,10 +1911,10 @@ function mulliganHTML() {
 function overHTML() {
   const s = S();
   const win = s.winner === G.me;
+  const score = G.mode === 'online' ? Ins.tonightLine(L?.results, s.players[G.me]?.name) : G.scoreLine || '';
   return `<div class="g-sheet"><div class="g-sheet-inner g-full" style="min-height:70vh;justify-content:center">
     <div class="winner">${win ? 'You win!' : `${esc(shortName(s.players[s.winner]?.name || 'Nobody'))} wins`}</div>
-    <div class="over-how">${s.log.slice(-4).filter((l) => !/ wins!$|ends their turn|'s turn\.$/.test(l.text)).slice(-2).map((l) => `<div>${esc(speak(l.text))}</div>`).join('')}</div>
-    <p class="muted">${win ? 'Well played.' : G.mode === 'practice' ? 'Take it back with ↶, or try again.' : 'Good game.'}</p>
+    ${G.rec ? Ins.overSummaryHTML(G.rec, { score }) : `<div class="over-how">${s.log.slice(-4).filter((l) => !/ wins!$|ends their turn|'s turn\.$/.test(l.text)).slice(-2).map((l) => `<div>${esc(speak(l.text))}</div>`).join('')}</div>`}
     <div class="btn-row">
       ${G.mode === 'online'
         ? '<button class="btn primary" data-act="lobby">Back to the lobby (swap cards, play again)</button>'
@@ -2352,6 +2423,7 @@ function onAct(act, el) {
     case 'fix-life': dispatch({ t: 'fix', by: G.me, op: 'life', p: Number(el.dataset.p), n: Number(el.dataset.n) }); G.sheet = fixSheet(); redraw(); break;
     case 'fix-energy': dispatch({ t: 'fix', by: G.me, op: 'energy', p: G.me, n: Number(el.dataset.n) }); G.sheet = fixSheet(); redraw(); break;
     case 'undo': G.sheet = null; if (G.mode === 'practice') undo(); break;
+    case 'review': if (G.rec) { G.sheet = Ins.reviewHTML(G.rec); redraw(); } break;
     case 'coach-next': tutAdvance(); break;
     case 'coach-skip': G.tut.done = true; flash('Lesson skipped. 💡 (top right) suggests a move, and ☰ has help.'); redraw(); schedule(); break;
     case 'help': G.sheet = helpSheet(); redraw(); break;

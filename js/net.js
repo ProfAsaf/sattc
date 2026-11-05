@@ -2,6 +2,7 @@
 //
 // rooms/{code}/info                    lobby: seats, names, deck codes, round, seeds
 // rooms/{code}/rounds/{n}/actions      the move list for game n (append-only)
+// rooms/{code}/results/{created}/{n}   how game n went (for tonight's scoreboard)
 //
 // The engine is deterministic, so a game is just its seed, decks and move
 // list. Every phone replays the same list in key order. A phone that sleeps,
@@ -194,6 +195,23 @@ export async function watchActions(code, round, onActions) {
 export async function sendAction(code, round, a) {
   await connect();
   await fb.push(actionsRef(code, round), JSON.parse(JSON.stringify(a)));
+}
+
+// ── tonight's results ───────────────────────────────────────────────
+// rooms/{code}/results/{created}/{round}   a finished game's summary (stats.js roomResult)
+// Every phone that sees a game end writes the same summary (the games are
+// the same everywhere), so it doesn't matter which one gets there first.
+// Under the room's creation time, so a reused room code starts a new night.
+const resultsRef = (code, created) => fb.ref(db, `rooms/${code}/results/${created}`);
+
+export async function sendResult(code, created, round, result) {
+  await connect();
+  await fb.set(fb.child(resultsRef(code, created), String(round)), JSON.parse(JSON.stringify(result)));
+}
+
+export async function watchResults(code, created, onResults) {
+  await connect();
+  return fb.onValue(resultsRef(code, created), (snap) => onResults(snap.val() || {}));
 }
 
 // ── draft night ─────────────────────────────────────────────────────

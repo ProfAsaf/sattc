@@ -184,13 +184,13 @@ function finishFight(s) {
   return s;
 }
 
-function scoreAfterFight(s, me) {
+export function scoreAfterFight(s, me) {
   const t = s.phase === 'combat' ? finishFight(s) : s;
   return t ? evaluate(t, me) : -Infinity;
 }
 
 // Sensible attacks: everyone, the safe ones, each alone, all but one.
-function attackCandidates(s, me) {
+export function attackCandidates(s, me) {
   const P = s.players[me];
   if (P.attackedOn === s.turn) return [];
   const ready = P.board.map((u) => s.cards[u]).filter((c) => canAttack(s, me, c));
@@ -228,7 +228,7 @@ function attackCandidates(s, me) {
 }
 
 // What can be done in a fight: Tricks from the hand, and creatures' abilities.
-const trickPlays = (s, me) => [
+export const trickPlays = (s, me) => [
   ...s.players[me].hand.filter((u) => isTrick(BY_ID[s.cards[u].cid])).flatMap((u) => playOptions(s, me, s.cards[u], 'hand', 24)),
   ...s.players[me].board.flatMap((u) => useOptions(s, me, s.cards[u], 12)),
 ];

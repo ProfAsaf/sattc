@@ -22,6 +22,10 @@ no build step.
 | `js/awake.js` | Keeps the screen on during a game, a draft or an online room (Screen Wake Lock) |
 | `js/draft.js` | Draft night's rules with no screen attached: the six piles, the 30 typed rounds, snake order, replay from the pick list, the draft bots |
 | `js/draft-ui.js` | Draft night's screens (practice against bots, and online in a room), plus its hooks into the Play page and lobby |
+| `js/stats.js` | Insights, the numbers: a finished game replayed and counted, the bot's review of your decisions, a draft's picks graded, tonight's results in a room, the summaries for the Insights page, and the games and drafts saved on the phone |
+| `js/insights.js` | Insights, the words and pictures: the Insights page (`#/insights`), a game's review, a draft's review, the end screen's lines and the lobby's board for tonight |
+| `css/insights.css` | Insights' look |
+| `tools/test-stats.mjs` | Insights checks over bot games and drafts, and how the grades come out for careful, noisy and random players (`node tools/test-stats.mjs`) |
 | `css/draft.css` | Draft night's look |
 | `tools/test-draft.mjs` | Draft checks: seeds, snake order, the recipe, replay, bots, Pick for (`node tools/test-draft.mjs`) |
 | `js/firebase-config.js` | Paste the Firebase web config here to switch online play on |
@@ -45,7 +49,8 @@ no build step.
 
 Firebase Realtime Database, free plan. Rooms live at `rooms/{CODE}/info`
 (seats, names, deck codes, round, seeds) and the moves of game *n* at
-`rooms/{CODE}/rounds/{n}/actions`. Because the engine is deterministic, every
+`rooms/{CODE}/rounds/{n}/actions`; how each game went (for tonight's board) at
+`rooms/{CODE}/results/{created}/{n}`. Because the engine is deterministic, every
 phone replays the same move list and agrees on the game; a phone that sleeps or
 reloads catches up from the list. To switch it on, paste the web config into
 `js/firebase-config.js`.
@@ -185,6 +190,57 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
   The first player to hit an opponent in a fight takes it; the holder draws an
   extra card at the end of each of their turns; hitting the holder in a fight
   takes it. If the holder is knocked out it goes to whoever's turn it is.
+
+## Insights (2026-11-04)
+
+How you're doing, the way chess.com's Insights and Game Review and 17lands
+(for Magic) do it, with no login: everything is kept on the phone
+(`collective.games.v1`, `collective.drafts.v1` in local storage; the newest
+250 games and 40 drafts).
+
+- **A finished game** (`analyzeGame` in `js/stats.js`) is replayed from its
+  setup and moves, and every move's events say who hit whom with which card
+  and what died: damage dealt and taken, creatures destroyed and lost, cards
+  played by kind, attacks, blocks, Energy used, cards lost to a full hand,
+  lowest Life, the Crown; for you, each card's part (drawn, played, damage,
+  kills) and the opponents' cards that hurt you most; the Life of everyone
+  and the bot's reading of "your chances" turn by turn; and the moments worth
+  telling (the biggest hit, the turn that swung it, the turning point if the
+  winner had been behind, players going out, a comeback).
+- **The bot's review** (`reviewPlay`, in the background after the game) asks
+  the practice bot, at each of your attacks, blocks, fight Tricks and ends of
+  turn, what it would have done and how much better that leaves you by its own
+  scoring (`evaluate` in `js/ai.js`, fights played out as the bot plays them).
+  Accuracy is 100 when it agreed every time and falls off like chess sites'
+  (`100·e^(−loss/8)`); the worst decisions are graded Inaccuracy, Mistake or
+  Blunder, Tricks that won a fight are Great. Energy kept for a Trick in hand
+  isn't counted against you, and a decision with no choice (or whose every
+  option loses) isn't counted. On bot games: a careful bot scores about 100%,
+  a random player about 70% (`tools/test-stats.mjs` prints both).
+- **The end screen** adds how long it took, tonight's score (or your record
+  against the bots), a small chart of your chances, one tip from the game, and
+  **Game review**: the chart (or everyone's Life), key moments, the bot's
+  notes, everyone's numbers, your best card and the one that hurt you most.
+- **Drafts** (`reviewDraft`): each of your picks against the bot's rating of
+  every card on the table for your deck at that moment (`pickScore` in
+  `js/draft.js`). Graded Best, Good, OK or Miss, with the card it liked more;
+  the draft score is the average (`100·e^(−loss/1.6)`). On the deck screen at
+  the end of a draft, and in Insights with how that deck then did.
+- **Tonight**: every phone in a room writes the same short summary of each
+  game it saw end (`roomResult`: the winner, everyone's damage, kills, blocks,
+  biggest hit, Crown turns and best card, under the players' names). The
+  lobby shows the wins and up to four awards (most damage, most creatures
+  destroyed, biggest hit, the wall, the Crown, the card of the night), and a
+  way back into your last game's review. No one's accuracy leaves their phone.
+- **The Insights page** (☰ on Home): your record and last ten games; how the
+  bot rates your play (accuracy and its trend; ends of turn, attacks, blocks
+  and Tricks; Energy used against the bots'; an average game); when you win
+  (going first or second, short or long games, kept or new opening hand, your
+  decks' factions); your cards (did the most; winning when drawn, 17lands'
+  IWD: win rate in games you drew it against games it stayed in your deck,
+  once there are enough games; stuck in your hand; hurt you most); rivals,
+  friends by name and bots by deck; drafting; records; recent games, each
+  opening its review. All games, or only friends' or bots'.
 
 ## Keeping the table calm
 

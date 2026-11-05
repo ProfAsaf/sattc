@@ -1,10 +1,11 @@
 // The Collective — app shell: hash router and the non-game views
-// (home, card gallery, deck list, deckbuilder, rules).
+// (home, card gallery, deck list, deckbuilder, rules; Insights is in insights.js).
 
 import { BY_ID, CARDS, FACTIONS, FACTION_ORDER, KEYWORDS, RULES, SET, STARTERS, TOKENS, isTrick } from './cards.js';
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
 import * as Decks from './decks.js';
 import { autoRejoin, demo, playPage, startTutorial } from './game-ui.js';
+import { closeSheet, insightsPage } from './insights.js';
 
 const view = document.getElementById('view');
 
@@ -137,6 +138,7 @@ const ICONS = {
   cards: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="7" y="3" width="12" height="16" rx="1.6"/><path d="M5 6.5v12.2A1.8 1.8 0 0 0 6.8 20.5H15"/></svg>',
   decks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 3.5 7.5 12 12l8.5-4.5z"/><path d="m3.5 12 8.5 4.5 8.5-4.5"/><path d="m3.5 16.5 8.5 4.5 8.5-4.5"/></svg>',
   rules: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M8.5 8h7M8.5 11.5h5"/></svg>',
+  insights: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M4 16l5-5 4 3 7-8"/><circle cx="20" cy="6" r="1.2" fill="currentColor"/></svg>',
 };
 
 function homeMenu(open) {
@@ -169,6 +171,7 @@ function home() {
         <a href="#/cards">${ICONS.cards}All 90 cards</a>
         <a href="#/decks">${ICONS.decks}Decks</a>
         <a href="#/rules">${ICONS.rules}Rules</a>
+        <a href="#/insights">${ICONS.insights}Insights</a>
       </nav>
     </div>`;
   view.onclick = (e) => {
@@ -465,11 +468,12 @@ function play() {
 }
 
 // ── router ──────────────────────────────────────────────────────────
-const ROUTES = { '': home, cards: gallery, decks: deckList, deck: builder, rules, play };
+const ROUTES = { '': home, cards: gallery, decks: deckList, deck: builder, rules, play, insights: () => insightsPage(view) };
 
 function route() {
   const [path = '', arg] = location.hash.replace(/^#\/?/, '').split('/');
   closeZoom();
+  closeSheet();
   document.body.dataset.page = path && ROUTES[path] ? path : 'home';
   (ROUTES[path] || home)(arg ? decodeURIComponent(arg) : undefined);
   window.scrollTo(0, 0);

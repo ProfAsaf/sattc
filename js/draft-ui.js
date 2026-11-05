@@ -10,7 +10,7 @@
 //
 // game-ui.js calls in from the Play page and the online lobby:
 //   savedPractice()                  a practice draft to resume, or null
-//   roomPanelHTML(code, info), modeSwitchHTML(on), createSwitchHTML(on)
+//   roomPanelHTML(code, info, tonight), modeSwitchHTML(on), createSwitchHTML(on)
 //   onPlayAct(act, el, ctx)          the Play page's draft-* buttons (draft-practice: el.dataset.n bots)
 //   onRoomInfo(code, info, refresh)  each lobby update of the room this phone is in
 //   beforeStart(code, info)          the host's Start game in a draft room
@@ -22,6 +22,8 @@ import * as FX from './fx.js';
 import { keepAwake } from './awake.js';
 import * as Decks from './decks.js';
 import * as Net from './net.js';
+import * as St from './stats.js';
+import * as Ins from './insights.js';
 import {
   KINDS, KIND_INFO, PICKS, botChoice, byCost, deckCounts, deckName, factionCounts, kindCounts, lastPicks,
   newSeed, poolKey, replay, roundPicks, adviceFor,
@@ -299,6 +301,7 @@ function endHTML(d) {
   for (const c of byCost(pool)) (groups[Math.min(7, c.cost)] ||= []).push(c);
   return `<div class="dr-end">
       <div class="dr-handoff">${handoffHTML(d)}</div>
+      ${Ins.draftLineHTML(d.reviewed)}
       <div class="dr-sum">
         <div class="dr-sum-l"><div class="dr-fcs">${factionsHTML(pool)}</div>${kindsHTML(pool)}</div>
         ${curveHTML(pool)}
@@ -410,7 +413,23 @@ function onClick(e) {
     case 'draft-start-game': startOnlineGame(el); break;
     case 'draft-ready': if (R) { el.disabled = true; Net.setDraftReady(R.code).catch(fail); } break;
     case 'draft-reload': location.reload(); break;
+    case 'draft-review': if (d?.reviewed) Ins.openSheet(Ins.draftReviewHTML(d.reviewed)); break;
   }
+}
+
+// A finished draft goes into Insights: each of your picks against the bot's
+// ratings (stats.js), saved on this phone with the deck it made, so the
+// games that deck plays can be counted with it.
+function noteDraft(d) {
+  if (!d?.st?.done || d.me < 0 || d.reviewed) return;
+  const id = d.kind === 'online' ? `od:${d.code}:${d.id}` : `pd:${d.seed}`;
+  const old = St.findDraft(id);
+  if (old) { d.reviewed = old; return; }
+  try {
+    const review = St.reviewDraft({ seed: d.seed, n: d.n }, d.picks, d.me);
+    d.reviewed = { id, at: Date.now(), mode: d.kind, n: d.n, deck: Decks.encode(deckCounts(review.pool)), review: { score: review.score, counts: review.counts, picks: review.picks } };
+    St.saveDraft(d.reviewed);
+  } catch (e) { console.error(e); }
 }
 
 // The cards came to rest on card i. They are already in place, so the rest of
@@ -528,6 +547,7 @@ function practiceFrom(saved, ctx) {
     names: ['You', ...bots.map((p) => `Bot ${p}`)], bots, play: ctx.play, timer: null,
   };
   d.st = replay(d, d.picks);
+  noteDraft(d);
   return d;
 }
 
@@ -566,6 +586,7 @@ function botsTick() {
 function addPracticePick(x) {
   P.picks.push(x);
   P.st = replay(P, P.picks);
+  noteDraft(P);
   savePractice();
   if (V?.kind === 'practice') render();
   botsTick();
@@ -601,7 +622,7 @@ export function onRoomInfo(code, info, refresh) {
   R.me = d.order.indexOf(Net.clientId());
   R.names = d.order.map((id, p) => (info.players || []).find((x) => x && x.id === id)?.name || `Player ${p + 1}`);
   if (R.me < 0 || info.status !== 'lobby') { if (V?.kind === 'online') closeScreen(); return; }
-  if (R.st) { ensureDeck(); maybeOpen(); }
+  if (R.st) { noteDraft(R); ensureDeck(); maybeOpen(); }
   if (V?.kind === 'online') render();
 }
 
@@ -616,6 +637,7 @@ function watchDraft(code, draft) {
     const first = !d.st, wasDone = d.st?.done;
     d.picks = picks;
     try { d.st = replay(d, picks); } catch (e) { console.error(e); return; }
+    noteDraft(d);
     if (d.sent && (d.st.done || d.st.round > d.sent.k || d.st.who !== d.me)) d.sent = null;
     ensureDeck();
     if (first) maybeOpen();
@@ -727,7 +749,7 @@ export function modeSwitchHTML(on) {
 }
 
 // The lobby of a draft room: seats with draft progress, then the next step.
-export function roomPanelHTML(code, info) {
+export function roomPanelHTML(code, info, tonight = '') {
   const me = Net.clientId();
   const players = info.players || [];
   const meSeat = players.findIndex((p) => p && p.id === me);
@@ -781,6 +803,7 @@ export function roomPanelHTML(code, info) {
       ${host ? '<button class="btn ghost small" data-act="draft-again">Draft again from scratch</button>' : ''}`;
   }
   return `<div class="pp-title"><h3>Game <b>${esc(code)}</b> · Draft night</h3><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
+    ${tonight}
     <div class="deck-cards" style="margin-top:12px">${seats}</div>
     ${versionNoteHTML(info)}
     <div class="dr-room">${next}<button class="btn ghost" data-act="leave-room">Leave this game</button></div>`;

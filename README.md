@@ -285,6 +285,18 @@ and Asaf's own: if it isn't critical, less is more.
   Resume button. No explanations: the lesson teaches, and Draft night's lobby
   keeps "How the draft works" a tap away.
 
+## The lesson's coach box (2026-11-05)
+
+On Asaf's iPhone the page gets about 800px of the screen, and the middle strip
+of the table (between the two rows of creatures) is only about 80px tall, so
+the coach box was cut off and had to be scrolled inside. Now it floats over
+the table (`placeCoach` in game-ui.js): in the middle when it fits there,
+otherwise spilling onto the rows next to it where it hides the fewest
+creatures, and never over what the step is talking about or a fight in the
+middle. Its bottom row is gone: Next is the button at the bottom right, a gold
+line along the top of the box shows how far through the lesson you are, and
+Skip the lesson is in ☰.
+
 ## Fights, step by step (2026-11-04)
 
 Asaf found blocking "super hard to follow" and the swipe that confirmed a move

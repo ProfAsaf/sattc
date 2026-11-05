@@ -235,11 +235,17 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
   animation: coachIn .25s ease-out;
 }
 .coach-text { font-family: 'Spectral', Georgia, serif; }
-.coach-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-.coach-n { flex: 1; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #7a6a52; }
-.coach .btn.small { min-height: 34px; }
-.coach .btn.ghost { color: #6b5b44; border-color: rgba(60, 45, 30, .25); }
 .coach-wait .coach-text::after { content: ' ⏳'; }
+/* on the table it floats (placeCoach sets its top): never cut off, never a box to scroll */
+.g-table > .coach {
+  position: absolute; z-index: 8; left: 0; right: 0; top: 30%; margin: 0 auto;
+  width: min(calc(100% - 24px), 380px); padding-top: 14px;
+}
+/* how far through the lesson you are: a gold line along the top */
+.g-table > .coach::before {
+  content: ''; position: absolute; left: 14px; right: 14px; top: 6px; height: 3px; border-radius: 2px;
+  background: linear-gradient(90deg, #c9a24e var(--done, 0%), rgba(60, 45, 30, .14) var(--done, 0%));
+}
 .coach-sheet { width: 100%; margin: 12px 0 0; }
 @keyframes coachIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
@@ -344,8 +350,6 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 .recap-life { font-size: 16px; color: #fff3d6; margin: 2px 0 5px; }
 .recap-x { font-size: 11px; color: var(--muted); text-align: right; margin-top: 4px; }
 
-/* the lesson's coach box sits above the fight lines */
-.coach { position: relative; z-index: 5; }
 /* a ghost button stays readable over a raised hand card */
 .g-actions .btn.ghost { background: rgba(23, 18, 13, .92); }
 
@@ -367,9 +371,9 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
   #game.g-ffa .g-mid .banner-sub { font-size: 12px; line-height: 1.3; }
   #game.g-ffa .pv-k { display: none; } /* "If no one plays a Trick:": the ☠ and the numbers say it */
   #game.g-ffa.fighting .g-side .tc-row { padding: 2px 0; min-height: 0; --w-board-max: 40px; --w-board: 40px; }
-  .coach { font-size: 13.5px; line-height: 1.34; padding: 8px 11px 6px; }
-  .coach-row { margin-top: 3px; }
-  .coach .btn.small { min-height: 30px; }
+  .coach { font-size: 13.5px; line-height: 1.34; padding: 8px 11px 7px; }
+  .g-table > .coach { padding-top: 12px; }
+  .g-table > .coach::before { left: 11px; right: 11px; top: 5px; }
 }
 /* an iPhone SE in Safari (about 550px tall): smaller cards, so the whole
    table still fits above the strip and your hand instead of spilling over them */

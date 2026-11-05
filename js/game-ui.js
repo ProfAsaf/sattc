@@ -347,13 +347,53 @@ async function runBotScript(st) {
   if (G && tutStep() === st) tutAdvance();
 }
 
+// The coach box floats over the table (placeCoach). The gold line along its top
+// is how far through the lesson you are; Next is the button at the bottom
+// right, and ☰ has Skip the lesson.
 function coachHTML(st) {
   const n = G.tut.i + 1, total = TUTORIAL.steps.length;
-  return `<div class="coach${st.bot ? ' coach-wait' : ''}" data-key="coach">
+  return `<div class="coach${st.bot ? ' coach-wait' : ''}" data-key="coach" data-step="${n}" style="--done: ${Math.round((n / total) * 100)}%">
     <div class="coach-text">${esc(st.say)}</div>
-    <div class="coach-row"><span class="coach-n">Lesson ${n} of ${total}${st.next ? ' · Next is at the bottom right' : ''}</span>
-      ${st.final || st.bot ? '' : '<button class="btn small ghost" data-act="coach-skip">Skip lesson</button>'}</div>
   </div>`;
+}
+
+// The middle strip of the table is often shorter than the coach box (on many
+// phones it was cut off, and read by scrolling inside it), so the box floats
+// over the table instead: in the middle when it fits there, otherwise spilling
+// onto the rows next to it where it covers the fewest creatures, and never
+// over what it is talking about (the gold rings) or a fight in the middle.
+function placeCoach(root) {
+  const box = root.querySelector('.g-table > .coach'), st = tutStep();
+  if (!box || !st) return;
+  const table = box.parentElement, T = table.getBoundingClientRect();
+  const span = (el) => { const r = el.getBoundingClientRect(); return [r.top - T.top, r.bottom - T.top]; };
+  // (what the step rings, whether or not the rings are showing: a card's big view hides them)
+  const talksAbout = (el) => (st.show || []).some((sel) => el.matches(sel) || el.querySelector(sel));
+  const hard = [], soft = [];
+  for (const el of table.querySelectorAll('.g-side .tc-row, .g-side .pbar')) {
+    if (talksAbout(el)) hard.push(span(el));
+    else if (el.children.length) soft.push(span(el));
+  }
+  for (const el of table.querySelectorAll('.g-battle, .g-say > *')) hard.push(span(el));
+  const mid = span(table.querySelector('.g-mid'));
+  const h = box.offsetHeight;
+  const want = (mid[0] + mid[1] - h) / 2;
+  const over = (y, [a, b]) => Math.max(0, Math.min(y + h, b) - Math.max(y, a));
+  let best = want, least = Infinity;
+  for (let y = 4; y <= Math.max(4, T.height - h - 4); y += 2) {
+    let cost = Math.abs(y - want);
+    for (const r of hard) cost += 1000 * over(y, r);
+    for (const r of soft) cost += 10 * over(y, r);
+    if (cost < least) { least = cost; best = y; }
+  }
+  box.style.top = `${Math.round(best)}px`;
+  if (box.sizes) return;
+  // the first time it goes straight there; from then on it glides
+  requestAnimationFrame(() => { box.style.transition = 'top .3s ease'; });
+  // the text's font arriving late, or the phone turning, changes the sizes
+  box.sizes = new ResizeObserver(() => { if (box.isConnected && G) placeCoach(root); });
+  box.sizes.observe(box);
+  box.sizes.observe(table);
 }
 
 // ?demo=<seed>&moves=<n>&bots=<1|2>: bots play every seat for n moves, then
@@ -1419,9 +1459,9 @@ function tableHTML() {
     </div>
     <div class="g-table">
       ${others.map((P) => `<section class="g-side opp${s.active === P.i ? ' active' : ''}${P.out ? ' out' : ''}${s.combat && (s.combat.a === P.i || s.combat.d === P.i) ? ' in-fight' : ''}" data-side="${P.i}">${pbarHTML(s, P, hl)}${row(P)}</section>`).join('')}
-      <div class="g-mid">${st ? coachHTML(st) : ''}${bv ? battleHTML(s, bv, hl) : ''}<div class="g-say" data-key="say">${midHTML()}</div></div>
+      <div class="g-mid">${bv ? battleHTML(s, bv, hl) : ''}<div class="g-say" data-key="say">${midHTML()}</div></div>
       <section class="g-side me${s.active === G.me ? ' active' : ''}${me.out ? ' out' : ''}" data-side="${G.me}">${row(me)}${pbarHTML(s, me, hl)}</section>
-      ${recapHTML()}
+      ${st ? coachHTML(st) : ''}${recapHTML()}
     </div>
     <div class="g-actions">${actionsHTML()}</div>
     <div class="tc-hand g-hand${myMove() ? '' : ' wait'}${me.out ? ' out' : ''}">${handHTML(s)}</div>
@@ -1540,6 +1580,7 @@ function draw(root) {
   const st = tutStep();
   const rings = st?.show || (G.suggest?.show && G.suggest.state === G.state ? G.suggest.show : null);
   if (rings && !G.sheet) for (const sel of rings) root.querySelectorAll(sel).forEach((el) => el.classList.add('coach-on'));
+  placeCoach(root);
 }
 
 // Redraw after a tap: things that moved glide to their new places.
@@ -2159,6 +2200,7 @@ function playerSheet(pi) {
 
 function menuSheet() {
   return `<h3>Menu</h3><div class="btn-col">
+    ${tutStep() ? '<button class="btn" data-act="coach-skip">Skip the lesson (play on against the bot)</button>' : ''}
     ${G.mode === 'practice' ? '<button class="btn" data-act="undo">↶ Take back my last move</button>' : ''}
     <button class="btn" data-act="help">How the table works</button>
     <button class="btn" data-act="log">Game log</button>
@@ -2166,7 +2208,7 @@ function menuSheet() {
     <button class="btn" data-act="fixes">Fix something</button>
     <button class="btn" data-act="rules">All the rules (leaves the table)</button>
     <button class="btn danger" data-act="concede">${G.concedeArm && Date.now() - G.concedeArm < 4000 ? 'Tap again to concede' : 'Concede'}</button>
-    <button class="btn ghost" data-act="leave">Leave (${G.mode === 'practice' ? 'you can resume later' : 'the game continues'})</button>
+    <button class="btn ghost" data-act="leave">${G.mode === 'tutorial' ? 'Leave the lesson' : `Leave (${G.mode === 'practice' ? 'you can resume later' : 'the game continues'})`}</button>
     </div>`;
 }
 
@@ -2454,7 +2496,7 @@ function onAct(act, el) {
     case 'undo': G.sheet = null; if (G.mode === 'practice') undo(); break;
     case 'review': if (G.rec) { G.sheet = Ins.reviewHTML(G.rec); redraw(); } break;
     case 'coach-next': tutAdvance(); break;
-    case 'coach-skip': G.tut.done = true; flash('Lesson skipped. 💡 (top right) suggests a move, and ☰ has help.'); redraw(); schedule(); break;
+    case 'coach-skip': G.sheet = null; G.tut.done = true; flash('Lesson skipped. 💡 (top right) suggests a move, and ☰ has help.'); redraw(); schedule(); break;
     case 'help': G.sheet = helpSheet(); redraw(); break;
     case 'tutorial': startTutorial(); break;
     case 'concede':

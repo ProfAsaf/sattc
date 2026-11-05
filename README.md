@@ -146,8 +146,8 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
 - Guard now means "can block two attackers". Attacks no longer target creatures.
 - On the table, fighting creatures meet in a battle zone in the middle and
   fights resolve one pair at a time; the move that carries the game on
-  (End turn, Attack, Block, Fight) is a swipe across the table, either way (see
-  "Your hand, and swipes instead of buttons").
+  (End turn, Attack, Block, Fight) is a button at the bottom right (see
+  "Fights, step by step").
 
 ## More from Magic (2026-11-04)
 
@@ -184,7 +184,7 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
 - **💡 Suggest** (top right on the table, hidden during the lesson): asks the
   practice bot what it would do in your place, without peeking at face-down
   Traps. A play comes with "Do it"; an attack or a block is set up on the
-  table for you to confirm (swipe) or change. The mulligan screen says whether the
+  table for you to confirm (tap Attack or Block) or change. The mulligan screen says whether the
   bot would keep the hand.
 - **👑 The Crown** (three or more players; `crown` in the setup turns it off).
   The first player to hit an opponent in a fight takes it; the holder draws an
@@ -283,30 +283,50 @@ and Asaf's own: if it isn't critical, less is more.
   Resume button. No explanations: the lesson teaches, and Draft night's lobby
   keeps "How the draft works" a tap away.
 
-## Your hand, and swipes instead of buttons
+## Fights, step by step (2026-11-04)
 
-Where a gesture is easy to guess, it replaces a button or a line of text.
-Things the thumb uses sit low on the screen, in the same place whatever the
-text above them says.
+Asaf found blocking "super hard to follow" and the swipe that confirmed a move
+"not very intuitive and still often hard to see", so a fight now explains
+itself on the table.
 
-- **Swipe either way to move on:** no big End turn button. A faded line says
-  what the move is ("‹‹‹ End turn ›››", or Attack, Block, Don't block, Fight)
-  and you swipe left or right anywhere on the table, or on the line itself, to
-  make it. The line lives in the strip between your bar and your hand, with
-  the Cancel/Skip/Done buttons at its sides: nothing on the table (the 💡 tip,
-  a fight's preview, "Since your last turn", a crowded table on a small phone)
-  can cover it or push it out of view, and it never moves. It sits at the top
-  of the strip, clear of the middle card of your hand, which pokes up into the
-  rest. The line follows the finger and lights up gold past the mark; let go
-  there (or flick) to do it, or short of it and it slides back; it flies off
-  the way you swiped. It gets brighter, its arrows running outward, when there
-  is nothing else to do. A tap only nudges it (and says "Swipe it left or
-  right"); a click from a keyboard or screen reader does it. Swipes start away
-  from the screen's edges (the browser's back and forward swipes), your hand,
-  buttons and your own creatures (you drag those to aim). The table and its
-  middle are `touch-action: pan-y`: the middle scrolls by itself, and without
-  that the browser takes a sideways swipe there and cancels it. With three
-  players you first tap whose name to attack.
+- **One button moves the game on:** End turn, Attack, Block (or No block)
+  and Fight, at the right of the strip above your hand, under the thumb, always
+  in the same place, where nothing on the table can cover it. It is gold when
+  it is the thing to do. End turn stays plain while you could still play a card
+  or attack, and then its first tap only asks ("End turn anyway", with a note
+  saying what you could still do), so a stray tap never throws a turn away.
+  Cancel and Clear sit on the left. (The swipe across the table is gone.)
+- **What to tap** is written just above the fighting creatures: "Tap your
+  creatures to add or take out attackers", "Tap your creatures to block. Two
+  can team up on one attacker", "Tap a blocker again to move it or take it
+  back", "Play a Trick now (it glows in your hand), or tap Fight". On short
+  phones in a three-player fight, where that label is hidden, the banner under
+  the fight carries it (`fightHow` in `js/game-ui.js`).
+- **Blocking is taps:** tap one of your creatures and it steps in front of an
+  attacker it can stop (the first one nobody blocks yet). Tap it again and it
+  moves on to the next attacker, and after the last one back home
+  (`cycleBlock`). Dragging it onto an attacker puts it exactly there (a Guard
+  takes a second attacker that way).
+- **Why it works or not:** while you decide, ☠ marks every creature that would
+  be destroyed if no one plays a Trick, and the banner says what you would
+  take and lose (`fightPreview`, worked out once for each set of blocks).
+  Tapping a creature that can't block says why: exhausted (it attacked),
+  frozen, "can't block" on its card, or the attacker has Soar and only Soar or
+  Reach can block it. A hunted creature says what it must block.
+- **"Agree to fight":** after blockers are chosen, whoever could still play a
+  Trick (or use an ability) gets the chance, and the button says Fight.
+- **Room on short phones:** during a fight on a short phone with three
+  players, both opponents fold to their bars, the hand sinks lower, the fight's
+  cards are a little smaller and its banner compact, so the attackers, your
+  blockers and the banner all fit an iPhone SE without covering each other.
+
+## Your hand, and gestures
+
+Where a gesture is easy to guess, it replaces a button or a line of text:
+looking through cards and putting things away. Committing to a move is a
+button. Things the thumb uses sit low on the screen, in the same place
+whatever the text above them says.
+
 - **The hand is a carousel:** the focal card sits in the middle, poking up, a
   little bigger, with its rules in small print; the others fan out to either
   side, the far ones off the screen. Slide the hand sideways and it follows the

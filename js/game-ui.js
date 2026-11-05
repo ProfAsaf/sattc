@@ -405,8 +405,6 @@ function mount() {
     });
     // Your hand, big: swipe sideways to move along it.
     root.addEventListener('pointerdown', viewerSwipe);
-    // Swipe across the table, either way, to end your turn (or attack, block, fight).
-    root.addEventListener('pointerdown', goSwipe);
     // Drag from your creature to aim: at an opponent to attack, at an attacker to block it.
     FX.dragArrow(root, {
       selector: '.g-side.me .tcard',
@@ -587,7 +585,7 @@ function startSuggest() {
         G.atk = { att: [...a.att], hunt: (a.hunt || []).map((h) => [...h]), target: a.target };
         G.suggest.setUp = at.players.length === 2 ? 'Attack' : `Attack ${at.players[a.target].name.replace(/^Bot · /, '')}`;
       }
-      if (a.t === 'block' && G.blk) { G.blk.pairs = a.blocks.map((p) => [...p]); G.blk.sel = null; G.suggest.setUp = a.blocks.length ? 'Block' : 'Don’t block'; }
+      if (a.t === 'block' && G.blk) { G.blk.pairs = a.blocks.map((p) => [...p]); G.blk.sel = null; G.suggest.setUp = a.blocks.length ? 'Block' : 'No block'; }
     } catch (e) { console.error(e); G.suggest = null; flash('No suggestion this time.'); }
     redraw();
   }, 40);
@@ -620,7 +618,7 @@ function describeMove(s, a) {
       for (const [b, x] of a.blocks) by.set(x, [...(by.get(x) || []), b]);
       return `${[...by].map(([x, bs]) => `${listNames(bs.map(card))} ${bs.length > 1 ? 'block' : 'blocks'} ${card(x)}`).join('; ')}.`;
     }
-    case 'pass': return 'Swipe to <b>Fight</b>: no Trick or ability is worth it here.';
+    case 'pass': return 'Tap <b>Fight</b>: no Trick or ability is worth it here.';
     case 'use': {
       const c = s.cards[a.uid];
       if (c.zone === 'relic') return `Use the ${card(a.uid)}: sacrifice ${card(a.sac)} to draw a card.`;
@@ -654,7 +652,7 @@ function suggestHTML() {
   if (!sg || sg.state !== G.state || !myMove()) return '';
   if (sg.thinking) return '<div class="suggest"><span class="suggest-t"><span class="suggest-h">💡 Thinking…</span></span></div>';
   if (sg.setUp) {
-    return `<div class="suggest" data-act="suggest-close"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text} It’s set up: swipe to confirm (<b>${esc(sg.setUp)}</b>), or change it.</span></div>`;
+    return `<div class="suggest" data-act="suggest-close"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text} It’s set up: tap <b>${esc(sg.setUp)}</b> to do it, or change it.</span></div>`;
   }
   return `<div class="suggest" data-act="suggest-close"><span class="suggest-t"><span class="suggest-h">💡 The bot would:</span> ${sg.text}</span>
     <div class="suggest-row"><button class="btn small primary" data-act="suggest-do">Do it</button></div></div>`;
@@ -938,6 +936,40 @@ function assignBlock(b, a) {
   redraw();
 }
 
+// Tap a creature of yours to block: it steps in front of an attacker it can
+// stop (the first one nobody blocks yet, if there is one). Tap it again and it
+// moves on to the next attacker, and after the last one back home. Dragging it
+// onto an attacker puts it exactly there (a Guard can take a second one that way).
+function cycleBlock(b) {
+  const s = S();
+  const forced = G.blk.pairs.find(([x, y]) => x === b && isForced(x, y));
+  if (forced && blockLimit(s, s.cards[b]) === 1) { flash(`${nameOf(b)} must block ${nameOf(forced[1])}: it was hunted.`); return; }
+  const fits = s.combat.att.filter((a) => canAssign(b, a));
+  if (!fits.length) return;
+  const cur = G.blk.pairs.find(([x, y]) => x === b && !isForced(x, y));
+  G.blk.cycle ||= {};
+  if (!cur) G.blk.cycle[b] = Math.max(0, fits.findIndex((a) => !G.blk.pairs.some(([, y]) => y === a)));
+  const k = G.blk.cycle[b] || 0;
+  const order = [...fits.slice(k), ...fits.slice(0, k)];
+  const next = cur ? order[order.indexOf(cur[1]) + 1] : order[0];
+  G.suggest = null;
+  G.blk.sel = null;
+  if (cur) G.blk.pairs = G.blk.pairs.filter((p) => p !== cur);
+  if (next != null) assignBlock(b, next);
+  else redraw();
+}
+
+// Why one of your creatures can't block now, in a sentence.
+function whyNoBlock(u) {
+  const s = S(), c = s.cards[u], d = BY_ID[c.cid];
+  if (d.cantBlock) return `${d.name} can’t block: its card says so.`;
+  if (c.frozen) return `${d.name} is frozen, so it can’t block until it thaws.`;
+  if (c.ex) return `${d.name} is exhausted (it attacked), so it can’t block until your next turn.`;
+  const soar = s.combat.att.find((a) => hasKw(s, s.cards[a], 'soar'));
+  if (soar != null) return `${d.name} can’t block ${nameOf(soar)}: it has Soar, and only creatures with Soar or Reach can block it.`;
+  return `${d.name} can’t block this time.`;
+}
+
 // What a block would lead to, if nobody plays a Trick.
 const lean = (s) => ({ ...s, log: [], events: [] });
 function playOut(s, a) {
@@ -951,6 +983,14 @@ function playOut(s, a) {
     t = r2.state;
   }
   return t;
+}
+// How the fight you are deciding goes if no one plays a Trick (worked out once
+// for each position and set of blocks: the banner and the cards both use it).
+function fightPreview(s) {
+  const key = iBlock() ? `b${JSON.stringify(G.blk?.pairs || [])}` : iTrick() ? 'p' : null;
+  if (!key) return null;
+  if (G.pv?.s !== s || G.pv.key !== key) G.pv = { s, key, t: playOut(s, key === 'p' ? { t: 'pass', p: G.me } : { t: 'block', p: G.me, blocks: G.blk?.pairs || [] }) };
+  return G.pv.t;
 }
 function outcome(s, t) {
   if (!t) return '';
@@ -1056,6 +1096,8 @@ function creatureHTML(s, c, hl, inBattle = false) {
     if (c.played === s.turn && s.active === G.me && !c.rush && !hasKw(s, c, 'rush')) st.push('sick');
   }
   if (G.blk?.sel === c.uid) st.push('selected');
+  // in a fight you are deciding: what would be destroyed if no one plays a Trick
+  if (inBattle && (iBlock() || iTrick())) { const pv = fightPreview(s); if (pv && pv.cards[c.uid]?.zone !== 'board') st.push('doomed'); }
   if (hl.targets.some((t) => t.uid === c.uid)) st.push('target');
   if (hl.picked.includes(c.uid)) st.push('selected');
   const kws = FX.KEYWORD_BADGES.filter((k) => hasKw(s, c, k));
@@ -1111,6 +1153,30 @@ function battleView(s) {
   return { a, d, attTop, cols, inZone: new Set([...att, ...placed]) };
 }
 
+// What to tap right now while picking attackers or in a fight you are
+// deciding ('' when there is nothing to say). It sits on the label just above
+// the fighting creatures; on short phones in a three-player fight, where that
+// label is hidden, the banner under them carries it instead.
+function fightHow(s) {
+  if (tutStep()) return '';
+  if (G.atk && myMain()) {
+    if (hunterWithoutPrey()) return '';
+    return G.atk.target == null ? 'Who do you attack? Tap their name ↑' : 'Tap your creatures to add or take out attackers.';
+  }
+  if (iBlock()) {
+    const mine = s.players[G.me].board.filter((u) => canBlockSomething(u));
+    if (G.blk?.sel != null) return `Now tap the attacker ${nameOf(G.blk.sel)} should block.`;
+    if (!mine.length) return 'None of your creatures can block this.';
+    if (!G.blk?.pairs.length) return mine.length > 1 ? 'Tap your creatures to block. Two can team up on one attacker.' : 'Tap your creature to block.';
+    return s.combat.att.length > 1 ? 'Tap a blocker again to move it or take it back.' : 'Tap a blocker again to take it back.';
+  }
+  if (iTrick()) {
+    const trick = s.players[G.me].hand.some((u) => isTrick(BY_ID[s.cards[u].cid]) && !playable(u));
+    return trick ? 'Play a Trick now (it glows in your hand), or tap Fight.' : 'Use an ability now, or tap Fight.';
+  }
+  return '';
+}
+
 function battleHTML(s, bv, hl) {
   const card = (u) => creatureHTML(s, s.cards[u], hl, true);
   const blocking = iBlock();
@@ -1134,8 +1200,9 @@ function battleHTML(s, bv, hl) {
   const who = bv.a === G.me ? 'You' : shortName(s.players[bv.a].name);
   const at = target ? (target.i === G.me ? 'you' : shortName(target.name)) : null;
   const across = bv.cols.reduce((n, c) => n + Math.max(1, c.bs.length + (c.also.length ? 0.6 : 0)), 0);
-  const label = at ? `⚔ ${esc(who)} → ${esc(at)}` : '⚔ Who do you attack? Tap their name ↑';
-  return `<div class="g-battle ${bv.attTop ? 'att-top' : 'att-bottom'}${bv.cols.length > 4 || across > 5 ? ' many' : ''}" data-key="battle">${tutStep() ? '' : `<div class="gb-label">${label}</div>`}<div class="gb-cols">${cols}</div></div>`;
+  const how = fightHow(s);
+  const label = how ? `<div class="gb-label how">${esc(how)}</div>` : `<div class="gb-label">${at ? `⚔ ${esc(who)} → ${esc(at)}` : '⚔ Who do you attack? Tap their name ↑'}</div>`;
+  return `<div class="g-battle ${bv.attTop ? 'att-top' : 'att-bottom'}${bv.cols.length > 4 || across > 5 ? ' many' : ''}" data-key="battle">${tutStep() ? '' : label}<div class="gb-cols">${cols}</div></div>`;
 }
 
 // The hand always has a focal card: the one you last slid to or looked at,
@@ -1184,20 +1251,17 @@ function midInner() {
   if (G.atk && myMain()) {
     const hunter = hunterWithoutPrey();
     if (hunter) return `<div class="banner fight"><span>${esc(nameOf(hunter))} can Hunt: tap the enemy creature it must fight (optional).</span></div>`;
-    return '';
+    const how = fightHow(s);
+    return how ? `<div class="banner fight only-small"><span>${esc(how)}</span></div>` : '';
   }
-  // in a fight, the one line that matters: how it goes if no one plays a Trick
+  // in a fight: what to tap, and how it goes if no one plays a Trick (☠ on the cards)
   if (iBlock()) {
     if (coached) return ''; // the coach box explains it, and the fight needs the room
-    const pairs = G.blk?.pairs || [];
-    const preview = outcome(s, playOut(s, { t: 'block', p: G.me, blocks: pairs }));
-    const sel = G.blk?.sel != null ? `<span>Now tap the attacker ${esc(nameOf(G.blk.sel))} should block.</span>` : '';
-    return `<div class="banner fight foe">${sel}<div class="banner-sub">If no one plays a Trick: ${preview}</div></div>`;
+    return `<div class="banner fight foe"><span class="banner-how">${esc(fightHow(s))}</span><div class="banner-sub"><span class="pv-k">If no one plays a Trick: </span>${outcome(s, fightPreview(s))}</div></div>`;
   }
   if (iTrick()) {
     if (coached) return '';
-    const preview = outcome(s, playOut(s, { t: 'pass', p: G.me }));
-    return `<div class="banner fight"><div class="banner-sub">As things stand: ${preview}</div></div>`;
+    return `<div class="banner fight"><span class="banner-how">${esc(fightHow(s))}</span><div class="banner-sub"><span class="pv-k">As things stand: </span>${outcome(s, fightPreview(s))}</div></div>`;
   }
   // how the last fight went (the full story is in the game log, in the menu)
   if (G.fightNote && s.phase === 'main' && !coached) return `<div class="fight-note">${G.fightNote}</div>`;
@@ -1261,15 +1325,16 @@ function anythingToDo() {
   return phoenixReady(s, G.me).length > 0 && P.energy >= 2;
 }
 
-// The strip under the table: Cancel, a choice's Skip or Done, the lesson's
-// Next, and between them the quiet line you swipe to carry the game on (End
-// turn, Attack, Block, Fight): goHTML. Nothing on the table can cover it or
-// push it out of view there, and it never moves.
+// The strip under the table: Cancel, Clear or a Phoenix on the left; on the
+// right, under the thumb, the button that carries the game on (End turn,
+// Attack, Block, Fight: goHTML), or a choice's Skip or Done, or the lesson's
+// Next. Nothing on the table can cover it or push it out of view there, and
+// it never moves.
 function actionsHTML() {
   const s = S();
   const btn = (cls, act, label, extra = '') => `<button class="btn ${cls}" data-act="${act}" ${extra}>${label}</button>`;
   const left = [], right = [];
-  const row = () => `<span class="ga-side">${left.join('')}</span>${goHTML()}<span class="ga-side end">${right.join('')}</span>`;
+  const row = () => `<span class="ga-side">${left.join('')}</span><span class="ga-side end">${right.join('')}${goHTML()}</span>`;
   // In the lesson, "Next" is a button here: the coach box can be taller than the
   // middle of a short phone, and the button must never be the part that's cut off.
   const lesson = tutStep();
@@ -1293,9 +1358,15 @@ function actionsHTML() {
 }
 
 // ── moving the game on ──────────────────────────────────────────────
-// No big button: the move that carries the game on is a quiet line under
-// the table ("‹‹‹ End turn ›››"), and you swipe across the table, either way,
-// to make it. Choices (whom to attack with three players, a target) are taps.
+// One button, always in the same place at the right of the strip: End turn,
+// Attack, Block (or No block) and Fight. It is gold when it is the thing to
+// do. End turn stays plain while you could still play a card or attack, and
+// then its first tap only asks ("End turn anyway"), so a stray tap never
+// throws a turn away. Choices (whom to attack with three players, a target)
+// are taps on the table.
+const END_ARM_MS = 4000;
+const endArmed = () => !!G.endArm && Date.now() - G.endArm < END_ARM_MS;
+
 function goAction() {
   const s = S();
   if (G.flow || (s.phase !== 'main' && s.phase !== 'combat') || s.players[G.me].out) return null;
@@ -1303,99 +1374,32 @@ function goAction() {
   if (G.atk && myMain()) {
     const p = G.atk.target;
     if (p == null) return null; // three players: tap whom to attack first
-    return { act: 'attack', p, label: s.players.length === 2 ? 'Attack' : `Attack ${shortName(s.players[p].name)}` };
+    return { act: 'attack', p, label: s.players.length === 2 ? 'Attack' : `Attack ${shortName(s.players[p].name)}`, gold: true };
   }
-  if (iBlock()) return { act: 'block', label: G.blk?.pairs.length ? 'Block' : 'Don’t block' };
-  if (iTrick()) return { act: 'pass', label: 'Fight' };
-  if (myMain()) return { act: 'end', label: 'End turn', ready: !anythingToDo() };
+  if (iBlock()) return { act: 'block', label: G.blk?.pairs.length ? 'Block' : 'No block', gold: true };
+  if (iTrick()) return { act: 'pass', label: 'Fight', gold: true };
+  if (myMain()) return { act: 'end', label: endArmed() ? 'End turn anyway' : 'End turn', gold: !anythingToDo(), armed: endArmed() };
   return null;
 }
 
 function goHTML() {
   const go = goAction();
   if (!go) return '';
-  // a fresh element after every swipe, so the last one can fly off
-  const arrows = (side) => `<span class="go-arrow ${side}" aria-hidden="true"><i></i><i></i><i></i></span>`;
-  return `<div class="g-go${go.ready ? ' ready' : ''}" data-key="go-${G.goN || 0}" data-go="${go.act}"${go.p != null ? ` data-p="${go.p}"` : ''} role="button" aria-label="${esc(go.label)} (swipe left or right)">`
-    + `${arrows('l')}<span class="go-t">${esc(go.label)}</span>${arrows('r')}</div>`;
+  return `<button class="btn g-go${go.gold ? ' primary' : ''}${go.armed ? ' armed' : ''}" data-act="go" data-go="${go.act}"${go.p != null ? ` data-p="${go.p}"` : ''} data-key="go">${esc(go.label)}</button>`;
 }
 
-function doGo(el) {
+function goTap(el) {
   if (!G || G.busy) return;
-  onAct(el.dataset.go, el); // 'attack' reads data-p
-}
-
-// A tap only shows that it's a swipe (a click from a keyboard or a screen reader does it).
-function nudgeGo(el) {
-  el.classList.remove('nudge');
-  void el.offsetWidth;
-  el.classList.add('nudge');
-  toast('Swipe it left or right', 1100);
-}
-
-function swallowClick() {
-  const kill = (k) => { k.stopPropagation(); k.preventDefault(); };
-  addEventListener('click', kill, { capture: true, once: true });
-  setTimeout(() => removeEventListener('click', kill, { capture: true }), 350);
-}
-
-// Swipe left or right anywhere on the table, or on the line itself (not from
-// your hand, a button or one of your creatures, which you drag to aim): the
-// line follows the finger and lights up past the mark. Let go there, or
-// flick, to do it; short of it, it slides back.
-function goSwipe(e) {
-  if (!G || G.busy || G.sheet || FX.isDragging() || (e.pointerType === 'mouse' && e.button !== 0)) return;
-  const t = e.target;
-  if (!t.closest?.('.g-table, .g-go') || t.closest('button, [data-act], .relic, .g-side.me .tcard, .recap-pop')) return;
-  if (e.clientX < 24 || e.clientX > innerWidth - 24) return; // the screen's edges belong to the browser's back and forward swipes
-  const el = document.querySelector('#game .g-go');
-  if (!el) return;
-  const x0 = e.clientX, y0 = e.clientY;
-  const mark = Math.min(150, innerWidth * 0.38);
-  const vel = FX.velocity();
-  let live = false, dx = 0;
-  const set = (x) => {
-    const d = Math.abs(x), p = Math.min(1, d / mark);
-    // the line moves a little slower than the finger, so it never leaves the screen
-    el.style.setProperty('--go-x', `${(Math.sign(x) * 0.6 * (d <= mark ? d : mark + FX.rubber((d - mark) / 120) * 120)).toFixed(1)}px`);
-    el.style.setProperty('--go-p', p.toFixed(3));
-    el.classList.toggle('armed', p >= 1);
-  };
-  const stop = () => {
-    removeEventListener('pointermove', move, true);
-    removeEventListener('pointerup', up, true);
-    removeEventListener('pointercancel', up, true);
-  };
-  const move = (ev) => {
-    if (ev.pointerId !== e.pointerId) return;
-    dx = ev.clientX - x0;
-    const dy = ev.clientY - y0;
-    if (!live) {
-      if (Math.hypot(dx, dy) < 10) return;
-      if (Math.abs(dy) > Math.abs(dx) * 0.8) { stop(); return; } // not a sideways swipe: leave it be
-      live = true;
-      el.classList.add('dragging');
-    }
-    vel.add(ev.clientX);
-    set(dx);
-  };
-  const up = (ev) => {
-    if (ev.pointerId !== e.pointerId) return;
-    stop();
-    if (!live) return;
-    swallowClick();
-    el.classList.remove('dragging');
-    const v = vel.get();
-    const flick = Math.abs(v) > 0.7 && Math.sign(v) === Math.sign(dx) && Math.abs(dx) > mark * 0.35;
-    if (ev.type === 'pointercancel' || !(Math.abs(dx) >= mark || flick) || !G || G.busy) { set(0); return; } // short of the mark: it slides back
-    el.style.setProperty('--go-dir', dx < 0 ? -1 : 1); // it flies off the way it was swiped
-    el.classList.add('gone');
-    G.goN = (G.goN || 0) + 1;
-    setTimeout(() => doGo(el), 120);
-  };
-  addEventListener('pointermove', move, true);
-  addEventListener('pointerup', up, true);
-  addEventListener('pointercancel', up, true);
+  const act = el.dataset.go;
+  if (act === 'end' && !tutStep() && anythingToDo() && !endArmed()) {
+    G.endArm = Date.now();
+    toast(canStartAttack() ? 'You can still attack. Tap again to end your turn.' : 'You can still play a card. Tap again to end.', 2200);
+    redraw();
+    setTimeout(() => { if (G?.endArm && !endArmed()) { G.endArm = 0; redraw(); } }, END_ARM_MS + 50);
+    return;
+  }
+  G.endArm = 0;
+  onAct(act, el); // 'attack' reads data-p
 }
 
 function tableHTML() {
@@ -2159,17 +2163,18 @@ function helpSheet() {
       <div><b>Creatures</b>: theirs above, yours below. Left number = <b>Power</b> (damage it deals), right = <b>Vitality</b> (damage it can take). Small badges are keywords; tap any card to read it.</div>
       <div><b>Your hand</b>: the card in the middle pokes up with its rules showing. Slide the hand sideways to bring another card to the middle (flick it to go further). <b>Tap a card</b> to see your whole hand big, and swipe through it.</div>
       <div><b>Play a card</b>: drag it from your hand up onto the table, or tap it and tap Play. Glowing cards can be played now.</div>
-      <div><b>Attack</b> (once a turn): tap your glowing creatures and they step into the middle of the table, then <b>swipe</b> across the table (with three players, first tap whose name to attack). Attackers are exhausted afterwards: they can’t block until your next turn.</div>
-      <div><b>Block</b>: when you are attacked, the attackers come to the middle. Tap one of your creatures and it steps in front of an attacker (if it could stop several, tap the one you want). Then <b>swipe</b> across. The line in the middle tells you what will happen.</div>
+      <div><b>Attack</b> (once a turn): tap your glowing creatures and they step into the middle of the table, then tap <b>Attack</b> (with three players, first tap whose name to attack). Attackers are exhausted afterwards: they can’t block until your next turn.</div>
+      <div><b>Block</b>: when you are attacked, the attackers come to the middle. <b>Tap one of your creatures</b> and it steps in front of an attacker; tap it again to move it to the next attacker, or back home. ☠ marks what would be destroyed if no one plays a Trick, and the line in the middle says what you would lose. Then tap <b>Block</b>.</div>
+      <div><b>Can’t block?</b> An exhausted creature (it attacked) can’t, and only creatures with Soar or Reach can block one with Soar. Tap it to see why.</div>
       <div><b>Team up</b>: several of your creatures can block the same attacker. They all hit it, and it splits its damage among them, destroying the costliest ones it can.</div>
-      <div><b>The fight</b> plays out one pair at a time, in the middle. <b>Tricks</b> and abilities can be used before it starts; <b>swipe</b> to Fight when you are done.</div>
+      <div><b>The fight</b> plays out one pair at a time, in the middle. <b>Tricks</b> and abilities can be used before it starts; tap <b>Fight</b> when you are done.</div>
       <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
-      <div><b>Swipe</b> across the table, left or right, to move on: the faded line just above your hand says what it does (End turn, Attack, Block, Fight).</div>
+      <div><b>The button at the bottom right</b> moves the game on: End turn, Attack, Block, Fight. While you could still play a card or attack, End turn asks for a second tap.</div>
       <div><b>💡</b> (top right) asks the bot what it would do in your place: it spells out the move and rings the cards. Tap <b>Do it</b> to make that move, or do something else.</div>
       <div><b>Is it ready?</b> A <b>gold glow</b> means it can act now. <b>zZ</b> means it just arrived: it can block, but it can’t attack until your next turn. Turned sideways, with ↻ in its corner, means it attacked: it can’t attack or block until its owner’s next turn.</div>
       <div><b>Discard piles</b> sit at the end of each player’s bar. Spells land there when they’re done; tap a pile to look through it.</div>
-      <div><b>End turn</b> (swipe) when you’re finished. Energy you don’t spend waits for your next turn, so you can answer attacks with Tricks.</div>
+      <div><b>End turn</b> when you’re finished. Energy you don’t spend stays until your next turn, so you can answer attacks with Tricks.</div>
     </div>
     <div class="btn-col">
       ${G.mode === 'online' ? '' : '<button class="btn" data-act="tutorial">Play the guided lesson</button>'}
@@ -2261,8 +2266,6 @@ function onClick(e) {
   if (G.recap != null && !t.closest('.recap-pop')) { G.recap = null; if (!actEl) redraw(); }
   if (actEl && !t.closest('.relic')) { onAct(actEl.dataset.act, actEl); return; }
   if (G.busy) return;
-  const go = t.closest('.g-go');
-  if (go) { if (e.detail === 0) doGo(go); else nudgeGo(go); return; }
 
   if (G.sheet) {
     const ch = t.closest('[data-choice]');
@@ -2310,20 +2313,18 @@ function onClick(e) {
   const slot = t.closest('.gb-empty[data-att]');
   if (iBlock() && slot) {
     if (G.blk.sel != null) assignBlock(G.blk.sel, Number(slot.dataset.att));
-    else flash('First tap the creature of yours that should block.');
+    else flash('Tap one of your glowing creatures: it steps in front of an attacker.');
     return;
   }
 
   if (iBlock() && target?.uid != null) {
     const c = s.cards[target.uid];
     if (c.ctrl === G.me) {
-      const paired = G.blk.pairs.find(([b]) => b === c.uid);
-      if (paired && !isForced(paired[0], paired[1])) { G.blk.pairs = G.blk.pairs.filter(([b, a]) => !(b === c.uid && !isForced(b, a))); G.blk.sel = null; G.suggest = null; redraw(); return; }
-      const fits = s.combat.att.filter((a) => canAssign(c.uid, a));
-      // only one attacker it could stop: it steps in front of it straight away (beside any other blocker)
-      if (fits.length === 1) { assignBlock(c.uid, fits[0]); return; }
-      if (fits.length) { G.blk.sel = G.blk.sel === c.uid ? null : c.uid; redraw(); return; }
-    } else if (s.combat.att.includes(c.uid) && G.blk.sel != null) { assignBlock(G.blk.sel, c.uid); return; }
+      if (!canBlockSomething(c.uid)) { flash(whyNoBlock(c.uid)); return; }
+      cycleBlock(c.uid);
+      return;
+    }
+    if (s.combat.att.includes(c.uid) && G.blk.sel != null) { assignBlock(G.blk.sel, c.uid); return; }
     G.sheet = cardSheet(target.uid);
     redraw();
     return;
@@ -2386,6 +2387,7 @@ function onAct(act, el) {
     case 'cancel': clearSelections(); G.sheet = null; redraw(); break;
     case 'keep': dispatch({ t: 'mulligan', p: G.me, redraw: false }); break;
     case 'redraw': dispatch({ t: 'mulligan', p: G.me, redraw: true }); break;
+    case 'go': goTap(el); break;
     case 'end': clearSelections(); dispatch({ t: 'end', p: G.me }); break;
     case 'play': startPlay(uid, 'hand'); break;
     case 'echo': startPlay(uid, 'discard'); break;

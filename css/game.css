@@ -284,6 +284,10 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 }
 .g-battle.many { --w-battle: 46px; }
 .gb-label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #f0b48a; }
+/* what to tap, just above the fighting creatures */
+.gb-label.how { font-size: 13.5px; letter-spacing: 0; text-transform: none; font-weight: 600; color: #ffe2cc; text-align: center; line-height: 1.3; max-width: 94vw; }
+/* the banner under the fight carries it only where that label is hidden (below) */
+.banner-how, .banner.only-small { display: none; }
 .gb-cols { display: flex; justify-content: center; align-items: stretch; gap: 10px; }
 .gb-col { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 2px 3px; border-radius: 12px; transition: background .2s, box-shadow .2s; }
 .gb-slot { min-height: calc(var(--w-battle) * 1.33); display: grid; place-items: center; }
@@ -345,11 +349,23 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 /* a ghost button stays readable over a raised hand card */
 .g-actions .btn.ghost { background: rgba(23, 18, 13, .92); }
 
-/* short phones (an iPhone SE, or Safari with its toolbars) in a three-player fight */
+/* while a fight is on screen the hand sinks a little to make room
+   (the cards slide down, partly below the screen edge) */
+#game.fighting { --hand-h: 116px; --hand-sink: 54px; }
+#game.g-ffa.fighting { --hand-h: 104px; --hand-sink: 48px; }
+/* short phones (an iPhone SE, or Safari with its toolbars) in a three-player fight
+   (after the rules above, so its smaller hand wins) */
 @media (max-height: 720px) {
   #game.g-ffa.fighting { --hand-h: 76px; --hand-sink: 64px; }
-  #game.g-ffa { --w-battle: 40px; }
+  #game.g-ffa { --w-battle: 36px; }
   #game.g-ffa .gb-label { display: none; }
+  #game.g-ffa .banner-how { display: block; }
+  #game.g-ffa .banner.only-small { display: flex; }
+  /* a fight needs the room: both opponents fold to their bars (their other creatures can't join it), and the banner is compact */
+  #game.g-ffa.fighting .g-side.opp .tc-row { display: none; }
+  #game.g-ffa .g-mid .banner { padding: 4px 9px; gap: 0 8px; font-size: 12.5px; line-height: 1.3; }
+  #game.g-ffa .g-mid .banner-sub { font-size: 12px; line-height: 1.3; }
+  #game.g-ffa .pv-k { display: none; } /* "If no one plays a Trick:": the ☠ and the numbers say it */
   #game.g-ffa.fighting .g-side .tc-row { padding: 2px 0; min-height: 0; --w-board-max: 40px; --w-board: 40px; }
   .coach { font-size: 13.5px; line-height: 1.34; padding: 8px 11px 6px; }
   .coach-row { margin-top: 3px; }
@@ -364,10 +380,6 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
   .g-mid { min-height: 6px; }
 }
 
-/* while a fight is on screen the hand sinks a little to make room
-   (the cards slide down, partly below the screen edge) */
-#game.fighting { --hand-h: 116px; --hand-sink: 54px; }
-#game.g-ffa.fighting { --hand-h: 104px; --hand-sink: 48px; }
 .tc-hand { transition: height .3s ease, opacity .25s, filter .25s; }
 /* a row emptied into the battle zone gets out of the way while the fight is on */
 #game.fighting .g-side .tc-row:empty { min-height: 20px; padding: 0; }
@@ -502,41 +514,24 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 /* the 💡 tip: tap it to put it away */
 .suggest { cursor: pointer; }
 
-/* ── the move that carries the game on: swipe across the table, either way ──
-   A quiet line in the strip above your hand ("‹‹‹ End turn ›››", or Attack,
-   Block, Fight), where nothing on the table can cover it and it never moves.
-   It follows the finger and lights up past the mark; brighter, its arrows
-   running outward, when there is nothing else to do. A tap nudges it to
-   show that it's a swipe. */
-.g-go {
-  --go-x: 0px; --go-p: 0;
-  grid-column: 2; grid-row: 1;
-  display: inline-flex; align-items: center; gap: 10px;
-  padding: 6px 12px;
-  font: 600 18px/1 'EB Garamond', Georgia, serif; letter-spacing: .06em; white-space: nowrap;
-  color: rgba(236, 220, 186, calc(.42 + var(--go-p) * .58));
-  text-shadow: 0 1px 6px rgba(0, 0, 0, .9); /* readable over the top of a raised hand card */
-  transform: translateX(var(--go-x));
-  transition: transform .55s cubic-bezier(.2, 1.35, .4, 1), color .25s, opacity .25s, text-shadow .25s;
-  cursor: grab; touch-action: pan-y;
+/* ── the button that carries the game on (End turn, Attack, Block, Fight) ──
+   At the right of the strip above your hand, under the thumb, always in the
+   same place. Gold when it is the thing to do; End turn stays plain while you
+   could still play a card or attack, and goes red-edged when its first tap
+   asks "End turn anyway". */
+.g-go { min-width: 120px; font-weight: 700; }
+.g-go.armed { background: rgba(208, 112, 92, .18); border-color: var(--danger); color: #ffd6ca; }
+/* in a fight you are deciding: ☠ on a creature that would be destroyed if no one plays a Trick */
+.tcard.doomed { --shade: .38; }
+.tcard.doomed > .tc-body::after {
+  content: '☠'; position: absolute; z-index: 7; left: 50%; top: 46%; transform: translate(-50%, -50%);
+  width: max(24px, calc(var(--w) * .42)); height: max(24px, calc(var(--w) * .42));
+  display: grid; place-items: center; border-radius: 50%; pointer-events: none;
+  font-size: max(14px, calc(var(--w) * .26)); line-height: 1; color: #ffe3da;
+  background: rgba(122, 34, 24, .9); box-shadow: 0 2px 8px rgba(0, 0, 0, .6);
 }
-.go-t { max-width: 50vw; overflow: hidden; text-overflow: ellipsis; }
-.g-go.ready { color: rgba(244, 222, 166, calc(.8 + var(--go-p) * .2)); }
-.g-go.dragging { transition: color .15s, text-shadow .15s; }
-.g-go.armed { color: #ffd98c; text-shadow: 0 0 16px rgba(255, 196, 92, .6); }
-.g-go.gone { transform: translateX(calc(var(--go-dir, 1) * 75vw)); opacity: 0; transition: transform .26s cubic-bezier(.5, 0, .9, .5), opacity .26s ease-in; }
-.busy .g-go { opacity: .35; }
-.go-arrow { display: inline-flex; gap: 3px; margin-top: 1px; }
-.go-arrow i { width: 8px; height: 8px; border: solid currentColor; border-width: 2px 2px 0 0; transform: rotate(45deg); opacity: calc(.5 + var(--go-p) * .5); }
-.go-arrow.l i { transform: rotate(-135deg); }
-.g-go.ready .go-arrow i { animation: go-run 2.4s ease-in-out infinite; }
-.g-go.ready .go-arrow.r i:nth-child(2), .g-go.ready .go-arrow.l i:nth-child(2) { animation-delay: .14s; }
-.g-go.ready .go-arrow.r i:nth-child(3), .g-go.ready .go-arrow.l i:nth-child(1) { animation-delay: .28s; }
-@keyframes go-run { 0%, 55%, 100% { opacity: .45; } 18% { opacity: 1; } }
-.g-go.nudge { animation: go-nudge .8s cubic-bezier(.3, 1.6, .5, 1); }
-@keyframes go-nudge { 22% { transform: translateX(24px); } 55% { transform: translateX(-24px); } 100% { transform: translateX(0); } }
-/* sideways swipes on the table are ours; it can still scroll up and down when it must
-   (the middle scrolls by itself, so it says so too, or the browser takes the swipe) */
+/* sideways drags on the table (aiming from a creature) are ours; it can still scroll up and down when it must
+   (the middle scrolls by itself, so it says so too, or the browser takes the drag) */
 .g-table, .g-mid { touch-action: pan-y; }
 
 /* an empty discard pile shows nothing (it keeps its place for the first card to land in) */

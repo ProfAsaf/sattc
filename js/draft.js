@@ -67,13 +67,18 @@ function shuffle(list, rand) {
   return list;
 }
 
+// The draft's pool: Week One's 90 cards, one of each. Three players' 30 picks
+// use up exactly these (the piles and rounds are built around them), so the
+// later cards (n 91 on, for decks you build) stay out of the draft.
+export const DRAFT_POOL = CARDS.filter((c) => !c.token && c.n <= 90);
+
 // A fingerprint of this draft format and the card list (ids, in order): the
 // piles come from it, so every phone in a draft must have the same one. Card
 // text may differ.
 const FORMAT = 'snake-1';
 export function poolKey() {
   let h = 2166136261;
-  for (const ch of `${FORMAT}|${CARDS.filter((c) => !c.token).map((c) => c.id).join(',')}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  for (const ch of `${FORMAT}|${DRAFT_POOL.map((c) => c.id).join(',')}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
   return (h >>> 0).toString(36);
 }
 
@@ -81,7 +86,7 @@ export function poolKey() {
 export function makePiles(seed) {
   const rand = rng(seed);
   const piles = Object.fromEntries(KINDS.map((k) => [k, []]));
-  for (const c of CARDS) if (!c.token) piles[kindOf(c)].push(c.id);
+  for (const c of DRAFT_POOL) piles[kindOf(c)].push(c.id);
   for (const k of KINDS) shuffle(piles[k], rand);
   return piles;
 }

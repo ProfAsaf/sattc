@@ -147,7 +147,8 @@ A painting made elsewhere can be dropped into `art/raw/<card-id>.png`; then run
 - New keywords: Soar, Reach, Swift, Venom, Drain, Overrun, Watchful, Hunt.
   New card kinds: Tricks (playable mid-fight, even on others' turns), Relics
   (stay on the table, at most 3), Legendary (gold foil, no extra rules).
-- 90 different cards, one of each. Unspent Energy stays until your next turn,
+- 90 different cards, one of each (since 2026-11-07: 97 cards, two of each in a
+  deck; see "Combos that escalate"). Unspent Energy stays until your next turn,
   so you can hold it for Tricks.
 - Guard now means "can block two attackers". Attacks no longer target creatures.
 - On the table, fighting creatures meet in a battle zone in the middle and
@@ -387,6 +388,35 @@ small Cloudflare Worker sends them (`push/`, with how to deploy it); the game
 says nothing about alerts until `js/push-config.js` points at it. No alert
 while your game is open in front of you. iPhones: iOS 16.4+, the game opened
 from its Home Screen icon.
+
+## Combos that escalate (2026-11-07)
+
+"There was something very exciting about combos and how things start
+escalating exponentially that felt less true for this game." Bot games agreed:
+about 1.5 cards a turn all game, the board stalled after turn 5, and only 12% of
+turns ended with two engine creatures out. Three reasons: one copy of each card
+(a two-card combo had turned up by turn 5 only 10% of the time; with two of each,
+30%), about one card a turn, and synergies that add instead of multiply.
+
+- **Two of each card in a deck** (`RULES.maxCopies`, `Decks.maxCopies`; one of a
+  Legendary). Draft night keeps Week One's 90 cards, one of each (`DRAFT_POOL`):
+  its rounds are built to use them up exactly.
+- **Seven cards that multiply** (n 91–97, art in `js/art/scenes/new-d.js`):
+  The Bright Choir (each Spirit you create brings another), Dawnsinger (every
+  Spirit costs each opponent 1 Life), Crescendo (damage for each Spell this turn),
+  Ripple (draw; the next Spell costs 1 less), Season of Plenty (every creature
+  that has grown grows again each turn), Lantern Ferryman (your creatures that
+  die come back as Spirits), Wild Bloom (double a creature for the turn).
+- **Starter decks** are now chosen lists with two of the cards each deck is
+  built around. In 1,200 bot games they win 46–54% each, as even as before.
+- After the change: total Power on your side keeps climbing (15 by turn 7, 21
+  by turn 10, against 13 and 15) and turns with two engines out went from 12% to
+  19%. Bots don't plan a combo turn, so big single turns are for people to find.
+- Bigger boards needed room: a fight with 5 or more attackers uses short words
+  ("−7" under a column, the total in the line below) and smaller gaps, and wraps
+  to two lines if it still won't fit (`fitDecision`). A folded side says
+  "7 creatures · 2 Relics" on one line instead of showing its Relics, and on
+  short phones Relics sit small in their player's bar.
 
 ## Invites that open the app (2026-11-07)
 

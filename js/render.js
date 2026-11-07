@@ -156,7 +156,7 @@ export function cardRowHTML(card, count = 0, opts = {}) {
       <div class="r-ctl">
         <button class="r-btn" data-act="minus" ${count <= 0 ? 'disabled' : ''} aria-label="Remove one">−</button>
         <span class="r-count${count ? ' on' : ''}">${count}</span>
-        <button class="r-btn" data-act="plus" ${count >= (opts.max ?? 1) || opts.blocked ? 'disabled' : ''} aria-label="Add one">+</button>
+        <button class="r-btn" data-act="plus" ${count >= (opts.max ?? Infinity) || opts.blocked ? 'disabled' : ''} aria-label="Add one">+</button>
       </div>`;
   return `<div class="row" data-id="${esc(card.id)}" style="${factionVars(card)}">
       <div class="r-thumb">${thumb}</div>

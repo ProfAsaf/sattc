@@ -33,10 +33,13 @@ export function split(counts) {
   return { creatures, spells };
 }
 
+// How many of a card a deck may hold: two (one of a Legendary).
+export const maxCopies = (card) => (card?.legendary ? 1 : RULES.maxCopies);
+
 // Can one more copy go in? Returns a reason when it can't.
 export function canAdd(counts, id) {
   const card = BY_ID[id];
-  if ((counts[id] || 0) >= RULES.maxCopies) return { ok: false, reason: 'You own one of each card, and it is already in.' };
+  if ((counts[id] || 0) >= maxCopies(card)) return { ok: false, reason: card.legendary ? 'A Legendary card: one per deck, and it is already in.' : `You have ${maxCopies(card)} of each card, and both are already in.` };
   const fs = factionsOf(counts);
   for (const f of card.factions) fs.add(f);
   if (fs.size > RULES.maxFactions) return { ok: false, reason: 'That would make 4 factions. Decks can use at most 3.' };
@@ -52,7 +55,7 @@ export function validate(counts) {
   if (fs.size > RULES.maxFactions) errors.push(`${fs.size} factions; the limit is ${RULES.maxFactions}.`);
   for (const [id, c] of Object.entries(counts)) {
     if (!BY_ID[id] || BY_ID[id].token) errors.push(`Unknown card: ${id}.`);
-    else if (c > RULES.maxCopies) errors.push(`${BY_ID[id].name}: you own only one.`);
+    else if (c > maxCopies(BY_ID[id])) errors.push(`${BY_ID[id].name}: at most ${maxCopies(BY_ID[id])}.`);
   }
   return { ok: errors.length === 0, errors };
 }

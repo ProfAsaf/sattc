@@ -103,9 +103,9 @@ function openZoom(id, deckCtx = null) {
               <button class="r-btn" data-act="minus" ${n <= 0 ? 'disabled' : ''}>−</button>
               <span class="r-count${n ? ' on' : ''}" style="width:auto;padding:0 8px">${n} in deck</span>
               <button class="r-btn" data-act="plus" ${!can.ok ? 'disabled' : ''}>+</button>
-            </div>` : `<span class="muted small">Everyone owns one</span>`}
+            </div>` : `<span class="muted small">Everyone owns ${card.legendary ? 'one (Legendary)' : 'two'}</span>`}
         </div>
-        ${deckCtx && !can.ok && n < RULES.maxCopies ? `<div class="zoom-note">${esc(can.reason)}</div>` : ''}
+        ${deckCtx && !can.ok && n < Decks.maxCopies(card) ? `<div class="zoom-note">${esc(can.reason)}</div>` : ''}
         ${kwList.length || notes.length ? `<div class="kw-help">${kwList.map((k) =>
           `<div><b>${KEYWORDS[k].name}</b> — ${esc(KEYWORDS[k].text)}</div>`).join('')}${notes.map((t) => `<div>${t}</div>`).join('')}</div>` : ''}
       </div>`;
@@ -193,7 +193,7 @@ function gallery() {
     view.innerHTML = `
       ${pageHead('Cards')}
       ${chipsHTML(galleryState)}
-      <p class="count-line">${list.length} card${list.length === 1 ? '' : 's'} · everyone owns one of each</p>
+      <p class="count-line">${list.length} card${list.length === 1 ? '' : 's'} · everyone owns two of each (one of a Legendary)</p>
       <div class="grid">${list.map((c) => cardHTML(c)).join('')}</div>`;
   };
   render();
@@ -369,7 +369,7 @@ function rules() {
   view.innerHTML = `${pageHead('Rules')}<article class="rules-page">
     <div class="notice" style="margin-bottom:8px"><div>▶</div><div>Rather learn by doing? <button class="btn small primary" data-act="tutorial" style="margin-left:6px">Play the guided lesson</button></div></div>
     <h2>The idea</h2>
-    <p>Every player owns the <b>same 90 cards</b>, one of each. Before you play, you build a deck of exactly <b>30</b>. Everyone is solving the same puzzle. The fun is finding combinations nobody else spotted, and guessing what your friends will bring.</p>
+    <p>Every player owns the <b>same ${CARDS.filter((c) => !c.token).length} cards</b>, two of each (one of a Legendary). Before you play, you build a deck of exactly <b>30</b>. Everyone is solving the same puzzle. The fun is finding combinations nobody else spotted, and guessing what your friends will bring.</p>
 
     <h2>Winning</h2>
     <p>Everyone starts with <b>${RULES.startLife} Life</b>. Bring a player to 0 and they are out. Last player standing wins.</p>
@@ -425,7 +425,7 @@ function rules() {
 
     <h2>Building a deck</h2>
     <ul>
-      <li>Exactly <b>${RULES.deckSize} cards</b>; you own one of each, so no repeats.</li>
+      <li>Exactly <b>${RULES.deckSize} cards</b>, with at most <b>two of any card</b> (one of a Legendary). Two of the cards your deck is built around make its combos turn up far more often.</li>
       <li>At most <b>${RULES.maxFactions} factions</b>. Two-faction cards count as both.</li>
       <li>Between games, you may swap cards with the 60 you left out.</li>
       <li>Not sure? Use a <a href="#/decks">starter deck</a> and change it later.</li>

@@ -143,6 +143,7 @@ function price(s, pi, c, from = 'hand') {
       case 'the-forest-remembers': cost = Math.max(3, cost - P.board.filter((u) => s.cards[u].grown).length); break;
     }
   }
+  if (d.type === 'spell' && P.ripple > 0) cost -= 1; // Ripple: the next Spell this turn
   let usesMirror = false;
   if (d.type === 'spell' && !P.mirror && cost <= 2) {
     const mages = countOn(s, P.board, 'mirror-mage');
@@ -365,6 +366,7 @@ function killBatch(s, dead) {
       const o = s.cards[u];
       if (o.cid === 'ash-collector' && o.zone === 'board' && o.ctrl === ctrl) buff(s, o, 1, 0, false);
       if (o.cid === 'kindly-undertaker') { log(s, ctrl, 'Kindly Undertaker: gain 1 Life.'); gainLife(s, ctrl, 1); }
+      if (o.cid === 'lantern-ferryman' && o.zone === 'board' && o.ctrl === ctrl && !BY_ID[as].token) { log(s, ctrl, `The Lantern Ferryman carries ${BY_ID[as].name} across: a Spirit rises.`); makeTokens(s, ctrl, 'spirit', 1); }
       if (o.cid === 'the-pale-abbess') {
         log(s, ctrl, 'The Pale Abbess takes her tithe: each opponent loses 1 Life.');
         for (const o2 of opponents(s, ctrl)) loseLife(s, o2.i, 1);
@@ -461,7 +463,8 @@ function takeControl(s, c, pi, until) {
   return true;
 }
 
-function makeTokens(s, pi, cid, n) {
+// `answer`: these are The Bright Choir's own (they don't call it again).
+function makeTokens(s, pi, cid, n, answer = false) {
   const P = s.players[pi];
   let made = 0;
   for (let k = 0; k < n && P.board.length < RULES.boardMax; k++, made++) {
@@ -470,6 +473,17 @@ function makeTokens(s, pi, cid, n) {
     ev(s, { k: 'token', uid: t.uid, p: pi });
   }
   if (made) log(s, pi, `${P.name} creates ${made} ${BY_ID[cid].name}${made === 1 ? '' : 's'}.`);
+  if (!made || cid !== 'spirit') return;
+  const singers = countOn(s, P.board, 'dawnsinger');
+  if (singers) {
+    log(s, pi, `Dawnsinger: each opponent loses ${made * singers} Life.`);
+    for (const o of opponents(s, pi)) loseLife(s, o.i, made * singers);
+  }
+  if (answer) return;
+  for (const u of [...P.relics]) if (s.cards[u].cid === 'the-bright-choir') {
+    log(s, pi, 'The Bright Choir answers.');
+    makeTokens(s, pi, 'spirit', made, true);
+  }
 }
 
 // ── fighting ────────────────────────────────────────────────────────
@@ -741,8 +755,10 @@ export function needs(s, pi, c, from = 'hand') {
       return { sac: own, target: anyTarget };
     case 'the-mountain-is-angry':
       return { target: opponents(s, pi).map((Q) => ({ p: Q.i })) };
-    case 'wild-growth': case 'kindle': case 'sudden-growth': case 'kiss-of-night': case 'bastion':
+    case 'wild-growth': case 'kindle': case 'sudden-growth': case 'kiss-of-night': case 'bastion': case 'wild-bloom':
       return pickOne(own);
+    case 'crescendo':
+      return { target: anyTarget };
     case 'worldtree-stag':
       return pickOne(own, true);
     case 'not-yet':
@@ -962,6 +978,17 @@ function resolveSpell(s, pi, c, a) {
       break;
     case 'the-mountain-is-angry':
       hit(s, a.target, 7);
+      break;
+    case 'crescendo':
+      log(s, pi, `Crescendo: ${P.spells} Spell${P.spells === 1 ? '' : 's'} this turn.`);
+      hit(s, a.target, P.spells);
+      break;
+    case 'ripple':
+      draw(s, pi, 1);
+      P.ripple = (P.ripple || 0) + 1;
+      break;
+    case 'wild-bloom':
+      if (t?.zone === 'board') buff(s, t, Math.max(0, power(s, t)), Math.max(0, vitality(s, t)), false);
       break;
     case 'wild-growth':
       buff(s, t, 2, 2, true);
@@ -1200,6 +1227,7 @@ function play(s, pi, a) {
   // Spells
   c.zone = 'stack';
   if (usesMirror) P.mirror = true;
+  if (P.ripple > 0) P.ripple -= 1; // (a Ripple's discount is used up)
   P.spells += 1;
   if (P.spells === 2) {
     for (const u of [...P.board]) if (s.cards[u].cid === 'lightning-theorist') {
@@ -1273,6 +1301,7 @@ function startTurn(s, i) {
   P.turns += 1;
   P.spells = 0;
   P.mirror = false;
+  P.ripple = 0;
   P.maxEnergy = Math.min(RULES.maxEnergy, P.maxEnergy + 1);
   P.energy = P.maxEnergy;
   for (const u of P.board) {
@@ -1291,6 +1320,11 @@ function startTurn(s, i) {
       buff(s, small, 1, 1, true);
     }
     if (r.cid === 'beacon-of-hope') makeTokens(s, i, 'spirit', 1);
+    if (r.cid === 'season-of-plenty') {
+      const grown = P.board.filter((u) => s.cards[u].grown); // (those it grows don't count twice)
+      if (grown.length) log(s, i, `Season of Plenty: ${grown.length} creature${grown.length > 1 ? 's' : ''} grow${grown.length > 1 ? '' : 's'} again.`);
+      for (const u of grown) buff(s, s.cards[u], 1, 1, true);
+    }
     if (r.cid === 'the-drowned-clock') {
       r.chimes = (r.chimes || 0) + 1;
       ev(s, { k: 'chime', uid: r.uid, n: r.chimes });

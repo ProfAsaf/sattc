@@ -4,7 +4,7 @@
 
 import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack, useOptions } from '../js/engine.js';
 import { RULES, STARTERS } from '../js/cards.js';
-import { cardList } from '../js/decks.js';
+import { canAdd, cardList, validate } from '../js/decks.js';
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -1260,6 +1260,104 @@ test('Replay is deterministic', () => {
   }
   const r = replay(setup, actions);
   eq(JSON.stringify(r.players), JSON.stringify(s.players), 'same players after replay');
+});
+
+test('Two of each card in a deck, one of a Legendary', () => {
+  ok(canAdd({ cinderling: 1 }, 'cinderling').ok, 'a second Cinderling goes in');
+  ok(!canAdd({ cinderling: 2 }, 'cinderling').ok, 'not a third');
+  ok(!canAdd({ 'grandmother-bramble': 1 }, 'grandmother-bramble').ok, 'one Legendary only');
+  ok(!validate({ ...STARTERS[0].counts, cinderling: 3 }).ok, 'three copies make a deck illegal');
+  for (const d of STARTERS) ok(validate(d.counts).ok && Object.values(d.counts).reduce((a, n) => a + n, 0) === 30, `${d.name}: a legal 30-card deck`);
+  ok(STARTERS.every((d) => Object.values(d.counts).some((n) => n === 2)), 'every starter has cards it holds two of');
+});
+
+// ── cards that multiply (n 91–97) ───────────────────────────────────
+test('The Bright Choir doubles Spirits; Dawnsinger drains for each', () => {
+  let s = scene();
+  addCard(s, 'the-bright-choir', A, 'relics');
+  addCard(s, 'dawnsinger', A, 'board');
+  const spirits = () => s.players[A].board.filter((u) => s.cards[u].cid === 'spirit').length;
+  const ts = addCard(s, 'twin-souls', A, 'hand');
+  s = play(s, ts.uid);
+  eq(spirits(), 4, 'two Spirits, and two more (the Choir’s own don’t call it again)');
+  eq(s.players[B].life, 16, 'Dawnsinger: 1 Life for each of the 4');
+  const tl = addCard(s, 'a-thousand-lights', A, 'hand');
+  s.players[A].energy = 8;
+  s = play(s, tl.uid);
+  eq(s.players[A].board.length, 7, 'the table holds 7: it stops there');
+  eq(s.players[B].life, 14, 'and only the Spirits made count');
+});
+
+test('Crescendo counts the Spells played this turn', () => {
+  let s = scene();
+  const sc = addCard(s, 'scorch', A, 'hand'), cr = addCard(s, 'crescendo', A, 'hand');
+  const rat = addCard(s, 'grave-rat', B, 'board');
+  deckOf(s, B, 3);
+  s = play(s, sc.uid, { target: { uid: rat.uid } });
+  s = play(s, cr.uid, { target: { p: B } });
+  eq(s.players[B].life, 18, 'second Spell of the turn: 2 damage');
+  s = end(s); s = end(s);
+  const cr2 = addCard(s, 'crescendo', A, 'hand');
+  s = play(s, cr2.uid, { target: { p: B } });
+  eq(s.players[B].life, 17, 'a new turn counts from 1');
+});
+
+test('Ripple draws, and the next Spell costs 1 less', () => {
+  let s = scene({ energy: 6 });
+  deckOf(s, A, 3); deckOf(s, B, 3);
+  const rp = addCard(s, 'ripple', A, 'hand'), w = addCard(s, 'wildfire', A, 'hand'), w2 = addCard(s, 'wildfire', A, 'hand');
+  const n = s.players[A].hand.length;
+  s = play(s, rp.uid);
+  eq(s.players[A].hand.length, n, 'Ripple went, a card came');
+  eq(costOf(s, A, s.cards[w.uid]), 2, 'Wildfire costs 2 now');
+  s = play(s, w.uid);
+  eq(s.players[A].energy, 6 - 1 - 2, 'paid 1, then 2');
+  eq(costOf(s, A, s.cards[w2.uid]), 3, 'the one after costs 3 again');
+  const rp2 = addCard(s, 'ripple', A, 'hand');
+  s.players[A].energy = 1;
+  s = play(s, rp2.uid);
+  s = end(s); s = end(s);
+  eq(costOf(s, A, s.cards[w2.uid]), 3, 'a discount left over ends with the turn');
+});
+
+test('Season of Plenty grows what has already grown', () => {
+  let s = scene();
+  addCard(s, 'season-of-plenty', A, 'relics');
+  const m = addCard(s, 'mossback', A, 'board'), rat = addCard(s, 'grave-rat', A, 'board');
+  Object.assign(s.cards[m.uid], { pP: 1, pV: 1, grown: true });
+  deckOf(s, A, 4); deckOf(s, B, 4);
+  s = end(s); s = end(s);
+  eq(power(s, s.cards[m.uid]), 5, 'Mossback 3 + 1 + 1');
+  eq(power(s, s.cards[rat.uid]), 1, 'the Rat never grew: no change');
+  s = end(s); s = end(s);
+  eq(power(s, s.cards[m.uid]), 6, 'and again the next turn');
+});
+
+test('Lantern Ferryman: a Spirit for each creature of yours that dies, not tokens', () => {
+  let s = scene();
+  addCard(s, 'lantern-ferryman', A, 'board');
+  addCard(s, 'grave-rat', A, 'board');
+  deckOf(s, A, 4);
+  const spirits = () => s.players[A].board.filter((u) => s.cards[u].cid === 'spirit');
+  const w = addCard(s, 'wildfire', A, 'hand');
+  s = play(s, w.uid);
+  eq(spirits().length, 1, 'the Rat rises as a Spirit');
+  const sc = addCard(s, 'scorch', A, 'hand');
+  s = play(s, sc.uid, { target: { uid: spirits()[0] } });
+  eq(spirits().length, 0, 'a token that dies brings nothing back');
+});
+
+test('Wild Bloom doubles Power and Vitality for the turn', () => {
+  let s = scene();
+  const m = addCard(s, 'mossback', A, 'board');
+  Object.assign(s.cards[m.uid], { pP: 2, grown: true });
+  const wb = addCard(s, 'wild-bloom', A, 'hand');
+  s = play(s, wb.uid, { target: { uid: m.uid } });
+  eq(power(s, s.cards[m.uid]), 10, 'Power 5, doubled');
+  eq(vitality(s, s.cards[m.uid]), 8, 'Vitality 4, doubled');
+  deckOf(s, A, 2); deckOf(s, B, 2);
+  s = end(s);
+  eq(power(s, s.cards[m.uid]), 5, 'back after the turn');
 });
 
 // ── fuzz: random legal play ─────────────────────────────────────────

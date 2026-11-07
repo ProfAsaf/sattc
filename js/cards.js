@@ -7,7 +7,7 @@ export const SET = { name: 'The Collective', week: 'Week One', title: 'The Awake
 
 export const RULES = {
   deckSize: 30,
-  maxCopies: 1,
+  maxCopies: 2, // of each card in a deck (one of a Legendary); it was one until November 2026, which made combos rare
   maxFactions: 3,
   startLife: 20,
   openingHand: 5,
@@ -520,6 +520,42 @@ export const CARDS = [
       text: 'Drain\nWhenever another creature you control dies, each opponent loses 1 Life.',
       flavor: 'She prays for every soul, and collects a tithe.',
       art: 'A pale abbess in white and violet robes holding up a lantern in a misty cemetery, small spirits drifting from the graves into it.' }),
+
+  // ── Week One, second printing: cards that multiply (2026-11-07) ──
+  // Built on combos already in the pool, so a deck that assembles one keeps
+  // escalating: Spirits that double, a spell that counts the ones before it,
+  // growth that compounds, deaths that come back as Spirits.
+  C({ id: 'the-bright-choir', n: 91, name: 'The Bright Choir', cost: 5, factions: ['radiant'], type: 'relic', subtype: 'Relic',
+      keywords: ['relic'],
+      text: 'Relic\nWhenever you create one or more Spirits, create that many more.',
+      flavor: 'Every voice wakes another.',
+      art: 'A ring of tall glowing choir figures in a great hall of dawn light, each small spirit rising from their song splitting into two as it climbs.' }),
+  C({ id: 'dawnsinger', n: 92, name: 'Dawnsinger', cost: 3, factions: ['radiant'], type: 'creature', subtype: 'Human', power: 2, vitality: 3,
+      text: 'Whenever you create a Spirit, each opponent loses 1 Life.',
+      flavor: 'She sings, and the sky answers.',
+      art: 'A singer on a hilltop at dawn, head thrown back in song, a stream of tiny winged spirits pouring from her voice toward the rising sun.' }),
+  C({ id: 'crescendo', n: 93, name: 'Crescendo', cost: 2, factions: ['ember'], type: 'spell',
+      text: 'Deal damage to any target equal to the number of Spells you have played this turn, this one included.',
+      flavor: 'Each spark louder than the last.',
+      art: 'A fire mage with both arms raised like a conductor, a spiral of flame around her growing wider and brighter with every turn of the spiral.' }),
+  C({ id: 'ripple', n: 94, name: 'Ripple', cost: 1, factions: ['tide'], type: 'spell',
+      text: 'Draw a card. The next Spell you play this turn costs 1 less.',
+      flavor: 'One drop, and the whole pond answers.',
+      art: 'A single bright drop falling into a still dark pool, rings of light spreading outward across the water to the reeds at its edges.' }),
+  C({ id: 'season-of-plenty', n: 95, name: 'Season of Plenty', cost: 4, factions: ['verdant'], type: 'relic', subtype: 'Relic',
+      keywords: ['relic'],
+      text: 'Relic\nAt the start of your turn, each creature you control that has been permanently strengthened gets +1/+1 permanently.',
+      flavor: 'What grows, keeps growing.',
+      art: 'An orchard at harvest under a huge low golden sun, the tallest trees bowed with fruit, one young tree in the middle glowing as it grows.' }),
+  C({ id: 'lantern-ferryman', n: 96, name: 'Lantern Ferryman', cost: 3, factions: ['umbral'], type: 'creature', subtype: 'Shade', power: 2, vitality: 3,
+      text: 'Whenever another creature you control dies, if it was not a token, create a 1/1 Spirit creature.',
+      flavor: 'No one crosses alone.',
+      art: 'A hooded ferryman poling a narrow boat across a dark misty river, a lantern glowing at the bow and a pale spirit rising from the water in its wake.' }),
+  C({ id: 'wild-bloom', n: 97, name: 'Wild Bloom', cost: 3, factions: ['verdant'], type: 'spell', ...TRICK,
+      keywords: ['trick'],
+      text: 'Trick\nDouble the Power and Vitality of a creature you control this turn.',
+      flavor: 'Spring, all at once.',
+      art: 'A small fern bursting in an instant into a towering flowering plant, petals and light exploding outward from its heart.' }),
 ];
 
 export const TOKENS = {
@@ -539,24 +575,35 @@ export const BY_ID = Object.fromEntries([...CARDS, ...Object.values(TOKENS)].map
 
 export const isTrick = (card) => card.keywords.includes('trick');
 
-// Starter decks: every card of two factions plus their two-faction card,
-// minus three, so new players can play on day one and tweak from there.
-const pool = (factions) => CARDS.filter((c) => c.factions.every((f) => factions.includes(f)));
-const starter = (factions, cuts) => Object.fromEntries(pool(factions).filter((c) => !cuts.includes(c.id)).map((c) => [c.id, 1]));
+// Starter decks: 30 cards of two factions (and their two-faction card), with
+// two of each card the deck is built around, so its combo actually turns up,
+// and one of the rest. New players can play on day one and tweak from there.
+const deck = (twice, once) => Object.fromEntries([...once.map((id) => [id, 1]), ...twice.map((id) => [id, 2])]);
 export const STARTERS = [
   { id: 'starter-everything-dies', name: 'Everything Dies', factions: ['ember', 'umbral'],
-    pitch: 'Your creatures want to die. Every death burns the opponent or feeds something bigger.',
-    counts: starter(['ember', 'umbral'], ['kindle', 'kiss-of-night', 'molten-berserker']) },
+    pitch: 'Your creatures want to die. Every death burns the opponent, feeds something bigger, or comes back as a Spirit.',
+    counts: deck(['cinderling', 'grave-rat', 'kindly-undertaker', 'feed-the-flame', 'the-kiln', 'hungry-ghoul', 'lantern-ferryman'],
+      ['spark-runner', 'scorch', 'marsh-adder', 'vesper-bat', 'bone-altar', 'funeral-pyre', 'ash-collector', 'wildfire', 'bonepicker',
+        'borrowed-time', 'smoldering-golem', 'phoenix-of-the-last-spark', 'death-is-a-door', 'something-beneath', 'the-one-who-came-back', 'the-mountain-is-angry']) },
   { id: 'starter-more-is-more', name: 'More Is More', factions: ['verdant', 'radiant'],
-    pitch: 'Go wide with small creatures, then make all of them bigger, permanently.',
-    counts: starter(['verdant', 'radiant'], ['ancient-roots', 'savage-clash', 'bastion']) },
+    pitch: 'Go wide with Spirits and small creatures, then make all of them bigger, permanently.',
+    counts: deck(['street-recruit', 'lightweaver', 'little-gardener', 'twin-souls', 'wild-growth', 'standard-keeper', 'dawnsinger'],
+      ['seedling', 'sudden-growth', 'we-grow-together', 'heartwood-totem', 'mossback', 'wild-bloom', 'stand-together', 'choirmother',
+        'beacon-of-hope', 'season-of-plenty', 'grandmother-bramble', 'the-bright-choir', 'dawn-captain', 'worldtree-stag', 'a-thousand-lights', 'the-forest-remembers']) },
   { id: 'starter-you-didnt-need-that', name: "You Didn't Need That", factions: ['tide', 'umbral'],
     pitch: 'Fill your discard pile on purpose, then play it like a second hand. Best for an experienced player.',
-    counts: starter(['tide', 'umbral'], ['perfect-recall', 'one-more-wave', 'kiss-of-night']) },
+    counts: deck(['curious-wisp', 'grave-rat', 'marsh-adder', 'memory-diver', 'hungry-ghoul', 'forbidden-archivist'],
+      ['ripple', 'second-thought', 'cloud-ray', 'riptide', 'unearth', 'mirror-mage', 'countercurrent', 'bonepicker', 'borrowed-time',
+        'windborne-sage', 'tidal-mimic', 'the-drowned-clock', 'death-is-a-door', 'carrion-wyrm', 'deepwater-leviathan', 'something-beneath', 'nerissa', 'the-one-who-came-back']) },
   { id: 'starter-storm-front', name: 'Storm Front', factions: ['ember', 'tide'],
-    pitch: 'Cheap spells, creatures that Soar, tricks, and lightning every time you double up.',
-    counts: starter(['ember', 'tide'], ['the-kiln', 'ash-collector', 'reckless-initiate']) },
+    pitch: 'Cheap spells in a row: each one makes the next hit harder, and lightning strikes every time you double up.',
+    counts: deck(['cinderling', 'spark-runner', 'scorch', 'ripple', 'crescendo', 'mirror-mage', 'lightning-theorist'],
+      ['kindle', 'curious-wisp', 'memory-diver', 'second-thought', 'feed-the-flame', 'wildfire', 'ember-duelist', 'molten-berserker',
+        'windborne-sage', 'phoenix-of-the-last-spark', 'smoldering-golem', 'the-drowned-clock', 'deepwater-leviathan', 'nerissa', 'ashmaw', 'the-mountain-is-angry']) },
   { id: 'starter-wild-hunt', name: 'Wild Hunt', factions: ['verdant', 'ember'],
-    pitch: 'Big beasts that overrun their blockers and grow every time they fight, backed by fire.',
-    counts: starter(['verdant', 'ember'], ['the-kiln', 'ashmaw', 'stampede']) },
+    pitch: 'Big beasts that overrun their blockers and grow every time they fight, then keep growing, backed by fire.',
+    counts: deck(['canopy-archer', 'grove-druid', 'wild-growth', 'patient-giant'],
+      ['seedling', 'reckless-initiate', 'cinderling', 'scorch', 'kindle', 'sudden-growth', 'little-gardener', 'spark-runner', 'savage-clash', 'mossback',
+        'wild-bloom', 'heartwood-totem', 'ember-duelist', 'ash-collector', 'the-kiln', 'season-of-plenty', 'grandmother-bramble', 'smoldering-golem', 'ironhide-charger',
+        'apex-predator', 'worldtree-stag', 'the-forest-remembers']) },
 ];

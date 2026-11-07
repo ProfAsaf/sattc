@@ -1058,6 +1058,8 @@ const PROMPTS = {
   nerissa: [null, 'Take which enemy creature for good? (cost 4 or less, or skip)'],
   'kiss-of-night': [null, 'Which of your creatures gets Venom and Drain?'],
   bastion: [null, 'Which of your creatures gets +1/+3?'],
+  crescendo: [null, 'Where does it hit? (1 damage for each Spell you play this turn, this one included)'],
+  'wild-bloom': [null, 'Which of your creatures doubles its Power and Vitality?'],
   'dawns-judgment': [null, 'Destroy which attacker?'],
   'sky-warden': [null, 'Pin down which enemy creature?'],
 };
@@ -1353,9 +1355,9 @@ function relicHTML(s, r, hl) {
 
 function pbarHTML(s, P, hl, folded = false) {
   const isT = hl.targets.some((t) => t.p === P.i);
-  // a folded side (three players) says how many creatures it has; a tap opens it
-  const n = P.board.length;
-  const fold = folded && !P.out ? `<span class="pb-fold">${n ? `${n} creature${n > 1 ? 's' : ''}` : 'no creatures'}</span>` : '';
+  // a folded side (three players) says how many creatures and Relics it has, on one line; a tap opens it
+  const n = P.board.length, nr = P.relics.length;
+  const fold = folded && !P.out ? `<span class="pb-fold">${n ? `${n} creature${n > 1 ? 's' : ''}` : 'no creatures'}${nr ? ` · ${nr} Relic${nr > 1 ? 's' : ''}` : ''}</span>` : '';
   const C = s.combat;
   const fighting = C && (C.d === P.i ? ' defending' : C.a === P.i ? ' attacking' : '');
   const crown = s.crown === P.i ? `<button class="pb-crown" data-act="crown-info" aria-label="Holds the Crown">${ICON.crown}</button>` : '';
@@ -1514,8 +1516,11 @@ const decCards = (cls, html, n) => `<div class="dec-cards ${cls}" data-n="${n}">
 
 // Under an unblocked attacker: the damage it would deal. (A blocked pair says
 // it with ☠ on the cards; the line under the fight says it in words.)
-function decRes(s, a, bs, toMe) {
-  return bs.length ? '' : `<b class="hit">${power(s, s.cards[a])} damage</b>${toMe ? ' to you' : ''}`;
+// (`compact`, many columns: just "−7"; the line under the fight says the total)
+function decRes(s, a, bs, toMe, compact = false) {
+  if (bs.length) return '';
+  const p = power(s, s.cards[a]);
+  return compact ? `<b class="hit" title="${p} damage${toMe ? ' to you' : ''}">−${p}</b>` : `<b class="hit">${p} damage</b>${toMe ? ' to you' : ''}`;
 }
 // "☠" explained, when a fight shows one
 const skullNote = (s, t) => (t && s.combat.att.some((a) => [a, ...(blockersOf(s)[a] || [])].some((u) => t.cards[u]?.zone !== 'board')) ? ' ☠: would be destroyed.' : '');
@@ -1531,21 +1536,22 @@ function decFight(s, t, { blocking = false } = {}) {
   const atts = C.att.filter((u) => s.cards[u].zone === 'board');
   const bsOf = (a) => (blk[a] || []).filter((b) => s.cards[b]?.zone === 'board');
   const one = !blocking && atts.every((a) => !bsOf(a).length);
+  const compact = atts.length >= 5; // a big board: short words, so every column fits the screen
   const cols = atts.map((a) => {
     const bs = bsOf(a);
     const sel = blocking ? G.blk.sel : null;
     const open = sel != null && canAssign(sel, a) && !G.blk.pairs.some(([x, y]) => x === sel && y === a);
     const picked = blocking && G.blk.selA === a;
     const att = decCard(s, a, { act: blocking ? 'dec-foe' : 'dec-look', foe: !mineAttack, states: ['attacking', doomed(a) && 'doomed', (open || picked) && 'target'] });
-    const res = `<div class="dec-res">${decRes(s, a, bs, toMe)}</div>`;
+    const res = `<div class="dec-res">${decRes(s, a, bs, toMe, compact)}</div>`;
     if (one) return `<div class="dec-col" data-n="1" data-key="col-${a}"><div class="dec-stack">${att}</div>${res}</div>`;
     let other;
     if (blocking) {
       other = bs.map((b) => decCard(s, b, { act: 'dec-unblk', att: a, states: ['blocking', doomed(b) && 'doomed'], tag: isForced(b, a) ? 'hunted' : '' })).join('')
-        + (open || picked || !bs.length ? `<button class="dec-empty${open || picked ? ' open' : ''}" data-act="dec-foe" data-u="${a}">${open || picked ? 'Block here' : 'Not blocked'}</button>` : '');
+        + (open || picked || !bs.length ? `<button class="dec-empty${open || picked ? ' open' : ''}" data-act="dec-foe" data-u="${a}" aria-label="${open || picked ? 'Block here' : 'Not blocked'}">${open || picked ? (compact ? 'Here' : 'Block here') : compact ? '–' : 'Not blocked'}</button>` : '');
     } else {
       other = bs.map((b) => decCard(s, b, { act: 'dec-look', foe: mineAttack, states: ['blocking', doomed(b) && 'doomed'] })).join('')
-        || '<span class="dec-free">Not blocked</span>';
+        || `<span class="dec-free">${compact ? '–' : 'Not blocked'}</span>`;
     }
     const n = Math.max(1, bs.length + (blocking && bs.length && (open || picked) ? 1 : 0));
     return `<div class="dec-col${picked ? ' picked' : ''}" data-n="${n}" data-key="col-${a}">
@@ -1691,14 +1697,31 @@ function fitDecision(root) {
   const fight = dec.querySelector('.dec-fight');
   if (fight) {
     const cols = [...fight.children];
-    const units = cols.reduce((x, c) => x + Math.max(1, (Number(c.dataset.n) || 1) * 0.86), 0);
+    // many attackers (a big board): smaller words and gaps (.tight), and two lines of
+    // columns (.wrap) when one line won't fit the screen
+    const tight = cols.length >= 5, gap = tight ? 8 : 14;
+    fight.classList.toggle('tight', tight);
     const W = fight.clientWidth, H = fight.clientHeight;
     const rows = fight.classList.contains('one') ? 1 : 2;
-    let w = Math.max(34, Math.floor(Math.min(108, (W - (cols.length - 1) * 14) / units, (H - (rows === 1 ? 44 : 62)) / rows / 1.33)));
-    fight.style.setProperty('--dw', `${w}px`);
-    // (the words under a column can take more room than reckoned: smaller until it all fits)
-    const fits = () => cols.every((c) => c.offsetHeight <= H + 1) && cols.reduce((x, c) => x + c.offsetWidth, 0) + (cols.length - 1) * 14 <= W + 1;
-    for (let k = 0; k < 8 && w > 34 && !fits(); k++) { w = Math.max(34, Math.floor(w * 0.92)); fight.style.setProperty('--dw', `${w}px`); }
+    const fits = () => fight.scrollWidth <= W + 1 && fight.scrollHeight <= H + 1;
+    const lay = (lines) => {
+      const per = Math.ceil(cols.length / lines);
+      fight.classList.toggle('wrap', lines > 1);
+      fight.style.setProperty('--fcols', per);
+      let units = 0;
+      for (let i = 0; i < cols.length; i += per) units = Math.max(units, cols.slice(i, i + per).reduce((x, c) => x + Math.max(1, (Number(c.dataset.n) || 1) * 0.86), 0));
+      let w = Math.max(34, Math.floor(Math.min(108, (W - (per - 1) * gap) / units, (H - lines * (rows === 1 ? 44 : 62)) / (lines * rows) / 1.33)));
+      fight.style.setProperty('--dw', `${w}px`);
+      // (the words under a column can take more room than reckoned: smaller until it all fits)
+      for (let k = 0; k < 10 && w > 34 && !fits(); k++) { w = Math.max(34, Math.floor(w * 0.92)); fight.style.setProperty('--dw', `${w}px`); }
+      return w;
+    };
+    let w = lay(1);
+    if (cols.length >= 4 && (!fits() || w < 44)) {
+      const one = { w, ok: fits() };
+      const two = lay(2);
+      if ((one.ok && !fits()) || (one.ok && two < one.w + 6)) w = lay(1); else w = two;
+    }
     fw = w;
   }
   const GAP = 16; // (room for a picked card's lift and glow)

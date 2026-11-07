@@ -21,7 +21,7 @@ function test(name, fn) {
   try { fn(); } catch (e) { fail++; failures.push(`${name}: threw ${e.stack.split('\n').slice(0, 3).join(' | ')}`); }
 }
 
-const ALL = CARDS.filter((c) => !c.token).map((c) => c.id);
+const ALL = CARDS.filter((c) => !c.token && c.n <= 90).map((c) => c.id); // the draft's pool (Week One's 90)
 const RECIPE = { small: 5, medium: 6, spells: 6, big: 4, tricks: 4, relics: 2, last: 3 };
 
 // Everyone picks with the bot, turn by turn; returns the pick list.
@@ -155,7 +155,8 @@ test('two players: 6 cards a round, 2 picks a round, 60 cards used', () => {
       if (at.kind !== 'relics') eq(at.dealt.length, TABLE, `seed ${seed} round ${r + 1}: 6 cards on the table`);
     }
     const relics2 = replay({ seed, n: 2 }, picks.filter((x) => x.k < ROUNDS.lastIndexOf('relics')));
-    eq(relics2.dealt.length, 4, `seed ${seed}: the second relics round shows the 4 relics nobody took`);
+    const left = Math.min(TABLE, CARDS.filter((c) => c.type === 'relic' && !c.token && c.n <= 90).length - 2); // (the pool's Relics, less the two picked)
+    eq(relics2.dealt.length, left, `seed ${seed}: the second relics round shows the ${left} relics nobody took`);
     for (let p = 0; p < 2; p++) {
       const got = {};
       for (const e of st.log.filter((x) => x.p === p)) got[ROUNDS[e.r]] = (got[ROUNDS[e.r]] || 0) + 1;

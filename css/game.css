@@ -323,7 +323,9 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 .g-side.folded { padding-top: 0; padding-bottom: 0; }
 .g-side.folded .pbar { padding-top: 2px; padding-bottom: 2px; background: rgba(42, 34, 26, .5); border-color: rgba(214, 180, 106, .16); }
 .g-side.folded .pb-life { font-size: 18px; }
-.g-side.folded .tc-pile { display: none; } /* (open the side for its discard pile) */
+.g-side.folded .tc-pile, .g-side.folded .pb-relics { display: none; } /* (open the side for its discard pile and Relics) */
+/* three players: smaller Relic medallions, so a row of them costs the table less height */
+#game.g-three .relic { width: 28px; height: 28px; }
 .pb-fold { flex: none; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .pb-fold::after { content: ' ▾'; color: var(--gold); }
 /* two others in play: the one under the middle has its row first and its bar under it, as yours */
@@ -388,6 +390,9 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
   .g-mid { min-height: 6px; }
   /* three players laid out as a duel have a folded bar more to fit */
   .g-three.g-duel { --w-board-max: 50px; --w-board: 48px; --w-hand: 84px; --hand-h: 112px; }
+  /* and Relics sit in the bar's own line, small, instead of a row of their own */
+  .g-three .pb-relics { flex-basis: auto; gap: 4px; }
+  #game.g-three .relic { width: 22px; height: 22px; }
   .g-three.g-duel .g-side .tc-row { padding: 3px 0; }
 }
 
@@ -652,6 +657,12 @@ body:has(#game .g-sheet) .g-beat { display: none; }
 .dec-vs { height: 16px; font-size: 15px; line-height: 16px; color: #ffcfa8; text-shadow: 0 0 8px rgba(255, 120, 60, .8); }
 .dec-res { min-height: 16px; margin-top: 3px; max-width: max(calc(var(--dw, 80px) + 14px), 7.5em); font-size: 12.5px; line-height: 1.25; color: #ffd8c2; text-align: center; }
 .dec-res .hit { color: #ffb08a; }
+/* many attackers (a big board): smaller words and gaps, and two lines of columns
+   when one won't fit (fitDecision) */
+.dec-fight.tight { gap: 8px; }
+.dec-fight.tight .dec-res { font-size: 11px; max-width: calc(var(--dw, 80px) + 12px); }
+.dec-fight.tight .dec-empty, .dec-fight.tight .dec-free { font-size: 10px; }
+.dec-fight.wrap { display: grid; grid-template-columns: repeat(var(--fcols, 4), auto); justify-content: center; align-content: center; gap: 4px 8px; }
 .dec-empty {
   all: unset; cursor: pointer; box-sizing: border-box;
   width: var(--dw, 80px); height: calc(var(--dw, 80px) * 1.33); border-radius: calc(var(--dw, 80px) * .09);

@@ -82,7 +82,7 @@ export async function createRoom({ seats, name, deck, draft = false }) {
   for (let tries = 0; tries < 6; tries++) {
     const code = newCode();
     const res = await fb.runTransaction(infoRef(code), (cur) => (cur === null
-      ? { created: Date.now(), status: 'lobby', seats, host: clientId(), round: 0, players: [{ id: clientId(), name, deck, v: version() }], ...(draft ? { draft: { on: true } } : {}) }
+      ? { created: Date.now(), status: 'lobby', seats, host: clientId(), round: 0, champions: true, players: [{ id: clientId(), name, deck, v: version() }], ...(draft ? { draft: { on: true } } : {}) }
       : undefined));
     if (res.committed) { setLastRoom(code); return code; }
   }
@@ -268,6 +268,16 @@ export async function watchResults(code, created, onResults) {
 const picksRef = (code, id) => fb.ref(db, `rooms/${code}/draft/${id}/picks`);
 
 // Host, before the draft starts: switch the room between bring-your-deck and draft.
+// Host, in the lobby: Champions on or off for the room's games.
+export async function setChampions(code, on) {
+  await connect();
+  await fb.runTransaction(infoRef(code), (room) => {
+    if (!room || room.host !== clientId() || room.status !== 'lobby') return room;
+    room.champions = !!on;
+    return room;
+  });
+}
+
 export async function setDraftMode(code, on) {
   await connect();
   await fb.runTransaction(infoRef(code), (room) => {

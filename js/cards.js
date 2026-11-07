@@ -571,7 +571,60 @@ export const TOKENS = {
             art: 'A single bright spark floating above an open palm in darkness.' },
 };
 
-export const BY_ID = Object.fromEntries([...CARDS, ...Object.values(TOKENS)].map((c) => [c.id, c]));
+// ── Champions (a prototype, 2026-11-07) ─────────────────────────────
+// One per faction. With Champions on, every player starts with their deck's
+// Champion on the table (the faction the deck has most cards of: championFor),
+// a defender that grows: it levels up twice as its player does what its
+// faction does (`xp`: what counts, and the totals for levels 2 and 3), and each
+// level brings new stats (`levels`: Power, Vitality, keywords) and an ability
+// that works on the rest of the deck (engine.js). Not part of the 97-card pool.
+const kwWords = (ks) => (ks.length ? `, ${ks.map((k) => KEYWORDS[k].name).join(', ')}` : '');
+const champion = (o) => ({
+  ...o, type: 'creature', subtype: 'Champion', cost: 2, champion: true, legendary: true,
+  power: o.levels[0][0], vitality: o.levels[0][1], keywords: o.levels[0][2],
+  // (short enough for the card's text box; the rules page and a player's sheet say it in full)
+  text: `Starts on the table; attacks from Level 2. If it leaves, it goes back to your hand, 2 Energy dearer.\n`
+    + `Level 2 (${o.xp.at[0]} ${o.xp.short}): ${o.levels[1][0]}/${o.levels[1][1]}${kwWords(o.levels[1][2])}. ${o.l2}\n`
+    + `Level 3 (${o.xp.at[1]} ${o.xp.short}): ${o.levels[2][0]}/${o.levels[2][1]}${kwWords(o.levels[2][2])}. ${o.l3}`,
+});
+export const CHAMPIONS = Object.fromEntries([
+  champion({ id: 'champion-radiant', name: 'Aurelia, the Lightkeeper', factions: ['radiant'],
+    levels: [[1, 4, []], [2, 5, []], [3, 6, ['soar']]], xp: { what: 'spirit', at: [3, 6], unit: 'Spirits created', short: 'Spirits' },
+    l2: 'Your Spirits have +1/+1 and Soar.', l3: 'Each Spirit you create brings another.',
+    flavor: 'She keeps the light, and the light keeps coming.',
+    art: 'A tall armoured woman holding a lantern of pure light high above her head on a dawn hillside, small winged spirits gathering around the glow.' }),
+  champion({ id: 'champion-ember', name: 'Pyra, Herald of Ash', factions: ['ember'],
+    levels: [[2, 3, []], [3, 4, []], [5, 4, ['swift']]], xp: { what: 'spell', at: [3, 6], unit: 'Spells played', short: 'Spells' },
+    l2: 'Each Spell you play deals 1 damage to each opponent.', l3: 'Your Spells cost 1 less.',
+    flavor: 'Every spell is a verse of her song.',
+    art: 'A herald in scorched robes blowing a long curved horn, a plume of fire and sparks pouring from it across a red sky.' }),
+  champion({ id: 'champion-verdant', name: 'Old Root, Grove Warden', factions: ['verdant'],
+    levels: [[0, 5, ['reach']], [2, 6, ['reach']], [5, 7, ['reach', 'overrun']]], xp: { what: 'grow', at: [4, 10], unit: 'permanent boosts to your creatures', short: 'boosts' },
+    l2: 'Each turn your weakest creature gets +1/+1 permanently.', l3: 'Your other creatures’ permanent boosts give +1/+1 more.',
+    flavor: 'It has stood here longer than the hills.',
+    art: 'An ancient tree-giant with a face in its bark and a shield of woven roots, standing guard at the edge of a sunlit forest.' }),
+  champion({ id: 'champion-umbral', name: 'Morwen, the Gravekeeper', factions: ['umbral'],
+    levels: [[1, 4, []], [2, 4, ['venom']], [5, 5, ['venom', 'drain']]], xp: { what: 'death', at: [8, 14], unit: 'creatures dying, anyone’s', short: 'deaths' },
+    l2: 'When another creature of yours dies, each opponent loses 1 Life.', l3: 'Each turn your best dead creature (cost 3 or less) returns to play.',
+    flavor: 'Every grave is a door she keeps the key to.',
+    art: 'A cloaked gravekeeper leaning on a long spade in a moonlit cemetery, faint violet spirits rising from the graves behind her.' }),
+  champion({ id: 'champion-tide', name: 'Nim, the Tidecaller', factions: ['tide'],
+    levels: [[1, 4, ['soar']], [2, 5, ['soar']], [4, 6, ['soar']]], xp: { what: 'draw', at: [2, 5], unit: 'extra cards drawn', short: 'extra cards' },
+    l2: 'Draw an extra card each turn.', l3: 'Each card you draw costs each opponent 1 Life.',
+    flavor: 'The sea gives back what it is asked for.',
+    art: 'A slender sea-mage on a rock in the surf, one hand raised as a great wave rises behind her full of glowing scrolls and silver fish.' }),
+].map((c) => [c.id, c]));
+
+// A deck's Champion: the faction it has most cards of (two-faction cards count
+// for both; a tie goes to the one first in FACTION_ORDER).
+export function championFor(deckIds) {
+  const n = Object.fromEntries(FACTION_ORDER.map((f) => [f, 0]));
+  for (const id of deckIds) for (const f of BY_ID[id]?.factions || []) if (f in n) n[f] += 1;
+  const best = FACTION_ORDER.reduce((a, f) => (n[f] > n[a] ? f : a), FACTION_ORDER[0]);
+  return `champion-${best}`;
+}
+
+export const BY_ID = Object.fromEntries([...CARDS, ...Object.values(TOKENS), ...Object.values(CHAMPIONS)].map((c) => [c.id, c]));
 
 export const isTrick = (card) => card.keywords.includes('trick');
 

@@ -26,6 +26,7 @@ export function creatureValue(s, c) {
   for (const k in KW_VALUE) if (d.keywords.includes(k) || (k === 'soar' && hasKw(s, c, 'soar'))) val += KW_VALUE[k];
   if (d.cantBlock) val -= 1;
   if (ENGINES.has(c.cid)) val += 1.5;
+  if (d.champion) val += 2.5; // (its level-ups work on the whole deck)
   if (d.ability) val += 0.8;
   if (c.sacEnd || c.stolen) val *= 0.2;
   return val;

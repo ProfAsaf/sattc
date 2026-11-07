@@ -261,6 +261,7 @@ function typeText(card) {
  *   legendary  override for card.legendary
  *   cls        extra classes
  *   ability    { cost, on, used } → a ⚡ chip for a "Pay N Energy" ability, N in a hexagon
+ *   champ      a Champion's level (1–3): a gold star with the number
  *              (on: usable now, glows; used: already used this turn).
  *              Tapping it fires data-act="ability" with data-ab = uid.
  */
@@ -309,6 +310,7 @@ export function tcardHTML(card, state = {}) {
     + '</div></div>'
     + (hand ? `<div class="tc-cost${costCls}"><span>${cost}</span></div>` : '')
     + (creature ? `<b class="tc-p${pCls}">${p}</b><b class="tc-v${vCls}">${v}</b>` : '')
+    + (s.champ && !hand ? `<i class="tc-lvl" aria-label="Champion, Level ${s.champ}">★${s.champ}</i>` : '')
     + (s.ability && !hand ? `<i class="tc-ab${s.ability.on ? ' on' : ''}${s.ability.used ? ' used' : ''}" data-act="ability"${s.uid != null ? ` data-ab="${esc(s.uid)}"` : ''} role="button" aria-label="Ability: pay ${s.ability.cost} Energy">${BOLT}<span class="en-hex"><b>${s.ability.cost}</b></span></i>` : '')
     + (badges ? `<div class="tc-kws">${badges}</div>` : '')
     + `<i class="tc-ex">${SPENT}<b>Spent</b></i>`

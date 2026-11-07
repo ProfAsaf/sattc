@@ -12,7 +12,7 @@
 // (the defender choosing blockers, then both sides taking turns to play
 // Tricks until both pass).
 
-import { BY_ID, RULES, isTrick } from './cards.js';
+import { BY_ID, RULES, championFor, isTrick } from './cards.js';
 
 // ── small helpers ───────────────────────────────────────────────────
 const def = (c) => BY_ID[c.cid];
@@ -63,7 +63,9 @@ function mk(s, cid, owner, zone) {
 // `startEnergy` is everyone's Energy on their first turn: new games pass
 // RULES.startEnergy. A setup without it starts at 1, the old rule, so games
 // saved before the change replay as they were played (the lesson too).
-export function newGame({ seed = 1, players, stacked = false, first = null, crown = null, startEnergy = 1 }) {
+// `champions`: every player starts with their deck's Champion on the table
+// (a player's `champion` picks one; otherwise championFor). Off unless asked.
+export function newGame({ seed = 1, players, stacked = false, first = null, crown = null, startEnergy = 1, champions = false }) {
   const s = {
     v: 2, rng: seed | 0, mode: players.length > 2 ? 'ffa' : 'duel',
     turn: 0, active: 0, first: 0, phase: 'mulligan', winner: null, combat: null,
@@ -89,6 +91,14 @@ export function newGame({ seed = 1, players, stacked = false, first = null, crow
   }
   for (const P of s.players) if (P.i !== s.first) P.hand.push(mk(s, 'spark', P.i, 'hand').uid);
   log(s, null, `${s.players[s.first].name} goes first. Everyone else gets a Spark.`);
+  if (champions) {
+    s.players.forEach((P, i) => {
+      const cid = players[i].champion || championFor(players[i].deck);
+      enterPlay(s, mk(s, cid, i, 'board'), i);
+      Object.assign(P, { champ: cid, cxp: 0 });
+    });
+    log(s, null, 'Every player’s Champion takes the field.');
+  }
   return s;
 }
 
@@ -103,28 +113,58 @@ function drawRaw(s, P) {
 const boardOf = (s, c) => s.players[c.ctrl].board;
 const countOn = (s, uids, cid) => uids.reduce((n, u) => n + (s.cards[u].cid === cid ? 1 : 0), 0);
 
+// ── Champions (a prototype: CHAMPIONS in cards.js) ──────────────────
+// A player's Champion levels up as they do what its faction does (gainXP); its
+// stats and keywords come from its owner's level, and its abilities work only
+// while it is on the table (champOn).
+const isChamp = (c) => !!def(c).champion;
+export function champLevel(s, pi) {
+  const P = s.players[pi];
+  if (!P?.champ) return 0;
+  const at = BY_ID[P.champ].xp.at;
+  return 1 + (P.cxp >= at[0] ? 1 : 0) + (P.cxp >= at[1] ? 1 : 0);
+}
+function champOn(s, pi, cid, level) {
+  const P = s.players[pi];
+  return P.champ === cid && champLevel(s, pi) >= level && P.board.some((u) => s.cards[u].cid === cid);
+}
+function gainXP(s, pi, what, n = 1) {
+  const P = s.players[pi];
+  if (!P?.champ || P.out || n <= 0 || BY_ID[P.champ].xp.what !== what) return;
+  const before = champLevel(s, pi);
+  P.cxp += n;
+  const after = champLevel(s, pi);
+  if (after > before) {
+    log(s, pi, `${BY_ID[P.champ].name} reaches Level ${after}!`);
+    ev(s, { k: 'levelup', p: pi, cid: P.champ, level: after });
+  }
+}
+// its Power (0), Vitality (1) or keywords (2) at its owner's level
+const champStat = (s, c, i) => def(c).levels[Math.max(0, champLevel(s, c.owner) - 1)][i];
+
 export function power(s, c) {
-  let p = def(c).power + (c.pP || 0) + (c.tP || 0);
+  let p = (isChamp(c) ? champStat(s, c, 0) : def(c).power) + (c.pP || 0) + (c.tP || 0);
   if (c.zone === 'board') {
     const board = boardOf(s, c);
     for (const u of board) if (u !== c.uid && s.cards[u].cid === 'standard-keeper') p += 1;
     if (c.cid === 'street-recruit' && board.length > 1) p += 1;
-    if (c.cid === 'spirit') p += countOn(s, board, 'choirmother');
+    if (c.cid === 'spirit') p += countOn(s, board, 'choirmother') + (champOn(s, c.ctrl, 'champion-radiant', 2) ? 1 : 0);
   }
   return Math.max(0, p);
 }
 export function vitality(s, c) {
-  let v = def(c).vitality + (c.pV || 0) + (c.tV || 0);
-  if (c.zone === 'board' && c.cid === 'spirit') v += countOn(s, boardOf(s, c), 'choirmother');
+  let v = (isChamp(c) ? champStat(s, c, 1) : def(c).vitality) + (c.pV || 0) + (c.tV || 0);
+  if (c.zone === 'board' && c.cid === 'spirit') v += countOn(s, boardOf(s, c), 'choirmother') + (champOn(s, c.ctrl, 'champion-radiant', 2) ? 1 : 0);
   return v;
 }
 
 // Printed keywords, plus what other cards grant and this turn's Tricks.
 export function hasKw(s, c, kw) {
   if (def(c).keywords.includes(kw)) return true;
+  if (isChamp(c) && champStat(s, c, 2).includes(kw)) return true;
   if (c.tKw && c.tKw.includes(kw)) return true;
   if (c.zone !== 'board') return false;
-  if (kw === 'soar' && c.cid === 'spirit' && countOn(s, boardOf(s, c), 'choirmother')) return true;
+  if (kw === 'soar' && c.cid === 'spirit' && (countOn(s, boardOf(s, c), 'choirmother') || champOn(s, c.ctrl, 'champion-radiant', 2))) return true;
   if (kw === 'rush' && s.players[c.ctrl].relics.some((u) => s.cards[u].cid === 'banner-of-the-charge')) return true;
   return false;
 }
@@ -134,6 +174,7 @@ const creaturesIn = (s, uids) => uids.filter((u) => def(s.cards[u]).type === 'cr
 function price(s, pi, c, from = 'hand') {
   const d = def(c), P = s.players[pi];
   let cost = from === 'discard' ? d.echo : d.cost;
+  if (d.champion) cost = 2 + 2 * (c.deaths || 0); // (2 more each time it has left the table)
   if (from === 'hand') {
     switch (c.cid) {
       case 'the-mountain-is-angry': cost = Math.max(3, cost - s.died); break;
@@ -144,6 +185,7 @@ function price(s, pi, c, from = 'hand') {
     }
   }
   if (d.type === 'spell' && P.ripple > 0) cost -= 1; // Ripple: the next Spell this turn
+  if (d.type === 'spell' && champOn(s, pi, 'champion-ember', 3)) cost -= 1;
   let usesMirror = false;
   if (d.type === 'spell' && !P.mirror && cost <= 2) {
     const mages = countOn(s, P.board, 'mirror-mage');
@@ -172,6 +214,13 @@ function enterPlay(s, c, pi) {
 // for cards leaving hand or deck.
 function toDiscard(s, c, from) {
   const P = s.players[c.owner];
+  if (isChamp(c)) { // (a Champion goes back to its owner's hand instead, dearer each time)
+    if (from === 'board') c.deaths = (c.deaths || 0) + 1;
+    c.zone = 'hand';
+    if (!P.hand.includes(c.uid)) P.hand.push(c.uid);
+    log(s, c.owner, `${nameOf(c)} goes back to ${P.name}'s hand.`);
+    return;
+  }
   if (c.token) { c.zone = 'gone'; return; }
   if (c.echoed) { c.zone = 'exile'; P.exile.push(c.uid); return; }
   c.zone = 'discard';
@@ -188,7 +237,8 @@ function toHand(s, c, from) {
   P.hand.push(c.uid);
 }
 
-export function draw(s, pi, n = 1) {
+// (`turnDraw`: the draw every turn starts with; any other is an extra card, for Nim)
+export function draw(s, pi, n = 1, turnDraw = false) {
   const P = s.players[pi];
   for (let k = 0; k < n && !P.out; k++) {
     if (!P.deck.length) {
@@ -206,6 +256,11 @@ export function draw(s, pi, n = 1) {
     P.hand.push(c.uid);
     ev(s, { k: 'draw', p: pi });
     for (const u of [...P.board]) if (s.cards[u].cid === 'brook-hydra') buff(s, s.cards[u], 1, 1, true);
+    if (!turnDraw) gainXP(s, pi, 'draw', 1);
+    if (champOn(s, pi, 'champion-tide', 3)) {
+      log(s, pi, `${BY_ID['champion-tide'].name}: each opponent loses 1 Life.`);
+      for (const o of opponents(s, pi)) loseLife(s, o.i, 1);
+    }
   }
 }
 
@@ -298,7 +353,12 @@ function buff(s, c, dP, dV, permanent, fromBramble = false) {
   }
   if (!permanent) return;
   c.grown = true;
+  gainXP(s, c.ctrl, 'grow', 1);
   const board = s.players[c.ctrl].board;
+  if (!fromBramble && c.cid !== 'champion-verdant' && c.zone === 'board' && champOn(s, c.ctrl, 'champion-verdant', 3)) {
+    log(s, c.ctrl, `${BY_ID['champion-verdant'].name}: ${nameOf(c)} gets +1/+1 more.`);
+    buff(s, c, 1, 1, true, true);
+  }
   if (!fromBramble) {
     for (const u of [...board]) {
       if (u === c.uid || s.cards[u].cid !== 'grandmother-bramble' || c.zone !== 'board') continue;
@@ -361,6 +421,11 @@ function killBatch(s, dead) {
   }
   for (const { c, as, ctrl } of gone) {
     const P = s.players[ctrl];
+    for (const Q of s.players) gainXP(s, Q.i, 'death', 1);
+    if (champOn(s, ctrl, 'champion-umbral', 2)) {
+      log(s, ctrl, `${BY_ID['champion-umbral'].name}: each opponent loses 1 Life.`);
+      for (const o of opponents(s, ctrl)) loseLife(s, o.i, 1);
+    }
     for (const u of before[ctrl]) {
       if (u === c.uid) continue;
       const o = s.cards[u];
@@ -474,6 +539,7 @@ function makeTokens(s, pi, cid, n, answer = false) {
   }
   if (made) log(s, pi, `${P.name} creates ${made} ${BY_ID[cid].name}${made === 1 ? '' : 's'}.`);
   if (!made || cid !== 'spirit') return;
+  gainXP(s, pi, 'spirit', made);
   const singers = countOn(s, P.board, 'dawnsinger');
   if (singers) {
     log(s, pi, `Dawnsinger: each opponent loses ${made * singers} Life.`);
@@ -484,12 +550,17 @@ function makeTokens(s, pi, cid, n, answer = false) {
     log(s, pi, 'The Bright Choir answers.');
     makeTokens(s, pi, 'spirit', made, true);
   }
+  if (champOn(s, pi, 'champion-radiant', 3)) {
+    log(s, pi, `${BY_ID['champion-radiant'].name} answers.`);
+    makeTokens(s, pi, 'spirit', made, true);
+  }
 }
 
 // ── fighting ────────────────────────────────────────────────────────
 export function canAttack(s, pi, c) {
   return !!c && c.zone === 'board' && c.ctrl === pi && !c.ex &&
-    (c.played < s.turn || !!c.rush || hasKw(s, c, 'rush'));
+    (c.played < s.turn || !!c.rush || hasKw(s, c, 'rush')) &&
+    !(isChamp(c) && champLevel(s, c.owner) < 2); // (a Champion defends until Level 2)
 }
 
 // Can creature b block attacker a?
@@ -1229,6 +1300,11 @@ function play(s, pi, a) {
   if (usesMirror) P.mirror = true;
   if (P.ripple > 0) P.ripple -= 1; // (a Ripple's discount is used up)
   P.spells += 1;
+  gainXP(s, pi, 'spell', 1);
+  if (champOn(s, pi, 'champion-ember', 2)) {
+    log(s, pi, `${BY_ID['champion-ember'].name}: 1 damage to each opponent.`);
+    for (const o of opponents(s, pi)) damagePlayer(s, o.i, 1);
+  }
   if (P.spells === 2) {
     for (const u of [...P.board]) if (s.cards[u].cid === 'lightning-theorist') {
       log(s, pi, 'Lightning Theorist: 2 damage to each opponent.');
@@ -1335,6 +1411,25 @@ function startTurn(s, i) {
       } else log(s, i, `The Drowned Clock chimes (${r.chimes} of 3).`);
     }
   }
+  if (champOn(s, i, 'champion-verdant', 2) && P.board.length) {
+    const small = P.board.map((x) => s.cards[x]).reduce((m, x) => (power(s, x) < power(s, m) ? x : m));
+    log(s, i, `${BY_ID['champion-verdant'].name} strengthens ${nameOf(small)}.`);
+    buff(s, small, 1, 1, true);
+  }
+  if (champOn(s, i, 'champion-umbral', 3) && P.board.length < RULES.boardMax) {
+    const back = P.discard.map((x) => s.cards[x]).filter((x) => def(x).type === 'creature' && def(x).cost <= 3)
+      .reduce((m, x) => (!m || def(x).cost >= def(m).cost ? x : m), null);
+    if (back) {
+      removeFrom(P.discard, back.uid);
+      enterPlay(s, back, i);
+      log(s, i, `${BY_ID['champion-umbral'].name} calls ${nameOf(back)} back from the grave.`);
+      ev(s, { k: 'token', uid: back.uid, p: i });
+    }
+  }
+  if (champOn(s, i, 'champion-tide', 2)) {
+    log(s, i, `${BY_ID['champion-tide'].name}: ${P.name} draws an extra card.`);
+    draw(s, i, 1);
+  }
   for (const u of [...P.board]) {
     const c = s.cards[u];
     if (c.cid === 'seedling' && c.zone === 'board' && vitality(s, c) >= 3) {
@@ -1343,7 +1438,7 @@ function startTurn(s, i) {
       draw(s, i, 1);
     }
   }
-  if (!(i === s.first && P.turns === 1)) draw(s, i, 1);
+  if (!(i === s.first && P.turns === 1)) draw(s, i, 1, true);
   settle(s);
   if (P.out && s.phase !== 'over') nextTurn(s);
 }

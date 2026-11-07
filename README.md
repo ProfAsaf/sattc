@@ -389,6 +389,34 @@ says nothing about alerts until `js/push-config.js` points at it. No alert
 while your game is open in front of you. iPhones: iOS 16.4+, the game opened
 from its Home Screen icon.
 
+## Champions, a prototype (2026-11-07)
+
+"Starting everybody with one defender or something… what I like about Dominion
+is you are always building and growing… and on a phone it could automatically
+figure it out for you." With Champions on (a switch on the Play page, on by
+default, and one in a game's room for the host), every deck starts with a
+Champion on the table: the faction it has most cards of (`championFor`; the five
+starters get five different ones). A Champion can block from the start but can't
+attack until Level 2. It levels up as its player does its faction's thing, and
+each level brings bigger stats and an ability that works on the rest of the deck
+(CHAMPIONS in cards.js; `champLevel`, `gainXP`, `champOn` in engine.js):
+
+| Champion | levels with | Level 2 | Level 3 |
+|---|---|---|---|
+| Aurelia (Radiant) | Spirits created (3, 6) | Spirits +1/+1 and Soar | each Spirit brings another |
+| Pyra (Ember) | Spells played (3, 6) | each Spell: 1 damage to each opponent | Spells cost 1 less |
+| Old Root (Verdant) | permanent boosts (4, 10) | the smallest grows each turn | every boost +1/+1 more |
+| Morwen (Umbral) | creatures dying, anyone's (8, 14) | your creatures' deaths drain 1 | a dead creature (cost ≤ 3) returns each turn |
+| Nim (Tide) | extra cards drawn (2, 5) | an extra card each turn | each card drawn drains 1 |
+
+Its powers work only while it's on the table; if it leaves, it goes back to its
+owner's hand (even a full one), 2 Energy dearer each time. Tuned with bots (1,200
+duels): each Champion reaches Level 2 in 71–80% of games around its 4th–6th turn,
+Level 3 in 20–49%, and the starters win 43–59%, as without Champions. A setup
+without `champions` has none (old saves, the lesson). The table shows the level
+as a gold ★ on the card, a level up gets the whole screen, and a player's sheet
+(tap their bar) says how far along their Champion is.
+
 ## Combos that escalate (2026-11-07)
 
 "There was something very exciting about combos and how things start

@@ -49,7 +49,8 @@ import { new_a } from './scenes/new-a.js';
 import { new_b } from './scenes/new-b.js';
 import { new_c } from './scenes/new-c.js';
 import { new_d } from './scenes/new-d.js';
+import { champions } from './scenes/champions.js';
 
 export { PAL } from './scenes/shared.js';
 
-export const SCENES = { ...ember, ...verdant, ...tide, ...umbral, ...radiant, ...multi, ...new_a, ...new_b, ...new_c, ...new_d };
+export const SCENES = { ...ember, ...verdant, ...tide, ...umbral, ...radiant, ...multi, ...new_a, ...new_b, ...new_c, ...new_d, ...champions };

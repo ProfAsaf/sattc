@@ -1,7 +1,7 @@
 // The Collective — app shell: hash router and the non-game views
 // (home, card gallery, deck list, deckbuilder, rules; Insights is in insights.js).
 
-import { BY_ID, CARDS, FACTIONS, FACTION_ORDER, KEYWORDS, RULES, SET, STARTERS, TOKENS, isTrick } from './cards.js';
+import { BY_ID, CARDS, CHAMPIONS, FACTIONS, FACTION_ORDER, KEYWORDS, RULES, SET, STARTERS, TOKENS, isTrick } from './cards.js';
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, demo, playPage, startTutorial } from './game-ui.js';
@@ -396,6 +396,10 @@ function rules() {
       <li>Then both sides may play <b>Tricks</b> and use <b>abilities</b>, attacker first, back and forth until both are done.</li>
       <li><b>Damage.</b> A blocked attacker and its blocker hit each other, each dealing its Power; a creature dies when the damage reaches its Vitality. Unblocked attackers hit the player. A blocked attacker never hits the player (unless it has <b>Overrun</b>), even if its blocker is gone.</li>
     </ul>
+
+    <h2>★ Champions (new)</h2>
+    <p>With Champions on (a switch on the Play page, and in a game's room), every deck starts with a <b>Champion</b> on the table: the one of the faction the deck has most cards of. It can block from the start but can't attack until <b>Level 2</b>. It levels up as you do what its faction does, and each level makes it bigger and changes how your other cards work. Its powers work only while it's on the table; if it leaves, it goes back to your hand and costs 2 more each time.</p>
+    <ul>${Object.values(CHAMPIONS).map((c) => `<li><b>${esc(c.name)}</b> (${esc(FACTIONS[c.factions[0]].name)}) levels up with ${esc(c.xp.unit)}: at ${c.xp.at[0]}, ${esc(c.l2)} At ${c.xp.at[1]}, ${esc(c.l3)}</li>`).join('')}</ul>
 
     <h2>⚡ Abilities</h2>
     <p>Some creatures say <b>“Pay 2 Energy: …”</b>. Pay the Energy and it happens. Each ability works <b>once each turn</b>, whenever you could play a Trick: on your own turn, or during a fight you are in. On the table, tap the ⚡ chip on the creature, which shows the Energy it takes; it glows gold when you can use it.</p>

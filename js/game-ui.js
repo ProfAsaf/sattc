@@ -8,7 +8,7 @@
 // redrawn and everything glides into place.
 
 import { BY_ID, KEYWORDS, RULES, STARTERS, isTrick } from './cards.js';
-import { abilityNeeds, actor, apply, blockLimit, canAttack, canBlock, costOf, forcedBlocks, hasKw, living, needs, newGame, opponents, phoenixReady, playOptions, power, replay, useOptions, vitality } from './engine.js';
+import { abilityNeeds, actor, apply, blockLimit, canAttack, canBlock, champLevel, costOf, forcedBlocks, hasKw, living, needs, newGame, opponents, phoenixReady, playOptions, power, replay, useOptions, vitality } from './engine.js';
 import { chooseAction } from './ai.js';
 import { artTag, cardBackHTML, cardHTML, esc, factionCoin, factionVars } from './render.js';
 import * as FX from './fx.js';
@@ -71,7 +71,7 @@ function deckChoices() {
 let L = null; // { code, info, unsub } while in a room
 let playView = null;
 // The Play page's switches and its "Decks" list, kept while the page redraws.
-const PF = { draftNight: false, botDraft: false, decksOpen: false };
+const PF = { draftNight: false, botDraft: false, decksOpen: false, champions: (() => { try { return localStorage.getItem('collective.champions') !== '0'; } catch { return true; } })() };
 const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 
 function deckSelect(id, choices, chosen) {
@@ -141,6 +141,7 @@ function onlinePanelHTML(choices, chosen) {
       <div class="deck-cards">${seats}</div>
       ${Draft.versionNoteHTML(info)}
       ${host && info.status === 'lobby' ? Draft.modeSwitchHTML(false) : ''}
+      ${info.status === 'lobby' ? `<label class="dr-switch mini"><input type="checkbox" id="room-champions"${info.champions ? ' checked' : ''}${host ? '' : ' disabled'}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>Champions</b> (new)${host ? '' : ': the host decides'}</span></label>` : ''}
       <div class="pp-group"><label class="pp-row"><span>Deck</span>${deckSelect('room-deck', choices, current)}</label></div>
       ${next}
       ${alertsHTML()}
@@ -184,6 +185,7 @@ function botsPanelHTML(choices, chosen) {
     </div>
     <div class="pp-opts">
       <label class="dr-switch mini"><input type="checkbox" id="bot-draft"${PF.botDraft ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>Draft my deck</b></span></label>
+      <label class="dr-switch mini"><input type="checkbox" id="champions-practice"${PF.champions ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>Champions</b> (new)</span></label>
       <button class="pp-more" data-act="decks" aria-expanded="${PF.decksOpen}" aria-controls="bot-decks"${PF.botDraft ? ' hidden' : ''}>Decks<i>${PF.decksOpen ? '▴' : '▾'}</i></button>
     </div>
     <div class="pp-group" id="bot-decks"${PF.decksOpen && !PF.botDraft ? '' : ' hidden'}>
@@ -336,6 +338,8 @@ export function playPage(view) {
     const t = e.target;
     if (t.id === 'draft-new') { PF.draftNight = t.checked; document.getElementById('net-deck-row').hidden = t.checked; return; }
     if (t.id === 'bot-draft') { PF.botDraft = t.checked; showDecks(); return; }
+    if (t.id === 'champions-practice') { PF.champions = t.checked; try { localStorage.setItem('collective.champions', t.checked ? '1' : '0'); } catch { /* fine */ } return; }
+    if (t.id === 'room-champions') { if (L) Net.setChampions(L.code, t.checked).catch((err) => flash(err.message)); return; }
     if (t.id !== 'room-deck' || !L) return;
     const d = choices.find((x) => x.id === t.value);
     Net.setDeck(L.code, Decks.encode(d.counts)).then(() => flash(`${d.name.replace(/ \(starter\)$/, '')} is your deck for the next game.`), (err) => flash(err.message));
@@ -381,7 +385,7 @@ function pickBots(n, which, mine) {
 function startPractice(mine, bots) {
   const players = [{ name: 'You', deck: Decks.cardList(mine.counts) },
     ...bots.map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
-  const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy };
+  const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, champions: PF.champions };
   begin({ mode: 'practice', setup, actions: [], me: 0, bots: bots.map((_, i) => i + 1) });
 }
 
@@ -478,7 +482,7 @@ export function demo(params) {
   const decks = [STARTERS[1], STARTERS[4], STARTERS[0]];
   const players = [{ name: 'You', deck: Decks.cardList(decks[0].counts) },
     ...decks.slice(1, 1 + nBots).map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
-  const setup = { seed, players, startEnergy: RULES.startEnergy };
+  const setup = { seed, players, startEnergy: RULES.startEnergy, champions: params.get('champions') === '1' };
   let s = newGame(setup);
   const actions = [];
   for (let k = 0; s.phase !== 'over' && (k < moves || actor(s) !== 0 || s.phase !== 'main'); k++) {
@@ -551,7 +555,7 @@ function begin(rec) {
 function beginOnline(info, seat) {
   const round = info.round;
   // (every phone in a game runs the same version, so they agree on the rules: see G.stale)
-  const setup = { seed: info.seeds[round], players: info.players.map((p) => ({ name: p.name, deck: Decks.cardList(Decks.decode(p.deck) || {}) })), startEnergy: RULES.startEnergy };
+  const setup = { seed: info.seeds[round], players: info.players.map((p) => ({ name: p.name, deck: Decks.cardList(Decks.decode(p.deck) || {}) })), startEnergy: RULES.startEnergy, champions: !!info.champions };
   clearTimeout(G?.timer);
   G?.unsubActions?.();
   endGate?.(false);
@@ -1407,7 +1411,7 @@ function creatureHTML(s, c, hl, inBattle = false) {
   const ability = d.ability && mine ? { cost: d.ability.cost, on: !abilityBlocked(c.uid), used: c.usedOn === s.turn } : null;
   return FX.tcardHTML(d, {
     uid: c.uid, states: st, power: power(s, c), vitality: vitality(s, c) - (c.dmg || 0), dmg: c.dmg,
-    keywords: kws, leaving: !!(c.sacEnd || c.stolen), foe: !mine, ability,
+    keywords: kws, leaving: !!(c.sacEnd || c.stolen), foe: !mine, ability, champ: d.champion ? champLevel(s, c.owner) : 0,
     ...(inBattle ? { cls: 'in-battle', rest: false } : {}),
   });
 }
@@ -2470,6 +2474,13 @@ async function animateOld(root, events, after = G.state) {
         break;
       }
       case 'crownDraw': { const b = barEl(root, e.p); if (b) await FX.number(b, '👑 +1 card', { kind: 'buff' }); break; }
+      case 'levelup': {
+        const d = BY_ID[e.cid], u = S().players[e.p].board.find((x) => S().cards[x].cid === e.cid);
+        const n = u != null ? el(root, u) : null;
+        if (n) FX.burst(n, { color: '#ffd76a' });
+        await FX.banner(`${e.p === G.me ? 'Your' : `${name(e.p)}’s`} ${d.name.split(',')[0]}: Level ${e.level}!`, { sub: levelLine(d, e.level), tone: e.p === G.me ? 'mine' : 'foe' });
+        break;
+      }
       case 'chime': { const n = el(root, e.uid); if (n) await FX.number(n, `🔔 ${e.n || 3}/3`, { kind: 'buff' }); break; }
       default: break;
     }
@@ -2752,6 +2763,7 @@ function cardSheet(uid, { from = 'hand' } = {}) {
     if (c.owner !== c.ctrl && !c.stolen) bits.push(`Taken from ${shortName(s.players[c.owner].name)} for good`);
     if (c.sacEnd) bits.push('Borrowed Time: it leaves at the end of this turn');
     if (c.baseCid) bits.push(`Really ${BY_ID[c.baseCid].name}: it turns back if it leaves play`);
+    if (d.champion) bits.push(champLine(s, c));
     if (c.ctrl === G.me) {
       if (myMain() && !attackedThisTurn() && canAttack(s, G.me, c)) actions = `<button class="btn primary" data-act="attack-from-sheet" data-uid="${uid}">${G.atk?.att.includes(uid) ? 'Keep it home' : 'Send it into the attack'}</button>`;
       else if (c.played === s.turn && s.active === G.me && !hasKw(s, c, 'rush')) bits.push('Arrived this turn: it can attack next turn (it can block already)');
@@ -2836,6 +2848,24 @@ function energyLine(s, P, whose) {
   return `${P.energy} now, ${next} at the start of ${whose} next turn`;
 }
 
+// Champions: what a level brings, and how far along one is.
+function levelLine(d, L) {
+  const [p, v, ks] = d.levels[L - 1];
+  return `${p}/${v}${ks.length ? `, ${ks.map((k) => KEYWORDS[k].name).join(', ')}` : ''}. ${L === 2 ? d.l2 : d.l3}`;
+}
+// (a player's sheet: their Champion, where it is, and how far along)
+function champRow(s, P) {
+  const d = BY_ID[P.champ], L = champLevel(s, P.i);
+  const u = [...P.board, ...P.hand].find((x) => s.cards[x].cid === P.champ);
+  const where = !u ? 'gone' : s.cards[u].zone === 'board' ? 'on the table' : 'in hand';
+  return `${d.name.split(',')[0]}, Level ${L} (${where})${L < 3 ? ` · ${P.cxp} of ${d.xp.at[L - 1]} ${d.xp.unit} for Level ${L + 1}` : ''}`;
+}
+function champLine(s, c) {
+  const d = BY_ID[c.cid], P = s.players[c.owner], L = champLevel(s, c.owner);
+  if (!P.champ) return 'Champion';
+  return L >= 3 ? 'Champion at Level 3, the top' : `Champion at Level ${L}: ${P.cxp} of ${d.xp.at[L - 1]} ${d.xp.unit} for Level ${L + 1} (${levelLine(d, L + 1)})`;
+}
+
 // Tap a player's bar: everything about them, in words.
 function playerSheet(pi) {
   const s = S(), P = s.players[pi], mine = pi === G.me;
@@ -2848,6 +2878,7 @@ function playerSheet(pi) {
     ['Discard pile', `${P.discard.length} card${P.discard.length === 1 ? '' : 's'}`],
     ...(P.traps.length ? [['Face-down Traps', P.traps.length]] : []),
     ...(s.crownOn ? [['The Crown', s.crown === pi ? (mine ? 'yours: an extra card at the end of each of your turns' : 'theirs: hit them in a fight to take it') : 'no']] : []),
+    ...(P.champ ? [['Champion', champRow(s, P)]] : []),
   ];
   const relics = P.relics.map((u) => BY_ID[s.cards[u].cid]).map((d) => `<div><b>${esc(d.name)}</b> — ${esc(d.text.replace(/^Relic\n/, ''))}</div>`).join('');
   return `<h3>${who}</h3>
@@ -2888,6 +2919,7 @@ function helpSheet() {
       <div><b>The fight</b>: before it starts, a screen shows the <b>Tricks</b> and abilities you could use (only when you have one): play one, or tap <b>Fight</b>. It comes up big, a pair at a time, with what happened and why: tap to go on, Skip to close. The note under the table afterwards plays it again.</div>
       <div><b>The others’ moves wait for you</b>: a card someone plays stays up big, and an attack between the other two stays on the table, until you <b>tap anywhere</b>. <b>Skip to your move</b> passes over the rest. In ☰ you can let them play by themselves instead.</div>
       <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card, which shows the Energy it takes (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
+      ${S().players.some((P) => P.champ) ? '<div><b>★ Champions</b> (new): every deck starts with a Champion on the table. It can block from the start, but can’t attack until Level 2. It levels up as you do what its faction does (tap it to see how far along it is), and each level changes how your other cards work. If it leaves the table it goes back to your hand, costing 2 more each time.</div>' : ''}
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
       <div><b>The button at the bottom right</b> moves the game on: End turn, Attack, Block, Fight. While you could still play a card or attack, End turn asks for a second tap.</div>
       <div><b>💡</b> (top right) asks the bot what it would do in your place: it spells out the move and rings the cards. Tap <b>Do it</b> to make that move, or do something else.</div>

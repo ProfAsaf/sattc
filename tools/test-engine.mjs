@@ -2,8 +2,8 @@
 //   node tools/test-engine.mjs            all tests + 400 fuzz games
 //   node tools/test-engine.mjs 3000       more fuzz games
 
-import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack, useOptions } from '../js/engine.js';
-import { RULES, STARTERS } from '../js/cards.js';
+import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack, useOptions, champLevel, draw } from '../js/engine.js';
+import { BY_ID, RULES, STARTERS } from '../js/cards.js';
 import { canAdd, cardList, validate } from '../js/decks.js';
 
 let pass = 0, fail = 0;
@@ -1271,6 +1271,138 @@ test('Two of each card in a deck, one of a Legendary', () => {
   ok(STARTERS.every((d) => Object.values(d.counts).some((n) => n === 2)), 'every starter has cards it holds two of');
 });
 
+// ── Champions (a prototype) ─────────────────────────────────────────
+// A Champion of player p on the table, as newGame puts it there.
+const AT = (cid) => BY_ID[cid].xp.at; // (its totals for Levels 2 and 3, as tuned)
+function champ(s, p, cid) {
+  const c = addCard(s, cid, p, 'board');
+  Object.assign(s.players[p], { champ: cid, cxp: 0 });
+  return c;
+}
+
+test('Champions start on the table, one each, from the deck', () => {
+  const ed = cardList(STARTERS[0].counts), mm = cardList(STARTERS[1].counts);
+  const s = newGame({ seed: 3, players: [{ name: 'A', deck: ed }, { name: 'B', deck: mm }], startEnergy: 3, champions: true });
+  eq(s.players[A].board.map((u) => s.cards[u].cid).join(), 'champion-umbral', 'Everything Dies brings Morwen');
+  eq(s.players[B].board.map((u) => s.cards[u].cid).join(), 'champion-radiant', 'More Is More brings Aurelia');
+  eq(champLevel(s, A), 1, 'at Level 1');
+  ok(!canAttack(s, A, s.cards[s.players[A].board[0]]), 'a Level 1 Champion can’t attack');
+  const old = newGame({ seed: 3, players: [{ name: 'A', deck: ed }, { name: 'B', deck: mm }] });
+  eq(old.players[A].board.length, 0, 'none without champions');
+});
+
+test('Aurelia: Spirits level her; then Spirits grow, then double', () => {
+  let s = scene();
+  const au = champ(s, A, 'champion-radiant');
+  const spirits = () => s.players[A].board.filter((u) => s.cards[u].cid === 'spirit');
+  ok(AT('champion-radiant')[0] === 3, '(this test reckons with Level 2 at 3 Spirits)');
+  const ts = addCard(s, 'twin-souls', A, 'hand');
+  s = play(s, ts.uid);
+  eq(champLevel(s, A), 1, '2 Spirits: still Level 1');
+  ok(canAttack(s, A, s.cards[au.uid]) === false, 'and still only a defender');
+  const lw = addCard(s, 'lightweaver', A, 'hand');
+  s = play(s, lw.uid);
+  eq(champLevel(s, A), 2, '3 Spirits: Level 2');
+  eq(power(s, s.cards[au.uid]), 2, 'Aurelia 2/5');
+  eq(vitality(s, s.cards[au.uid]), 5, 'Aurelia 2/5 (Vitality)');
+  eq(power(s, s.cards[spirits()[0]]), 2, 'Spirits are 2/2');
+  ok(canAttack(s, A, s.cards[au.uid]), 'and she can attack now');
+  s.players[A].cxp = AT('champion-radiant')[1] - 1;
+  const ts2 = addCard(s, 'twin-souls', A, 'hand');
+  s = play(s, ts2.uid);
+  eq(champLevel(s, A), 3, 'Level 3');
+  eq(spirits().length, 5, 'two more Spirits fill the table: 7 creatures, so the doubling has no room');
+  eq(s.players[A].board.length, 7, 'the table holds 7');
+  ok(hasKw(s, s.cards[au.uid], 'soar'), 'Level 3 Soar');
+});
+
+test('Pyra: Spells level her; then each Spell burns, then they cost less', () => {
+  let s = scene();
+  champ(s, A, 'champion-ember');
+  s.players[A].cxp = AT('champion-ember')[0] - 1;
+  const sc = addCard(s, 'scorch', A, 'hand'), sc2 = addCard(s, 'scorch', A, 'hand');
+  const rat = addCard(s, 'grave-rat', B, 'board'), rat2 = addCard(s, 'grave-rat', B, 'board');
+  s = play(s, sc.uid, { target: { uid: rat.uid } });
+  eq(champLevel(s, A), 2, 'one more Spell: Level 2');
+  eq(s.players[B].life, 19, 'and it already burns: 1 damage');
+  s.players[A].cxp = AT('champion-ember')[1] - 1;
+  s = play(s, sc2.uid, { target: { uid: rat2.uid } });
+  eq(champLevel(s, A), 3, 'Level 3');
+  const w = addCard(s, 'wildfire', A, 'hand');
+  eq(costOf(s, A, s.cards[w.uid]), 2, 'Spells cost 1 less');
+});
+
+test('Old Root: growth levels him; then the smallest grows each turn, then every boost grows more', () => {
+  let s = scene();
+  const root = champ(s, A, 'champion-verdant');
+  const m = addCard(s, 'mossback', A, 'board'), sd = addCard(s, 'grave-rat', A, 'board');
+  deckOf(s, A, 4); deckOf(s, B, 4);
+  ok(hasKw(s, s.cards[root.uid], 'reach'), 'Reach from Level 1');
+  s.players[A].cxp = AT('champion-verdant')[0] - 1;
+  const wg = addCard(s, 'wild-growth', A, 'hand');
+  s = play(s, wg.uid, { target: { uid: m.uid } });
+  eq(champLevel(s, A), 2, 'one more boost: Level 2');
+  s = end(s); s = end(s);
+  eq(power(s, s.cards[sd.uid]), 2, 'his turn: the smallest (the Rat) grows +1/+1');
+  s.players[A].cxp = AT('champion-verdant')[1];
+  const wg2 = addCard(s, 'wild-growth', A, 'hand');
+  s = play(s, wg2.uid, { target: { uid: m.uid } });
+  eq(power(s, s.cards[m.uid]), 3 + 2 + 2 + 1, 'Level 3: Wild Growth gives +1/+1 more');
+});
+
+test('Morwen: deaths level her; then deaths drain, then the grave gives back', () => {
+  let s = scene();
+  champ(s, A, 'champion-umbral');
+  s.players[A].cxp = AT('champion-umbral')[0] - 1;
+  deckOf(s, A, 4); deckOf(s, B, 4);
+  const rat = addCard(s, 'grave-rat', A, 'board');
+  const w = addCard(s, 'wildfire', A, 'hand');
+  s = play(s, w.uid);
+  eq(champLevel(s, A), 2, 'one more death: Level 2');
+  eq(s.players[B].life, 19, 'and the Rat’s death drains 1');
+  ok(s.cards[rat.uid].zone === 'discard', 'the Rat is in the discard pile');
+  s.players[A].cxp = AT('champion-umbral')[1];
+  s = end(s); s = end(s);
+  ok(s.players[A].board.some((u) => s.cards[u].cid === 'grave-rat'), 'Level 3: her turn brings a Rat back');
+});
+
+test('Nim: extra cards level her; then she draws more, then every card drains', () => {
+  let s = scene();
+  champ(s, A, 'champion-tide');
+  deckOf(s, A, 10); deckOf(s, B, 10);
+  s = end(s); s = end(s);
+  eq(s.players[A].cxp, 0, 'the turn’s own draw doesn’t count');
+  s.players[A].cxp = AT('champion-tide')[0] - 2;
+  const st = addCard(s, 'second-thought', A, 'hand');
+  s = play(s, st.uid, { discard: s.players[A].hand.find((u) => s.cards[u].cid === 'grave-rat') });
+  eq(champLevel(s, A), 2, 'Second Thought’s cards: Level 2');
+  const n = s.players[A].hand.length;
+  s = end(s); s = end(s);
+  eq(s.players[A].hand.length, n + 2, 'her turn: the turn’s card and an extra one');
+  s.players[A].cxp = AT('champion-tide')[1];
+  const life = s.players[B].life;
+  draw(s, A, 1);
+  eq(s.players[B].life, life - 1, 'Level 3: a card drawn costs them 1 Life');
+});
+
+test('A Champion that leaves the table comes back to hand, dearer each time', () => {
+  let s = scene();
+  const au = champ(s, A, 'champion-radiant');
+  s.players[A].cxp = AT('champion-radiant')[0];
+  const sc = addCard(s, 'scorch', B, 'hand');
+  s.active = B;
+  s = play(s, sc.uid, { target: { uid: au.uid } });
+  s = play(s, addCard(s, 'scorch', B, 'hand').uid, { target: { uid: au.uid } });
+  s = play(s, addCard(s, 'scorch', B, 'hand').uid, { target: { uid: au.uid } });
+  eq(s.cards[au.uid].zone, 'hand', 'Aurelia goes back to hand');
+  eq(costOf(s, A, s.cards[au.uid]), 4, 'and costs 4 now');
+  eq(champLevel(s, A), 2, 'she keeps her level');
+  const ts = addCard(s, 'twin-souls', A, 'hand');
+  s.active = A;
+  s = play(s, ts.uid);
+  eq(power(s, s.cards[s.players[A].board.find((u) => s.cards[u].cid === 'spirit')]), 1, 'her Level 2 works only while she is on the table');
+});
+
 // ── cards that multiply (n 91–97) ───────────────────────────────────
 test('The Bright Choir doubles Spirits; Dawnsinger drains for each', () => {
   let s = scene();
@@ -1368,7 +1500,7 @@ function fuzz(games) {
   for (let g = 0; g < games; g++) {
     const n = g % 4 === 3 ? 3 : 2;
     const players = Array.from({ length: n }, (_, i) => ({ name: `P${i}`, deck: decks[(g + i * 2) % decks.length] }));
-    let s = newGame({ seed: seed++, players, startEnergy: g % 2 ? RULES.startEnergy : 1 });
+    let s = newGame({ seed: seed++, players, startEnergy: g % 2 ? RULES.startEnergy : 1, champions: g % 3 !== 0 });
     let rand = g * 2654435761 >>> 0;
     const R = () => (rand = (Math.imul(rand, 1103515245) + 12345) >>> 0) / 4294967296;
     try {
@@ -1386,7 +1518,7 @@ function fuzz(games) {
         for (const P of s.players) {
           if (P.board.length > 7) throw new Error('board over 7');
           if (P.relics.length > 3) throw new Error('relics over 3');
-          if (P.hand.length > 10) throw new Error('hand over 10');
+          if (P.hand.filter((u) => !BY_ID[s.cards[u].cid]?.champion).length > 10) throw new Error('hand over 10'); // (a Champion goes back even to a full hand)
           for (const [z, want] of [['hand', 'hand'], ['deck', 'deck'], ['discard', 'discard'], ['board', 'board'], ['exile', 'exile'], ['relics', 'relic'], ['traps', 'trap']]) for (const u of P[z]) {
             if (s.cards[u].zone !== want) throw new Error(`zone mismatch ${s.cards[u].cid} in ${z} says ${s.cards[u].zone}`);
             if ((z === 'board' || z === 'relics') && s.cards[u].ctrl !== P.i) throw new Error(`control mismatch ${s.cards[u].cid}`);

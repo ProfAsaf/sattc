@@ -12,6 +12,9 @@ worker to send the next player a Web Push.
 - The worker makes its VAPID key pair on first use and keeps it in KV: there
   is no secret to copy anywhere.
 - `sw.js` (at the site root) shows the alert and opens the game when it's tapped.
+- Invites (`POST /invite`): a new room's lobby can wake the players of the
+  inviter's earlier rooms who have alerts on; a tap on that alert brings them
+  into the room (`sw.js` leaves the code in the cache for the game to find).
 
 iPhones get alerts from iOS 16.4 on, and only when the game was opened from
 its Home Screen icon.

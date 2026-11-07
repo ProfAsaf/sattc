@@ -4,7 +4,7 @@
 import { BY_ID, CARDS, FACTIONS, FACTION_ORDER, KEYWORDS, RULES, SET, STARTERS, TOKENS, isTrick } from './cards.js';
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
 import * as Decks from './decks.js';
-import { autoRejoin, demo, playPage, startTutorial } from './game-ui.js';
+import { acceptInvite, autoRejoin, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
 import * as Push from './push.js';
 
@@ -488,7 +488,13 @@ route();
 const params = new URLSearchParams(location.search);
 Push.start(); // (the service worker for turn alerts, once they are set up)
 if (params.has('demo')) demo(params);
-else autoRejoin();
+else {
+  // an invite tapped in an alert (sw.js) comes before the last room
+  const tapped = params.get('invite');
+  if (tapped) history.replaceState(null, '', location.pathname + location.hash);
+  Push.takeInvite().then((code) => (code || tapped ? acceptInvite(code || tapped) : autoRejoin()));
+}
+Push.onInvite(acceptInvite); // (one tapped while the game is open)
 // an invite link (?room=CODE) opens the Play tab with the code filled in
 if (params.has('room') && !location.hash.startsWith('#/play')) location.hash = '#/play';
 

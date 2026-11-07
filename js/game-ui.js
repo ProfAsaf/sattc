@@ -81,7 +81,7 @@ function deckSelect(id, choices, chosen) {
 // 🔔 "It's your turn" alerts (js/push.js), for games that go on while the phones are put away.
 function alertsHTML() {
   switch (Push.status()) {
-    case 'off': return '<button class="btn small" data-act="alerts-on">🔔 Alert me when it’s my turn</button>';
+    case 'off': return '<button class="btn small" data-act="alerts-on">🔔 Alert me when it’s my turn</button><p class="muted small pp-alerts">Alerts also bring friends’ invites: one tap and you’re in their game.</p>';
     case 'on': return '<p class="muted small pp-alerts">🔔 Alerts are on: this phone hears when it’s your turn. <button class="btn small ghost" data-act="alerts-off">Turn off</button></p>';
     case 'home': return '<p class="muted small pp-alerts">🔔 For “your turn” alerts, open the game from its Home Screen icon.</p>';
     case 'blocked': return '<p class="muted small pp-alerts">🔔 Alerts are turned off for this game in the iPhone’s Settings → Notifications.</p>';
@@ -96,10 +96,23 @@ async function alertsTap(on) {
   flash(st === 'on' ? 'Alerts on: you’ll hear when it’s your turn.' : st === 'blocked' ? 'Alerts weren’t allowed. Settings → Notifications can turn them on.' : 'Alerts off.');
 }
 
+// 🔔 Invites: a link can't open the Home Screen app on an iPhone, but an alert
+// can. One tap wakes the players of this phone's last rooms (those with alerts
+// on), and a tap on their alert brings them straight into this room (acceptInvite).
+function inviteHTML() {
+  const info = L?.info;
+  if (!info || info.status !== 'lobby' || !Push.enabled()) return '';
+  const here = new Set((info.players || []).filter(Boolean).map((p) => p.id));
+  if (here.size >= info.seats) return '';
+  if (L.invited) return `<p class="muted small pp-alerts">🔔 Invited ${esc(listNames(L.invited))}: a tap on the alert brings them here.</p>`;
+  const who = (L.invitees || []).filter((p) => !here.has(p.id)).map((p) => p.name);
+  return who.length ? `<button class="btn" data-act="invite">🔔 Invite ${esc(listNames(who))}</button>` : '';
+}
+
 function onlinePanelHTML(choices, chosen) {
   if (!Net.isConfigured()) return '<div class="pp-in"><h3>Friends</h3><p class="muted small" style="margin:0">Online play is not set up yet.</p></div>';
   if (L && L.info) {
-    if (L.info.draft) return Draft.roomPanelHTML(L.code, L.info, tonightHTML()); // Draft night has its own lobby
+    if (L.info.draft) return Draft.roomPanelHTML(L.code, L.info, inviteHTML() + tonightHTML()); // Draft night has its own lobby
     const info = L.info;
     const meSeat = (info.players || []).findIndex((p) => p && p.id === Net.clientId());
     const host = info.host === Net.clientId();
@@ -123,6 +136,7 @@ function onlinePanelHTML(choices, chosen) {
           : `<p class="muted small pp-wait">${esc(hostName)} starts the game.</p>`;
     return `<div class="pp-in">
       <div class="pp-title"><h3>Game <b>${esc(L.code)}</b></h3><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
+      ${inviteHTML()}
       ${tonightHTML()}
       <div class="deck-cards">${seats}</div>
       ${Draft.versionNoteHTML(info)}
@@ -217,12 +231,36 @@ async function enterRoom(code) {
     Draft.onRoomInfo(code, info, () => { if (playView && location.hash === '#/play' && !G) playPage(playView); });
     if (!info) { flash('That game no longer exists.'); Net.setLastRoom(''); exitRoom(); return; }
     watchTonight(info);
+    if (info.status === 'lobby' && !L.invitees && Push.enabled()) {
+      L.invitees = [];
+      Net.invitees(code).then((who) => { if (L?.code !== code) return; L.invitees = who; if (playView && location.hash === '#/play' && !G) playPage(playView); }, () => {});
+    }
     const seat = (info.players || []).findIndex((p) => p && p.id === Net.clientId());
     if (seat < 0 && info.status !== 'lobby') { Net.setLastRoom(''); exitRoom(); return; }
     if (info.status === 'playing' && seat >= 0 && !(G && G.mode === 'online' && G.round === info.round)) beginOnline(info, seat);
     if (info.status === 'lobby' && G && G.mode === 'online') { leave(); }
     if (playView && location.hash === '#/play' && !G) playPage(playView);
   });
+}
+
+// A tapped invite (sw.js, Push.takeInvite): straight into that room, with this
+// phone's name and deck. No name yet: the Play page, with the code filled in.
+export async function acceptInvite(code) {
+  code = Net.cleanCode(code);
+  if (code.length !== 4 || !Net.isConfigured()) return;
+  if (!Net.myName()) { location.href = `${location.pathname}?room=${code}#/play`; return; }
+  if (L?.code !== code) {
+    try {
+      const choices = deckChoices();
+      const deck = choices.find((d) => d.id === Decks.getActiveId()) || choices[0];
+      await Net.joinRoom(code, { name: Net.myName(), deck: Decks.encode(deck.counts) });
+    } catch (e) { flash(e.message || String(e)); return; }
+    if (G?.mode === 'online') leave();
+    exitRoom();
+    await enterRoom(code).catch((e) => flash(e.message || String(e)));
+  }
+  if (location.hash !== '#/play') location.hash = '#/play';
+  flash(`You’re in game ${code}.`);
 }
 
 // On start-up, go straight back into a game this phone was part of
@@ -268,6 +306,12 @@ async function onlineAct(act, el, choices) {
     if (act === 'leave-room') { const code = L.code; Draft.leaveRoom(); exitRoom(); await Net.leaveLobby(code); } // stop watching first, so leaving isn't reported as the game vanishing
     if (act === 'rejoin-table') { const seat = L.info.players.findIndex((p) => p.id === Net.clientId()); beginOnline(L.info, seat); }
     if (act === 'copy-link') { try { await navigator.clipboard.writeText(el.dataset.link); flash('Invite link copied.'); } catch { flash(el.dataset.link); } }
+    if (act === 'invite') {
+      el.disabled = true;
+      const r = await Push.invite(L.code);
+      if (r.sent) { L.invited = r.names; flash(`Invited ${listNames(r.names)}.`); } else flash(r.why === 'just sent' ? 'The invites just went out.' : 'No one could be invited: their alerts are off.');
+      if (playView && location.hash === '#/play' && !G) playPage(playView);
+    }
   } catch (e) { flash(e.message || String(e)); }
 }
 
@@ -310,7 +354,7 @@ export function playPage(view) {
       setTimeout(() => { if (el.isConnected) { el.classList.remove('armed'); el.textContent = '✕'; } }, 3000);
       return;
     }
-    if (['create', 'join', 'rejoin', 'start', 'leave-room', 'rejoin-table', 'copy-link'].includes(act)) { onlineAct(act, el, choices); return; }
+    if (['create', 'join', 'rejoin', 'start', 'leave-room', 'rejoin-table', 'copy-link', 'invite'].includes(act)) { onlineAct(act, el, choices); return; }
     if (act === 'alerts-on' || act === 'alerts-off') { alertsTap(act === 'alerts-on').catch((er) => flash(er.message)).finally(() => playPage(view)); return; }
     if (act === 'last-review') { if (L?.lastRec) Ins.openSheet(Ins.reviewHTML(L.lastRec)); return; }
     const ctx = { play: startPractice, refresh: () => playPage(view), code: L?.code };
@@ -1044,7 +1088,7 @@ function startAbility(uid) {
   const s = S(), c = s.cards[uid];
   const n = abilityNeeds(s, G.me, c);
   G.sheet = null;
-  if (!n.target) { dispatch({ t: 'use', p: G.me, uid }); return; }
+  if (!n.target) { tryMove({ t: 'use', p: G.me, uid }); return; }
   G.flow = { a: { t: 'use', p: G.me, uid }, steps: [{ kind: 'target', options: n.target, prompt: ABILITY_PROMPTS[c.cid] || 'Choose a target.' }], i: 0, multi: [] };
   nextChoice();
 }
@@ -1856,6 +1900,8 @@ function goButton() {
 function goTap(el) {
   if (!G || G.busy) return;
   const act = el.dataset.go;
+  const w = act === 'end' && !tutStep() ? endSlip(S()) : null; // Energy, and a creature or Relic still to play: ask
+  if (w) { G.endArm = 0; G.slip = { a: { t: 'end', p: G.me }, ...w }; G.sheet = slipSheet(G.slip); redraw(); return; }
   if (act === 'end' && !tutStep() && anythingToDo() && !endArmed()) {
     G.endArm = Date.now();
     toast(canStartAttack() ? 'You can still attack. Tap again to end your turn.' : 'You can still play a card. Tap again to end.', 2200);
@@ -2850,6 +2896,111 @@ function fixSheet() {
 `;
 }
 
+// ── asking first: moves that are almost surely a slip ───────────────
+// Legal, but almost never what anyone means: a spell or an ability that would
+// change nothing; one aimed at the wrong side (destroying or weakening your own
+// creature, making theirs stronger, Life lost by you or given to them); ending
+// the turn with Energy and a creature or Relic you could still play (Energy
+// left over is only good for Tricks until your next turn); not blocking when
+// that puts you out. These ask first, on a sheet: go back, or do it anyway.
+// Not in the lesson, and never for the 💡 suggestion.
+const ZONES = ['deck', 'hand', 'discard', 'exile', 'board', 'traps', 'relics'];
+
+function tryMove(a, steps = []) {
+  const w = tutStep() ? null : slip(S(), a, steps);
+  G.slip = w ? { a, ...w } : null;
+  if (!w) return dispatch(a);
+  G.sheet = slipSheet(G.slip);
+  redraw();
+  return false;
+}
+
+function slipSheet(w) {
+  return `<h3>${esc(w.title)}</h3><p class="sheet-note">${esc(w.text)}</p>
+    <div class="btn-col"><button class="btn primary" data-act="slip-no">${esc(w.no || 'Go back')}</button>
+    <button class="btn" data-act="slip-yes">${esc(w.yes || 'Do it anyway')}</button></div>`;
+}
+
+// What to ask before move `a` (null: just make it). `steps` are the choices it was made with.
+function slip(s, a, steps) {
+  if (a.t === 'end') return endSlip(s);
+  if (a.t === 'block') return blockSlip(s, a);
+  if ((a.t !== 'play' && a.t !== 'use') || a.payTax === false) return null; // (letting Countercurrent cancel it was a choice)
+  const r = apply(s, a);
+  if (r.error) return null; // sending it says why
+  const t = r.state, c0 = s.cards[a.uid], d = BY_ID[c0.cid];
+  const what = a.t === 'use' ? `${d.name}’s ability` : d.name;
+  if (s.phase === 'main' && (a.t === 'use' || d.type === 'spell')) {
+    const paid = a.t === 'use' ? d.ability?.cost || 0 : costOf(s, a.p, c0, a.from || 'hand') + (a.payTax ? 2 : 0);
+    if (changesNothing(s, t, a, paid)) {
+      const says = a.t === 'use' ? d.ability.short : d.text.replace(/^Trick\n/, '').replace(/\n/g, ' ');
+      return { title: `${what} would do nothing now`, text: `It says: “${says}” Right now nothing would happen, and you’d still pay its Energy.`, yes: a.t === 'use' ? 'Use it anyway' : 'Play it anyway' };
+    }
+  }
+  // aimed at the wrong side (only asked when the choice had both sides in it)
+  const tg = a.target, opts = steps.find((x) => x.kind === 'target')?.options || [];
+  if (tg?.uid != null && new Set(opts.filter((o) => o.uid != null).map((o) => s.cards[o.uid]?.ctrl === G.me)).size > 1) {
+    const c = s.cards[tg.uid], x = t.cards[tg.uid], nm = BY_ID[c.cid].name;
+    const hp = (st, k) => vitality(st, k) - (k.dmg || 0);
+    const stays = x.zone === 'board' && x.ctrl === c.ctrl;
+    if (c.ctrl === G.me) {
+      const verb = ['discard', 'exile'].includes(x.zone) ? 'destroy' : x.ctrl !== c.ctrl ? 'hand over' : x.frozen && !c.frozen ? 'freeze'
+        : stays && (power(t, x) < power(s, c) || hp(t, x) < hp(s, c)) ? 'weaken' : null;
+      if (verb) return { title: 'That’s your own creature', text: `${what} would ${verb} your own ${nm}.` };
+    } else if (stays && (power(t, x) > power(s, c) || hp(t, x) > hp(s, c))) {
+      return { title: 'That’s their creature', text: `${what} would make ${name(c.ctrl)}’s ${nm} stronger.` };
+    }
+  }
+  if (tg?.p != null && opts.some((o) => o.p != null && o.p !== tg.p)) {
+    const dl = t.players[tg.p].life - s.players[tg.p].life;
+    if (tg.p === G.me && dl < 0) return { title: 'That hits you', text: `${what} would take ${-dl} Life from you, not from them.` };
+    if (tg.p !== G.me && dl > 0) return { title: 'That helps them', text: `${what} would give ${name(tg.p)} ${dl} Life.` };
+  }
+  return null;
+}
+
+// Would the move change nothing but where the card itself is, the Energy paid and the log?
+function changesNothing(s, t, a, paid) {
+  const norm = (x, refund) => {
+    const y = structuredClone({ ...x, log: [], events: [], rng: 0 });
+    y.players[a.p].energy += refund;
+    y.players[a.p].spells = 0;
+    if (a.t === 'use') delete y.cards[a.uid].usedOn;
+    else { for (const Q of y.players) for (const z of ZONES) Q[z] = Q[z].filter((u) => u !== a.uid); delete y.cards[a.uid]; }
+    return JSON.stringify(y);
+  };
+  return norm(s, 0) === norm(t, paid);
+}
+
+// Ending the turn with Energy and a creature or Relic still to play: that Energy
+// is lost when your next turn starts (until then it's only good for Tricks).
+function endSlip(s) {
+  const P = s.players[G.me];
+  if (!myMain() || P.energy <= 0) return null;
+  const could = P.hand.map((u) => s.cards[u]).filter((c) => ['creature', 'relic'].includes(BY_ID[c.cid].type) && !playable(c.uid));
+  if (!could.length) return null;
+  const named = could.slice(0, 3).map((c) => `${BY_ID[c.cid].name} (${costOf(s, G.me, c, 'hand')})`);
+  const list = listNames(could.length > 3 ? [...named, `${could.length - 3} more`] : named);
+  const later = P.hand.some((u) => isTrick(BY_ID[s.cards[u].cid])) || P.board.some((u) => BY_ID[s.cards[u].cid].ability);
+  return {
+    title: `You still have ${P.energy} Energy`,
+    text: `You could play ${list}. ${later ? 'Energy you keep is only good for Tricks and abilities until your next turn starts.' : 'You have no Tricks or abilities to spend it on, so it’s lost when your next turn starts.'}`,
+    yes: 'End turn anyway', no: 'Keep playing',
+  };
+}
+
+// Not blocking when that puts you out, while a creature of yours could block.
+function blockSlip(s, a) {
+  if (a.blocks.length || s.players[G.me].out || !fightPreview(s)?.players[G.me].out) return null;
+  const can = s.players[G.me].board.filter((u) => s.combat.att.some((x) => canAssign(u, x)));
+  if (!can.length) return null;
+  return {
+    title: 'Without a block, you’re out',
+    text: `If no one blocks, you lose the game. ${listNames(can.map((u) => BY_ID[s.cards[u].cid].name))} could block.`,
+    yes: 'No block anyway', no: 'Choose a blocker',
+  };
+}
+
 // ── playing a card, one choice at a time ───────────────────────────
 function startPlay(uid, from = 'hand') {
   G.sheet = null;
@@ -2864,12 +3015,12 @@ function dropPlay(uid) {
   if (playable(uid)) return false;
   const steps = stepsFor(uid, 'hand');
   if (steps.length) { startPlay(uid, 'hand'); return false; }
-  return dispatch({ t: 'play', p: G.me, uid });
+  return tryMove({ t: 'play', p: G.me, uid });
 }
 
 function nextChoice() {
   const f = G.flow;
-  if (f.i >= f.steps.length) { G.flow = null; G.sheet = null; dispatch(f.a); if (G && !G.busy) redraw(); return; }
+  if (f.i >= f.steps.length) { G.flow = null; G.sheet = null; tryMove(f.a, f.steps); if (G && !G.busy && !G.slip) redraw(); return; }
   const st = f.steps[f.i];
   G.sheet = ['pick', 'picks', 'keep', 'bottom', 'discard', 'tax'].includes(st.kind) ? choiceSheet(st) : null;
   redraw();
@@ -3004,7 +3155,7 @@ function onAct(act, el) {
         ? 'You hold the Crown: you draw an extra card at the end of each of your turns. Anyone who hits you in a fight takes it.'
         : `${name(S().crown)} holds the Crown: an extra card at the end of each of their turns. Hit them in a fight to take it.`);
       break;
-    case 'close': if (G.viewer) { closeViewer('up'); break; } G.sheet = null; redraw(); break;
+    case 'close': if (G.viewer) { closeViewer('up'); break; } G.sheet = null; G.slip = null; redraw(); break;
     case 'recap-close': G.recap = null; redraw(); break;
     case 'fight-replay': {
       // the last fight again, big, in turn with whatever else is being shown
@@ -3029,7 +3180,17 @@ function onAct(act, el) {
     case 'echo-open': G.sheet = cardSheet(uid, { from: 'discard' }); redraw(); break;
     case 'attack-from-sheet': G.sheet = null; toggleAttacker(uid); break;
     case 'attack': sendAttack(Number(el.dataset.p)); break;
-    case 'block': dispatch({ t: 'block', p: G.me, blocks: G.blk?.pairs || [] }); break;
+    case 'block': tryMove({ t: 'block', p: G.me, blocks: G.blk?.pairs || [] }); break;
+    case 'slip-no': G.slip = null; G.sheet = null; redraw(); break;
+    case 'slip-yes': {
+      const a = G.slip?.a;
+      G.slip = null;
+      G.sheet = null;
+      if (!a) { redraw(); break; }
+      if (a.t === 'end') clearSelections();
+      dispatch(a);
+      break;
+    }
     case 'clear-blocks': G.blk.pairs = forcedBlocks(S()); G.blk.sel = null; G.blk.selA = null; G.suggest = null; redraw(); break;
     case 'pass': dispatch({ t: 'pass', p: G.me }); break;
     // the fight screens (decideHTML)

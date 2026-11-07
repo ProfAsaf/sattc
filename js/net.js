@@ -44,7 +44,15 @@ export function clientId() {
 export const myName = () => local.get('collective.name') || '';
 export const setMyName = (n) => local.set('collective.name', n);
 export const lastRoom = () => local.get('collective.room') || '';
-export const setLastRoom = (c) => local.set('collective.room', c || '');
+// The rooms this phone was in, newest first: invites go to their players.
+export function recentRooms() {
+  try { return JSON.parse(local.get('collective.rooms') || '[]').filter((c) => /^[A-Z]{4}$/.test(c)); } catch { return []; }
+}
+export function setLastRoom(c) {
+  const before = lastRoom();
+  local.set('collective.room', c || '');
+  if (c) local.set('collective.rooms', JSON.stringify([...new Set([c, before, ...recentRooms()].filter(Boolean))].slice(0, 6)));
+}
 
 // ── which version of the game this phone runs ──────────────────────
 // Phones replay each other's moves, so they must run the same rules. A phone's
@@ -205,6 +213,23 @@ export async function sendAction(code, round, a) {
 export async function savePush(code, sub) {
   await connect();
   await fb.set(fb.ref(db, `rooms/${code}/push/${clientId()}`), sub ? { sub, at: Date.now() } : null);
+}
+
+// Who an invite to room `code` would wake: the players of this phone's last
+// few rooms whose phones have alerts on ([{ id, name }]; the room's own players
+// are left out where it's shown).
+// The alert worker picks the same people (push/worker.js, /invite).
+export async function invitees(code) {
+  await connect();
+  const out = new Map();
+  for (const r of recentRooms().filter((x) => x !== code).slice(0, 3)) {
+    const [room, push] = await Promise.all([fb.get(infoRef(r)), fb.get(fb.ref(db, `rooms/${r}/push`))]);
+    const subs = push.val() || {};
+    for (const p of room.val()?.players || []) {
+      if (p && p.id !== clientId() && subs[p.id]?.sub && !out.has(p.id)) out.set(p.id, p.name);
+    }
+  }
+  return [...out].map(([id, name]) => ({ id, name }));
 }
 
 export async function markSeen(code, here) {

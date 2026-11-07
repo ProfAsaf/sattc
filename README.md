@@ -33,7 +33,7 @@ no build step.
 | `js/firebase-config.js` | Paste the Firebase web config here to switch online play on |
 | `js/push.js` | "It's your turn" alerts: turning them on (a Web Push subscription written into the room), and asking the alert worker to wake the next player |
 | `js/push-config.js` | The alert worker's address (empty: no alerts, nothing said about them) |
-| `sw.js` | The service worker: shows an alert and opens the game when it's tapped (it caches nothing) |
+| `sw.js` | The service worker: shows an alert and opens the game when it's tapped, an invite into its room (it caches no pages) |
 | `push/` | The alert worker (Cloudflare), with how to deploy it |
 | `js/art/` | Card art drawn in code: `kit.js` (drawing tools), `scenes.js` (style rules), `scenes/*.js` (one file per faction) |
 | `css/card.css` | The physical-card look, sized in `cqw` so one component scales from thumbnail to zoom |
@@ -387,6 +387,40 @@ small Cloudflare Worker sends them (`push/`, with how to deploy it); the game
 says nothing about alerts until `js/push-config.js` points at it. No alert
 while your game is open in front of you. iPhones: iOS 16.4+, the game opened
 from its Home Screen icon.
+
+## Invites that open the app (2026-11-07)
+
+"If I make a game room, a link I can post in text that opens the app and takes
+them into the game." On an iPhone no link can open a Home Screen app (a tapped
+link opens Safari, which keeps its own name, decks and storage), but a tapped
+alert does. So a new room's lobby offers **🔔 Invite Howard and T-Bone**: the
+players of this phone's last few rooms whose phones have alerts on
+(`Net.recentRooms`, `Net.invitees`). The tap asks the alert worker (`/invite`)
+to wake them; tapping the alert opens the game straight into the room, seated
+with the phone's name and deck (`acceptInvite`), with no code to type.
+iPhones may open the app without the address the alert gives, so `sw.js` also
+leaves the room's code in the cache, where the game looks when it starts or
+comes to the front (`Push.takeInvite`). A friend has to turn alerts on once,
+in any room, for this to reach them; until then there's the code and the
+invite link.
+
+## Asking first (2026-11-07)
+
+"A message that pops up to confirm if people try to do obviously stupid
+things." Before a legal move that is almost surely a slip, a sheet asks: Go
+back, or do it anyway (`tryMove` / `slip` in game-ui.js):
+
+- a spell or an ability that would change nothing right now (the move is
+  played out on a copy and compared, apart from the card itself, its Energy
+  and the log);
+- one aimed at the wrong side, when the choice had both sides: destroying,
+  weakening, freezing or handing over your own creature, making theirs
+  stronger, Life lost by you or given to them;
+- ending the turn with Energy and a creature or Relic still to play (Energy
+  left over is only good for Tricks until your next turn);
+- not blocking when that puts you out, while a creature of yours could block.
+
+Not in the lesson, and never for the 💡 suggestion's own move.
 
 ## Starting at 3 Energy (2026-11-07)
 

@@ -11,6 +11,9 @@
 //                    by are seats, kind is 'turn' | 'attacked' | 'move' | 'start', or
 //                    'hello' (to the phone that just turned alerts on: in a lobby too, and
 //                    even while it's looking, so its player sees what alerts look like)
+//   POST /invite     { room, from, by }: wake the players of the earlier rooms `from`
+//                    (codes) whose phones have alerts on, with an invite to the lobby
+//                    `room`; `by` is the inviter's player id. A tap on it brings them in.
 //
 // Who gets what is read from the room itself: rooms/{code}/info (the seats),
 // rooms/{code}/push/{player id} (the phone's subscription, written by the
@@ -39,6 +42,7 @@ export default {
     try {
       if (pathname === '/key') return reply({ key: (await vapid(env)).pub });
       if (pathname === '/notify' && req.method === 'POST') return reply(await notify(env, JSON.parse(await req.text())));
+      if (pathname === '/invite' && req.method === 'POST') return reply(await invite(env, JSON.parse(await req.text())));
       return reply({ error: 'not found' }, 404);
     } catch (e) {
       return reply({ error: String(e?.message || e) }, 500);
@@ -69,6 +73,40 @@ async function notify(env, { room, to, by, kind }) {
   }[kind] || ['Your move', 'Your move in The Collective.'];
   const res = await sendPush(sub, { title: say[0], body: say[1], room }, await vapid(env));
   return { sent: res.ok, status: res.status };
+}
+
+const isCode = (c) => /^[A-Z]{4}$/.test(c || '');
+
+// An invite to a lobby, for the players of the inviter's earlier rooms who have
+// alerts on (not those already in it). At most one round of invites a room every
+// 20 seconds. The alert carries the room's code: sw.js takes a tap on it there.
+async function invite(env, { room, from, by }) {
+  if (!isCode(room) || !Array.isArray(from) || typeof by !== 'string') return { sent: 0, why: 'bad request' };
+  const get = async (code, path) => (await fetch(`${DB}/rooms/${code}/${path}.json`)).json();
+  const info = await get(room, 'info');
+  const players = (info?.players || []).filter(Boolean);
+  const host = players.find((p) => p.id === by);
+  if (!info || info.status !== 'lobby' || !host) return { sent: 0, why: 'no such lobby, or not yours' };
+  if (players.length >= info.seats) return { sent: 0, why: 'the game is full' };
+  const gate = `inv:${room}`;
+  if (Date.now() - Number(await env.PUSH.get(gate) || 0) < 20000) return { sent: 0, why: 'just sent' };
+  await env.PUSH.put(gate, String(Date.now()), { expirationTtl: 60 });
+  const inRoom = new Set(players.map((p) => p.id));
+  const who = new Map(); // player id -> { name, sub }
+  for (const code of [...new Set(from)].filter(isCode).slice(0, 3)) {
+    const [old, push] = await Promise.all([get(code, 'info'), get(code, 'push')]);
+    for (const p of old?.players || []) {
+      const sub = push?.[p?.id]?.sub;
+      if (p && !inRoom.has(p.id) && !who.has(p.id) && sub?.endpoint && sub?.keys) who.set(p.id, { name: p.name, sub });
+    }
+  }
+  const v = await vapid(env);
+  const names = [];
+  for (const { name, sub } of who.values()) {
+    const res = await sendPush(sub, { title: `${host.name || 'A friend'} invites you to play`, body: `Tap to join game ${room} in The Collective.`, room, kind: 'invite' }, v);
+    if (res.ok) names.push(name);
+  }
+  return { sent: names.length, names };
 }
 
 // ── Web Push (RFC 8030), VAPID (RFC 8292), aes128gcm (RFC 8291) ─────────

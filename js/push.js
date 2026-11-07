@@ -5,6 +5,11 @@
 // alert for a player whose game is open in front of them (Net.markSeen).
 // On an iPhone this needs iOS 16.4 or later, and the game opened from the
 // Home Screen. With no worker set up (push-config.js) all of this stays quiet.
+//
+// Invites ride the same alerts. A tapped link can't open a Home Screen app on an
+// iPhone (it opens Safari), but a tapped alert does: a new room's players can
+// wake the players of their last rooms, and a tap on that alert brings each one
+// straight into the new room (sw.js leaves the code where the game finds it).
 
 import { PUSH_URL } from './push-config.js';
 import * as Net from './net.js';
@@ -95,4 +100,38 @@ export async function joinRoom(code) {
 export function notify(code, to, by, kind) {
   if (!PUSH_URL || !code) return;
   fetch(`${PUSH_URL}/notify`, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ room: code, to, by, kind }), keepalive: true }).catch(() => {});
+}
+
+/** Invite the players of this phone's last rooms (those with alerts on) to room `code`: { sent, names }. */
+export async function invite(code) {
+  if (!PUSH_URL) return { sent: 0, names: [] };
+  const from = Net.recentRooms().filter((x) => x !== code).slice(0, 3);
+  const r = await fetch(`${PUSH_URL}/invite`, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ room: code, from, by: Net.clientId() }) });
+  return r.json();
+}
+
+/** A room code from a tapped invite (sw.js keeps it in the cache), once; null if none (or it's old). */
+export async function takeInvite() {
+  try {
+    if (!('caches' in self)) return null;
+    const box = await caches.open('collective');
+    const r = await box.match('invite');
+    if (!r) return null;
+    await box.delete('invite');
+    const { room, at } = await r.json();
+    return Date.now() - at < 30 * 60 * 1000 ? room : null;
+  } catch { return null; }
+}
+
+/**
+ * `fn(code)` for an invite tapped while the game is open (in front, or put
+ * away), or one the service worker leaves just after the app has opened (an
+ * iPhone may open it before the tap is handled).
+ */
+export function onInvite(fn) {
+  const check = async () => { const code = await takeInvite(); if (code) fn(code); };
+  navigator.serviceWorker?.addEventListener('message', (e) => { if (e.data?.invite) check(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+  setTimeout(check, 1500);
+  setTimeout(check, 5000);
 }

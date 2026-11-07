@@ -32,6 +32,8 @@ const BOT = [
 const me = (cid) => `.tcard.on-board:not(.foe)[data-cid="${cid}"]`;
 const bot = (cid) => `.tcard.on-board.foe[data-cid="${cid}"]`;
 const hand = (cid) => `.g-hand .tcard[data-cid="${cid}"]`;
+// a card of your hand shown on a fight's own screen (the Tricks you could play)
+const offer = (cid) => `.g-dec .tcard[data-cid="${cid}"]`;
 const BOT_LIFE = '.pbar[data-p="1"] .pb-life';
 const MY_LIFE = '.pbar[data-p="0"] .pb-life';
 
@@ -58,7 +60,7 @@ export const TUTORIAL = {
       say: 'Play Spark Runner. It has Rush: it can attack the turn it arrives.',
       sheet: 'Spark Runner costs 2: all your Energy. Tap Play.' },
     { expect: { t: 'attack', att: ['cinderling', 'spark-runner'], target: 1 }, show: [me('cinderling'), me('spark-runner'), '.g-go'],
-      say: 'Time to attack! Tap Cinderling and Spark Runner: they step into the middle of the table. Then tap Attack (bottom right). The bot decides which of its creatures block.' },
+      say: 'Time to attack! Tap Attack (bottom right). Then tap Cinderling and Spark Runner, and tap Attack again. The bot decides which of its creatures block.' },
     { bot: [{ t: 'block', blocks: [['street-recruit', 'cinderling']] }], say: 'The bot decides how to block…' },
     { next: true, show: [BOT_LIFE],
       say: 'The bot blocked Cinderling with Street Recruit. Blocked creatures hit each other: both died. Cinderling’s Last Breath burned the bot for 1, and unblocked Spark Runner hit for 3. The bot is at 16.' },
@@ -72,9 +74,9 @@ export const TUTORIAL = {
     { next: true, show: [hand('kindle')],
       say: '…unless you have a Trick. Tricks are Spells you can play in the middle of a fight. Kindle gives a creature +2 Power and Swift: it strikes first.' },
     { expect: { t: 'attack', att: ['spark-runner'], target: 1 }, show: [me('spark-runner'), '.g-go'],
-      say: 'Attack with Spark Runner: tap it, then tap Attack.' },
+      say: 'Attack with Spark Runner: tap Attack, then Spark Runner, then Attack again.' },
     { bot: [{ t: 'block', blocks: [['shieldbearer', 'spark-runner']] }], say: 'The bot decides how to block…' },
-    { expect: { t: 'play', cid: 'kindle', target: { cid: 'spark-runner' } }, show: [hand('kindle'), me('spark-runner')],
+    { expect: { t: 'play', cid: 'kindle', target: { cid: 'spark-runner' } }, show: [hand('kindle'), offer('kindle'), me('spark-runner')],
       say: 'Shieldbearer blocked, just as planned. Now play Kindle on Spark Runner: tap Kindle, Play, then tap Spark Runner.',
       sheet: 'Kindle costs 1. Tap Play, then tap your Spark Runner.' },
     { next: true, show: [me('spark-runner')],
@@ -86,7 +88,7 @@ export const TUTORIAL = {
 
     { bot: [{ t: 'play', cid: 'spark-runner' }, { t: 'attack', att: ['spark-runner'], target: 0 }], say: 'The bot is taking its turn…' },
     { expect: { t: 'block', blocks: [['spirit', 'spark-runner']] }, show: [me('spirit'), bot('spark-runner'), '.g-go'],
-      say: 'The bot attacks you with its own Spark Runner (3 Power, 1 Vitality)! Yours is exhausted, so it can’t help. Block with your Spirit: tap it and it steps in front of the attacker. Then tap Block.' },
+      say: 'The bot attacks you with its own Spark Runner (3 Power, 1 Vitality)! Yours is exhausted, so it can’t help. Block with your Spirit: tap it, and it steps in front of the attacker. Then tap Block.' },
     { next: true, show: [MY_LIFE],
       say: 'Your Spirit and its Runner traded, and you took no damage. That’s blocking. Unblocked attackers hit you; blocked ones fight your creature instead.' },
     { bot: [{ t: 'end' }], say: 'The bot ends its turn…' },

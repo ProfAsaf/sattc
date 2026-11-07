@@ -58,11 +58,13 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 }
 .pb-life svg { width: 16px; height: 16px; color: #c4553f; }
 .pb-life.low { color: #ff9b85; }
-.pb-energy { display: inline-flex; align-items: center; gap: 2px; flex: none; }
-.pip { width: 9px; height: 11px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #3a3127; }
-.pip.on { background: linear-gradient(160deg, #f0d79c, #b58c43); }
-.pip.extra { background: linear-gradient(160deg, #fff2c4, #f0b54a); }
-.pb-en-n { font-size: 12px; color: var(--muted); margin-left: 4px; }
+/* your Energy: as big as your Life, out of the most you have this turn */
+.pb-energy {
+  display: inline-flex; align-items: center; flex: none;
+  font-family: 'EB Garamond', Georgia, serif; font-weight: 700; font-size: 22px; line-height: 1; color: #ffe2a0;
+}
+.pb-energy svg { width: 15px; height: 15px; margin-right: 2px; color: #e9b44c; }
+.pb-energy span { font-size: 15px; font-weight: 600; color: var(--muted); margin-left: 1px; }
 .pb-meta { display: flex; gap: 8px; font-size: 12px; color: var(--muted); flex: none; }
 .pb-meta span { display: inline-flex; align-items: center; gap: 3px; }
 .pb-meta svg { width: 12px; height: 12px; opacity: .8; }
@@ -201,9 +203,8 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 .g-sheet .choice-grid.big { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 /* knocked out: your hand fades away */
 .g-hand.out { opacity: .3; filter: grayscale(.7); pointer-events: none; }
-/* three players: names keep some room next to Life and Energy (6+ pips speak for themselves) */
+/* three players: names keep some room next to Life and Energy */
 .g-ffa .pb-name { min-width: 72px; }
-.pb-energy.many .pb-en-n { display: none; }
 /* finger-sized targets around small buttons */
 .g-icon { position: relative; }
 .g-icon::before { content: ''; position: absolute; inset: -4px; }
@@ -290,10 +291,6 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 }
 .g-battle.many { --w-battle: 46px; }
 .gb-label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #f0b48a; }
-/* what to tap, just above the fighting creatures */
-.gb-label.how { font-size: 13.5px; letter-spacing: 0; text-transform: none; font-weight: 600; color: #ffe2cc; text-align: center; line-height: 1.3; max-width: 94vw; }
-/* the banner under the fight carries it only where that label is hidden (below) */
-.banner-how, .banner.only-small { display: none; }
 .gb-cols { display: flex; justify-content: center; align-items: stretch; gap: 10px; }
 .gb-col { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 2px 3px; border-radius: 12px; transition: background .2s, box-shadow .2s; }
 .gb-slot { min-height: calc(var(--w-battle) * 1.33); display: grid; place-items: center; }
@@ -305,12 +302,10 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
   font-size: 10px; line-height: 1.15; color: rgba(240, 220, 190, .7); padding: 2px;
 }
 .gb-empty.gb-hit { border-color: rgba(255, 120, 80, .45); color: #ffb08a; font-size: 11px; }
-.gb-empty.open { border-color: #cfeaff; color: #e6f5ff; background: rgba(150, 210, 255, .12); animation: pulse 1.1s ease-in-out infinite; }
 .gb-empty.gb-also { font-size: 9px; }
 /* two or more blockers on one attacker stand side by side */
 .gb-slot.multi { display: flex; align-items: center; justify-content: center; gap: 3px; }
 .g-battle .gb-slot.multi .tcard { --w: calc(var(--w-battle) * .86); }
-.gb-empty.gb-add { width: calc(var(--w-battle) * .56); font-size: 10px; }
 .gb-slot.multi .gb-empty.gb-also { width: calc(var(--w-battle) * .7); }
 
 /* the pair that is fighting right now; everything else steps back */
@@ -340,7 +335,7 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 /* my attackers line up along the bottom of the zone, the others' along the top */
 .g-battle.att-bottom .gb-col { justify-content: flex-end; }
 /* what to decide (the preview, the 💡 tip) is never the part of the middle that's cut off */
-.g-say { position: sticky; bottom: 0; z-index: 3; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.g-say { position: sticky; bottom: 0; z-index: 5; width: 100%; /* (over the attack lines: no line runs through its words) */ display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .g-say:empty { display: none; }
 /* a 💡 tip taller than the middle (a small phone) grows up over the row above it instead of being cut off
    (in a fight the middle keeps scrolling under the tip and the preview, as the fighters are in it) */
@@ -375,11 +370,8 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
   #game.g-three.fighting { --hand-h: 76px; --hand-sink: 64px; }
   #game.g-three { --w-battle: 36px; }
   #game.g-three .gb-label { display: none; }
-  #game.g-three .banner-how { display: block; }
-  #game.g-three .banner.only-small { display: flex; }
   #game.g-three .g-mid .banner { padding: 4px 9px; gap: 0 8px; font-size: 12.5px; line-height: 1.3; }
   #game.g-three .g-mid .banner-sub { font-size: 12px; line-height: 1.3; }
-  #game.g-three .pv-k { display: none; } /* "If no one plays a Trick:": the ☠ and the numbers say it */
   #game.g-three.fighting .g-side .tc-row { padding: 2px 0; min-height: 0; --w-board-max: 40px; --w-board: 40px; }
   .coach { font-size: 13.5px; line-height: 1.34; padding: 8px 11px 7px; }
   .g-table > .coach { padding-top: 12px; }
@@ -580,3 +572,138 @@ body:has(#game .g-sheet) .g-beat { display: none; }
   font-size: 15px; line-height: 1.45;
 }
 .g-stale b { display: block; margin-bottom: 6px; font-size: 17px; color: #ffd2b8; }
+
+/* ── deciding a fight, big (game-ui.js decideHTML) ─────────────────
+   Picking attackers, blocking and the Tricks before a fight: a screen of its
+   own over the table, under ☰ and 💡 (the top row stays), with big cards, one
+   line on what to tap next and the button that carries the game on at the
+   bottom right. Sheets (a card's big view, the hand) open over it. */
+.g-dec {
+  position: absolute; z-index: 30; left: 0; right: 0; bottom: 0;
+  top: calc(env(safe-area-inset-top, 0px) + 46px);
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 2px 12px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  background: radial-gradient(120% 70% at 50% 45%, #2e1b0f, #0c0907); /* solid: the table must not show through */
+  color: var(--ink);
+  animation: fade .15s ease-out;
+}
+.dec-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 10px; flex: none; }
+.dec-title { font-family: 'EB Garamond', Georgia, serif; font-size: 22px; font-weight: 600; color: #f4e2b0; line-height: 1.15; min-width: 0; }
+.dec-meta { flex: none; margin-left: auto; display: inline-flex; align-items: center; gap: 2px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.dec-meta svg { width: 12px; height: 12px; color: #e9b44c; }
+/* what to tap next: the one line to read */
+.dec-say { flex: none; font-size: 16px; font-weight: 600; line-height: 1.3; color: #fff0d8; text-align: center; }
+.dec-say b { color: #ffd98a; }
+/* in the lesson the coach speaks here */
+.dec-say.dec-coach {
+  font: 15px/1.42 'Spectral', Georgia, serif; font-weight: 400; text-align: left; color: #1c1611;
+  padding: 9px 12px; border-radius: 14px;
+  background: var(--grain), linear-gradient(180deg, #f6eedb, #e9dcc0); box-shadow: 0 0 0 1.5px #d9b764;
+}
+/* what it means, quietly */
+.dec-why { flex: none; font-size: 13px; line-height: 1.35; color: var(--muted); text-align: center; }
+.dec-label { flex: none; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #d9c08a; text-align: center; display: flex; align-items: center; justify-content: center; gap: 3px; }
+.dec-label svg { width: 11px; height: 11px; }
+
+/* whom to attack (three players) */
+.dec-whom { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dec-foe {
+  all: unset; cursor: pointer; display: grid; gap: 2px; padding: 7px 10px; border-radius: 12px; text-align: center;
+  border: 1.5px solid var(--line); background: rgba(42, 34, 26, .7);
+}
+.dec-foe b { font-family: 'EB Garamond', Georgia, serif; font-size: 18px; color: #f4e7c8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dec-foe span { display: inline-flex; justify-content: center; align-items: center; gap: 3px; font-size: 13px; color: var(--muted); }
+.dec-foe span svg { width: 12px; height: 12px; color: #c4553f; }
+.dec-foe.on { border-color: #ff8a5c; background: rgba(120, 50, 25, .55); box-shadow: 0 0 14px rgba(255, 110, 60, .35); }
+.dec-foe.on b::before { content: '⚔ '; color: #ffb08a; }
+
+/* boxes of cards, sized to fit (fitDecision sets --dw and --dcols) */
+.dec-cards {
+  flex: 1 1 0; min-height: 0;
+  display: grid; grid-template-columns: repeat(var(--dcols, 3), var(--dw, 80px)); gap: 16px;
+  justify-content: center; align-content: center; justify-items: center;
+}
+.dec-cards.theirs { flex-grow: .65; }
+.dec-cards.tricks { flex-grow: .8; }
+.dec-c { position: relative; cursor: pointer; display: grid; justify-items: center; }
+.g-dec .dec-c > .tcard { --w: var(--dw, 80px); }
+.g-dec .dec-stack > .dec-c:nth-child(2) > .tcard, .g-dec .dec-stack > .dec-c:has(+ .dec-c, + .dec-empty) > .tcard { --w: calc(var(--dw, 80px) * .86); }
+/* a word under a card: attacking, hunted, can block 1 more */
+.dec-tag {
+  position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); z-index: 8; white-space: nowrap; pointer-events: none;
+  padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; color: #2a1408; background: #ffb08a;
+}
+
+/* the fight: a column for each attacker, theirs on top and yours below */
+.dec-fight {
+  flex: 2.4 1 0; min-height: 0; /* (two cards high, with words: it gets the most room) */
+  display: flex; justify-content: center; align-items: center; gap: 14px;
+}
+.dec-col { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px; border-radius: 14px; transition: background .2s; }
+.dec-col.picked { background: rgba(255, 140, 80, .12); box-shadow: 0 0 0 1px rgba(255, 160, 110, .4); }
+.dec-stack { display: flex; justify-content: center; align-items: center; gap: 4px; min-height: calc(var(--dw, 80px) * 1.33); }
+.g-dec .dec-fight .tcard { --sy: 0px; --ss: 1; } /* (they stand still here: no stepping forward) */
+/* a picked card lifts a little (more, and it covers the words above it) */
+.g-dec .dec-cards .tcard:is(.attacking, .selected) { --sy: calc(var(--w) * -.05); --ss: 1.04; }
+/* a spent creature lies straight here (tilted, they ran into each other) */
+.g-dec .tcard.exhausted { --sr: 0deg; --ss: .94; }
+.dec-vs { height: 16px; font-size: 15px; line-height: 16px; color: #ffcfa8; text-shadow: 0 0 8px rgba(255, 120, 60, .8); }
+.dec-res { min-height: 16px; margin-top: 3px; max-width: max(calc(var(--dw, 80px) + 14px), 7.5em); font-size: 12.5px; line-height: 1.25; color: #ffd8c2; text-align: center; }
+.dec-res .hit { color: #ffb08a; }
+.dec-empty {
+  all: unset; cursor: pointer; box-sizing: border-box;
+  width: var(--dw, 80px); height: calc(var(--dw, 80px) * 1.33); border-radius: calc(var(--dw, 80px) * .09);
+  border: 1.5px dashed rgba(240, 220, 190, .3); display: grid; place-items: center; text-align: center;
+  font-size: 12px; line-height: 1.2; color: rgba(240, 220, 190, .6); padding: 4px;
+}
+.dec-stack .dec-c + .dec-empty { width: calc(var(--dw, 80px) * .6); }
+.dec-empty.open { border-color: #cfeaff; color: #e6f5ff; background: rgba(150, 210, 255, .14); animation: pulse 1.1s ease-in-out infinite; }
+.dec-free {
+  display: grid; place-items: center; width: var(--dw, 80px); height: calc(var(--dw, 80px) * 1.33);
+  font-size: 12px; color: rgba(255, 176, 138, .8); text-align: center;
+}
+/* (next to the attacker it is about) */
+.dec-stack.top .dec-free { align-content: end; }
+.dec-stack.bottom .dec-free { align-content: start; }
+
+/* ⚡ abilities you could use: chips, what each does on a roomy phone (its card says it all on a tap) */
+.dec-abs { flex: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.dec-ab {
+  all: unset; cursor: pointer; display: inline-flex; align-items: baseline; gap: 6px; padding: 7px 12px; border-radius: 999px;
+  border: 1px solid #c9a35a; background: rgba(60, 46, 26, .7); font-size: 14px; color: #f6e6c2; max-width: 100%;
+}
+.dec-ab svg { width: 13px; height: 13px; color: #ffd76a; flex: none; align-self: center; }
+.dec-ab b { color: #ffe2a0; white-space: nowrap; }
+.dec-ab-what { color: #f0dcc0; }
+.dec-ab i { font-style: normal; font-weight: 700; color: #2a1408; background: #e9b44c; border-radius: 999px; padding: 0 6px; font-size: 12px; }
+
+/* how it would turn out, in words */
+.dec-sum { flex: none; font-size: 14px; line-height: 1.35; color: #f0dcc0; text-align: center; padding: 6px 10px; border-radius: 12px; background: rgba(255, 240, 220, .05); }
+.dec-sum b { color: #ffb08a; }
+.g-dec .suggest { flex: none; margin: 0 auto; }
+.dec-btns { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 50px; }
+.dec-btns .g-go[disabled] { opacity: .45; }
+
+/* short phones: smaller words, so the cards keep their room */
+@media (max-height: 720px) {
+  .g-dec { gap: 4px; }
+  .dec-title { font-size: 19px; }
+  .dec-say { font-size: 14.5px; }
+  .dec-say.dec-coach { font-size: 13.5px; line-height: 1.34; padding: 7px 10px; }
+  .dec-why { font-size: 12px; }
+  .dec-sum { font-size: 13px; padding: 4px 8px; }
+  .dec-foe { padding: 4px 8px; }
+  .dec-foe b { font-size: 16px; }
+  .dec-ab-what { display: none; }
+}
+/* an SE in Safari: the coach's words a little smaller still */
+@media (max-height: 600px) {
+  .dec-say.dec-coach { font-size: 12.5px; line-height: 1.3; padding: 5px 9px; }
+  .dec-ab { padding: 4px 10px; font-size: 13px; gap: 5px; } /* (two to a row: the fight keeps its room) */
+  .dec-tricks .dec-why { display: none; } /* (the line above says what to do; the fight needs the room) */
+}
+
+/* the big hand: what you have to spend, next to what a card costs */
+.hv-have { flex: none; display: flex; justify-content: center; align-items: center; gap: 3px; margin-bottom: 6px; font-size: 14px; color: var(--muted); }
+.hv-have svg { width: 13px; height: 13px; color: #e9b44c; }
+.hv-have b { font-size: 16px; color: #ffe2a0; }

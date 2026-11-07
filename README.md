@@ -31,6 +31,10 @@ no build step.
 | `css/draft.css` | Draft night's look |
 | `tools/test-draft.mjs` | Draft checks: seeds, snake order, the recipe, replay, bots, Pick for (`node tools/test-draft.mjs`) |
 | `js/firebase-config.js` | Paste the Firebase web config here to switch online play on |
+| `js/push.js` | "It's your turn" alerts: turning them on (a Web Push subscription written into the room), and asking the alert worker to wake the next player |
+| `js/push-config.js` | The alert worker's address (empty: no alerts, nothing said about them) |
+| `sw.js` | The service worker: shows an alert and opens the game when it's tapped (it caches nothing) |
+| `push/` | The alert worker (Cloudflare), with how to deploy it |
 | `js/art/` | Card art drawn in code: `kit.js` (drawing tools), `scenes.js` (style rules), `scenes/*.js` (one file per faction) |
 | `css/card.css` | The physical-card look, sized in `cqw` so one component scales from thumbnail to zoom |
 | `css/game.css` | The table, laid out for an iPhone held upright |
@@ -337,6 +341,52 @@ the table is laid out, and sized, as a duel (`openSides` in game-ui.js):
   touches everyone, then the table folds back. A tap on a folded bar
   mid-fight opens everyone until the fight is over. Choosing a target opens
   every side with something to pick.
+
+## Deciding a fight on its own screen (2026-11-06)
+
+After the first game night: "Players are just unsure when attacking and
+defending where to click when, and what it means." On short phones the fight
+in the middle of the table had 36px cards, the "block here" place sat under
+the banner, and the attack arrow ran through the words. So each decision in a
+fight now has a screen of its own over the table (`decideHTML` in
+game-ui.js), with ☰ and 💡 still at the top:
+
+- **Attack.** On your turn the button at the bottom right is a gold
+  **Attack** while something can attack (End turn waits on the left). Its
+  screen: whom (three players), the creatures of theirs that could block,
+  your creatures (the ones that can't attack yet are dimmed: tap one for
+  why), then **Attack ‹name›**. One line says what to tap next, one what
+  attacking means, and one how much they take if nothing is blocked. Tapping a
+  ready creature on the table opens it with that one picked; a Hunt attacker
+  picks its prey there.
+- **Block.** When you're attacked: the attackers on top, a place in front of
+  each, your creatures below. Tap one of yours: with one attacker it can stop
+  it steps in front of it, with several it lifts and the attackers it can
+  block light up (an attacker tapped first works too). Tap a blocker to send
+  it back. ☠ marks what would be destroyed; the line under it says it in words;
+  **No block (take 7)** says what not blocking costs.
+- **Tricks.** Before a fight, only when you have a Trick or ability you could
+  use: the fight as it stands, the Tricks you can play (tap one: your hand,
+  big, with Play), the ⚡ abilities, and **Fight**.
+- The lesson's coach speaks in the line at the top of these screens.
+- The cards are sized to the space they have (`fitDecision`), from an SE to a
+  Pro Max; `dec-check.mjs` (session scratchpad) drives games through every
+  screen at five sizes and checks nothing is covered, cut off or too small.
+
+Your Energy on your bar is now a number as big as your Life ("⚡ 3/7"): with
+three players the pips lost their number at 6+, and spent ones were nearly
+invisible. The big hand says "You have ⚡ 3 Energy" next to Play.
+
+## Turn alerts (2026-11-06)
+
+For playing over days: "we need a push notification or something that says
+it's your turn." A phone that turns alerts on (🔔 in the game's room, or ☰ in
+an online game) hears when another player's move leaves the next one to it:
+your turn, you're attacked, your move in a fight, the game has started. A
+small Cloudflare Worker sends them (`push/`, with how to deploy it); the game
+says nothing about alerts until `js/push-config.js` points at it. No alert
+while your game is open in front of you. iPhones: iOS 16.4+, the game opened
+from its Home Screen icon.
 
 ## Fights, step by step (2026-11-04)
 

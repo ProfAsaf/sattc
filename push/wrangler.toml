@@ -1,0 +1,10 @@
+# The turn-alert worker (worker.js). Deploy with `npx wrangler deploy` from this folder.
+name = "collective-push"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+
+# Where the VAPID key pair and the "just sent one" marks live (the KV namespace
+# "collective-push", made with `npx wrangler kv namespace create collective-push`).
+[[kv_namespaces]]
+binding = "PUSH"
+id = "337d81a4ddca498eb3434da8ec74406c"

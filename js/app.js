@@ -6,6 +6,7 @@ import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.
 import * as Decks from './decks.js';
 import { autoRejoin, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
+import * as Push from './push.js';
 
 const view = document.getElementById('view');
 
@@ -485,6 +486,7 @@ window.addEventListener('hashchange', route);
 window.addEventListener('scroll', () => document.body.classList.toggle('scrolled', window.scrollY > 4), { passive: true });
 route();
 const params = new URLSearchParams(location.search);
+Push.start(); // (the service worker for turn alerts, once they are set up)
 if (params.has('demo')) demo(params);
 else autoRejoin();
 // an invite link (?room=CODE) opens the Play tab with the code filled in

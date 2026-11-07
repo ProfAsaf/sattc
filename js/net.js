@@ -3,6 +3,7 @@
 // rooms/{code}/info                    lobby: seats, names, deck codes, round, seeds
 // rooms/{code}/rounds/{n}/actions      the move list for game n (append-only)
 // rooms/{code}/results/{created}/{n}   how game n went (for tonight's scoreboard)
+// rooms/{code}/push, rooms/{code}/seen  turn alerts: the phones that want them, and who is looking
 //
 // The engine is deterministic, so a game is just its seed, decks and move
 // list. Every phone replays the same list in key order. A phone that sleeps,
@@ -195,6 +196,22 @@ export async function watchActions(code, round, onActions) {
 export async function sendAction(code, round, a) {
   await connect();
   await fb.push(actionsRef(code, round), JSON.parse(JSON.stringify(a)));
+}
+
+// ── turn alerts (js/push.js, push/worker.js) ────────────────────────
+// rooms/{code}/push/{client id}   { sub, at }: this phone's Web Push subscription
+// rooms/{code}/seen/{client id}   server time this phone last had the game in
+//                                 front of it (0: put away); no alerts then
+export async function savePush(code, sub) {
+  await connect();
+  await fb.set(fb.ref(db, `rooms/${code}/push/${clientId()}`), sub ? { sub, at: Date.now() } : null);
+}
+
+export async function markSeen(code, here) {
+  await connect();
+  const ref = fb.ref(db, `rooms/${code}/seen/${clientId()}`);
+  if (here) fb.onDisconnect(ref).set(0); // closed, or the connection lost: away
+  await fb.set(ref, here ? fb.serverTimestamp() : 0);
 }
 
 // ── tonight's results ───────────────────────────────────────────────

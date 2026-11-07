@@ -1,9 +1,11 @@
 // The table: practice games against the bot (online games reuse it).
 // Drag a card from your hand onto the table to play it (or tap it, then
-// Play). Tap your ready creatures to send them into an attack; when someone
-// attacks you, tap a creature of yours and then the attacker it blocks.
-// Every move is animated on the old table first (cards flying in, lunges,
-// hits, deaths), then the table is redrawn and everything glides into place.
+// Play). Attacking, blocking and the Tricks before a fight each have a screen
+// of their own over the table (decideHTML): tap Attack, then the creatures
+// that attack; when someone attacks you, tap a creature of yours (and, with
+// several attackers, the one it blocks). Every move is animated on the old
+// table first (cards flying in, lunges, hits, deaths), then the table is
+// redrawn and everything glides into place.
 
 import { BY_ID, KEYWORDS, RULES, STARTERS, isTrick } from './cards.js';
 import { abilityNeeds, actor, apply, blockLimit, canAttack, canBlock, costOf, forcedBlocks, hasKw, living, needs, newGame, opponents, phoenixReady, playOptions, power, replay, useOptions, vitality } from './engine.js';
@@ -18,6 +20,7 @@ import { TUTORIAL, botAction, matches } from './tutorial.js';
 import * as St from './stats.js';
 import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
+import * as Push from './push.js';
 
 const SAVE = 'collective.practice.v2';
 const store = {
@@ -72,6 +75,24 @@ function deckSelect(id, choices, chosen) {
   return `<select id="${id}" class="select">${choices.map((d) => `<option value="${esc(d.id)}"${d.id === chosen ? ' selected' : ''}>${esc(d.name)}</option>`).join('')}</select>`;
 }
 
+// 🔔 "It's your turn" alerts (js/push.js), for games that go on while the phones are put away.
+function alertsHTML() {
+  switch (Push.status()) {
+    case 'off': return '<button class="btn small" data-act="alerts-on">🔔 Alert me when it’s my turn</button>';
+    case 'on': return '<p class="muted small pp-alerts">🔔 Alerts are on: this phone hears when it’s your turn. <button class="btn small ghost" data-act="alerts-off">Turn off</button></p>';
+    case 'home': return '<p class="muted small pp-alerts">🔔 For “your turn” alerts, open the game from its Home Screen icon.</p>';
+    case 'blocked': return '<p class="muted small pp-alerts">🔔 Alerts are turned off for this game in the iPhone’s Settings → Notifications.</p>';
+    default: return ''; // not set up, or a phone that can't
+  }
+}
+
+async function alertsTap(on) {
+  const code = G?.mode === 'online' ? G.code : L?.code;
+  const seat = G?.mode === 'online' ? G.me : (L?.info?.players || []).findIndex((p) => p && p.id === Net.clientId());
+  const st = on ? await Push.turnOn(code, seat) : await Push.turnOff(code);
+  flash(st === 'on' ? 'Alerts on: you’ll hear when it’s your turn.' : st === 'blocked' ? 'Alerts weren’t allowed. Settings → Notifications can turn them on.' : 'Alerts off.');
+}
+
 function onlinePanelHTML(choices, chosen) {
   if (!Net.isConfigured()) return '<div class="pp-in"><h3>Friends</h3><p class="muted small" style="margin:0">Online play is not set up yet.</p></div>';
   if (L && L.info) {
@@ -105,6 +126,7 @@ function onlinePanelHTML(choices, chosen) {
       ${host && info.status === 'lobby' ? Draft.modeSwitchHTML(false) : ''}
       <div class="pp-group"><label class="pp-row"><span>Deck</span>${deckSelect('room-deck', choices, current)}</label></div>
       ${next}
+      ${alertsHTML()}
       <button class="btn ghost" data-act="leave-room">Leave this game</button>
     </div>`;
   }
@@ -182,6 +204,7 @@ async function enterRoom(code) {
   L?.resUnsub?.();
   L = { code, info: null, unsub: null };
   keepAwake('room', true);
+  Push.joinRoom(code);
   L.unsub = await Net.watchRoom(code, (info) => {
     if (!L || L.code !== code) return;
     L.info = info;
@@ -236,6 +259,8 @@ async function onlineAct(act, el, choices) {
       if (L.info?.draft) await Draft.beforeStart(L.code, L.info); // drafted decks, not the picker's
       else await Net.setDeck(L.code, Decks.encode(deckOf('room-deck').counts));
       await Net.startGame(L.code);
+      const me = (L.info?.players || []).findIndex((p) => p && p.id === Net.clientId());
+      (L.info?.players || []).forEach((p, i) => { if (p && i !== me) Push.notify(L.code, i, me, 'start'); });
     }
     if (act === 'leave-room') { const code = L.code; Draft.leaveRoom(); exitRoom(); await Net.leaveLobby(code); } // stop watching first, so leaving isn't reported as the game vanishing
     if (act === 'rejoin-table') { const seat = L.info.players.findIndex((p) => p.id === Net.clientId()); beginOnline(L.info, seat); }
@@ -283,6 +308,7 @@ export function playPage(view) {
       return;
     }
     if (['create', 'join', 'rejoin', 'start', 'leave-room', 'rejoin-table', 'copy-link'].includes(act)) { onlineAct(act, el, choices); return; }
+    if (act === 'alerts-on' || act === 'alerts-off') { alertsTap(act === 'alerts-on').catch((er) => flash(er.message)).finally(() => playPage(view)); return; }
     if (act === 'last-review') { if (L?.lastRec) Ins.openSheet(Ins.reviewHTML(L.lastRec)); return; }
     const ctx = { play: startPractice, refresh: () => playPage(view), code: L?.code };
     if (act === 'bots') {
@@ -488,6 +514,7 @@ function beginOnline(info, seat) {
   G.stale = !!info.v && info.v !== Net.version();
   mount();
   redraw();
+  watchSeen(true);
   Net.watchActions(L.code, round, (actions, atEnd) => {
     if (!G || G.mode !== 'online' || G.round !== round) return;
     if (atEnd && actions.length === G.actions.length + 1) {
@@ -505,6 +532,7 @@ function beginOnline(info, seat) {
 // an online game carries on and you can go back to it from Play).
 function leave(goTo = '#/play') {
   clearTimeout(G?.timer);
+  if (G?.mode === 'online' && Push.enabled()) { watchSeen(false); Net.markSeen(G.code, false).catch(() => {}); }
   G?.unsubActions?.();
   endGate?.(false);
   if (G && G.mode === 'practice' && G.state.phase === 'over') store.clear();
@@ -560,7 +588,7 @@ function dispatch(a) {
     const r = apply(G.state, a);
     if (r.error) { flash(r.error); return false; }
     clearSelections();
-    Net.sendAction(G.code, G.round, a).catch((e) => flash(`Not sent: ${e.message}`));
+    Net.sendAction(G.code, G.round, a).then(() => turnAlert(r.state, a), (e) => flash(`Not sent: ${e.message}`));
     return true;
   }
   // In the lesson, your moves must be the one the coach is asking for.
@@ -576,6 +604,30 @@ function dispatch(a) {
   else schedule();
   return true;
 }
+
+// Online: a move that leaves the next one to another player wakes their phone
+// (js/push.js; nothing if they're looking at the game, or alerts are off).
+function turnAlert(s, a) {
+  if (!G || G.mode !== 'online' || s.phase === 'over' || s.phase === 'mulligan') return;
+  const next = actor(s);
+  if (next == null || next === G.me || s.players[next]?.out) return;
+  const kind = s.phase === 'combat' && s.combat.step === 'block' && s.combat.d === next ? 'attacked' : a.t === 'end' || a.t === 'mulligan' ? 'turn' : 'move';
+  Push.notify(G.code, next, G.me, kind);
+}
+
+// Online: while the game is in front of you, your seat says so (and nobody's
+// move wakes your phone); put away or left, it doesn't.
+let seenTimer = 0;
+function markSeen() {
+  if (G?.mode === 'online' && Push.enabled()) Net.markSeen(G.code, document.visibilityState === 'visible').catch(() => {});
+}
+function watchSeen(on) {
+  clearInterval(seenTimer);
+  if (!on || !Push.enabled()) return;
+  markSeen();
+  seenTimer = setInterval(markSeen, 15000);
+}
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', markSeen);
 
 // Apply a move locally, remember it, and show it. Returns true if it happened.
 function commit(a) {
@@ -676,12 +728,12 @@ function describeMove(s, a) {
   return 'Anything goes.';
 }
 
-// What to ring on the table for a suggested move.
+// What to ring for a suggested move: on the table, and on a fight's own screen.
 function suggestRings(s, a) {
-  const c = (u) => (s.cards[u]?.zone === 'relic' ? `.relic[data-uid="${u}"]` : `.tcard[data-uid="${u}"]:not(.in-hand)`);
+  const c = (u) => (s.cards[u]?.zone === 'relic' ? `.relic[data-uid="${u}"]` : `.tcard[data-uid="${u}"]:not(.in-hand), .dec-c[data-u="${u}"] > .tcard`);
   const t = (x) => (!x ? [] : x.p != null ? [`.pbar[data-p="${x.p}"]`] : [c(x.uid)]);
   switch (a.t) {
-    case 'play': return [a.from === 'discard' ? `.tc-pile[data-pile="${G.me}"]` : `.g-hand .tcard[data-uid="${a.uid}"]`, ...t(a.target), ...[a.sac, a.fighter, ...(a.targets || [])].filter((u) => u != null).map(c)];
+    case 'play': return [a.from === 'discard' ? `.tc-pile[data-pile="${G.me}"]` : `.g-hand .tcard[data-uid="${a.uid}"], .dec-c[data-u="${a.uid}"] > .tcard`, ...t(a.target), ...[a.sac, a.fighter, ...(a.targets || [])].filter((u) => u != null).map(c)];
     case 'attack': return [...a.att.map(c), `.pbar[data-p="${a.target}"]`, ...(a.hunt || []).map(([, y]) => c(y))];
     case 'block': return a.blocks.length ? a.blocks.flatMap(([b, x]) => [c(b), c(x)]) : ['.g-go'];
     case 'pass': return ['.g-go'];
@@ -1039,13 +1091,39 @@ function preyFor(hunter, target = G.atk?.target) {
   return opponents(s, G.me).filter((Q) => target == null || Q.i === target).flatMap((Q) => Q.board).filter((u) => canBlock(s, s.cards[u], a));
 }
 
+// Whom an attack is aimed at to begin with: the only opponent, or (three
+// players) the one open on the table.
+function attackTarget(s) {
+  const opp = opponents(s, G.me).filter((Q) => !Q.out);
+  return opp.length === 1 ? opp[0].i : focusOf(s);
+}
+
+// The attack screen (decideHTML) is open while G.atk is: Attack opens it,
+// and so does tapping a ready creature on the table (it comes in picked).
+function openAttack(first = null) {
+  if (!canStartAttack()) return;
+  G.suggest = null;
+  G.atk = { att: first != null ? [first] : [], hunt: [], target: attackTarget(S()) };
+  redraw();
+}
+
 function toggleAttacker(uid) {
-  G.suggest = null; // a suggestion set up on the table is now yours to change
-  if (!G.atk) G.atk = { att: [], hunt: [], target: S().players.length === 2 ? opponents(S(), G.me)[0].i : null };
+  G.suggest = null; // a suggestion set up on the screen is now yours to change
+  if (!G.atk) { openAttack(uid); return; }
   const k = G.atk.att.indexOf(uid);
   if (k >= 0) { G.atk.att.splice(k, 1); G.atk.hunt = G.atk.hunt.filter(([a]) => a !== uid); }
   else G.atk.att.push(uid);
-  if (!G.atk.att.length) G.atk = null;
+  redraw();
+}
+
+// A Hunt attacker can make one of the defender's creatures block it: tap that
+// creature (tap it again to let it go). Any other of theirs: its card, big.
+function preyTap(u) {
+  const had = G.atk.hunt.find(([, y]) => y === u);
+  if (had) { G.atk.hunt = G.atk.hunt.filter((h) => h !== had); redraw(); return; }
+  const hunter = hunterWithoutPrey();
+  if (hunter != null && preyFor(hunter).includes(u)) { G.atk.hunt.push([hunter, u]); G.suggest = null; redraw(); return; }
+  G.sheet = cardSheet(u);
   redraw();
 }
 
@@ -1060,7 +1138,9 @@ function sendAttack(target) {
 function syncBlocks() {
   if (!iBlock()) { G.blk = null; return; }
   const key = `${S().turn}:${S().combat.att.join(',')}`;
-  if (!G.blk || G.blk.key !== key) G.blk = { key, pairs: forcedBlocks(S()), sel: null };
+  // sel: a creature of yours picked up, waiting for the attacker it blocks; selA: an attacker
+  // picked first, waiting for the creature that blocks it (either way round works)
+  if (!G.blk || G.blk.key !== key) G.blk = { key, pairs: forcedBlocks(S()), sel: null, selA: null };
 }
 const isForced = (b, a) => forcedBlocks(S()).some(([x, y]) => x === b && y === a);
 function canAssign(b, a) {
@@ -1082,30 +1162,56 @@ function assignBlock(b, a) {
     G.blk.pairs.push([b, a]);
   }
   G.blk.sel = null;
+  G.blk.selA = null;
   redraw();
 }
 
-// Tap a creature of yours to block: it steps in front of an attacker it can
-// stop (the first one nobody blocks yet, if there is one). Tap it again and it
-// moves on to the next attacker, and after the last one back home. Dragging it
-// onto an attacker puts it exactly there (a Guard can take a second one that way).
-function cycleBlock(b) {
+// How many more attackers a creature of yours could still take on (a Guard blocks two).
+const blocksLeft = (b) => blockLimit(S(), S().cards[b]) - G.blk.pairs.filter(([x]) => x === b).length;
+
+// On the block screen: tap a creature of yours. With one attacker it can stop,
+// it steps in front of it; with several, it is picked up and the attackers it
+// can block light up: tap one. (An attacker tapped first waits for its blocker.)
+function blockTap(b) {
   const s = S();
-  const forced = G.blk.pairs.find(([x, y]) => x === b && isForced(x, y));
-  if (forced && blockLimit(s, s.cards[b]) === 1) { flash(`${nameOf(b)} must block ${nameOf(forced[1])}: it was hunted.`); return; }
-  const fits = s.combat.att.filter((a) => canAssign(b, a));
-  if (!fits.length) return;
-  const cur = G.blk.pairs.find(([x, y]) => x === b && !isForced(x, y));
-  G.blk.cycle ||= {};
-  if (!cur) G.blk.cycle[b] = Math.max(0, fits.findIndex((a) => !G.blk.pairs.some(([, y]) => y === a)));
-  const k = G.blk.cycle[b] || 0;
-  const order = [...fits.slice(k), ...fits.slice(0, k)];
-  const next = cur ? order[order.indexOf(cur[1]) + 1] : order[0];
+  if (!canBlockSomething(b)) { flash(whyNoBlock(b)); return; }
+  const fits = s.combat.att.filter((a) => canAssign(b, a) && !G.blk.pairs.some(([x, y]) => x === b && y === a));
   G.suggest = null;
+  if (G.blk.selA != null) {
+    const a = G.blk.selA;
+    if (fits.includes(a)) { assignBlock(b, a); return; }
+    flash(`${nameOf(b)} can’t block ${nameOf(a)}${hasKw(s, s.cards[a], 'soar') ? ': it has Soar' : ''}.`);
+    return;
+  }
+  if (!fits.length) { flash(`${nameOf(b)} is already blocking.`); return; }
+  if (fits.length === 1) { assignBlock(b, fits[0]); return; }
+  G.blk.sel = G.blk.sel === b ? null : b;
+  redraw();
+}
+
+function attackerTap(a) {
+  const s = S();
+  G.suggest = null;
+  if (G.blk.sel != null) {
+    const b = G.blk.sel;
+    if (canAssign(b, a)) assignBlock(b, a);
+    else flash(`${nameOf(b)} can’t block ${nameOf(a)}${hasKw(s, s.cards[a], 'soar') ? ': it has Soar, so only Soar or Reach can block it' : ''}.`);
+    return;
+  }
+  const can = s.players[G.me].board.filter((u) => canAssign(u, a) && blocksLeft(u) > 0);
+  if (!can.length) { flash(`None of your creatures can block ${nameOf(a)}${hasKw(s, s.cards[a], 'soar') ? ': it has Soar, so only Soar or Reach can block it' : ''}.`); return; }
+  G.blk.selA = G.blk.selA === a ? null : a;
+  redraw();
+}
+
+// Tap a blocker standing in front of an attacker: it goes back.
+function unblock(b, a) {
+  if (isForced(b, a)) { flash(`${nameOf(b)} must block ${nameOf(a)}: it was hunted.`); return; }
+  G.suggest = null;
+  G.blk.pairs = G.blk.pairs.filter(([x, y]) => !(x === b && y === a));
   G.blk.sel = null;
-  if (cur) G.blk.pairs = G.blk.pairs.filter((p) => p !== cur);
-  if (next != null) assignBlock(b, next);
-  else redraw();
+  G.blk.selA = null;
+  redraw();
 }
 
 // Why one of your creatures can't block now, in a sentence.
@@ -1147,26 +1253,25 @@ function outcome(s, t) {
   const gone = (P) => P.board.filter((u) => t.cards[u].zone !== 'board').map((u) => BY_ID[s.cards[u].cid].name);
   const mine = gone(s.players[G.me]);
   const theirs = s.players.filter((Q) => Q.i !== G.me).flatMap(gone);
-  const bits = [lost > 0 ? `you take <b>${lost}</b>` : 'you take no damage'];
+  const out = t.players[G.me].out && !s.players[G.me].out; // (then losing your creatures goes without saying)
+  const bits = [out ? `you take <b>${lost}</b> and <b>you’re out!</b>` : lost > 0 ? `you take <b>${lost}</b>` : 'you take no damage'];
   for (const Q of s.players) {
     const n = Q.life - t.players[Q.i].life;
     if (Q.i !== G.me && n > 0) bits.push(`${esc(shortName(Q.name))} takes <b>${n}</b>${t.players[Q.i].out ? ' (and is out!)' : ''}`);
   }
-  if (mine.length) bits.push(`you lose ${esc(listNames(mine))}`);
+  if (mine.length && !out) bits.push(`you lose ${esc(listNames(mine))}`);
   if (theirs.length) bits.push(`they lose ${esc(listNames(theirs))}`);
   return bits.join(' · ');
 }
 
-// Dragging from one of your creatures: what can it aim at?
+// Dragging from one of your creatures on the table: what can it aim at?
+// (An opponent's bar to attack them, or the prey of a Hunt: the attack screen
+// opens with that set up. Blocking happens on the block screen.)
 function aimTargets(uid) {
   const root = document.getElementById('game');
   if (!root || !G) return [];
   const s = S(), c = s.cards[uid];
   if (!c || c.ctrl !== G.me) return [];
-  if (iBlock()) {
-    if (!canBlockSomething(uid)) return [];
-    return s.combat.att.filter((a) => canBlock(s, c, s.cards[a])).map((a) => root.querySelector(`.tcard[data-uid="${a}"]`)).filter(Boolean);
-  }
   if (myMain() && !attackedThisTurn() && canAttack(s, G.me, c)) {
     const bars = opponents(s, G.me).map((Q) => root.querySelector(`.pbar[data-p="${Q.i}"]`));
     const prey = hasKw(s, c, 'hunt') ? opponents(s, G.me).flatMap((Q) => Q.board).filter((u) => canBlock(s, s.cards[u], c)).map((u) => root.querySelector(`.tcard[data-uid="${u}"]`)) : [];
@@ -1177,7 +1282,6 @@ function aimTargets(uid) {
 
 function aimDrop(uid, toEl) {
   const s = S();
-  if (iBlock()) { const a = Number(toEl.dataset.uid); syncBlocks(); assignBlock(uid, a); return; }
   if (!G.atk) G.atk = { att: [], hunt: [], target: null };
   if (!G.atk.att.includes(uid)) G.atk.att.push(uid);
   if (toEl.dataset.p != null) G.atk.target = Number(toEl.dataset.p);
@@ -1191,13 +1295,6 @@ function aimDrop(uid, toEl) {
 }
 
 // ── rendering ───────────────────────────────────────────────────────
-function pips(P) {
-  const max = Math.max(P.maxEnergy, P.energy);
-  let h = '';
-  for (let i = 0; i < max; i++) h += `<span class="pip${i < P.energy ? (i >= P.maxEnergy ? ' extra' : ' on') : ''}"></span>`;
-  return h;
-}
-
 function relicHTML(s, r, hl) {
   const d = BY_ID[r.cid];
   const isT = hl.targets.some((t) => t.uid === r.uid);
@@ -1215,10 +1312,11 @@ function pbarHTML(s, P, hl, folded = false) {
   const fighting = C && (C.d === P.i ? ' defending' : C.a === P.i ? ' attacking' : '');
   const crown = s.crown === P.i ? `<button class="pb-crown" data-act="crown-info" aria-label="Holds the Crown">${ICON.crown}</button>` : '';
   // A glance shows Life, Energy and cards in hand; the rest is a tap away (playerSheet).
-  // Your own Energy keeps its pips (you spend them); the others' is one number.
+  // Your own Energy is a big number out of your most this turn (tiny pips were hard to
+  // count); the others' is one number.
   const mine = P.i === G.me;
   const energy = mine
-    ? `<div class="pb-energy${s.players.length > 2 && Math.max(P.maxEnergy, P.energy) >= 6 ? ' many' : ''}">${pips(P)}<span class="pb-en-n">${P.energy}/${P.maxEnergy}</span></div>`
+    ? `<div class="pb-energy" title="Energy">${ICON.bolt}<b>${P.energy}</b><span>/${P.maxEnergy}</span></div>`
     : `<div class="pb-en" title="Energy">${ICON.bolt}${P.energy}</div>`;
   const meta = (mine ? '' : `<span title="cards in hand">${ICON.hand}${P.hand.length}</span>`)
     + (P.deck.length <= 5 && !P.out ? `<span class="pb-low" title="cards left in the deck">${ICON.deck}${P.deck.length} left</span>` : '')
@@ -1306,45 +1404,18 @@ function battleView(s) {
   return { a, d, attTop, cols, inZone: new Set([...att, ...placed]) };
 }
 
-// What to tap right now while picking attackers or in a fight you are
-// deciding ('' when there is nothing to say). It sits on the label just above
-// the fighting creatures; on short phones in a three-player fight, where that
-// label is hidden, the banner under them carries it instead.
-function fightHow(s) {
-  if (tutStep()) return '';
-  if (G.atk && myMain()) {
-    if (hunterWithoutPrey()) return '';
-    return G.atk.target == null ? 'Who do you attack? Tap their name ↑' : 'Tap your creatures to add or take out attackers.';
-  }
-  if (iBlock()) {
-    const mine = s.players[G.me].board.filter((u) => canBlockSomething(u));
-    if (G.blk?.sel != null) return `Now tap the attacker ${nameOf(G.blk.sel)} should block.`;
-    if (!mine.length) return 'None of your creatures can block this.';
-    if (!G.blk?.pairs.length) return mine.length > 1 ? 'Tap your creatures to block. Two can team up on one attacker.' : 'Tap your creature to block.';
-    return s.combat.att.length > 1 ? 'Tap a blocker again to move it or take it back.' : 'Tap a blocker again to take it back.';
-  }
-  if (iTrick()) {
-    const trick = s.players[G.me].hand.some((u) => isTrick(BY_ID[s.cards[u].cid]) && !playable(u));
-    return trick ? 'Play a Trick now (it glows in your hand), or tap Fight.' : 'Use an ability now, or tap Fight.';
-  }
-  return '';
-}
-
+// The fight on the table is to watch (yours while the others decide, and the
+// others'); deciding one happens on its own screen (decideHTML).
 function battleHTML(s, bv, hl) {
   const card = (u) => creatureHTML(s, s.cards[u], hl, true);
-  const blocking = iBlock();
   const target = bv.d != null ? s.players[bv.d] : null;
   const short = (P) => (P.i === G.me ? 'you' : shortName(P.name));
   const cols = bv.cols.map(({ a, bs, also }) => {
     const parts = bs.map(card);
     if (also.length) parts.push(`<div class="gb-empty gb-also">also ${esc(listNames(also.map(nameOf)))}</div>`);
-    const open = blocking && G.blk?.sel != null && canAssign(G.blk.sel, a) && !G.blk.pairs.some(([x, y]) => x === G.blk.sel && y === a);
     // an unblocked attacker gets a small "→ name" label, not a card-sized slot
-    let label = false;
-    if (!parts.length) {
-      label = !blocking;
-      parts.push(blocking ? `<div class="gb-empty${open ? ' open' : ''}" data-att="${a}">block<br>here</div>` : `<div class="gb-empty gb-hit">→ ${target ? esc(short(target)) : '?'}</div>`);
-    } else if (open) parts.push(`<div class="gb-empty gb-add open" data-att="${a}">+ here</div>`);
+    const label = !parts.length;
+    if (label) parts.push(`<div class="gb-empty gb-hit">→ ${target ? esc(short(target)) : '?'}</div>`);
     const other = `<div class="gb-slot${parts.length > 1 ? ' multi' : ''}${label ? ' label' : ''}">${parts.join('')}</div>`;
     const mine = `<div class="gb-slot">${card(a)}</div>`;
     const blocked = bs.length + also.length > 0;
@@ -1353,9 +1424,249 @@ function battleHTML(s, bv, hl) {
   const who = bv.a === G.me ? 'You' : shortName(s.players[bv.a].name);
   const at = target ? (target.i === G.me ? 'you' : shortName(target.name)) : null;
   const across = bv.cols.reduce((n, c) => n + Math.max(1, c.bs.length + (c.also.length ? 0.6 : 0)), 0);
-  const how = fightHow(s);
-  const label = how ? `<div class="gb-label how">${esc(how)}</div>` : `<div class="gb-label">${at ? `⚔ ${esc(who)} → ${esc(at)}` : '⚔ Who do you attack? Tap their name ↑'}</div>`;
+  const label = at ? `<div class="gb-label">⚔ ${esc(who)} → ${esc(at)}</div>` : '';
   return `<div class="g-battle ${bv.attTop ? 'att-top' : 'att-bottom'}${bv.cols.length > 4 || across > 5 ? ' many' : ''}" data-key="battle">${tutStep() ? '' : label}<div class="gb-cols">${cols}</div></div>`;
+}
+
+// ── deciding a fight, big ───────────────────────────────────────────
+// Picking attackers, blocking and the Tricks before a fight each get a screen
+// of their own over the table (players couldn't tell on the small fight in the
+// middle what to tap, when, or what it meant): big cards, one line saying what
+// to tap next, a line on what it means, and how it would turn out, in words.
+// The button that carries the game on is at the bottom right, as on the table;
+// ☰ and 💡 stay at the top. The lesson's coach speaks in the line at the top.
+
+// Which fight decision is on screen: 'attack', 'block', 'tricks' or null.
+// (None while a move plays out, or while a Trick's target is picked on the table.)
+function decision() {
+  if (!G || G.busy || G.flow || G.stale) return null;
+  const s = S();
+  if (s.phase === 'over' || s.players[G.me].out) return null;
+  if (G.atk && myMain()) return 'attack';
+  if (iBlock()) return 'block';
+  if (iTrick()) return 'tricks';
+  return null;
+}
+
+// A creature on a decision screen: a big table card in a wrapper that is what you tap
+// (no data-uid of its own, so nothing on the table mistakes it for the one in the row).
+function decCard(s, u, { act = '', states = [], foe = false, tag = '', why = '', att = null } = {}) {
+  const c = s.cards[u], d = BY_ID[c.cid];
+  const card = FX.tcardHTML(d, {
+    states: states.filter(Boolean), power: power(s, c), vitality: vitality(s, c) - (c.dmg || 0), dmg: c.dmg,
+    keywords: FX.KEYWORD_BADGES.filter((k) => hasKw(s, c, k)), leaving: !!(c.sacEnd || c.stolen), foe, rest: false,
+  });
+  return `<div class="dec-c"${act ? ` data-act="${act}" role="button"` : ''} data-u="${u}"${att != null ? ` data-att="${att}"` : ''}${why ? ` data-why="${esc(why)}"` : ''} data-key="dc-${u}">`
+    + `${card}${tag ? `<span class="dec-tag">${tag}</span>` : ''}</div>`;
+}
+
+// The cards in a box: as big as the box lets them be (fitDecision sizes them).
+const decCards = (cls, html, n) => `<div class="dec-cards ${cls}" data-n="${n}">${html}</div>`;
+
+// Under an unblocked attacker: the damage it would deal. (A blocked pair says
+// it with ☠ on the cards; the line under the fight says it in words.)
+function decRes(s, a, bs, toMe) {
+  return bs.length ? '' : `<b class="hit">${power(s, s.cards[a])} damage</b>${toMe ? ' to you' : ''}`;
+}
+// "☠" explained, when a fight shows one
+const skullNote = (s, t) => (t && s.combat.att.some((a) => [a, ...(blockersOf(s)[a] || [])].some((u) => t.cards[u]?.zone !== 'board')) ? ' ☠: would be destroyed.' : '');
+
+// The fight as it stands: a column for each attacker, the other side's creatures
+// on top and yours below. Blocking, your side of each column is where your
+// blockers stand (tap one to send it back) or a place to put one. With nobody
+// blocked (a Tricks window), the attackers stand in one row.
+function decFight(s, t, { blocking = false } = {}) {
+  const C = s.combat, mineAttack = C.a === G.me, toMe = C.d === G.me;
+  const blk = blockersOf(s);
+  const doomed = (u) => !!t && t.cards[u]?.zone !== 'board';
+  const atts = C.att.filter((u) => s.cards[u].zone === 'board');
+  const bsOf = (a) => (blk[a] || []).filter((b) => s.cards[b]?.zone === 'board');
+  const one = !blocking && atts.every((a) => !bsOf(a).length);
+  const cols = atts.map((a) => {
+    const bs = bsOf(a);
+    const sel = blocking ? G.blk.sel : null;
+    const open = sel != null && canAssign(sel, a) && !G.blk.pairs.some(([x, y]) => x === sel && y === a);
+    const picked = blocking && G.blk.selA === a;
+    const att = decCard(s, a, { act: blocking ? 'dec-foe' : 'dec-look', foe: !mineAttack, states: ['attacking', doomed(a) && 'doomed', (open || picked) && 'target'] });
+    const res = `<div class="dec-res">${decRes(s, a, bs, toMe)}</div>`;
+    if (one) return `<div class="dec-col" data-n="1" data-key="col-${a}"><div class="dec-stack">${att}</div>${res}</div>`;
+    let other;
+    if (blocking) {
+      other = bs.map((b) => decCard(s, b, { act: 'dec-unblk', att: a, states: ['blocking', doomed(b) && 'doomed'], tag: isForced(b, a) ? 'hunted' : '' })).join('')
+        + (open || picked || !bs.length ? `<button class="dec-empty${open || picked ? ' open' : ''}" data-act="dec-foe" data-u="${a}">${open || picked ? 'Block here' : 'Not blocked'}</button>` : '');
+    } else {
+      other = bs.map((b) => decCard(s, b, { act: 'dec-look', foe: mineAttack, states: ['blocking', doomed(b) && 'doomed'] })).join('')
+        || '<span class="dec-free">Not blocked</span>';
+    }
+    const n = Math.max(1, bs.length + (blocking && bs.length && (open || picked) ? 1 : 0));
+    return `<div class="dec-col${picked ? ' picked' : ''}" data-n="${n}" data-key="col-${a}">
+      <div class="dec-stack top">${mineAttack ? other : att}</div><div class="dec-vs">${bs.length ? '⚔' : '↓'}</div><div class="dec-stack bottom">${mineAttack ? att : other}</div>
+      ${res}</div>`;
+  });
+  return `<div class="dec-fight${one ? ' one' : ''}" data-key="fight">${cols.join('')}</div>`;
+}
+
+function decideHTML(s) {
+  const mode = decision();
+  if (!mode) return '';
+  const st = tutStep();
+  let body;
+  try {
+    body = mode === 'attack' ? attackDec(s) : mode === 'block' ? blockDec(s) : tricksDec(s);
+  } catch (e) { console.error(e); return ''; }
+  // the coach's words take the place of the usual line (and of what it means)
+  const say = st ? `<div class="dec-say dec-coach">${esc(st.say)}</div>` : `<div class="dec-say">${body.say}</div>${body.why ? `<div class="dec-why">${body.why}</div>` : ''}`;
+  return `<div class="g-dec dec-${mode}" data-key="dec">
+    <div class="dec-head"><div class="dec-title">${body.title}</div>${body.meta ? `<div class="dec-meta">${body.meta}</div>` : ''}</div>
+    ${say}
+    ${body.main}
+    ${body.sum ? `<div class="dec-sum">${body.sum}</div>` : ''}
+    ${suggestHTML()}
+    <div class="dec-btns"><span>${body.left || ''}</span><span>${goButton()}</span></div>
+  </div>`;
+}
+
+// Picking attackers: whom (three players), your creatures that can attack, and
+// theirs that could block them.
+function attackDec(s) {
+  const A = G.atk, T = s.players[A.target];
+  const tn = esc(shortName(T.name));
+  const opp = opponents(s, G.me).filter((Q) => !Q.out);
+  const mine = s.players[G.me].board;
+  const ready = readyAttackers();
+  const pool = A.att.length ? A.att : ready;
+  const theirs = T.board.filter((u) => pool.some((a) => canBlock(s, s.cards[u], s.cards[a])));
+  const hunter = hunterWithoutPrey();
+  const prey = hunter != null ? new Set(preyFor(hunter)) : new Set();
+  const hunted = new Map(A.hunt.map(([a, y]) => [y, a]));
+  const whom = opp.length > 1 ? `<div class="dec-whom">${opp.map((Q) => `<button class="dec-foe${Q.i === A.target ? ' on' : ''}" data-act="dec-target" data-p="${Q.i}" data-key="foe-${Q.i}">
+    <b>${esc(shortName(Q.name))}</b><span>${ICON.heart}${Q.life} · ${Q.board.length} creature${Q.board.length === 1 ? '' : 's'}</span></button>`).join('')}</div>` : '';
+  const theirCards = theirs.map((u) => decCard(s, u, { act: 'dec-prey', foe: true, states: [prey.has(u) && 'target', hunted.has(u) && 'selected'], tag: hunted.has(u) ? 'hunted' : '' })).join('');
+  const myCards = mine.map((u) => {
+    const c = s.cards[u];
+    if (ready.includes(u)) return decCard(s, u, { act: 'dec-att', states: [A.att.includes(u) ? 'attacking' : 'ready'], tag: A.att.includes(u) ? '⚔ attacking' : '' });
+    const why = c.ex ? `${nameOf(u)} is spent: it can’t attack until your next turn.` : `${nameOf(u)} just arrived: it can attack next turn.`;
+    return decCard(s, u, { act: 'dec-why', states: [c.ex ? 'exhausted' : 'sick'], why });
+  }).join('');
+  const n = A.att.length;
+  const hit = A.att.reduce((x, u) => x + power(s, s.cards[u]), 0);
+  let say;
+  if (!n) say = ready.length > 1 ? 'Tap the creatures you attack with.' : 'Tap your creature to attack with it.';
+  else if (hunter != null && prey.size) say = `${esc(nameOf(hunter))} can Hunt: tap one of ${tn}’s creatures to make it block (or skip it).`;
+  else say = `${ready.length > n ? 'Tap more to add them, or tap' : 'Tap'} <b>Attack${opp.length > 1 ? ` ${tn}` : ''}</b> to send ${n > 1 ? 'them' : 'it'}.`;
+  return {
+    title: '⚔ Attack',
+    meta: opp.length > 1 ? '' : `${tn} ${ICON.heart}${T.life}`,
+    say,
+    why: `Attackers hit ${tn} unless blocked: a blocked one fights its blocker instead. Attacking spends them: they can’t block until your next turn.`,
+    main: `${whom}
+      <div class="dec-label">${theirs.length ? `${tn} can block with` : `${tn} has nothing that can block`}</div>
+      ${theirs.length ? decCards('theirs', theirCards, theirs.length) : ''}
+      <div class="dec-label">Your creatures</div>
+      ${decCards('mine', myCards, mine.length)}`,
+    sum: n ? `If nothing is blocked, ${tn} takes <b>${hit}</b>${hit >= T.life ? ': enough to knock them out!' : '.'}` : '',
+    left: '<button class="btn small ghost" data-act="cancel">Cancel</button>',
+  };
+}
+
+// Blocking: the attackers on top with a place in front of each; your creatures
+// below. Tap one of yours, then (with several attackers) the one it blocks.
+function blockDec(s) {
+  const C = s.combat, A = s.players[C.a], an = esc(shortName(A.name));
+  const t = fightPreview(s);
+  const me = s.players[G.me];
+  const can = me.board.filter((u) => canBlockSomething(u));
+  const free = me.board.filter((u) => !canBlockSomething(u) || blocksLeft(u) > 0);
+  const myCards = free.map((u) => {
+    if (!canBlockSomething(u)) return decCard(s, u, { act: 'dec-why', states: [s.cards[u].ex ? 'exhausted' : 'dim'], why: whyNoBlock(u) });
+    const used = G.blk.pairs.some(([x]) => x === u); // a Guard, with one attacker taken
+    return decCard(s, u, { act: 'dec-blk', states: [G.blk.sel === u ? 'selected' : 'ready'], tag: used ? 'can block 1 more' : '' });
+  }).join('');
+  const atts = C.att.filter((u) => s.cards[u].zone === 'board');
+  let say;
+  if (G.blk.selA != null) say = `Now tap the creature of yours that blocks ${esc(nameOf(G.blk.selA))}.`;
+  else if (G.blk.sel != null) say = `Now tap the attacker ${esc(nameOf(G.blk.sel))} blocks.`;
+  else if (!can.length) say = 'None of your creatures can block this. Tap <b>No block</b>.';
+  else if (!G.blk.pairs.length) say = `Tap ${can.length > 1 ? 'one of your creatures' : 'your creature'} to block${atts.length > 1 ? ' an attacker' : ''}, or tap <b>No block</b>.`;
+  else say = 'Tap <b>Block</b> when you’re done. Tap a blocker to send it back.';
+  const clear = G.blk.pairs.some(([b, a]) => !isForced(b, a)) ? '<button class="btn small ghost" data-act="clear-blocks">Clear</button>' : '';
+  return {
+    title: `⚔ ${an} attacks you`,
+    meta: `${ICON.bolt}${A.energy} · ${A.hand.length} card${A.hand.length === 1 ? '' : 's'}`,
+    say,
+    why: `A blocked attacker fights your blocker instead of hitting you.${can.length > 1 && atts.length ? ' Two of yours can team up on one attacker.' : ''}${skullNote(s, t)}`,
+    main: `${decFight(s, t, { blocking: true })}
+      ${free.length ? `<div class="dec-label">${can.length ? 'Your creatures' : 'Your creatures can’t block (tap one to see why)'}</div>${decCards('mine', myCards, free.length)}` : ''}`,
+    sum: `If no one plays a Trick: ${outcome(s, t)}.`,
+    left: clear,
+  };
+}
+
+// The Tricks before a fight: the fight as it stands, and what you could play.
+function tricksDec(s) {
+  const C = s.combat, mineAttack = C.a === G.me;
+  const O = s.players[mineAttack ? C.d : C.a], on = esc(shortName(O.name));
+  const P = s.players[G.me];
+  const t = fightPreview(s);
+  const tricks = P.hand.filter((u) => isTrick(BY_ID[s.cards[u].cid]));
+  const abil = P.board.filter((u) => BY_ID[s.cards[u].cid].ability && !abilityBlocked(u));
+  const cards = tricks.map((u) => {
+    const d = BY_ID[s.cards[u].cid], why = playable(u);
+    return `<div class="dec-c" data-act="${why ? 'dec-why' : 'dec-trick'}" role="button" data-u="${u}"${why ? ` data-why="${esc(why)}"` : ''} data-key="dt-${u}">${FX.tcardHTML(d, { zone: 'hand', cost: costOf(s, G.me, s.cards[u]), states: [why ? 'dim' : 'can'] })}</div>`;
+  }).join('');
+  const abs = abil.map((u) => {
+    const ab = BY_ID[s.cards[u].cid].ability;
+    return `<button class="dec-ab" data-act="dec-ab" data-u="${u}" data-key="da-${u}">${ICON.bolt}<b>${esc(nameOf(u))}</b><span class="dec-ab-what">${esc(ab.short)}</span><i>${ab.cost}</i></button>`;
+  }).join('');
+  const can = tricks.some((u) => !playable(u));
+  return {
+    title: mineAttack ? `⚔ You attack ${on}` : `⚔ ${on} attacks you`,
+    meta: `${ICON.bolt}${O.energy} · ${O.hand.length} card${O.hand.length === 1 ? '' : 's'}`,
+    say: `Before the fight: ${can ? 'play a Trick' : 'use an ability'}, or tap <b>Fight</b>.`,
+    why: `Tricks${abil.length ? ' and ⚡ abilities' : ''} can change a fight; ${on} can answer yours.${skullNote(s, t)}`,
+    main: `${decFight(s, t)}
+      <div class="dec-label">You can play · you have ${ICON.bolt}${P.energy} Energy</div>
+      ${tricks.length ? decCards('tricks', cards, tricks.length) : ''}
+      ${abs ? `<div class="dec-abs">${abs}</div>` : ''}`,
+    sum: `If no one plays a Trick: ${outcome(s, t)}.`,
+  };
+}
+
+// Each box of cards gets the biggest size at which they all fit, in as many
+// rows as suits it; a fight's columns, the size at which two cards stack.
+function fitDecision(root) {
+  const dec = root.querySelector('.g-dec');
+  if (!dec) return;
+  // the fight first: your creatures below it are never drawn bigger than the fighters
+  let fw = 0;
+  const fight = dec.querySelector('.dec-fight');
+  if (fight) {
+    const cols = [...fight.children];
+    const units = cols.reduce((x, c) => x + Math.max(1, (Number(c.dataset.n) || 1) * 0.86), 0);
+    const W = fight.clientWidth, H = fight.clientHeight;
+    const rows = fight.classList.contains('one') ? 1 : 2;
+    let w = Math.max(34, Math.floor(Math.min(108, (W - (cols.length - 1) * 14) / units, (H - (rows === 1 ? 44 : 62)) / rows / 1.33)));
+    fight.style.setProperty('--dw', `${w}px`);
+    // (the words under a column can take more room than reckoned: smaller until it all fits)
+    const fits = () => cols.every((c) => c.offsetHeight <= H + 1) && cols.reduce((x, c) => x + c.offsetWidth, 0) + (cols.length - 1) * 14 <= W + 1;
+    for (let k = 0; k < 8 && w > 34 && !fits(); k++) { w = Math.max(34, Math.floor(w * 0.92)); fight.style.setProperty('--dw', `${w}px`); }
+    fw = w;
+  }
+  const GAP = 16; // (room for a picked card's lift and glow)
+  for (const box of dec.querySelectorAll('.dec-cards')) {
+    const n = Number(box.dataset.n) || 1, W = box.clientWidth, H = box.clientHeight;
+    const hand = box.classList.contains('tricks');
+    const ar = hand ? 1.397 : 1.33;
+    const max = Math.min(hand ? 92 : box.classList.contains('theirs') ? 84 : 112, fw && !hand ? Math.max(56, Math.round(fw * 1.1)) : Infinity);
+    let best = { w: 0, cols: n };
+    for (let rows = 1; rows <= Math.min(3, n); rows++) {
+      const cols = Math.ceil(n / rows);
+      const w = Math.min(max, (W - (cols - 1) * GAP) / cols, (H - (rows - 1) * 16 - 16) / rows / ar);
+      if (w > best.w + 2) best = { w, cols };
+    }
+    box.style.setProperty('--dw', `${Math.max(36, Math.floor(best.w))}px`);
+    box.style.setProperty('--dcols', best.cols);
+  }
 }
 
 // The hand always has a focal card: the one you last slid to or looked at,
@@ -1401,21 +1712,7 @@ function midInner() {
   const coached = !!tutStep(); // the coach box says what to do
   const st = G.flow?.steps[G.flow.i];
   if (st && ['sac', 'fighter', 'target', 'targets'].includes(st.kind)) return `<div class="banner"><span>${esc(st.prompt)}</span></div>`;
-  if (G.atk && myMain()) {
-    const hunter = hunterWithoutPrey();
-    if (hunter) return `<div class="banner fight"><span>${esc(nameOf(hunter))} can Hunt: tap the enemy creature it must fight (optional).</span></div>`;
-    const how = fightHow(s);
-    return how ? `<div class="banner fight only-small"><span>${esc(how)}</span></div>` : '';
-  }
-  // in a fight: what to tap, and how it goes if no one plays a Trick (☠ on the cards)
-  if (iBlock()) {
-    if (coached) return ''; // the coach box explains it, and the fight needs the room
-    return `<div class="banner fight foe"><span class="banner-how">${esc(fightHow(s))}</span><div class="banner-sub"><span class="pv-k">If no one plays a Trick: </span>${outcome(s, fightPreview(s))}</div></div>`;
-  }
-  if (iTrick()) {
-    if (coached) return '';
-    return `<div class="banner fight"><span class="banner-how">${esc(fightHow(s))}</span><div class="banner-sub"><span class="pv-k">As things stand: </span>${outcome(s, fightPreview(s))}</div></div>`;
-  }
+  // (picking attackers, blocking and the Tricks before a fight have their own screen: decideHTML)
   // how the last fight went (the full story is in the game log, in the menu)
   if (G.fightNote && s.phase === 'main' && !coached) return `<div class="fight-note"${G.lastFight ? ' data-act="fight-replay" role="button"' : ''}>${G.fightNote}${G.lastFight ? ' <span class="fn-replay">▶ Replay</span>' : ''}</div>`;
   if (s.players[G.me].out && s.phase !== 'over') return '<div class="hint">You’re out of this game; the others play on.</div>';
@@ -1478,11 +1775,11 @@ function anythingToDo() {
   return phoenixReady(s, G.me).length > 0 && P.energy >= 2;
 }
 
-// The strip under the table: Cancel, Clear or a Phoenix on the left; on the
-// right, under the thumb, the button that carries the game on (End turn,
-// Attack, Block, Fight: goHTML), or a choice's Skip or Done, or the lesson's
-// Next. Nothing on the table can cover it or push it out of view there, and
-// it never moves.
+// The strip under the table: Cancel, End turn or a Phoenix on the left; on
+// the right, under the thumb, the button that carries the game on (Attack,
+// End turn: goHTML), or a choice's Skip or Done, or the lesson's Next. Nothing
+// on the table can cover it or push it out of view there, and it never moves.
+// (While a fight is being decided, its screen has the buttons: decideHTML.)
 function actionsHTML() {
   const s = S();
   const btn = (cls, act, label, extra = '') => `<button class="btn ${cls}" data-act="${act}" ${extra}>${label}</button>`;
@@ -1497,12 +1794,11 @@ function actionsHTML() {
     left.push(btn('small ghost', 'cancel', 'Cancel'));
     if (st.kind === 'targets' && G.flow.multi.length) right.push(btn('primary', 'done-targets', `Done (${G.flow.multi.length})`));
     else if (st.optional) right.push(btn('primary', 'skip', 'Skip'));
-  } else if (G.atk && myMain()) {
-    left.push(btn('small ghost', 'cancel', 'Cancel'));
-  } else if (iBlock()) {
-    const n = G.blk?.pairs.length || 0;
-    if (n && G.blk.pairs.some(([b, a]) => !isForced(b, a))) left.push(btn('small ghost', 'clear-blocks', 'Clear'));
-  } else {
+  } else if (!decision()) {
+    // Attack is the button at the right while you can attack: End turn waits on the left
+    if (myMain() && canStartAttack() && goAction()?.act === 'attack-open') {
+      left.push(`<button class="btn small g-end${endArmed() ? ' armed' : ''}" data-act="go" data-go="end">${endArmed() ? 'End turn anyway' : 'End turn'}</button>`);
+    }
     const phoenix = phoenixReady(s, G.me);
     if (phoenix.length && myMain()) left.push(btn('small', 'phoenix', 'Return Phoenix (2)', `data-uid="${phoenix[0]}"`));
     if (s.players[G.me].out && s.phase !== 'over') right.push(btn('primary', 'leave', 'Leave'));
@@ -1511,12 +1807,12 @@ function actionsHTML() {
 }
 
 // ── moving the game on ──────────────────────────────────────────────
-// One button, always in the same place at the right of the strip: End turn,
-// Attack, Block (or No block) and Fight. It is gold when it is the thing to
-// do. End turn stays plain while you could still play a card or attack, and
-// then its first tap only asks ("End turn anyway"), so a stray tap never
-// throws a turn away. Choices (whom to attack with three players, a target)
-// are taps on the table.
+// One button, always in the same place at the bottom right: Attack (it opens
+// the attack screen) and End turn on the table; Attack, Block (or No block)
+// and Fight on a fight's own screen. It is gold when it is the thing to do.
+// End turn stays plain while you could still play a card or attack, and then
+// its first tap only asks ("End turn anyway"), so a stray tap never throws a
+// turn away.
 const END_ARM_MS = 4000;
 const endArmed = () => !!G.endArm && Date.now() - G.endArm < END_ARM_MS;
 
@@ -1526,19 +1822,30 @@ function goAction() {
   if (tutStep()?.next) return null; // the lesson's own Next comes first
   if (G.atk && myMain()) {
     const p = G.atk.target;
-    if (p == null) return null; // three players: tap whom to attack first
-    return { act: 'attack', p, label: s.players.length === 2 ? 'Attack' : `Attack ${shortName(s.players[p].name)}`, gold: true };
+    if (p == null) return null;
+    const label = s.players.length === 2 ? 'Attack' : `Attack ${shortName(s.players[p].name)}`;
+    return { act: 'attack', p, label, gold: G.atk.att.length > 0, off: !G.atk.att.length };
   }
-  if (iBlock()) return { act: 'block', label: G.blk?.pairs.length ? 'Block' : 'No block', gold: true };
+  if (iBlock()) {
+    if (G.blk?.pairs.length) return { act: 'block', label: 'Block', gold: true };
+    const t = fightPreview(s), lost = t ? s.players[G.me].life - t.players[G.me].life : 0;
+    return { act: 'block', label: t?.players[G.me].out ? 'No block (you’re out!)' : lost > 0 ? `No block (take ${lost})` : 'No block', gold: true };
+  }
   if (iTrick()) return { act: 'pass', label: 'Fight', gold: true };
+  if (myMain() && canStartAttack()) return { act: 'attack-open', label: 'Attack', gold: true };
   if (myMain()) return { act: 'end', label: endArmed() ? 'End turn anyway' : 'End turn', gold: !anythingToDo(), armed: endArmed() };
   return null;
 }
 
+// The button on the strip under the table (none while a fight's screen is up: it has its own).
 function goHTML() {
+  return decision() ? '' : goButton();
+}
+
+function goButton() {
   const go = goAction();
   if (!go) return '';
-  return `<button class="btn g-go${go.gold ? ' primary' : ''}${go.armed ? ' armed' : ''}" data-act="go" data-go="${go.act}"${go.p != null ? ` data-p="${go.p}"` : ''} data-key="go">${esc(go.label)}</button>`;
+  return `<button class="btn g-go${go.gold ? ' primary' : ''}${go.armed ? ' armed' : ''}" data-act="go" data-go="${go.act}"${go.p != null ? ` data-p="${go.p}"` : ''}${go.off ? ' disabled' : ''} data-key="go">${esc(go.label)}</button>`;
 }
 
 function goTap(el) {
@@ -1688,10 +1995,11 @@ function tableHTML() {
       ${others.map((P) => `<section class="g-side opp${s.active === P.i ? ' active' : ''}${P.out ? ' out' : ''}${s.combat && (s.combat.a === P.i || s.combat.d === P.i) ? ' in-fight' : ''}${folded(P) ? ' folded' : ''}${low(P)}" data-side="${P.i}"${order(P.i)}>${pbarHTML(s, P, hl, folded(P))}${row(P)}</section>`).join('')}
       <div class="g-mid"${order('mid')}>${bv ? battleHTML(s, bv, hl) : ''}<div class="g-say" data-key="say">${midHTML()}</div></div>
       <section class="g-side me${s.active === G.me ? ' active' : ''}${me.out ? ' out' : ''}${folded(me) ? ' folded' : ''}" data-side="${G.me}"${order(G.me)}>${row(me)}${pbarHTML(s, me, hl, folded(me))}</section>
-      ${st ? coachHTML(st) : ''}${recapHTML()}
+      ${st && !decision() ? coachHTML(st) : ''}${recapHTML()}
     </div>
     <div class="g-actions">${actionsHTML()}</div>
     <div class="tc-hand g-hand${myMove() ? '' : ' wait'}${me.out ? ' out' : ''}">${handHTML(s)}</div>
+    ${decideHTML(s)}
     <svg class="g-lines" aria-hidden="true"></svg>
     ${s.phase === 'over' ? overHTML() : ''}
     ${G.stale ? STALE_GAME : ''}
@@ -1808,6 +2116,7 @@ function draw(root) {
   if (root.className !== cls) root.className = cls; // an unchanged class costs nothing to restyle
   morphChildren(root, tableHTML());
   FX.layoutHand(root.querySelector('.tc-hand'));
+  fitDecision(root);
   // ring whatever the lesson (or a 💡 suggestion) is talking about
   const st = tutStep();
   const rings = st?.show || (G.suggest?.show && G.suggest.state === G.state ? G.suggest.show : null);
@@ -1918,7 +2227,8 @@ async function present(events, after, quick = false, a = null) {
   // the sides opened for this move fold again
   if (G.reveal) { G.reveal = null; G.revealTop = null; G.dirty = true; }
   if (G.skipping && (myMove() || S().phase === 'over')) G.skipping = false;
-  if (G.dirty) redraw();
+  // (a fight to decide now comes up on its own screen)
+  if (G.dirty || decision()) redraw();
 }
 
 const el = (root, uid) => root.querySelector(`.tcard[data-uid="${uid}"]:not(.in-hand), .relic[data-uid="${uid}"]`);
@@ -2303,10 +2613,12 @@ function viewerHTML() {
   // The cards and Play sit low, where the thumb is, and never move with the
   // amount of text: the details fill the space above them. No Close button:
   // swipe the cards up (or down) to put the hand away; the handle says so.
+  // (what you have to spend, next to what it costs)
+  const have = s.phase === 'mulligan' ? '' : `<div class="hv-have">You have ${ICON.bolt}<b>${s.players[G.me].energy}</b> Energy</div>`;
   return `<div class="hv" data-key="hv">
     <div class="hv-info"><div class="kw-help">${kwHelp(d)}</div>${note}</div>
     <div class="hv-track">${cards}</div>${dots}
-    <div class="hv-btns">${actions}</div>
+    ${have}<div class="hv-btns">${actions}</div>
     <div class="hv-grab" data-act="close" role="button" aria-label="Close"><i></i><span>Swipe up to close</span></div></div>`;
 }
 
@@ -2470,6 +2782,7 @@ function menuSheet() {
     <button class="btn" data-act="log">Game log</button>
     <button class="btn" data-act="speed">${fastOn() ? 'Animations: fast (tap for normal)' : 'Animations: normal (tap for fast)'}</button>
     <button class="btn" data-act="pace">${tapThrough() ? 'Others’ moves: wait for your tap (tap for automatic)' : 'Others’ moves: automatic (tap to wait for your tap)'}</button>
+    ${G.mode === 'online' && ['on', 'off'].includes(Push.status()) ? `<button class="btn" data-act="alerts">${Push.status() === 'on' ? '🔔 Turn alerts: on (tap to turn off)' : '🔔 Turn alerts: off (tap to turn on)'}</button>` : ''}
     <button class="btn" data-act="fixes">Fix something</button>
     <button class="btn" data-act="rules">All the rules (leaves the table)</button>
     <button class="btn danger" data-act="concede">${G.concedeArm && Date.now() - G.concedeArm < 4000 ? 'Tap again to concede' : 'Concede'}</button>
@@ -2485,11 +2798,11 @@ function helpSheet() {
       <div><b>Creatures</b>: theirs above, yours below. Left number = <b>Power</b> (damage it deals), right = <b>Vitality</b> (damage it can take). Small badges are keywords; tap any card to read it.</div>
       <div><b>Your hand</b>: the card in the middle pokes up with its rules showing. Slide the hand sideways to bring another card to the middle (flick it to go further). <b>Tap a card</b> to see your whole hand big, and swipe through it.</div>
       <div><b>Play a card</b>: drag it from your hand up onto the table, or tap it and tap Play. Glowing cards can be played now.</div>
-      <div><b>Attack</b> (once a turn): tap your glowing creatures and they step into the middle of the table, then tap <b>Attack</b> (with three players, first tap whose name to attack). Attackers are exhausted afterwards: they can’t block until your next turn.</div>
-      <div><b>Block</b>: when you are attacked, the attackers come to the middle. <b>Tap one of your creatures</b> and it steps in front of an attacker; tap it again to move it to the next attacker, or back home. ☠ marks what would be destroyed if no one plays a Trick, and the line in the middle says what you would lose. Then tap <b>Block</b>.</div>
+      <div><b>Attack</b> (once a turn): tap <b>Attack</b> (bottom right). Its screen shows your creatures that can attack and theirs that could block: tap the ones that attack (with three players, also tap whom), then tap <b>Attack</b> again. Attackers are exhausted afterwards: they can’t block until your next turn.</div>
+      <div><b>Block</b>: when you are attacked, a screen comes up with the attackers on top and your creatures below. <b>Tap one of yours</b> and it steps in front of an attacker (with several attackers, then tap the one it blocks); tap a blocker to send it back. ☠ marks what would be destroyed if no one plays a Trick, and the line under it says what you would lose. Then tap <b>Block</b>.</div>
       <div><b>Can’t block?</b> An exhausted creature (it attacked) can’t, and only creatures with Soar or Reach can block one with Soar. Tap it to see why.</div>
       <div><b>Team up</b>: several of your creatures can block the same attacker. They all hit it, and it splits its damage among them, destroying the costliest ones it can.</div>
-      <div><b>The fight</b>: <b>Tricks</b> and abilities can be used before it starts; tap <b>Fight</b> when you are done. It comes up big, a pair at a time, with what happened and why: tap to go on, Skip to close. The note under the table afterwards plays it again.</div>
+      <div><b>The fight</b>: before it starts, a screen shows the <b>Tricks</b> and abilities you could use (only when you have one): play one, or tap <b>Fight</b>. It comes up big, a pair at a time, with what happened and why: tap to go on, Skip to close. The note under the table afterwards plays it again.</div>
       <div><b>The others’ moves wait for you</b>: a card someone plays stays up big, and an attack between the other two stays on the table, until you <b>tap anywhere</b>. <b>Skip to your move</b> passes over the rest. In ☰ you can let them play by themselves instead.</div>
       <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
@@ -2634,41 +2947,10 @@ function onClick(e) {
   if (inHand) { openViewer(Number(card.dataset.uid)); return; }
   if (relic) { G.sheet = cardSheet(target.uid); redraw(); return; }
 
-  // an empty "block here" slot in the battle zone
-  const slot = t.closest('.gb-empty[data-att]');
-  if (iBlock() && slot) {
-    if (G.blk.sel != null) assignBlock(G.blk.sel, Number(slot.dataset.att));
-    else flash('Tap one of your glowing creatures: it steps in front of an attacker.');
-    return;
-  }
-
-  if (iBlock() && target?.uid != null) {
-    const c = s.cards[target.uid];
-    if (c.ctrl === G.me) {
-      if (!canBlockSomething(c.uid)) { flash(whyNoBlock(c.uid)); return; }
-      cycleBlock(c.uid);
-      return;
-    }
-    if (s.combat.att.includes(c.uid) && G.blk.sel != null) { assignBlock(G.blk.sel, c.uid); return; }
-    G.sheet = cardSheet(target.uid);
-    redraw();
-    return;
-  }
-
-  if (myMain() && G.atk && target) {
-    if (target.p != null && target.p !== G.me) { if (S().players.length === 2) sendAttack(target.p); else { G.atk.target = G.focus = target.p; redraw(); } return; }
-    const c = target.uid != null ? s.cards[target.uid] : null;
-    const hunter = hunterWithoutPrey();
-    if (c && c.ctrl !== G.me && hunter && preyFor(hunter, null).includes(c.uid)) {
-      G.atk.hunt.push([hunter, c.uid]);
-      G.atk.target = c.ctrl;
-      redraw();
-      return;
-    }
-    if (c && c.ctrl === G.me && canAttack(s, G.me, c)) { toggleAttacker(c.uid); return; }
-  }
+  // (attacking and blocking are worked on their own screen, over the table: decideHTML)
   if (card) {
     const c = s.cards[target.uid];
+    // a ready creature of yours: the attack screen opens with it picked
     if (c.ctrl === G.me && myMain() && !attackedThisTurn() && canAttack(s, G.me, c)) { toggleAttacker(c.uid); return; }
     G.sheet = cardSheet(c.uid);
     redraw();
@@ -2681,7 +2963,7 @@ function onClick(e) {
 
 function onAct(act, el) {
   const uid = Number(el.dataset.uid);
-  const busyOk = ['menu', 'help', 'close', 'log', 'leave', 'speed', 'pace', 'rules', 'coach-skip', 'crown-info', 'reload'].includes(act);
+  const busyOk = ['menu', 'help', 'close', 'log', 'leave', 'speed', 'pace', 'alerts', 'rules', 'coach-skip', 'crown-info', 'reload'].includes(act);
   if (G.busy && !busyOk) return;
   // While choosing a target, the small chips on cards and bars are part of what you tap.
   const choosing = G.flow || G.atk || (G.blk && G.blk.sel != null);
@@ -2734,8 +3016,27 @@ function onAct(act, el) {
     case 'attack-from-sheet': G.sheet = null; toggleAttacker(uid); break;
     case 'attack': sendAttack(Number(el.dataset.p)); break;
     case 'block': dispatch({ t: 'block', p: G.me, blocks: G.blk?.pairs || [] }); break;
-    case 'clear-blocks': G.blk.pairs = forcedBlocks(S()); G.blk.sel = null; G.suggest = null; redraw(); break;
+    case 'clear-blocks': G.blk.pairs = forcedBlocks(S()); G.blk.sel = null; G.blk.selA = null; G.suggest = null; redraw(); break;
     case 'pass': dispatch({ t: 'pass', p: G.me }); break;
+    // the fight screens (decideHTML)
+    case 'attack-open': openAttack(); break;
+    case 'dec-target': {
+      const p = Number(el.dataset.p);
+      G.atk.target = G.focus = p;
+      G.atk.hunt = G.atk.hunt.filter(([, y]) => S().cards[y]?.ctrl === p);
+      G.suggest = null;
+      redraw();
+      break;
+    }
+    case 'dec-att': toggleAttacker(Number(el.dataset.u)); break;
+    case 'dec-prey': preyTap(Number(el.dataset.u)); break;
+    case 'dec-look': G.sheet = cardSheet(Number(el.dataset.u)); redraw(); break;
+    case 'dec-why': flash(el.dataset.why || 'Not now.'); break;
+    case 'dec-blk': blockTap(Number(el.dataset.u)); break;
+    case 'dec-foe': attackerTap(Number(el.dataset.u)); break;
+    case 'dec-unblk': unblock(Number(el.dataset.u), Number(el.dataset.att)); break;
+    case 'dec-trick': openViewer(Number(el.dataset.u)); break;
+    case 'dec-ab': G.sheet = cardSheet(Number(el.dataset.u)); redraw(); break;
     case 'use':
       G.sheet = null;
       G.flow = { a: { t: 'use', p: G.me, uid }, steps: [{ kind: 'sac', options: S().players[G.me].board.map((u) => ({ uid: u })), prompt: 'Sacrifice which creature to draw a card?' }], i: 0, multi: [] };
@@ -2760,6 +3061,7 @@ function onAct(act, el) {
       redraw();
       break;
     }
+    case 'alerts': alertsTap(Push.status() !== 'on').catch((e) => flash(e.message)).finally(() => { if (G) { G.sheet = menuSheet(); redraw(); } }); break;
     case 'pace': {
       try { localStorage.setItem('collective.tapThrough', tapThrough() ? '0' : '1'); } catch { /* fine */ }
       G.sheet = menuSheet();

@@ -3,7 +3,7 @@
 //   node tools/test-engine.mjs 3000       more fuzz games
 
 import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack, useOptions } from '../js/engine.js';
-import { STARTERS } from '../js/cards.js';
+import { RULES, STARTERS } from '../js/cards.js';
 import { cardList } from '../js/decks.js';
 
 let pass = 0, fail = 0;
@@ -974,19 +974,29 @@ test('Sky Warden pins a creature down', () => {
 // ── Rules ───────────────────────────────────────────────────────────
 test('Opening, Spark and first draw', () => {
   const deck = cardList(STARTERS[0].counts);
-  let s = newGame({ seed: 42, players: [{ name: 'A', deck }, { name: 'B', deck }] });
+  const players = [{ name: 'A', deck }, { name: 'B', deck }];
+  let s = newGame({ seed: 42, players, startEnergy: RULES.startEnergy });
   const first = s.first, second = 1 - first;
   eq(s.players[second].hand.length, 6, 'second player has 5 + Spark');
   s = act(s, { t: 'mulligan', p: first, redraw: true });
   s = act(s, { t: 'mulligan', p: second, redraw: false });
   eq(s.phase, 'main', 'game started');
   eq(s.players[first].hand.length, 5, 'first player skipped the draw');
-  eq(s.players[first].energy, 1, '1 Energy on turn one');
+  eq(s.players[first].energy, RULES.startEnergy, `${RULES.startEnergy} Energy on turn one`);
   s = end(s);
   eq(s.players[second].hand.length, 7, 'second player drew');
+  eq(s.players[second].energy, RULES.startEnergy, 'the same on their first turn');
   const spark = s.players[second].hand.find((u) => s.cards[u].cid === 'spark');
   s = play(s, spark);
-  eq(s.players[second].energy, 2, 'Spark: +1 Energy');
+  eq(s.players[second].energy, RULES.startEnergy + 1, 'Spark: +1 Energy');
+  eq(s.players[second].maxEnergy, RULES.startEnergy, 'but not +1 maximum');
+  s = end(s);
+  eq(s.players[first].energy, RULES.startEnergy + 1, 'one more on turn two');
+  // a game saved before the change (no startEnergy in its setup) replays with the old 1
+  let old = newGame({ seed: 42, players });
+  old = act(old, { t: 'mulligan', p: first, redraw: true });
+  old = act(old, { t: 'mulligan', p: second, redraw: false });
+  eq(old.players[first].energy, 1, 'an old setup starts at 1');
 });
 
 test('Empty deck and full hand', () => {
@@ -1260,7 +1270,7 @@ function fuzz(games) {
   for (let g = 0; g < games; g++) {
     const n = g % 4 === 3 ? 3 : 2;
     const players = Array.from({ length: n }, (_, i) => ({ name: `P${i}`, deck: decks[(g + i * 2) % decks.length] }));
-    let s = newGame({ seed: seed++, players });
+    let s = newGame({ seed: seed++, players, startEnergy: g % 2 ? RULES.startEnergy : 1 });
     let rand = g * 2654435761 >>> 0;
     const R = () => (rand = (Math.imul(rand, 1103515245) + 12345) >>> 0) / 4294967296;
     try {

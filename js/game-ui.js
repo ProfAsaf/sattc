@@ -41,6 +41,9 @@ const ICON = {
   crown: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 7.5l4.6 4 4.4-7 4.4 7 4.6-4-1.9 11H4.9z"/><rect x="4.9" y="19.6" width="14.2" height="2.2" rx=".6"/></svg>',
   bolt: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.2 1.5 4.5 13.6h6.3L9 22.5l10.5-12.9h-6.4z"/></svg>',
 };
+// Energy is drawn in the bronze hexagon a card's cost sits in, so what you have
+// and what a card costs look alike (players took a ⚡ and the hexagon for two things).
+const enHex = (n) => `<span class="en-hex"><b>${n}</b></span>`;
 const COLORS = { ember: '#ff7a2e', verdant: '#b4e06a', tide: '#8fe0ee', umbral: '#b07cff', radiant: '#ffd77a' };
 const colorOf = (cid) => COLORS[BY_ID[cid]?.factions[0]] || '#ffd77a';
 
@@ -334,7 +337,7 @@ function pickBots(n, which, mine) {
 function startPractice(mine, bots) {
   const players = [{ name: 'You', deck: Decks.cardList(mine.counts) },
     ...bots.map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
-  const setup = { seed: (Math.random() * 2 ** 31) | 0, players };
+  const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy };
   begin({ mode: 'practice', setup, actions: [], me: 0, bots: bots.map((_, i) => i + 1) });
 }
 
@@ -431,7 +434,7 @@ export function demo(params) {
   const decks = [STARTERS[1], STARTERS[4], STARTERS[0]];
   const players = [{ name: 'You', deck: Decks.cardList(decks[0].counts) },
     ...decks.slice(1, 1 + nBots).map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
-  const setup = { seed, players };
+  const setup = { seed, players, startEnergy: RULES.startEnergy };
   let s = newGame(setup);
   const actions = [];
   for (let k = 0; s.phase !== 'over' && (k < moves || actor(s) !== 0 || s.phase !== 'main'); k++) {
@@ -503,7 +506,8 @@ function begin(rec) {
 // the shared move list. Nothing is applied locally until it is in the list.
 function beginOnline(info, seat) {
   const round = info.round;
-  const setup = { seed: info.seeds[round], players: info.players.map((p) => ({ name: p.name, deck: Decks.cardList(Decks.decode(p.deck) || {}) })) };
+  // (every phone in a game runs the same version, so they agree on the rules: see G.stale)
+  const setup = { seed: info.seeds[round], players: info.players.map((p) => ({ name: p.name, deck: Decks.cardList(Decks.decode(p.deck) || {}) })), startEnergy: RULES.startEnergy };
   clearTimeout(G?.timer);
   G?.unsubActions?.();
   endGate?.(false);
@@ -1313,11 +1317,12 @@ function pbarHTML(s, P, hl, folded = false) {
   const crown = s.crown === P.i ? `<button class="pb-crown" data-act="crown-info" aria-label="Holds the Crown">${ICON.crown}</button>` : '';
   // A glance shows Life, Energy and cards in hand; the rest is a tap away (playerSheet).
   // Your own Energy is a big number out of your most this turn (tiny pips were hard to
-  // count); the others' is one number.
+  // count); the others' is one number. Before the first turn: what the first turn brings.
   const mine = P.i === G.me;
+  const most = s.phase === 'mulligan' ? Math.min(RULES.maxEnergy, P.maxEnergy + 1) : P.maxEnergy;
   const energy = mine
-    ? `<div class="pb-energy" title="Energy">${ICON.bolt}<b>${P.energy}</b><span>/${P.maxEnergy}</span></div>`
-    : `<div class="pb-en" title="Energy">${ICON.bolt}${P.energy}</div>`;
+    ? `<div class="pb-energy" title="Energy">${enHex(s.phase === 'mulligan' ? most : P.energy)}<span>/${most}</span></div>`
+    : `<div class="pb-en" title="Energy">${enHex(P.energy)}</div>`;
   const meta = (mine ? '' : `<span title="cards in hand">${ICON.hand}${P.hand.length}</span>`)
     + (P.deck.length <= 5 && !P.out ? `<span class="pb-low" title="cards left in the deck">${ICON.deck}${P.deck.length} left</span>` : '')
     + (P.traps.length ? `<span class="trap-chip" title="${P.traps.length} face-down Trap${P.traps.length > 1 ? 's' : ''}">${ICON.trap}${P.traps.length}</span>` : '');
@@ -1616,7 +1621,7 @@ function tricksDec(s) {
   }).join('');
   const abs = abil.map((u) => {
     const ab = BY_ID[s.cards[u].cid].ability;
-    return `<button class="dec-ab" data-act="dec-ab" data-u="${u}" data-key="da-${u}">${ICON.bolt}<b>${esc(nameOf(u))}</b><span class="dec-ab-what">${esc(ab.short)}</span><i>${ab.cost}</i></button>`;
+    return `<button class="dec-ab" data-act="dec-ab" data-u="${u}" data-key="da-${u}">${ICON.bolt}<b>${esc(nameOf(u))}</b><span class="dec-ab-what">${esc(ab.short)}</span>${enHex(ab.cost)}</button>`;
   }).join('');
   const can = tricks.some((u) => !playable(u));
   return {
@@ -1625,7 +1630,7 @@ function tricksDec(s) {
     say: `Before the fight: ${can ? 'play a Trick' : 'use an ability'}, or tap <b>Fight</b>.`,
     why: `Tricks${abil.length ? ' and ⚡ abilities' : ''} can change a fight; ${on} can answer yours.${skullNote(s, t)}`,
     main: `${decFight(s, t)}
-      <div class="dec-label">You can play · you have ${ICON.bolt}${P.energy} Energy</div>
+      <div class="dec-label">You can play · you have ${enHex(P.energy)} Energy</div>
       ${tricks.length ? decCards('tricks', cards, tricks.length) : ''}
       ${abs ? `<div class="dec-abs">${abs}</div>` : ''}`,
     sum: `If no one plays a Trick: ${outcome(s, t)}.`,
@@ -2531,7 +2536,7 @@ function mulliganHTML() {
   return `<div class="g-full" data-key="mull">
     <div class="kicker muted small" style="letter-spacing:.2em">YOUR OPENING HAND</div>
     <h2>${s.first === G.me ? 'You go first' : `${esc(shortName(first.name))} goes first`}</h2>
-    <p class="muted small" style="margin:0">${s.first === G.me ? 'Going first, you skip your first draw.' : 'You start with a Spark: a free card that gives 1 extra Energy.'}</p>
+    <p class="muted small" style="margin:0">Everyone has ${RULES.startEnergy} Energy on their first turn. ${s.first === G.me ? 'Going first, you skip your first draw.' : 'You also get a Spark: a free card that gives 1 extra Energy.'}</p>
     <div class="hand-row">${me.hand.map((u) => `<div class="mull-card" data-mull="${u}">${cardHTML(BY_ID[s.cards[u].cid])}</div>`).join('')}</div>
     <p class="muted small" style="margin:0">Tap a card to read it.</p>
     <p class="muted small" style="margin:0">Keep these, or shuffle them back and draw ${RULES.openingHand} new cards (once).</p>
@@ -2614,7 +2619,7 @@ function viewerHTML() {
   // amount of text: the details fill the space above them. No Close button:
   // swipe the cards up (or down) to put the hand away; the handle says so.
   // (what you have to spend, next to what it costs)
-  const have = s.phase === 'mulligan' ? '' : `<div class="hv-have">You have ${ICON.bolt}<b>${s.players[G.me].energy}</b> Energy</div>`;
+  const have = s.phase === 'mulligan' ? '' : `<div class="hv-have">You have ${enHex(s.players[G.me].energy)} Energy</div>`;
   return `<div class="hv" data-key="hv">
     <div class="hv-info"><div class="kw-help">${kwHelp(d)}</div>${note}</div>
     <div class="hv-track">${cards}</div>${dots}
@@ -2754,13 +2759,21 @@ function discardSheet(pi) {
 `;
 }
 
+// A player's Energy in words: what they have now, and what their next turn brings.
+function energyLine(s, P, whose) {
+  const next = Math.min(RULES.maxEnergy, P.maxEnergy + 1);
+  if (s.phase === 'mulligan') return `${next} on ${whose} first turn`;
+  if (s.active === P.i) return `${P.energy} now, out of ${P.maxEnergy} this turn`;
+  return `${P.energy} now, ${next} at the start of ${whose} next turn`;
+}
+
 // Tap a player's bar: everything about them, in words.
 function playerSheet(pi) {
   const s = S(), P = s.players[pi], mine = pi === G.me;
   const who = mine ? 'You' : esc(shortName(P.name));
   const rows = [
     ['Life', P.out ? 'out of the game' : P.life],
-    ['Energy', `${P.energy} now, ${P.maxEnergy} at the start of ${mine ? 'your' : 'their'} turn`],
+    ['Energy', energyLine(s, P, mine ? 'your' : 'their')],
     ['Cards in hand', P.hand.length],
     ['Cards left in the deck', P.deck.length],
     ['Discard pile', `${P.discard.length} card${P.discard.length === 1 ? '' : 's'}`],
@@ -2793,7 +2806,8 @@ function menuSheet() {
 function helpSheet() {
   return `<h3>How the table works</h3>
     <div class="help-list">
-      <div><b>Top: your opponents.</b> Name, Life ❤, Energy ⚡ and cards in hand. <b>Tap anyone’s bar</b> for the rest: their deck, discard pile and Relics. ⊠ is a face-down Trap.</div>
+      <div><b>Energy</b> ${enHex(4)}<span class="muted">/5</span> on your bar: 4 left to spend, out of your most this turn. A card’s cost is in the same bronze hexagon. Everyone has ${RULES.startEnergy} on their first turn, then 1 more each turn, up to ${RULES.maxEnergy}.</div>
+      <div><b>Top: your opponents.</b> Name, Life ❤, Energy and cards in hand. <b>Tap anyone’s bar</b> for the rest: their deck, discard pile and Relics. ⊠ is a face-down Trap.</div>
       ${S().players.length > 2 ? '<div><b>Three players</b>: the table shows two sides at a time, as in a duel: whoever is in play. The third folds to its bar (“3 creatures ▾”): <b>tap it</b>, or swipe sideways across the top, to open it.</div>' : ''}
       <div><b>Creatures</b>: theirs above, yours below. Left number = <b>Power</b> (damage it deals), right = <b>Vitality</b> (damage it can take). Small badges are keywords; tap any card to read it.</div>
       <div><b>Your hand</b>: the card in the middle pokes up with its rules showing. Slide the hand sideways to bring another card to the middle (flick it to go further). <b>Tap a card</b> to see your whole hand big, and swipe through it.</div>
@@ -2804,7 +2818,7 @@ function helpSheet() {
       <div><b>Team up</b>: several of your creatures can block the same attacker. They all hit it, and it splits its damage among them, destroying the costliest ones it can.</div>
       <div><b>The fight</b>: before it starts, a screen shows the <b>Tricks</b> and abilities you could use (only when you have one): play one, or tap <b>Fight</b>. It comes up big, a pair at a time, with what happened and why: tap to go on, Skip to close. The note under the table afterwards plays it again.</div>
       <div><b>The others’ moves wait for you</b>: a card someone plays stays up big, and an attack between the other two stays on the table, until you <b>tap anywhere</b>. <b>Skip to your move</b> passes over the rest. In ☰ you can let them play by themselves instead.</div>
-      <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
+      <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card, which shows the Energy it takes (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
       <div><b>The button at the bottom right</b> moves the game on: End turn, Attack, Block, Fight. While you could still play a card or attack, End turn asks for a second tap.</div>
       <div><b>💡</b> (top right) asks the bot what it would do in your place: it spells out the move and rings the cards. Tap <b>Do it</b> to make that move, or do something else.</div>
@@ -3088,7 +3102,7 @@ function onAct(act, el) {
     case 'reload': location.reload(); break;
     case 'lobby': Net.backToLobby(G.code).catch((e) => flash(e.message)); break;
     case 'rematch': {
-      const setup = { ...G.setup, seed: (Math.random() * 2 ** 31) | 0 };
+      const setup = { ...G.setup, seed: (Math.random() * 2 ** 31) | 0, startEnergy: RULES.startEnergy };
       begin({ mode: G.mode, setup, actions: [], me: G.me, bots: [...G.bots] });
       break;
     }

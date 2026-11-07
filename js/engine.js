@@ -60,7 +60,10 @@ function mk(s, cid, owner, zone) {
 // The tutorial adds `stacked: true` (decks keep their order, top card first)
 // and `first` (who goes first), so every step of the lesson is predictable.
 // `crown` turns the Crown on or off (on by default with three or more players).
-export function newGame({ seed = 1, players, stacked = false, first = null, crown = null }) {
+// `startEnergy` is everyone's Energy on their first turn: new games pass
+// RULES.startEnergy. A setup without it starts at 1, the old rule, so games
+// saved before the change replay as they were played (the lesson too).
+export function newGame({ seed = 1, players, stacked = false, first = null, crown = null, startEnergy = 1 }) {
   const s = {
     v: 2, rng: seed | 0, mode: players.length > 2 ? 'ffa' : 'duel',
     turn: 0, active: 0, first: 0, phase: 'mulligan', winner: null, combat: null,
@@ -69,7 +72,7 @@ export function newGame({ seed = 1, players, stacked = false, first = null, crow
   };
   players.forEach((pl, i) => {
     const P = {
-      i, name: pl.name || `Player ${i + 1}`, life: RULES.startLife, maxEnergy: 0, energy: 0,
+      i, name: pl.name || `Player ${i + 1}`, life: RULES.startLife, maxEnergy: startEnergy - 1, energy: 0,
       deck: [], hand: [], discard: [], exile: [], board: [], traps: [], relics: [],
       out: false, mull: null, turns: 0, spells: 0, mirror: false, attackedOn: -1, extra: 0,
     };

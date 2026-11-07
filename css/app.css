@@ -567,3 +567,36 @@ details.fine li { font-size: 14px; }
 
 /* a phone on another version of the game: named in the lobby until it reloads */
 .pp-stale { margin: 10px 0 0; padding: 8px 12px; border-radius: 12px; font-size: 13.5px; line-height: 1.4; color: #ffd2b8; background: rgba(120, 50, 20, .28); border: 1px solid rgba(255, 140, 90, .45); }
+
+/* Energy: the bronze hexagon a card's cost sits in, holding a number (what you have,
+   or what something costs), so the two look alike. --h sets its height. */
+.en-hex {
+  --h: 1.5em;
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: calc(var(--h) * .9);
+  height: var(--h);
+  vertical-align: middle;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: linear-gradient(160deg, #ecd7a2, #8d7444);
+}
+.en-hex::before {
+  content: '';
+  position: absolute;
+  inset: max(1px, calc(var(--h) * .055));
+  z-index: -1;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: radial-gradient(circle at 38% 28%, #6c5a3e, #261d14 72%);
+}
+.en-hex b {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: calc(var(--h) * .59);
+  line-height: 1;
+  margin-top: -.08em;
+  color: #f7ead0;
+}

@@ -427,9 +427,10 @@
 }
 .tc-zz svg { width: 70%; height: 70%; display: block; }
 
-/* "Pay N Energy" ability: a ⚡ chip on the top edge; it glows gold when you can use it now */
+/* "Pay N Energy" ability: a ⚡ chip on the top edge with its Energy in the cost hexagon;
+   it glows gold when you can use it now */
 .tc-ab {
-  --abh: max(16px, calc(var(--w) * .25));
+  --abh: max(18px, calc(var(--w) * .27));
   position: absolute;
   z-index: 8;
   left: 50%;
@@ -437,7 +438,8 @@
   translate: -50% 0;
   height: var(--abh);
   min-width: calc(var(--abh) * 1.45);
-  padding: 0 calc(var(--abh) * .24) 0 calc(var(--abh) * .1);
+  padding: 0 calc(var(--abh) * .08) 0 calc(var(--abh) * .08);
+  gap: calc(var(--abh) * .04);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -448,7 +450,8 @@
   box-shadow: 0 0 0 1px rgba(214, 180, 106, .6), 0 2px 4px rgba(0, 0, 0, .6);
   cursor: pointer;
 }
-.tc-ab svg { width: calc(var(--abh) * .72); height: calc(var(--abh) * .72); flex: none; color: #f3c25a; }
+.tc-ab svg { width: calc(var(--abh) * .62); height: calc(var(--abh) * .62); flex: none; color: #f3c25a; }
+.tc-ab .en-hex { --h: calc(var(--abh) * .9); }
 .tc-ab::before { content: ''; position: absolute; inset: -9px -8px; } /* a finger-sized target */
 .tc-ab.on {
   color: #2a1704;

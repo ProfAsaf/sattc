@@ -379,9 +379,9 @@ function rules() {
 
     <h2>Your turn</h2>
     <ol>
-      <li><b>Ready.</b> Your exhausted creatures stand back up. Your maximum Energy goes up by 1 (up to ${RULES.maxEnergy}) and refills.</li>
+      <li><b>Ready.</b> Your exhausted creatures stand back up, and your Energy refills: <b>${RULES.startEnergy} on your first turn</b>, then 1 more each turn (up to ${RULES.maxEnergy}).</li>
       <li><b>Draw</b> a card.</li>
-      <li><b>Play cards</b>: pay a card's cost in Energy. Creatures and Relics stay on the table; Spells happen once.</li>
+      <li><b>Play cards</b>: pay a card's cost (the number in its bronze hexagon <span class="en-hex"><b>2</b></span>) in Energy. Your Energy shows in the same hexagon on your bar. Creatures and Relics stay on the table; Spells happen once.</li>
       <li><b>Attack</b>, once, with as many creatures as you like (see below). You can still play cards afterwards.</li>
       <li><b>End your turn.</b> Damage on creatures heals and "this turn" effects end.</li>
     </ol>
@@ -398,7 +398,7 @@ function rules() {
     </ul>
 
     <h2>⚡ Abilities</h2>
-    <p>Some creatures say <b>“Pay 2 Energy: …”</b>. Pay the Energy and it happens. Each ability works <b>once each turn</b>, whenever you could play a Trick: on your own turn, or during a fight you are in. On the table, tap the ⚡ chip on the creature; it glows gold when you can use it.</p>
+    <p>Some creatures say <b>“Pay 2 Energy: …”</b>. Pay the Energy and it happens. Each ability works <b>once each turn</b>, whenever you could play a Trick: on your own turn, or during a fight you are in. On the table, tap the ⚡ chip on the creature, which shows the Energy it takes; it glows gold when you can use it.</p>
 
     <h2>Kinds of cards</h2>
     <ul>

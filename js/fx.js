@@ -201,7 +201,7 @@ const KW = {
   leaving:    { name: 'Leaves at the end of the turn', c: '#d8cfbd', svg: HOURGLASS },
 };
 const SPENT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.6 12.4a7.6 7.6 0 1 1-2.3-6.1" fill="none" stroke="currentColor" stroke-width="2.9" stroke-linecap="round"/><path d="M20.9 2.9v7.1h-7.1z" fill="currentColor"/></svg>';
-// ⚡ on an ability chip
+// ⚡ on an ability chip (its Energy cost follows in the cost hexagon)
 const BOLT = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14.2 1.5 4.5 13.6h6.3L9 22.5l10.5-12.9h-6.4z"/></svg>';
 // "zZ": just arrived, not awake enough to attack
 const DOZE = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 10.4h8.4L2.8 20.6h8.4" stroke-width="2.7"/><path d="M14.2 3.4h6.4l-6.4 7.8h6.4" stroke-width="2.3"/></svg>';
@@ -260,7 +260,7 @@ function typeText(card) {
  *   w          width in px (sets --w; otherwise --w-board / --w-hand)
  *   legendary  override for card.legendary
  *   cls        extra classes
- *   ability    { cost, on, used } → a ⚡ chip for a "Pay N Energy" ability
+ *   ability    { cost, on, used } → a ⚡ chip for a "Pay N Energy" ability, N in a hexagon
  *              (on: usable now, glows; used: already used this turn).
  *              Tapping it fires data-act="ability" with data-ab = uid.
  */
@@ -309,7 +309,7 @@ export function tcardHTML(card, state = {}) {
     + '</div></div>'
     + (hand ? `<div class="tc-cost${costCls}"><span>${cost}</span></div>` : '')
     + (creature ? `<b class="tc-p${pCls}">${p}</b><b class="tc-v${vCls}">${v}</b>` : '')
-    + (s.ability && !hand ? `<i class="tc-ab${s.ability.on ? ' on' : ''}${s.ability.used ? ' used' : ''}" data-act="ability"${s.uid != null ? ` data-ab="${esc(s.uid)}"` : ''} role="button" aria-label="Ability: pay ${s.ability.cost} Energy">${BOLT}<b>${s.ability.cost}</b></i>` : '')
+    + (s.ability && !hand ? `<i class="tc-ab${s.ability.on ? ' on' : ''}${s.ability.used ? ' used' : ''}" data-act="ability"${s.uid != null ? ` data-ab="${esc(s.uid)}"` : ''} role="button" aria-label="Ability: pay ${s.ability.cost} Energy">${BOLT}<span class="en-hex"><b>${s.ability.cost}</b></span></i>` : '')
     + (badges ? `<div class="tc-kws">${badges}</div>` : '')
     + `<i class="tc-ex">${SPENT}<b>Spent</b></i>`
     + `<i class="tc-zz">${DOZE}</i>`

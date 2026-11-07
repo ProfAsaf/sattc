@@ -17,7 +17,7 @@
 // { p, k, cid }: seat p's pick in round k was card cid. Every phone replays
 // the same list and agrees on the table, like the game's move list.
 
-import { BY_ID, CARDS, FACTION_ORDER, KEYWORDS } from './cards.js';
+import { BY_ID, CARDS, FACTION_ORDER, KEYWORDS, RULES } from './cards.js';
 
 export const TABLE = 6; // cards laid out each round, at most
 export const KINDS = ['small', 'medium', 'big', 'spells', 'tricks', 'relics'];
@@ -313,7 +313,7 @@ function needFor(kind, pool, table) {
   switch (kind) {
     case 'small':
       if (!cr.some((c) => c.cost === 1) && cr.filter((c) => c.cost === 2).length >= 2 && onTable((c) => c.cost === 1)) {
-        return 'Your cheap creatures all cost 2: a 1-Energy one gives you something to do on your first turn.';
+        return `Your cheap creatures all cost 2: a 1-Energy one goes with a 2 to use all ${RULES.startEnergy} Energy of your first turn.`;
       }
       return soarGap;
     case 'medium': {

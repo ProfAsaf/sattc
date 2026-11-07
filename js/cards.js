@@ -11,6 +11,7 @@ export const RULES = {
   maxFactions: 3,
   startLife: 20,
   openingHand: 5,
+  startEnergy: 3, // everyone's Energy on their first turn (it was 1 until November 2026: the first turns were too quiet)
   maxEnergy: 8,
   boardMax: 7,
   relicMax: 3,

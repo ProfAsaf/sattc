@@ -388,6 +388,24 @@ says nothing about alerts until `js/push-config.js` points at it. No alert
 while your game is open in front of you. iPhones: iOS 16.4+, the game opened
 from its Home Screen icon.
 
+## Starting at 3 Energy (2026-11-07)
+
+"Players in the first few rounds just sit around doing nothing." With 1
+Energy on the first turn, a third of players did nothing on it in bot games,
+and the next turns were about one card each. Everyone now has 3 Energy on
+their first turn (`RULES.startEnergy`), then 1 more each turn, up to 8.
+Going first doesn't run away with it: in 1,000 bot games per setting the
+first player won 57% starting at 1 and 53% at 3, since new creatures still
+can't attack the turn they arrive, so everyone has put down blockers before
+the first real attack. A setup carries `startEnergy`; one without it starts
+at 1, so games saved before the change (and the lesson, which teaches one
+card at a time) replay as they were played.
+
+Energy is drawn in the same bronze hexagon as a card's cost (players read the
+⚡ and the hexagon as two different things): your bar, the others' bars, the
+hand view and the fight screens. An ability chip keeps its ⚡, with its cost in
+a hexagon.
+
 ## Fights, step by step (2026-11-04)
 
 Asaf found blocking "super hard to follow" and the swipe that confirmed a move
@@ -527,6 +545,7 @@ whatever the text above them says.
 - Up to **3 factions** per deck (with 2, a pair had only 32–34 legal cards).
 - **Countercurrent** is a Trap set on your own turn, so nothing is played on an opponent's turn.
 - The first player skips their first draw; everyone else starts with a **Spark** (0: gain 1 Energy this turn).
+- Everyone has **3 Energy** on their first turn (it was 1 until 2026-11-07), then 1 more each turn.
 - Empty deck: lose 2 Life per missing draw. Board max 7 creatures; hand max 10.
 - "The opposing player" became "each opponent" / "an opponent" so cards work in 3-player games.
 - Little Gardener triggers once per turn (two of them would otherwise loop forever).

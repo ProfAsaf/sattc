@@ -3,14 +3,14 @@
 
 import { newGame, apply, actor } from '../js/engine.js';
 import { chooseAction } from '../js/ai.js';
-import { STARTERS } from '../js/cards.js';
+import { RULES, STARTERS } from '../js/cards.js';
 import { cardList } from '../js/decks.js';
 
 const N = Number(process.argv[2] || 20);
 const decks = STARTERS.map((d) => ({ name: d.name, list: cardList(d.counts) }));
 
 function game(a, b, seed) {
-  let s = newGame({ seed, players: [{ name: a.name, deck: a.list }, { name: b.name, deck: b.list }] });
+  let s = newGame({ seed, players: [{ name: a.name, deck: a.list }, { name: b.name, deck: b.list }], startEnergy: RULES.startEnergy });
   // RAMP=1: experiment where whoever goes second stays one Energy ahead
   if (process.env.RAMP) for (const P of s.players) if (P.i !== s.first) P.maxEnergy = Number(process.env.RAMP);
   if (process.env.NOSPARK) for (const P of s.players) P.hand = P.hand.filter((u) => s.cards[u].cid !== 'spark');

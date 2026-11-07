@@ -63,7 +63,7 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
   display: inline-flex; align-items: center; flex: none;
   font-family: 'EB Garamond', Georgia, serif; font-weight: 700; font-size: 22px; line-height: 1; color: #ffe2a0;
 }
-.pb-energy svg { width: 15px; height: 15px; margin-right: 2px; color: #e9b44c; }
+.pb-energy .en-hex { --h: 30px; margin-right: 2px; }
 .pb-energy span { font-size: 15px; font-weight: 600; color: var(--muted); margin-left: 1px; }
 .pb-meta { display: flex; gap: 8px; font-size: 12px; color: var(--muted); flex: none; }
 .pb-meta span { display: inline-flex; align-items: center; gap: 3px; }
@@ -272,6 +272,8 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 
 .help-list { display: grid; gap: 10px; font-size: 14px; line-height: 1.5; }
 .help-list b { color: var(--gold); }
+.help-list .en-hex { --h: 22px; }
+.help-list .en-hex b { color: #f7ead0; }
 .panel.learn { border-color: rgba(214, 180, 106, .45); background: linear-gradient(180deg, rgba(214, 180, 106, .1), var(--bg-2)); }
 
 /* taps land on the card itself, never on the picture or a badge inside it */
@@ -490,7 +492,7 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 /* ── a calmer table ─────────────────────────────────────────────── */
 /* the others' Energy: one number */
 .pb-en { display: inline-flex; align-items: center; gap: 2px; flex: none; font-size: 16px; font-weight: 600; color: #f0d79c; }
-.pb-en svg { width: 13px; height: 13px; color: #e9b44c; }
+.pb-en .en-hex { --h: 22px; }
 /* a deck about to run out is the one deck count worth showing */
 .pb-meta .pb-low { color: #ffb08a; }
 /* tap a bar: that player's details */
@@ -603,7 +605,7 @@ body:has(#game .g-sheet) .g-beat { display: none; }
 /* what it means, quietly */
 .dec-why { flex: none; font-size: 13px; line-height: 1.35; color: var(--muted); text-align: center; }
 .dec-label { flex: none; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #d9c08a; text-align: center; display: flex; align-items: center; justify-content: center; gap: 3px; }
-.dec-label svg { width: 11px; height: 11px; }
+.dec-label .en-hex { --h: 18px; margin: 0 1px; letter-spacing: 0; }
 
 /* whom to attack (three players) */
 .dec-whom { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -675,7 +677,7 @@ body:has(#game .g-sheet) .g-beat { display: none; }
 .dec-ab svg { width: 13px; height: 13px; color: #ffd76a; flex: none; align-self: center; }
 .dec-ab b { color: #ffe2a0; white-space: nowrap; }
 .dec-ab-what { color: #f0dcc0; }
-.dec-ab i { font-style: normal; font-weight: 700; color: #2a1408; background: #e9b44c; border-radius: 999px; padding: 0 6px; font-size: 12px; }
+.dec-ab .en-hex { --h: 20px; align-self: center; }
 
 /* how it would turn out, in words */
 .dec-sum { flex: none; font-size: 14px; line-height: 1.35; color: #f0dcc0; text-align: center; padding: 6px 10px; border-radius: 12px; background: rgba(255, 240, 220, .05); }
@@ -705,5 +707,4 @@ body:has(#game .g-sheet) .g-beat { display: none; }
 
 /* the big hand: what you have to spend, next to what a card costs */
 .hv-have { flex: none; display: flex; justify-content: center; align-items: center; gap: 3px; margin-bottom: 6px; font-size: 14px; color: var(--muted); }
-.hv-have svg { width: 13px; height: 13px; color: #e9b44c; }
-.hv-have b { font-size: 16px; color: #ffe2a0; }
+.hv-have .en-hex { --h: 24px; margin: 0 2px; }

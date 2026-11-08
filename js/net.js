@@ -4,6 +4,7 @@
 // rooms/{code}/rounds/{n}/actions      the move list for game n (append-only)
 // rooms/{code}/results/{created}/{n}   how game n went (for tonight's scoreboard)
 // rooms/{code}/push, rooms/{code}/seen  turn alerts: the phones that want them, and who is looking
+// rooms/{code}/shared                  not a room: a saved game someone shared (shareGame)
 //
 // The engine is deterministic, so a game is just its seed, decks and move
 // list. Every phone replays the same list in key order. A phone that sleeps,
@@ -87,6 +88,20 @@ export async function createRoom({ seats, name, deck, draft = false, ultra = fal
     if (res.committed) { setLastRoom(code); return code; }
   }
   throw new Error('Could not find a free room code. Try again.');
+}
+
+// A game sent for someone else to look at: rooms/{code}/shared holds one saved
+// game's record (stats.js; the newest games include their setup and move list)
+// as JSON text, under a fresh code that no room uses. Returns the code.
+export async function shareGame(rec) {
+  await connect();
+  const shared = { at: Date.now(), v: version(), rec: JSON.stringify(rec) };
+  for (let tries = 0; tries < 6; tries++) {
+    const code = newCode();
+    const res = await fb.runTransaction(fb.ref(db, `rooms/${code}`), (cur) => (cur === null ? { shared } : undefined));
+    if (res.committed) return code;
+  }
+  throw new Error('Could not find a free code. Try again.');
 }
 
 // Join, or rejoin, a room. Returns my seat number.

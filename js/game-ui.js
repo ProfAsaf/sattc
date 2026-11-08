@@ -639,6 +639,7 @@ function noteGameOver() {
   Object.assign(rec, {
     id: G.mode === 'online' ? `o:${G.code}:${G.created || 0}:${G.round}` : `p:${G.setup.seed}`,
     at: Date.now(), mode: G.mode === 'online' ? 'online' : 'practice', takebacks: G.takebacks || 0,
+    play: { setup: G.setup, actions: G.actions }, // (only the newest games keep it: stats.js saveGame)
   });
   G.rec = rec;
   St.saveGame(rec);
@@ -3454,6 +3455,15 @@ function onAct(act, el) {
     case 'fix-energy': dispatch({ t: 'fix', by: G.me, op: 'energy', p: G.me, n: Number(el.dataset.n) }); G.sheet = fixSheet(); redraw(); break;
     case 'undo': G.sheet = null; if (G.mode === 'practice') undo(); break;
     case 'review': if (G.rec) { G.sheet = Ins.reviewHTML(G.rec); redraw(); } break;
+    case 'share-game':
+      if (G.rec) {
+        el.disabled = true;
+        el.textContent = 'Sending…';
+        const rec = G.rec;
+        Ins.shareGame(rec.id).then((code) => { rec.shared = code; }).catch((e) => flash(e.message))
+          .finally(() => { if (G?.rec === rec && G.sheet?.startsWith('<div class="rv">')) { G.sheet = Ins.reviewHTML(rec); redraw(); } });
+      }
+      break;
     case 'coach-next': tutAdvance(); break;
     case 'coach-skip': G.sheet = null; G.tut.done = true; flash('Lesson skipped. 💡 (top right) suggests a move, and ☰ has help.'); redraw(); schedule(); break;
     case 'help': G.sheet = helpSheet(); redraw(); break;

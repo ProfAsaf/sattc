@@ -248,6 +248,12 @@ How you're doing, the way chess.com's Insights and Game Review and 17lands
   once there are enough games; stuck in your hand; hurt you most); rivals,
   friends by name and bots by deck; drafting; records; recent games, each
   opening its review. All games, or only friends' or bots'.
+- **Share this game** (2026-11-08), at the end of every review: it sends the
+  saved game to `rooms/{code}/shared` under a fresh 4-letter code (as JSON
+  text: `Net.shareGame`) and shows the code, so someone else can look at it.
+  The newest 12 saved games also keep their setup and move list (`play`), so
+  theirs replays move by move; older ones share their summary and review.
+  Read one with `node .phone-tests/shared-game.mjs CODE`.
 
 ## Keeping the table calm
 

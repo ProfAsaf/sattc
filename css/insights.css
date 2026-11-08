@@ -56,6 +56,9 @@
 .rv-table tbody tr + tr { border-top: 1px solid var(--line); }
 .rv-cards { display: grid; gap: 6px; margin-top: 12px; font-size: 14px; }
 .rv-k { display: block; font-size: 12px; color: var(--muted); }
+.rv-share { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 14px; }
+.rv-share .muted { font-size: 12px; }
+.rv-share b { font-size: 17px; letter-spacing: .12em; }
 
 /* a draft, pick by pick */
 .dv-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 2px; }

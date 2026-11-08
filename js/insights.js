@@ -13,6 +13,7 @@ import { esc, factionCoin } from './render.js';
 import * as FX from './fx.js';
 import { ROUNDS } from './draft.js';
 import * as St from './stats.js';
+import * as Net from './net.js';
 
 const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 const shortName = (n) => String(n ?? '').replace(/^Bot · /, '');
@@ -212,7 +213,29 @@ export function reviewHTML(rec) {
       ${me.mvp ? `<div><span class="rv-k">Your best card</span>${card(me.mvp.cid)} · ${[me.mvp.dmg ? `${me.mvp.dmg} damage` : '', me.mvp.k ? plural(me.mvp.k, 'kill') : ''].filter(Boolean).join(', ')}</div>` : ''}
       ${nem ? `<div><span class="rv-k">Hurt you most</span>${card(nem[0])} · ${nem[1]} damage</div>` : ''}
     </div>
+    ${rec.id ? `<div class="rv-share">${rec.shared ? sharedLine(rec.shared)
+      : `<button class="btn small" data-act="share-game" data-id="${esc(rec.id)}">Share this game</button><span class="muted">Sends it online and gives you a 4-letter code to pass on.</span>`}</div>` : ''}
   </div>`;
+}
+const sharedLine = (code) => `<span>Shared. Its code: <b>${esc(code)}</b></span>`;
+
+/** Sends one of this phone's saved games online (Net.shareGame) and keeps its code; resolves with the code. */
+export async function shareGame(id) {
+  const rec = St.findGame(id);
+  if (!rec) throw new Error('That game is no longer on this phone.');
+  const code = await Net.shareGame(rec);
+  St.markShared(id, code);
+  return code;
+}
+function shareInSheet(btn) {
+  const box = btn.closest('.rv-share');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  shareGame(btn.dataset.id).then((code) => { box.innerHTML = sharedLine(code); }).catch((e) => {
+    btn.disabled = false;
+    btn.textContent = 'Share this game';
+    box.querySelector('.muted').textContent = e.message;
+  });
 }
 
 /** The end screen's few lines: how long, tonight's score (or your record against the bots), a small chart, the tip. */
@@ -263,6 +286,8 @@ export function openSheet(html) {
   sheet.className = 'ins-sheet';
   sheet.innerHTML = `<div class="ins-sheet-inner">${html}</div><div class="g-grab ins-grab" role="button" aria-label="Close"><i></i><span>Swipe up to close</span></div>`;
   sheet.addEventListener('click', (e) => {
+    const share = e.target.closest('[data-act="share-game"]');
+    if (share) { shareInSheet(share); return; }
     if (e.target.closest('.ins-grab') || !e.target.closest('.ins-sheet-inner')) closeSheet();
   });
   sheet.addEventListener('pointerdown', (e) => {
@@ -451,7 +476,7 @@ export function insightsPage(view) {
     const rc = e.target.closest('.chip[data-r]');
     if (rc) { F.rules = rc.dataset.r; render(); return; }
     const g = e.target.closest('[data-act="ins-game"]');
-    if (g) { const rec = games.find((x) => x.id === g.dataset.id); if (rec) openSheet(reviewHTML(rec)); return; }
+    if (g) { const rec = St.findGame(g.dataset.id); if (rec) openSheet(reviewHTML(rec)); return; } // (from storage: it may have been shared since)
     const d = e.target.closest('[data-act="ins-draft"]');
     if (d) { const rec = drafts.find((x) => x.id === d.dataset.id); if (rec) openSheet(draftReviewHTML(rec)); }
   };

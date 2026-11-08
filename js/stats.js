@@ -653,6 +653,7 @@ export function nightAwards(results) {
 const GAMES = 'collective.games.v1';
 const DRAFTS = 'collective.drafts.v1';
 const MAX_GAMES = 250, MAX_DRAFTS = 40;
+const KEEP_MOVES = 12; // the newest games also keep their setup and move list (`play`), so they can be shared and replayed
 const load = (k) => { try { const v = JSON.parse(localStorage.getItem(k)); return Array.isArray(v) ? v : []; } catch { return []; } };
 function keep(k, list, max) {
   // when storage is full, the oldest go first
@@ -666,6 +667,7 @@ export const loadDrafts = () => load(DRAFTS);
 export function saveGame(rec) {
   const all = loadGames().filter((g) => g.id !== rec.id);
   all.push(rec);
+  for (const g of all.slice(0, -KEEP_MOVES)) delete g.play;
   return keep(GAMES, all, MAX_GAMES);
 }
 export function saveDraft(rec) {
@@ -674,4 +676,12 @@ export function saveDraft(rec) {
   return keep(DRAFTS, all, MAX_DRAFTS);
 }
 export const findGame = (id) => loadGames().find((g) => g.id === id) || null;
+/** Notes the code a saved game was shared under (Net.shareGame), leaving it where it is in the list. */
+export function markShared(id, code) {
+  const all = loadGames();
+  const g = all.find((x) => x.id === id);
+  if (!g) return false;
+  g.shared = code;
+  return keep(GAMES, all, MAX_GAMES);
+}
 export const findDraft = (id) => loadDrafts().find((d) => d.id === id) || null;

@@ -157,8 +157,13 @@ Bot games:
 | Rounds, three players | about 8 | about 12 |
 | Creatures that ever grow | 15% | 42% |
 
-- Starter decks win 37–57% in duels and 25–44% with three players (33% is even).
-- Weakest: Endless Swarm in duels; Sky and Arrows and The Giant with three players.
+- Starter decks win 42–56% in duels and 31–35% with three players (33% is even), after the 2026-11-08 retune (README, "SATTC Ultra"). Before it, three-player games ran 22–46%.
+- Weakest now: Endless Swarm in duels (about 42%).
+
+Added 2026-11-08:
+- An Unstable creature shows how close it is to erupting (💥8/10), and pulses red the turn before.
+- Tapping a creature shows what's helping it ("Helping it": Shield Captain, archer cover, Field Medic, Rootmother, Bloodbinder, Gravewarden, a Bodyguard, the Field…).
+- The first Ultra game on a phone opens with "What's different" before the opening hand.
 
 Not done yet:
 - (Done since: draft night and "Draft my deck" deal from the Ultra pool, stats and Insights know Ultra games, and suggestions word the Ultra moves.)

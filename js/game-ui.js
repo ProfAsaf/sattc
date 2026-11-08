@@ -8,7 +8,7 @@
 // redrawn and everything glides into place.
 
 import { BY_ID, KEYWORDS, RULES, STARTERS, ULTRA_KEYWORDS, ULTRA_STARTERS, isTrick } from './cards.js';
-import { abilityNeeds, actor, apply, blockLimit, canAttack, canBlock, champLevel, costOf, stageNeeds, forcedBlocks, hasKw, living, needs, newGame, opponents, phoenixReady, playOptions, power, replay, useOptions, vitality } from './engine.js';
+import { abilityNeeds, actor, apply, blockLimit, canAttack, canBlock, champLevel, costOf, stageNeeds, forcedBlocks, hasKw, helpers, living, needs, newGame, opponents, phoenixReady, playOptions, power, replay, unstableClock, useOptions, vitality } from './engine.js';
 import { chooseAction } from './ai.js';
 import { artTag, cardBackHTML, cardHTML, esc, factionCoin, factionVars } from './render.js';
 import * as FX from './fx.js';
@@ -31,6 +31,9 @@ const store = {
 };
 const SPEED_KEY = 'collective.fast';
 const fastOn = () => { try { return localStorage.getItem(SPEED_KEY) === '1'; } catch { return false; } };
+// The first SATTC Ultra game on this phone starts with what's different (ultraIntroHTML).
+const ULTRA_INTRO = 'collective.ultraIntro';
+let ultraIntroSeen = (() => { try { return localStorage.getItem(ULTRA_INTRO) === '1'; } catch { return false; } })();
 const SPEEDS = { normal: 1, fast: 1.7 };
 FX.setSpeed(fastOn() ? SPEEDS.fast : SPEEDS.normal);
 
@@ -1479,10 +1482,12 @@ function creatureHTML(s, c, hl, inBattle = false) {
   const kws = FX.KEYWORD_BADGES.filter((k) => hasKw(s, c, k));
   // ⚡ chips only on your own creatures (theirs are a tap away, on the card)
   const ability = d.ability && mine ? { cost: d.ability.cost, on: !abilityBlocked(c.uid), used: c.usedOn === s.turn } : null;
+  const clock = unstableClock(s, c);
   return FX.tcardHTML(d, {
     uid: c.uid, states: st, power: power(s, c), vitality: vitality(s, c) - (c.dmg || 0), dmg: c.dmg,
     keywords: kws, leaving: !!(c.sacEnd || c.stolen), foe: !mine, ability, champ: d.champion ? champLevel(s, c.owner) : 0,
     shelter: !!(s.ultra && c.shelter), hex: c.hex || 0, poison: c.poison || 0,
+    unstable: clock ? { p: clock.p, at: clock.at, soon: clock.turns <= 1 } : null,
     ...(inBattle ? { cls: 'in-battle', rest: false } : {}),
   });
 }
@@ -2262,7 +2267,7 @@ function draw(root) {
   syncBlocks();
   if (s.phase === 'mulligan' && !me.mull) {
     root.className = 'g-mull';
-    morphChildren(root, mulliganHTML() + (G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div>${GRAB}</div>` : '') + (G.stale ? STALE_GAME : ''));
+    morphChildren(root, (s.ultra && !ultraIntroSeen ? ultraIntroHTML() : mulliganHTML()) + (G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div>${GRAB}</div>` : '') + (G.stale ? STALE_GAME : ''));
     return;
   }
   // three players with a side folded are laid out (and sized) as a duel
@@ -2706,6 +2711,25 @@ async function animateNew(root, events) {
   await FX.wait(turn.p === G.me ? 250 : 450);
 }
 
+// The first SATTC Ultra game on this phone: what's different, before the opening hand.
+function ultraIntroHTML() {
+  const s = S();
+  return `<div class="g-full ultra-intro" data-key="ultra-intro">
+    <div class="kicker muted small" style="letter-spacing:.2em">YOUR FIRST SATTC ULTRA GAME</div>
+    <h2>What’s different</h2>
+    <ul>
+      <li><b>❤ ${s.players[G.me].life} Life.</b> Games run longer, so what you build has time to pay off.</li>
+      <li><b>Wounds stay.</b> They heal by half at the start of their owner’s turn. Poison (☠, from Venom) doesn’t heal.</li>
+      <li><b>🛡 New creatures are Sheltered:</b> opponents’ Spells and abilities can’t aim at them until their owner’s next turn.</li>
+      <li><b>⚡ Energy</b> grows to 6 by itself. <b>Invest</b> cards raise it for good, up to 12.</li>
+      <li><b>Growth lasts.</b> Some creatures <b>Grow</b> every turn or <b>Multiply</b>; an <b>Unstable</b> one erupts at 10 Power (💥8/10 shows how close). When a creature that grew dies, half its growth goes to your weakest (<b>Legacy</b>).</li>
+      <li><b>One Field</b> (the banner in the middle) changes the rules for everyone. <b>Rituals</b> wait in your Relic row: pay one stage a turn. A <b>Hex</b> (⛓) holds a creature until its owner pays to break it.</li>
+      <li><b>Tap any creature</b> to see what’s helping it.</li>
+    </ul>
+    <button class="btn primary" data-act="ultra-intro-ok">Got it: on to my opening hand</button>
+  </div>`;
+}
+
 function mulliganHTML() {
   const s = S(), me = s.players[G.me];
   const first = s.players[s.first];
@@ -2854,7 +2878,11 @@ function cardSheet(uid, { from = 'hand' } = {}) {
   if (c.owner === G.me && s.phase !== 'mulligan' && (c.zone === 'hand' || (from === 'discard' && d.echo))) ({ actions, note } = playPanel(uid, from));
   if (onBoard) {
     const bits = [];
-    if (c.dmg) bits.push(s.ultra ? `${c.dmg} damage: wounds heal by half at the start of its owner’s turn${c.poison ? ` (${c.poison} of it is poison, which doesn’t)` : ''}` : `${c.dmg} damage this turn (heals at the end of the turn)`);
+    const field = s.field != null ? s.cards[s.field].cid : null;
+    const mends = field === 'scorched-earth' ? 'wounds don’t heal while Scorched Earth is the Field' : field === 'sanctuary-spring' ? 'wounds heal fully at the start of its owner’s turn' : 'wounds heal by half at the start of its owner’s turn';
+    if (c.dmg) bits.push(s.ultra ? `${c.dmg} damage: ${mends}${c.poison ? ` (${c.poison} of it is poison, which doesn’t heal)` : ''}` : `${c.dmg} damage this turn (heals at the end of the turn)`);
+    const clock = unstableClock(s, c);
+    if (clock) bits.push(`Unstable: ${clock.p} of ${clock.at} Power. It swells +${clock.swell}/+${clock.swell} each turn and erupts at ${clock.at}: 3 damage to every other creature and every player. ${clock.turns <= 1 ? 'That’s next turn!' : `About ${clock.turns} turns away.`}`);
     if (s.ultra && c.shelter) bits.push('Sheltered: opponents can’t aim Spells or abilities at it until its owner’s next turn');
     if (c.hex) bits.push(`Hexed: it can’t attack or block until ${c.ctrl === G.me ? 'you pay' : `${shortName(s.players[c.ctrl].name)} pays`} ${c.hex} Energy`);
     if (c.fuseKw?.length) bits.push(`Fused: ${c.fuseKw.map((k) => KEYWORDS[k]?.name).filter(Boolean).join(', ')}`);
@@ -2875,6 +2903,9 @@ function cardSheet(uid, { from = 'hand' } = {}) {
       }
     } else if (d.ability) bits.push(c.usedOn === s.turn ? 'Its ability was used this turn' : `Its ability: pay ${d.ability.cost} Energy for ${d.ability.short}`);
     if (bits.length) note = `<div class="sheet-note">${bits.map(esc).join('<br>')}</div>`;
+    // the party around it: what each card on its side (and the Field) does for it
+    const helps = helpers(s, c);
+    if (helps.length) note += `<div class="sheet-helps"><b>Helping it</b>${helps.map((h) => `<div>${esc(h)}</div>`).join('')}</div>`;
   }
   if (c.zone === 'field') note = '<div class="sheet-note">The Field: it changes the rules for everyone at the table, until someone plays another Field.</div>';
   if (c.zone === 'relic') {
@@ -3030,7 +3061,7 @@ function helpSheet() {
       <div><b>The fight</b>: before it starts, a screen shows the <b>Tricks</b> and abilities you could use (only when you have one): play one, or tap <b>Fight</b>. It comes up big, a pair at a time, with what happened and why: tap to go on, Skip to close. The note under the table afterwards plays it again.</div>
       <div><b>The others’ moves wait for you</b>: a card someone plays stays up big, and an attack between the other two stays on the table, until you <b>tap anywhere</b>. <b>Skip to your move</b> passes over the rest. In ☰ you can let them play by themselves instead.</div>
       <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card, which shows the Energy it takes (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
-      ${S().ultra ? '<div><b>SATTC Ultra</b>: 30 Life. <b>Wounds stay</b> on creatures and heal by half at the start of their owner’s turn. A new creature is <b>Sheltered</b> (🛡) from opponents’ Spells and abilities until its owner’s next turn. When a creature that grew dies, half its growth passes to your weakest creature (<b>Legacy</b>). Energy grows by itself to 6; <b>Invest</b> cards raise it for good, up to 12. One <b>Field</b> (the banner in the middle) changes the rules for everyone. A <b>Ritual</b> stays in your Relic row: tap it to pay its next stage, one a turn. A <b>Hex</b> (⛓) lasts until its owner pays to break it: tap the creature. Venom’s damage is poison (☠): it doesn’t heal.</div>' : ''}
+      ${S().ultra ? '<div><b>SATTC Ultra</b>: 30 Life. <b>Wounds stay</b> on creatures and heal by half at the start of their owner’s turn. A new creature is <b>Sheltered</b> (🛡) from opponents’ Spells and abilities until its owner’s next turn. When a creature that grew dies, half its growth passes to your weakest creature (<b>Legacy</b>). Energy grows by itself to 6; <b>Invest</b> cards raise it for good, up to 12. One <b>Field</b> (the banner in the middle) changes the rules for everyone. A <b>Ritual</b> stays in your Relic row: tap it to pay its next stage, one a turn. A <b>Hex</b> (⛓) lasts until its owner pays to break it: tap the creature. Venom’s damage is poison (☠): it doesn’t heal. An <b>Unstable</b> creature shows how close it is to erupting (💥8/10; it pulses red the turn before). Tap a creature to see what’s helping it: the cards on its side, and the Field.</div>' : ''}
       ${S().players.some((P) => P.champ) ? '<div><b>★ Champions</b> (new): every deck starts with a Champion on the table. It can block from the start, but can’t attack until Level 2. It levels up as you do what its faction does (tap it to see how far along it is), and each level changes how your other cards work. If it leaves the table it goes back to your hand, costing 2 more each time.</div>' : ''}
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
       <div><b>The button at the bottom right</b> moves the game on: End turn, Attack, Block, Fight. While you could still play a card or attack, End turn asks for a second tap.</div>
@@ -3341,6 +3372,11 @@ function onAct(act, el) {
       break;
     }
     case 'cancel': clearSelections(); G.sheet = null; redraw(); break;
+    case 'ultra-intro-ok':
+      ultraIntroSeen = true;
+      try { localStorage.setItem(ULTRA_INTRO, '1'); } catch { /* fine: seen for now */ }
+      redraw();
+      break;
     case 'keep': dispatch({ t: 'mulligan', p: G.me, redraw: false }); break;
     case 'redraw': dispatch({ t: 'mulligan', p: G.me, redraw: true }); break;
     case 'go': goTap(el); break;

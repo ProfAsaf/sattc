@@ -179,6 +179,18 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 .g-sheet .card { --cw: min(80vw, 330px); margin: 0 auto; }
 .g-sheet h3 { margin: 4px 0 10px; text-align: center; }
 .g-sheet .sheet-note { font-size: 14px; color: var(--muted); text-align: center; margin: 8px 0; line-height: 1.45; }
+/* a creature's sheet: what the cards around it are doing for it */
+.g-sheet .sheet-helps {
+  margin: 10px auto; max-width: 360px; padding: 8px 12px 9px; border-radius: 10px; text-align: left;
+  font-size: 13.5px; line-height: 1.4; color: #e9dfc8; background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .12);
+}
+.g-sheet .sheet-helps b { display: block; margin-bottom: 5px; font: 600 10px/1 system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.g-sheet .sheet-helps div + div { margin-top: 3px; }
+/* the first SATTC Ultra game on a phone: what's different, before the opening hand */
+.ultra-intro h2 { text-shadow: 0 0 22px rgba(160, 120, 255, .55); }
+.ultra-intro ul { margin: 0; padding: 0 0 0 20px; max-width: 390px; display: grid; gap: 9px; text-align: left; font-size: 14.5px; line-height: 1.42; color: #e9dfc8; }
+.ultra-intro li::marker { color: #a477ff; }
+.ultra-intro li b { color: #f3e8d0; }
 .g-sheet .btn-col { display: grid; gap: 8px; margin-top: 14px; }
 .g-sheet .why { font-size: 13px; color: var(--danger); text-align: center; margin-top: 8px; }
 .choice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }

@@ -180,6 +180,77 @@ export function hasKw(s, c, kw) {
   return false;
 }
 
+// ── what is helping a creature (its card sheet) ─────────────────────
+// A line for each thing doing something for it right now, by the same rules as
+// power, vitality and hasKw above and buff, heal, fight and the start of a turn
+// below: its own growth and this turn's boosts first, then the cards on its side
+// ("Shield Captain: +0/+2…"), then the Field. ("each turn": at the start of its
+// owner's turn.)
+const signed = (n) => `${n < 0 ? '−' : '+'}${Math.abs(n)}`;
+const weakestOf = (s, P) => P.board.map((u) => s.cards[u]).reduce((m, x) => (power(s, x) < power(s, m) ? x : m));
+export function helpers(s, c) {
+  if (!c || c.zone !== 'board') return [];
+  const P = s.players[c.ctrl], out = [];
+  const on = (cid, self = false) => P.board.filter((u) => (self || u !== c.uid) && s.cards[u].cid === cid).length;
+  const relics = (cid) => P.relics.filter((u) => s.cards[u].cid === cid).length;
+  const say = (cid, k, text) => { if (k > 0) out.push(`${BY_ID[cid].name}${k > 1 ? ` ×${k}` : ''}: ${text}`); };
+  if (c.pP || c.pV) out.push(`Grown for good: ${signed(c.pP || 0)}/${signed(c.pV || 0)}`);
+  if (c.tP || c.tV) out.push(`This turn: ${signed(c.tP || 0)}/${signed(c.tV || 0)}`);
+  if (c.cid === 'bloodrage-berserker' && c.dmg) out.push(`Its wounds: +${c.dmg}/+0`);
+  if (c.cid === 'street-recruit' && P.board.length > 1) out.push('Not alone: +1/+0');
+  const keepers = on('standard-keeper');
+  say('standard-keeper', keepers, `+${keepers}/+0`);
+  if (c.cid === 'spirit') {
+    const k = on('choirmother');
+    say('choirmother', k, `+${k}/+${k} and Soar`);
+    if (champOn(s, c.ctrl, 'champion-radiant', 2)) say('champion-radiant', 1, '+1/+1 and Soar');
+  }
+  if (relics('banner-of-the-charge')) say('banner-of-the-charge', 1, 'Rush');
+  // more for every boost that lasts
+  const brambles = on('grandmother-bramble');
+  say('grandmother-bramble', brambles, `+${brambles}/+${brambles} more whenever it grows for good`);
+  if (c.cid !== 'champion-verdant' && champOn(s, c.ctrl, 'champion-verdant', 3)) say('champion-verdant', 1, '+1/+1 more whenever it grows for good');
+  if (c.grown) { const k = relics('season-of-plenty'); say('season-of-plenty', k, `+${k}/+${k} each turn (it has grown)`); }
+  if (weakestOf(s, P) === c) {
+    say('heartwood-totem', relics('heartwood-totem'), '+1/+1 each turn while it’s the weakest');
+    if (champOn(s, c.ctrl, 'champion-verdant', 2)) say('champion-verdant', 1, '+1/+1 each turn while it’s the weakest');
+  }
+  if (s.ultra) {
+    if (hasKw(s, c, 'guard')) {
+      const k = on('shield-captain'), all = on('shield-captain', true);
+      if (all) out.push(`${BY_ID['shield-captain'].name}${all > 1 ? ` ×${all}` : ''}: ${k ? `+0/+${2 * k}, and ` : ''}+0/+${all} for good each time it blocks`);
+    }
+    const medics = on('field-medic', true);
+    say('field-medic', medics, `heals ${2 * medics} more each turn`);
+    const roots = on('rootmother', true);
+    say('rootmother', roots, `+${roots}/+${roots} for good whenever it heals`);
+    if (hasKw(s, c, 'soar')) { const k = on('thornback-archer', true); say('thornback-archer', k, `${2 * k} damage to whatever it fights, before anyone strikes`); }
+    if (hasKw(s, c, 'drain') && on('bloodbinder', true)) say('bloodbinder', 1, 'it heals itself for the damage it deals');
+    const wardens = on('gravewarden', true);
+    say('gravewarden', wardens, `heals ${2 * wardens} and +${wardens}/+0 for good whenever another creature of yours dies`);
+    if (!hasKw(s, c, 'bodyguard')) {
+      for (const u of P.board) if (u !== c.uid && hasKw(s, s.cards[u], 'bodyguard')) out.push(`${nameOf(s.cards[u])}: Bodyguard, so opponents can’t aim Spells or abilities at this one`);
+    }
+    if (fieldIs(s, 'overgrowth')) out.push(`${BY_ID.overgrowth.name} (the Field): +1/+1 more whenever it grows for good`);
+    if (fieldIs(s, 'sanctuary-spring')) out.push(`${BY_ID['sanctuary-spring'].name} (the Field): heals fully each turn (not poison)`);
+  }
+  return out;
+}
+
+// Ultra: how far an Unstable creature is from erupting. It swells at the start
+// of its owner's turn (+2/+2, more with what adds to every lasting boost, and
+// Season of Plenty after that) and erupts at ULTRA_RULES.unstableAt Power; at 10
+// already (a boost that doesn't last), it erupts with its next boost.
+export function unstableClock(s, c) {
+  if (!s.ultra || !c || c.zone !== 'board' || !hasKw(s, c, 'unstable')) return null;
+  const P = s.players[c.ctrl], at = ULTRA_RULES.unstableAt, p = power(s, c);
+  const more = (fieldIs(s, 'overgrowth') ? 1 : 0) + countOn(s, P.board, 'grandmother-bramble') - (c.cid === 'grandmother-bramble' ? 1 : 0)
+    + (c.cid !== 'champion-verdant' && champOn(s, c.ctrl, 'champion-verdant', 3) ? 1 : 0);
+  const seasons = P.relics.filter((u) => s.cards[u].cid === 'season-of-plenty').length;
+  const swell = 2 + more + seasons * (1 + more);
+  return { p, at, swell: 2 + more, turns: Math.max(1, Math.ceil((at - p) / swell)) };
+}
+
 const creaturesIn = (s, uids) => uids.filter((u) => def(s.cards[u]).type === 'creature').length;
 
 function price(s, pi, c, from = 'hand') {

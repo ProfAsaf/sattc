@@ -986,7 +986,7 @@
 .g-field span { font: 600 9.5px/1 system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; opacity: .75; }
 .g-field b { font: 600 13.5px/1.1 'EB Garamond', Georgia, serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tc-flags {
-  position: absolute; z-index: 8; left: calc(var(--w) * -.07); top: calc(var(--w) * .2); display: flex; flex-direction: column; gap: 2px;
+  position: absolute; z-index: 8; left: calc(var(--w) * -.07); top: calc(var(--w) * .42); display: flex; flex-direction: column; gap: 2px; /* (below the zZ of a newcomer) */
   font-style: normal; pointer-events: none;
 }
 .tc-flags b {
@@ -995,4 +995,9 @@
 }
 .tc-flags .fl-hex { color: #e2c7ff; }
 .tc-flags .fl-poison { color: #bff08e; }
+/* an Unstable creature's fuse: 💥8/10, pulsing red when it erupts next turn */
+.tc-flags .fl-unstable { color: #ffb27a; white-space: nowrap; }
+.tc-flags .fl-unstable.soon { color: #fff1e6; background: #b3261e; animation: fuse-pulse 1s ease-in-out infinite; }
+@keyframes fuse-pulse { 50% { box-shadow: 0 0 0 1px #ffb27a, 0 0 10px 2px rgba(255, 90, 40, .85); } }
+@media (prefers-reduced-motion: reduce) { .tc-flags .fl-unstable.soon { animation: none; } }
 .relic-n.rite { color: #1b1206; background: linear-gradient(180deg, #ffe9a8, #e8b24a); }

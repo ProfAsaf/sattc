@@ -433,8 +433,8 @@ two or three ways to build.
 `Decks.validate(counts, { ultra })` keeps Ultra cards out of standard games and
 `ULTRA_OUT` out of Ultra ones. An Ultra room won't start until every deck fits.
 
-**Bot games** (`ultra-sim.mjs`, `pace.mjs`, `lifespan.mjs` in the session
-scratchpad):
+**Bot games** (`ultra-sim.mjs`, `pace.mjs`, `lifespan.mjs` in `.phone-tests/`,
+which git ignores):
 
 | | standard | Ultra |
 |---|---|---|
@@ -444,8 +444,21 @@ scratchpad):
 
 - Every new mechanic turns up in a typical game. Per duel: 1.5 Invests, 1
   Ritual, 1.2 Fuses, about 5 Legacies and 2.5 Multiply copies.
-- Starter decks win 36–58% in duels and 20–44% with three players (33% is even).
-  Sky and Arrows is weakest with three players, and Endless Swarm in duels.
+- Starter decks win 42–56% in duels and 31–35% with three players (33% is even),
+  over 2,600 bot games after the 2026-11-08 retune. Before it, three-player games
+  ran 22–46%: Blood and Bone and Endless Swarm hit *each opponent* at once,
+  which counts double with three players, while Sky and Arrows and The Giant
+  could only hit one at a time. The retune:
+  - The Giant: a second Stoke the Furnace and Patient Giant, and Smoldering
+    Golem, for Reckless Initiate, Ash Collector and Kindle. It builds slowly,
+    so with three players both opponents attacked it before it was big.
+  - Sky and Arrows: a second Drowned Clock and Wavewarden, for one Tidecaller's
+    Library and one Sky Warden. It had won 61% of duels.
+  - Blood and Bone: a second Carrion Wyrm for The Pale Abbess.
+  - Endless Swarm: a second Choirmother and Standard Keeper, for one Dawnsinger
+    and The Pale Abbess.
+  - The variants were tried with `bal.mjs` in `.phone-tests/` (deck swaps from
+    a JSON file, both formats, without touching cards.js).
 
 **On the table.**
 
@@ -469,6 +482,26 @@ scratchpad):
 - Marks on creatures: 🛡 Sheltered, ⛓N a Hex (tap the creature to break it),
   ☠N poison.
 - Wounds show in the Vitality number.
+
+**Seeing it build (2026-11-08).**
+
+- **💥8/10** on an Unstable creature: its Power, out of the 10 that sets it off.
+  It pulses red the turn before it erupts, and its sheet says how many turns are
+  left (`unstableClock` in engine.js counts what makes each swell bigger:
+  Overgrowth, Grandmother Bramble, Season of Plenty).
+- **Helping it.** A creature's sheet lists what is doing something for it right
+  now (`helpers` in engine.js, by the same rules as `power` and `vitality`):
+  - its own growth and this turn's boosts;
+  - the cards on its side: "Shield Captain: +0/+2, and +0/+1 for good each time
+    it blocks", "Thornback Archer: 2 damage to whatever it fights, before anyone
+    strikes", Field Medic, Rootmother, Bloodbinder, Gravewarden, a Bodyguard
+    beside it;
+  - the Field.
+  Standard games list their boosts too (Standard Keeper, Choirmother, Banner of
+  the Charge…). The wounds line says what the Field does to healing.
+- **The first Ultra game** on a phone opens with "What's different" before the
+  opening hand (`collective.ultraIntro`). After that, ☰ → How the table works
+  has the same.
 
 ## Champions, a prototype (2026-11-07)
 

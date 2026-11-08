@@ -267,10 +267,12 @@ function typeText(card) {
  *   legendary  override for card.legendary
  *   cls        extra classes
  *   ability    { cost, on, used } → a ⚡ chip for a "Pay N Energy" ability, N in a hexagon
- *   champ      a Champion's level (1–3): a gold star with the number
- *   shelter / hex / poison   SATTC Ultra: Sheltered (🛡), a Hex and what breaks it (⛓4), poison that won't heal (☠2)
  *              (on: usable now, glows; used: already used this turn).
  *              Tapping it fires data-act="ability" with data-ab = uid.
+ *   champ      a Champion's level (1–3): a gold star with the number
+ *   shelter / hex / poison   SATTC Ultra: Sheltered (🛡), a Hex and what breaks it (⛓4), poison that won't heal (☠2)
+ *   unstable   SATTC Ultra: { p, at, soon } → how close an Unstable creature is to erupting (💥8/10; soon: it
+ *              erupts at its owner's next turn, and the mark pulses)
  */
 export function tcardHTML(card, state = {}) {
   if (!card) return '';
@@ -318,7 +320,7 @@ export function tcardHTML(card, state = {}) {
     + (hand ? `<div class="tc-cost${costCls}"><span>${cost}</span></div>` : '')
     + (creature ? `<b class="tc-p${pCls}">${p}</b><b class="tc-v${vCls}">${v}</b>` : '')
     + (s.champ && !hand ? `<i class="tc-lvl" aria-label="Champion, Level ${s.champ}">★${s.champ}</i>` : '')
-    + (!hand && (s.shelter || s.hex || s.poison) ? `<i class="tc-flags">${s.shelter ? '<b class="fl-shelter" aria-label="Sheltered">🛡</b>' : ''}${s.hex ? `<b class="fl-hex" aria-label="Hex: ${s.hex} Energy to break">⛓${s.hex}</b>` : ''}${s.poison ? `<b class="fl-poison" aria-label="${s.poison} poison">☠${s.poison}</b>` : ''}</i>` : '')
+    + (!hand && (s.shelter || s.hex || s.poison || s.unstable) ? `<i class="tc-flags">${s.shelter ? '<b class="fl-shelter" aria-label="Sheltered">🛡</b>' : ''}${s.hex ? `<b class="fl-hex" aria-label="Hex: ${s.hex} Energy to break">⛓${s.hex}</b>` : ''}${s.poison ? `<b class="fl-poison" aria-label="${s.poison} poison">☠${s.poison}</b>` : ''}${s.unstable ? `<b class="fl-unstable${s.unstable.soon ? ' soon' : ''}" aria-label="Unstable: ${s.unstable.p} of ${s.unstable.at} Power, erupts at ${s.unstable.at}">💥${s.unstable.p}/${s.unstable.at}</b>` : ''}</i>` : '')
     + (s.ability && !hand ? `<i class="tc-ab${s.ability.on ? ' on' : ''}${s.ability.used ? ' used' : ''}" data-act="ability"${s.uid != null ? ` data-ab="${esc(s.uid)}"` : ''} role="button" aria-label="Ability: pay ${s.ability.cost} Energy">${BOLT}<span class="en-hex"><b>${s.ability.cost}</b></span></i>` : '')
     + (badges ? `<div class="tc-kws">${badges}</div>` : '')
     + `<i class="tc-ex">${SPENT}<b>Spent</b></i>`

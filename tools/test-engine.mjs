@@ -2,7 +2,7 @@
 //   node tools/test-engine.mjs            all tests + 400 fuzz games
 //   node tools/test-engine.mjs 3000       more fuzz games
 
-import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack, canBlock, useOptions, champLevel, draw, needs } from '../js/engine.js';
+import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack, canBlock, useOptions, champLevel, draw, needs, helpers, unstableClock } from '../js/engine.js';
 import { BY_ID, RULES, STARTERS, ULTRA_STARTERS } from '../js/cards.js';
 import { canAdd, cardList, validate } from '../js/decks.js';
 
@@ -1806,6 +1806,57 @@ test('Ultra: the Invest cards, and Tidecaller’s Library', () => {
   const h0 = s.players[A].hand.length;
   s = endT(s);
   eq(s.players[A].hand.length, h0 + 2, 'Library: an extra card each turn');
+});
+
+test('Ultra: an Unstable creature’s countdown says how far it is from erupting', () => {
+  let s = uscene();
+  const heart = ub(s, 'kindling-heart', B, { pP: 4, pV: 4 });
+  let k = unstableClock(s, heart);
+  ok(k.p === 4 && k.at === 10 && k.swell === 2 && k.turns === 3, `4 of 10, +2 a turn: 3 turns (${JSON.stringify(k)})`);
+  s = play(s, addCard(s, 'overgrowth', A, 'hand').uid);
+  k = unstableClock(s, s.cards[heart.uid]);
+  ok(k.swell === 3 && k.turns === 2, `Overgrowth: +3 a turn, 2 turns (${JSON.stringify(k)})`);
+  s = endT(s);
+  eq(power(s, s.cards[heart.uid]), 7, 'and it does swell +3');
+  eq(unstableClock(s, s.cards[heart.uid]).turns, 1, 'then it erupts next turn');
+  s = endT(endT(s));
+  eq(power(s, s.cards[heart.uid]), 0, 'which it does');
+  eq(unstableClock(s, ub(s, 'shieldbearer', A)), null, 'no countdown on a creature that isn’t Unstable');
+  const t = scene();
+  eq(unstableClock(t, addCard(t, 'kindling-heart', A, 'board')), null, 'or outside Ultra');
+});
+
+test('Helping it: a tapped creature’s sheet names what is boosting it, and only that', () => {
+  let s = uscene();
+  ub(s, 'shield-captain', B);
+  ub(s, 'field-medic', B);
+  ub(s, 'wavewarden', B);
+  const w = ub(s, 'bastion-wall', B, { pP: 1, pV: 2 });
+  let h = helpers(s, w);
+  ok(h.includes('Grown for good: +1/+2'), `its own growth (${h.join(' | ')})`);
+  ok(h.includes('Shield Captain: +0/+2, and +0/+1 for good each time it blocks'), 'Shield Captain');
+  ok(h.includes('Field Medic: heals 2 more each turn'), 'Field Medic');
+  ok(h.some((x) => /^Wavewarden: Bodyguard/.test(x)), 'the Bodyguard next to it');
+  ok(!h.some((x) => /Thornback|Bloodbinder|Rootmother/.test(x)), 'nothing that isn’t there');
+  ub(s, 'shield-captain', B);
+  ok(helpers(s, w).includes('Shield Captain ×2: +0/+4, and +0/+2 for good each time it blocks'), 'two Captains: twice as much');
+  const archer = ub(s, 'thornback-archer', A), flier = ub(s, 'cloud-ray', A);
+  ok(helpers(s, flier).includes('Thornback Archer: 2 damage to whatever it fights, before anyone strikes'), 'a flier: the archer’s cover');
+  ok(!helpers(s, archer).some((x) => /Thornback/.test(x)), 'the archer itself (no Soar): no cover');
+  ub(s, 'bloodbinder', A);
+  const bat = ub(s, 'vesper-bat', A);
+  ok(helpers(s, bat).includes('Bloodbinder: it heals itself for the damage it deals'), 'a Drain creature: Bloodbinder');
+  s = play(s, addCard(s, 'sanctuary-spring', A, 'hand').uid);
+  ok(helpers(s, s.cards[bat.uid]).some((x) => /^Sanctuary Spring \(the Field\)/.test(x)), 'the Field');
+  // and in the standard game: the boosts it has always had
+  const t = scene();
+  addCard(t, 'standard-keeper', A, 'board');
+  addCard(t, 'standard-keeper', A, 'board');
+  const r = addCard(t, 'street-recruit', A, 'board');
+  h = helpers(t, r);
+  ok(h.includes('Standard Keeper ×2: +2/+0') && h.includes('Not alone: +1/+0'), `Standard Keepers, and company (${h.join(' | ')})`);
+  eq(power(t, r), BY_ID['street-recruit'].power + 3, '(which is what its Power says)');
+  ok(!h.some((x) => /Field Medic|Shield Captain/.test(x)), 'no Ultra lines outside Ultra');
 });
 
 // ── fuzz: random legal play ─────────────────────────────────────────

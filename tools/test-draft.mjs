@@ -308,11 +308,12 @@ test('advice', () => {
 // cards): its piles, a key of its own, whole bot drafts that make legal decks
 // with Ultra cards in them, and advice that names no card.
 test('Ultra: the pool and its piles', () => {
-  eq(ULTRA_DRAFT_POOL.length, 117, 'the Ultra draft deals from 117 cards');
+  const size = 90 - ULTRA_OUT.length + ULTRA.length; // (117 at first; 127 with the Traps and Shields of 2026-11-08)
+  eq(ULTRA_DRAFT_POOL.length, size, `the Ultra draft deals from ${size} cards`);
   ok(poolKey(true) !== poolKey(false), 'with a pool key of its own');
   const piles = makePiles(5, true);
   const all = Object.values(piles).flat();
-  eq(all.length, 117, 'every card is in a pile');
+  eq(all.length, size, 'every card is in a pile');
   ok(!all.some((id) => ULTRA_OUT.includes(id)), 'none of the cards Ultra leaves out');
   ok(ULTRA.every((c) => all.includes(c.id)), 'all the Ultra cards');
   ok(['scorched-earth', 'overgrowth', 'sanctuary-spring', 'tidecallers-library'].every((id) => piles.relics.includes(id)), 'the Fields and the Library go in the Relics pile');

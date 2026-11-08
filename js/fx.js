@@ -273,6 +273,7 @@ function typeText(card) {
  *   shelter / hex / poison   SATTC Ultra: Sheltered (🛡), a Hex and what breaks it (⛓4), poison that won't heal (☠2)
  *   unstable   SATTC Ultra: { p, at, soon } → how close an Unstable creature is to erupting (💥8/10; soon: it
  *              erupts at its owner's next turn, and the mark pulses)
+ *   shield     SATTC Ultra: its Shields (◈2, and a glassy ring): each stops the next hit
  */
 export function tcardHTML(card, state = {}) {
   if (!card) return '';
@@ -289,6 +290,7 @@ export function tcardHTML(card, state = {}) {
   const states = Array.isArray(s.states) ? s.states : String(s.states || '').split(/\s+/);
   for (const st of states) if (st && !cls.includes(st)) cls.push(st);
   if (s.cls) cls.push(s.cls);
+  if (s.shield && !hand) cls.push('shielded');
 
   const p = s.power ?? card.power, v = s.vitality ?? card.vitality;
   const pCls = p > card.power ? ' up' : p < card.power ? ' down' : '';
@@ -320,7 +322,7 @@ export function tcardHTML(card, state = {}) {
     + (hand ? `<div class="tc-cost${costCls}"><span>${cost}</span></div>` : '')
     + (creature ? `<b class="tc-p${pCls}">${p}</b><b class="tc-v${vCls}">${v}</b>` : '')
     + (s.champ && !hand ? `<i class="tc-lvl" aria-label="Champion, Level ${s.champ}">★${s.champ}</i>` : '')
-    + (!hand && (s.shelter || s.hex || s.poison || s.unstable) ? `<i class="tc-flags">${s.shelter ? '<b class="fl-shelter" aria-label="Sheltered">🛡</b>' : ''}${s.hex ? `<b class="fl-hex" aria-label="Hex: ${s.hex} Energy to break">⛓${s.hex}</b>` : ''}${s.poison ? `<b class="fl-poison" aria-label="${s.poison} poison">☠${s.poison}</b>` : ''}${s.unstable ? `<b class="fl-unstable${s.unstable.soon ? ' soon' : ''}" aria-label="Unstable: ${s.unstable.p} of ${s.unstable.at} Power, erupts at ${s.unstable.at}">💥${s.unstable.p}/${s.unstable.at}</b>` : ''}</i>` : '')
+    + (!hand && (s.shelter || s.hex || s.poison || s.unstable || s.shield) ? `<i class="tc-flags">${s.shield ? `<b class="fl-shield" aria-label="${s.shield} Shield${s.shield > 1 ? 's' : ''}">◈${s.shield}</b>` : ''}${s.shelter ? '<b class="fl-shelter" aria-label="Sheltered">🛡</b>' : ''}${s.hex ? `<b class="fl-hex" aria-label="Hex: ${s.hex} Energy to break">⛓${s.hex}</b>` : ''}${s.poison ? `<b class="fl-poison" aria-label="${s.poison} poison">☠${s.poison}</b>` : ''}${s.unstable ? `<b class="fl-unstable${s.unstable.soon ? ' soon' : ''}" aria-label="Unstable: ${s.unstable.p} of ${s.unstable.at} Power, erupts at ${s.unstable.at}">💥${s.unstable.p}/${s.unstable.at}</b>` : ''}</i>` : '')
     + (s.ability && !hand ? `<i class="tc-ab${s.ability.on ? ' on' : ''}${s.ability.used ? ' used' : ''}" data-act="ability"${s.uid != null ? ` data-ab="${esc(s.uid)}"` : ''} role="button" aria-label="Ability: pay ${s.ability.cost} Energy">${BOLT}<span class="en-hex"><b>${s.ability.cost}</b></span></i>` : '')
     + (badges ? `<div class="tc-kws">${badges}</div>` : '')
     + `<i class="tc-ex">${SPENT}<b>Spent</b></i>`

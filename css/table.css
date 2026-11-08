@@ -1001,3 +1001,18 @@
 @keyframes fuse-pulse { 50% { box-shadow: 0 0 0 1px #ffb27a, 0 0 10px 2px rgba(255, 90, 40, .85); } }
 @media (prefers-reduced-motion: reduce) { .tc-flags .fl-unstable.soon { animation: none; } }
 .relic-n.rite { color: #1b1206; background: linear-gradient(180deg, #ffe9a8, #e8b24a); }
+
+/* SATTC Ultra, second version (2026-11-08) */
+/* Shields: ◈ with how many, and a glassy ring around the card */
+.tc-flags .fl-shield { color: #a8e6ff; }
+.tcard.on-board.shielded .tc-body { box-shadow: 0 0 0 2px rgba(150, 220, 255, .75), 0 0 12px 2px rgba(120, 200, 255, .45); border-radius: calc(var(--w) * .07); }
+/* your Legend, waiting beside your deck: first in your hand row, in gold, with a "Legend" tab */
+.tcard.in-hand.legend-wait .tc-body { box-shadow: 0 0 0 2px #e8b24a, 0 0 14px rgba(255, 200, 90, .55); border-radius: calc(var(--w) * .07); }
+.tcard.in-hand.legend-wait::after {
+  content: 'Legend'; position: absolute; z-index: 9; left: 50%; top: -9px; translate: -50% 0; pointer-events: none;
+  font: 700 10px/1 system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; padding: 3px 6px; border-radius: 8px;
+  color: #2a1704; background: linear-gradient(180deg, #ffe9a8, #e8b24a); box-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+}
+.hv-card.legend-wait { filter: drop-shadow(0 0 12px rgba(255, 200, 90, .55)); }
+/* a creature card dragged over one of your creatures: it fuses in on release */
+.tcard.on-board.fuse-over .tc-body { box-shadow: 0 0 0 3px #ffb35c, 0 0 18px 4px rgba(255, 160, 70, .7); border-radius: calc(var(--w) * .07); }

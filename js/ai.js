@@ -5,8 +5,8 @@
 // Trick; after blockers are chosen it plays a Trick only if that wins more
 // than holding the card. Quick enough for a phone.
 
-import { apply, legalActions, opponents, power, vitality, actor, hasKw, canBlock, blockLimit, forcedBlocks, canAttack, playOptions, useOptions, splitDamage } from './engine.js';
-import { BY_ID, isTrick } from './cards.js';
+import { apply, legalActions, opponents, power, vitality, actor, hasKw, canBlock, blockLimit, forcedBlocks, canAttack, playOptions, useOptions, splitDamage, ultraV2 } from './engine.js';
+import { BY_ID, ULTRA_V2, isTrick } from './cards.js';
 
 const lifeValue = (l) => (l <= 0 ? -200 : Math.sqrt(l) * 7 + l * 0.5);
 const CROWN = 4.5; // a card at the end of every turn, for as long as you keep it
@@ -15,7 +15,7 @@ const KW_VALUE = { soar: 1.3, venom: 1.2, drain: 0.8, swift: 0.8, overrun: 0.6, 
   grows: 1.8, multiply: 2.4, unstable: 1.4, bodyguard: 0.8, fuse: 0.4 }; // (the last line: SATTC Ultra)
 const ENGINES = new Set(['standard-keeper', 'lightning-theorist', 'mirror-mage', 'forbidden-archivist', 'kindly-undertaker', 'little-gardener',
   'ash-collector', 'grandmother-bramble', 'choirmother', 'the-pale-abbess', 'hungry-ghoul', 'brook-hydra', 'patient-giant', 'dawnsinger', 'lantern-ferryman',
-  'rootmother', 'shield-captain', 'field-medic', 'gravewarden', 'bloodbinder', 'thornback-archer']);
+  'rootmother', 'shield-captain', 'field-medic', 'gravewarden', 'bloodbinder', 'thornback-archer', 'shieldwright']);
 const RELIC_VALUE = { 'the-kiln': 3, 'heartwood-totem': 4, 'the-drowned-clock': 6, 'bone-altar': 2, 'beacon-of-hope': 5, 'banner-of-the-charge': 3, 'the-bright-choir': 4, 'season-of-plenty': 4,
   'tidecallers-library': 5 };
 // SATTC Ultra: a permanent +1 Energy, a Ritual on its way, the Field you chose.
@@ -29,6 +29,8 @@ export function creatureValue(s, c) {
   const v = vitality(s, c) - (c.tV || 0);
   let val = 1.2 + Math.max(0, p) * 1.5 + Math.max(1, s.ultra ? v - (c.dmg || 0) * 0.7 : v); // (Ultra: wounds last)
   for (const k in KW_VALUE) if (d.keywords.includes(k) || ((k === 'soar' || c.fuseKw) && hasKw(s, c, k))) val += KW_VALUE[k] * (k === 'grows' ? d.grows || 1 : 1);
+  if (c.fuseGrows) val += KW_VALUE.grows * c.fuseGrows; // (Ultra: Grows fused in from the hand)
+  if (c.shield > 0) val += 1.2 * c.shield + 0.3 * Math.max(0, p - 2); // (Ultra: a Shield, worth more on a creature that hits hard)
   if (d.cantBlock) val -= 1;
   if (ENGINES.has(c.cid)) val += 1.5;
   if (d.champion) val += 2.5; // (its level-ups work on the whole deck)
@@ -98,8 +100,8 @@ function duel(s, a, b) {
   const la = vitality(s, a) - (a.dmg || 0), lb = vitality(s, b) - (b.dmg || 0);
   const aVen = hasKw(s, a, 'venom'), bVen = hasKw(s, b, 'venom');
   const aSw = hasKw(s, a, 'swift'), bSw = hasKw(s, b, 'swift');
-  const killsB = pa > 0 && (pa >= lb || aVen);
-  const killsA = pb > 0 && (pb >= la || bVen);
+  const killsB = pa > 0 && (pa >= lb || aVen) && !(b.shield > 0); // (a Shield stops the hit)
+  const killsA = pb > 0 && (pb >= la || bVen) && !(a.shield > 0);
   let aDies, bDies;
   if (aSw && !bSw) { bDies = killsB; aDies = !bDies && killsA; }
   else if (bSw && !aSw) { aDies = killsA; bDies = !aDies && killsB; }
@@ -115,19 +117,21 @@ function gang(s, a, bs) {
   const la = vitality(s, a) - (a.dmg || 0);
   const aSw = hasKw(s, a, 'swift');
   const kills = (n, ven) => n > 0 && (n >= la || ven);
+  const plus = ultraV2(s) && bs.length >= 2 ? ULTRA_V2.together : 0; // (Ultra: ganging up)
+  const shieldOff = a.shield > 0 ? Math.max(...bs.map((b) => power(s, b) + plus)) : 0; // (its Shield stops the biggest blow)
   // Swift blockers strike first; if that kills the attacker, it never swings.
   const early = bs.filter((b) => hasKw(s, b, 'swift') && !aSw);
-  let hit = early.reduce((n, b) => n + power(s, b), 0);
+  let hit = early.reduce((n, b) => n + power(s, b) + plus, 0);
   let ven = early.some((b) => hasKw(s, b, 'venom') && power(s, b) > 0);
-  if (kills(hit, ven)) return { aDies: true, dead: [], through: 0 };
+  if (kills(hit - shieldOff, ven && !shieldOff)) return { aDies: true, dead: [], through: 0 };
   const { parts, rest } = splitDamage(s, a, bs, power(s, a));
-  const dead = parts.filter(([b, n]) => n > 0 && (n >= vitality(s, b) - (b.dmg || 0) || hasKw(s, a, 'venom'))).map(([b]) => b);
+  const dead = parts.filter(([b, n]) => n > 0 && !(b.shield > 0) && (n >= vitality(s, b) - (b.dmg || 0) || hasKw(s, a, 'venom'))).map(([b]) => b);
   for (const b of bs) {
     if (early.includes(b) || (aSw && !hasKw(s, b, 'swift') && dead.includes(b))) continue;
-    hit += power(s, b);
+    hit += power(s, b) + plus;
     ven ||= hasKw(s, b, 'venom') && power(s, b) > 0;
   }
-  return { aDies: kills(hit, ven), dead, through: rest };
+  return { aDies: kills(hit - shieldOff, ven && !shieldOff), dead, through: rest };
 }
 
 // A defender's likely blocks: good blocks first, then two creatures on an
@@ -169,6 +173,13 @@ export function quickBlocks(s, me, { chump = 'auto', gangUp = true } = {}) {
         if (!o.aDies) continue;
         const score = creatureValue(s, a) - o.dead.reduce((n, b) => n + creatureValue(s, b), 0) + (power(s, a) - o.through) * 0.15;
         if (score > bestScore) { bestScore = score; best = [cands[i], cands[j]]; }
+      }
+      // three when two aren't enough (with ganging up in Ultra, each strikes harder)
+      if (!best && ultraV2(s)) for (let i = 0; i < cands.length; i++) for (let j = i + 1; j < cands.length; j++) for (let k = j + 1; k < cands.length; k++) {
+        const o = gang(s, a, [cands[i], cands[j], cands[k]]);
+        if (!o.aDies) continue;
+        const score = creatureValue(s, a) - o.dead.reduce((n, b) => n + creatureValue(s, b), 0) + (power(s, a) - o.through) * 0.15;
+        if (score > bestScore) { bestScore = score; best = [cands[i], cands[j], cands[k]]; }
       }
       if (best) { for (const b of best) take(b, a); left.splice(left.indexOf(a), 1); }
     }
@@ -239,9 +250,10 @@ export function attackCandidates(s, me) {
   return out;
 }
 
-// What can be done in a fight: Tricks from the hand, and creatures' abilities.
+// What can be done in a fight: Tricks from the hand, creatures' abilities, and
+// (Ultra, version 2) creature cards fused into one of yours in the fight.
 export const trickPlays = (s, me) => [
-  ...s.players[me].hand.filter((u) => isTrick(BY_ID[s.cards[u].cid])).flatMap((u) => playOptions(s, me, s.cards[u], 'hand', 24)),
+  ...s.players[me].hand.filter((u) => isTrick(BY_ID[s.cards[u].cid]) || (ultraV2(s) && BY_ID[s.cards[u].cid].type === 'creature')).flatMap((u) => playOptions(s, me, s.cards[u], 'hand', 24)),
   ...s.players[me].board.flatMap((u) => useOptions(s, me, s.cards[u], 12)),
 ];
 
@@ -257,6 +269,8 @@ export function chooseAction(s, me, { noise = 0.4, rand = Math.random } = {}) {
   }
   const base = lean(s);
   if (base.phase === 'combat') return base.combat.step === 'block' ? chooseBlock(base, me, jitter) : chooseTrick(base, me, jitter);
+  // Others' Traps are face down: the bot plans as if they weren't there, so they can catch it.
+  if (s.ultra) base.players = base.players.map((Q) => (Q.i === me || !Q.traps.length ? Q : { ...Q, traps: [] }));
 
   const now = evaluate(base, me);
   let best = null, bestV = -Infinity;

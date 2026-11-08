@@ -509,6 +509,100 @@ which git ignores):
   opening hand (`collective.ultraIntro`). After that, ☰ → How the table works
   has the same.
 
+## SATTC Ultra, second version (2026-11-08)
+
+After the first Ultra game the user reported five problems:
+- late in the game there were no cards left and nothing to do;
+- no Legendary characters;
+- few of the strategies we'd talked about;
+- one or two super-powered creatures just crush;
+- not tricky or clever enough.
+
+Bot games (`.phone-tests/ultra-feel.mjs`) agreed:
+- a real choice on 96% of turns in rounds 2–3, but about half from round 8;
+- 2+ Energy left over on 40–50% of late turns;
+- one Legendary in the five starters;
+- no Traps and 1–2 Tricks per starter.
+
+New Ultra games are set up with `ultra: ULTRA_V` (2: `s.uv`). A setup with
+`ultra: true` is version 1, so saved games replay unchanged (checked: the old
+decks' fuzz games come out move for move as before).
+- **Legends** (`LEGENDS` in cards.js; `legendFor` gives a deck its own):
+  - Each deck's Legend waits beside the deck (`P.legend`, zone `legend`) and
+    plays from there (`from: 'legend'`).
+  - It levels like a Champion (`P.champ`, `P.cxp`), from its strategy, even
+    before it is played: Halvard from Guard creatures at the start of your
+    turns, Aeris from flier hits on players, Vesh from wounds, Ymra from lasting
+    boosts, Lumen from tokens.
+  - If it dies it goes back beside the deck, 2 Energy dearer. Nothing can be
+    fused into a Legend (`ULTRA_V2.fuseLegend`).
+- **Symbiotes** (the user's design, chosen over "fuse any creature card from
+  the hand"):
+  - The four Fuse creatures are Symbiotes: Molten Core, Bark Graft, Wing Graft
+    and Venom Shard.
+  - From the turn after one arrives, its ability (`{ t: 'use', uid, prey,
+    target }`, 1 Energy) kills a creature it can kill in one hit
+    (`symbioteNeeds`: Vitality left no more than its Power, no Shield, on either
+    side). It then fuses into another creature of yours.
+  - It arrives without Shelter, so opponents get a turn to kill it. A swarm of
+    weak creatures is its food.
+  - Fusing any creature card from the hand (`fuseIn`, `fuseHosts`, "Fuse in" on
+    the table) is still in the code, switched off by `ULTRA_V2.fuseHand`.
+- **Dig**: `{ t: 'dig' }`, 3 Energy for a card, once a turn.
+- **Ganging up**: each of 2+ blockers on one attacker strikes 2 harder
+  (`ULTRA_V2.together`).
+- **Traps** (n 132–136): Pitfall, Mirror Shield, Fog Bank, Grave Snare and
+  Backdraft each stop a big attacker for a while (`leaveFight`, `C.fog`).
+- **Shields** (the user's glass-cannon idea):
+  - Each one stops one hit, and they stack (`c.shield`, `giveShield`).
+  - n 137–141: Sunglass Lancer (4/1), Prism Duelist (3/1 Soar with a Shield),
+    Aegis Acolyte, Ward of Dawn and Shieldwright.
+- **Starters**:
+  - each names its Legend, and has 2–3 Traps or Tricks;
+  - Sky and Arrows became fliers and glass cannons behind Shields.
+- **Bots**:
+  - they fuse (mid-fight too), dig and play their Legend;
+  - they don't see others' face-down Traps in Ultra;
+  - they gang up three-on-one;
+  - they count Shields in their fight math.
+- **Table**:
+  - the Legend sits first in the hand row, in gold, and the hand turns to it the
+    first time it can be played;
+  - a Symbiote's ⚡ asks what it kills, then what it joins;
+  - Dig on the strip;
+  - ◈ and a glassy ring for Shields;
+  - an opponent's waiting Legend is a ★ on their bar;
+  - "What's new" once per phone (`collective.ultraIntro2`);
+  - the help and the rules page explain it all.
+
+Tuning (`bal.mjs` takes `KNOBS` and `CARDS` patches; `skill.mjs` is new):
+- **Legends at first decided games.** Ymra dealt 20 damage a game, and The
+  Giant won 79% of its duels while The Wall won 19%. The fixes:
+  - no fusing into Legends;
+  - smaller Ymra and Aeris;
+  - Halvard levels from his own wall, not from being attacked.
+- **Vesh levelled too fast with three players** (two opponents wound you), so
+  she needs 8 and 18 wounds there (`xp.at3`, `xpAt`) and 5 and 12 in a duel.
+- **With Symbiotes (as published)**, against version 1 and against fusing any
+  card from the hand:
+  - late turns with a real choice: 85% (31–53%; 89–95%);
+  - Energy left late: 0.6 a turn (about 2; 0.5);
+  - the first to an 8-Power creature wins 67% (66–76%; 72–80%);
+  - the Life leader at round 6 wins 54% (58–67%; 69–75%): more comebacks;
+  - a Legend played in every game; 10 rounds a game.
+- **Skill** (`skill.mjs`: careful bot against one that makes a random move 20%
+  of the time):
+  - careful wins 76% (71% under version 1, 69% with fusing from the hand);
+  - the strongest deck (The Giant, 61% careful against careful) loses the most
+    when played shakily (−32 points), and Sky and Arrows the least (−15).
+- **Balance** is still open: duels 41–60% (The Giant strong, Endless Swarm
+  weak), three players 25–49% (Blood and Bone strong).
+- **Tests**:
+  - engine: 576 checks plus a version 2 fuzz;
+  - `.phone-tests/ui-ultra2.mjs` 26/26 (Legend, Symbiote, Dig, Shields, What's
+    new, help);
+  - the two-phone online Ultra game 16/16.
+
 ## Champions, a prototype (2026-11-07)
 
 "Starting everybody with one defender or something… what I like about Dominion

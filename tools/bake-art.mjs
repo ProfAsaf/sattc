@@ -24,7 +24,7 @@ const port = 9500 + Math.floor(Math.random() * 400);
 // A throwaway browser profile (tens of MB): removed again when the run ends.
 const profile = mkdtempSync(join(tmpdir(), 'bake-'));
 const proc = spawn(chrome, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`,
-  '--no-first-run', '--hide-scrollbars', `--window-size=${W},${H}`, 'about:blank'], { stdio: 'ignore' });
+  '--no-first-run', '--disable-extensions', '--hide-scrollbars', `--window-size=${W},${H}`, 'about:blank'], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function closeBrowser() {
   // on Windows the browser's helper processes hold the profile open: end the whole tree

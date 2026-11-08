@@ -56,17 +56,19 @@ export const KEYWORDS = {
   grows:      { name: 'Grows',       text: 'At the start of your turn, it gets +N/+N for good.' },
   multiply:   { name: 'Multiply',    text: 'At the start of your turn, it makes a token copy of itself, while you have room. The copies multiply too.' },
   unstable:   { name: 'Unstable',    text: 'It grows +2/+2 each turn. At 10 Power it erupts: 3 damage to every other creature and every player, you too. Then it shrinks back to its printed size.' },
-  fuse:       { name: 'Fuse',        text: 'Pay 1 Energy: this creature joins another of yours, which keeps its Power, Vitality and keywords for good.' },
+  fuse:       { name: 'Symbiote',    text: 'Pay 1 Energy, from the turn after it arrives: it kills a creature it can kill in one hit (Vitality left no more than its Power), then joins another creature of yours, which keeps its Power, Vitality and keywords for good. It arrives without Shelter, so opponents can aim at it at once.' },
   ritual:     { name: 'Ritual',      text: 'A Spell in stages. It stays in front of you; pay one stage a turn (not the turn you start it) to get its effect. One Ritual at a time.' },
   hex:        { name: 'Hex',         text: 'It lasts until the creature’s controller pays N Energy on their turn to break it.' },
   field:      { name: 'Field',       text: 'Changes the rules for everyone at the table. One Field at a time: a new one replaces it.' },
   bodyguard:  { name: 'Bodyguard',   text: 'Opponents’ Spells and abilities can’t target your other creatures; they have to target this one.' },
+  shield:     { name: 'Shield',      text: 'Stops the next damage this creature would take, then breaks. Shields stack: two stop two hits.' },
+  legend:     { name: 'Legend',      text: 'Waits beside your deck, not in it: play it from there whenever you can pay. It levels up as you play its way, even before it’s out. Nothing can be fused into it. If it dies, it goes back to wait, 2 Energy dearer.' },
 };
 // Ultra changes what Venom does: its wounds never heal, instead of killing outright.
 export const ULTRA_KEYWORDS = { venom: 'Damage it deals to a creature is poison: it never heals (until cured).' };
 
 // Words in rules text that get keyword styling and a tap-to-explain hint.
-export const KEYWORD_PATTERN = /\b(Rush|Soar|Reach|Guard|Swift|Venom|Drain|Overrun|Watchful|Hunt|Last Breath|Awaken|Echo|Bond|Trick|Trap|Relic|Sacrifice|sacrifice|Invest|Grows|Multiply|Unstable|Fuse|Ritual|Hex|Field|Bodyguard)\b/g;
+export const KEYWORD_PATTERN = /\b(Rush|Soar|Reach|Guard|Swift|Venom|Drain|Overrun|Watchful|Hunt|Last Breath|Awaken|Echo|Bond|Trick|Trap|Relic|Sacrifice|sacrifice|Invest|Grows|Multiply|Unstable|Fuse|Symbiote|Ritual|Hex|Field|Bodyguard|Shield(?! Captain)|Legend)\b/g;
 
 // Shared look for every painting; each card adds its own subject.
 export const ART_STYLE =
@@ -578,9 +580,20 @@ export const CARDS = [
 // time to pay off, creatures that protect, heal and strengthen each other, and
 // answers that slow a build down without wiping it out (ultra-plan.md).
 export const ULTRA_RULES = { startLife: 30, startLife3: 25, energyGrowsTo: 6, maxEnergy: 12, unstableAt: 10 }; // (startLife3: with three players)
+// Ultra's second version (2026-11-08): Legends, Symbiotes, Dig and
+// ganging up (engine.js). New games are set up with `ultra: ULTRA_V`; a setup
+// with `ultra: true` is version 1, so games saved before then replay unchanged.
+export const ULTRA_V = 2;
+// digCost: Energy for a card, once a turn. together: +Power for each of 2 or more
+// creatures blocking one attacker. fuseTax: a card fused from the hand costs
+// this much more for each card already fused into that creature. fuseFight:
+// fusing from the hand also works in a fight, like a Trick. fuseHand: any
+// creature card can be fused in from the hand; off since the user chose
+// Symbiotes instead (only Symbiotes fuse, and they kill to do it).
+export const ULTRA_V2 = { digCost: 3, together: 2, fuseTax: 0, fuseFight: true, fuseLegend: false, legends: true, fuseHand: false, dig: true }; // (fuseLegend: cards can be fused into a Legend; legends and dig: switches for bot tests)
 // Base cards that destroy or steal for good stay out of Ultra decks.
 export const ULTRA_OUT = ['death-is-a-door', 'the-culling', 'dawns-judgment', 'nerissa'];
-const FUSE = { cost: 1, short: 'fuse into another of your creatures' };
+const FUSE = { cost: 1, short: 'kill a weak creature, then fuse into one of yours' }; // (Symbiote; in Ultra's first version, just fuse)
 const U = (o) => C({ ultra: true, ...o });
 export const ULTRA = [
   // Ember
@@ -604,7 +617,7 @@ export const ULTRA = [
       art: 'A volley of small flaming arrows arcing across a dusky sky toward a distant line of figures.' }),
   U({ id: 'molten-core', n: 105, name: 'Molten Core', cost: 2, factions: ['ember'], type: 'creature', subtype: 'Elemental', power: 2, vitality: 1,
       keywords: ['swift', 'fuse'], ability: FUSE,
-      text: 'Swift\nFuse',
+      text: 'Swift\nSymbiote',
       flavor: 'It fits inside anything.',
       art: 'A glowing orb of molten rock floating between two cupped hands, about to be pressed into the chest of a stone giant.' }),
   U({ id: 'scorched-earth', n: 106, name: 'Scorched Earth', cost: 3, factions: ['ember'], type: 'field', subtype: 'Field',
@@ -639,7 +652,7 @@ export const ULTRA = [
       art: 'Huge tree roots spreading deep underground through glowing soil and stone, a small young tree standing in the light above.' }),
   U({ id: 'bark-graft', n: 112, name: 'Bark Graft', cost: 2, factions: ['verdant'], type: 'creature', subtype: 'Plant', power: 1, vitality: 3,
       keywords: ['reach', 'fuse'], ability: FUSE,
-      text: 'Reach\nFuse',
+      text: 'Reach\nSymbiote',
       flavor: 'Wear the forest.',
       art: 'A living plate of bark and moss crawling up a warrior’s arm and shoulder like armour, small leaves unfurling on it.' }),
   U({ id: 'overgrowth', n: 113, name: 'Overgrowth', cost: 4, factions: ['verdant'], type: 'field', subtype: 'Field',
@@ -671,7 +684,7 @@ export const ULTRA = [
       art: 'A merfolk guard with a great shell shield standing in front of smaller sea creatures, a spear of water shattering on the shield.' }),
   U({ id: 'wing-graft', n: 118, name: 'Wing Graft', cost: 2, factions: ['tide'], type: 'creature', subtype: 'Bird', power: 1, vitality: 1,
       keywords: ['soar', 'fuse'], ability: FUSE,
-      text: 'Soar\nFuse',
+      text: 'Soar\nSymbiote',
       flavor: 'Borrowed wings fly just as well.',
       art: 'A pair of shimmering wings made of sea spray and light unfolding from a figure’s shoulders over the ocean.' }),
   // Umbral
@@ -702,7 +715,7 @@ export const ULTRA = [
       art: 'Heavy iron shackles carved with violet runes clamped on the legs of a huge beast, chains running down into the ground.' }),
   U({ id: 'venom-shard', n: 124, name: 'Venom Shard', cost: 1, factions: ['umbral'], type: 'creature', subtype: 'Crystal', power: 1, vitality: 1,
       keywords: ['venom', 'fuse'], ability: FUSE,
-      text: 'Venom\nFuse',
+      text: 'Venom\nSymbiote',
       flavor: 'A sting looking for a body.',
       art: 'A sliver of black crystal dripping green poison, hovering over an open palm, faint fumes curling up from it.' }),
   // Radiant
@@ -740,6 +753,58 @@ export const ULTRA = [
       text: 'Field\nAt the start of their owner’s turn, creatures heal fully (but not poison).',
       flavor: 'Drink, and be whole.',
       art: 'A clear spring in a sunlit grotto, golden light dancing on the water, a wounded deer drinking from it.' }),
+  // Traps that stop a big attacker for a while, without destroying it (2026-11-08).
+  // Face down, they all look the same: an attacker has to guess what is waiting.
+  U({ id: 'pitfall', n: 132, name: 'Pitfall', cost: 2, factions: ['verdant'], type: 'spell', subtype: 'Trap',
+      keywords: ['trap'],
+      text: 'Trap\nWhen a creature with 5 or more Power attacks you, it falls in: it leaves the fight and doesn’t ready on its next turn.',
+      flavor: 'The bigger they are.',
+      art: 'A hidden pit under a carpet of leaves on a forest path, a huge horned beast tumbling into it, vines snapping shut over the edge.' }),
+  U({ id: 'mirror-shield', n: 133, name: 'Mirror Shield', cost: 2, factions: ['radiant'], type: 'spell', subtype: 'Trap',
+      keywords: ['trap'],
+      text: 'Trap\nWhen an opponent attacks you, their attacker with the most Power leaves the fight and takes damage equal to half its Power.',
+      flavor: 'Strike me, and strike yourself.',
+      art: 'A great polished golden shield standing alone on a battlefield, a charging monster reflected in it, a burst of light where they meet.' }),
+  U({ id: 'fog-bank', n: 134, name: 'Fog Bank', cost: 2, factions: ['tide'], type: 'spell', subtype: 'Trap',
+      keywords: ['trap'],
+      text: 'Trap\nWhen an opponent attacks you, creatures deal no damage to you this fight.',
+      flavor: 'They charged. The sea swallowed the rest.',
+      art: 'A thick silver fog rolling in from the sea over a rocky shore, the shapes of charging warriors fading into it.' }),
+  U({ id: 'grave-snare', n: 135, name: 'Grave Snare', cost: 3, factions: ['umbral'], type: 'spell', subtype: 'Trap',
+      keywords: ['trap'], hex: 3,
+      text: 'Trap\nWhen an opponent attacks you, their attacker with the most Power leaves the fight. Hex 3: it can’t attack or block.',
+      flavor: 'The ground remembers who walked on it.',
+      art: 'Skeletal hands bursting out of the earth of a misty graveyard to grip the legs of a charging knight’s horse, violet runes glowing.' }),
+  U({ id: 'backdraft', n: 136, name: 'Backdraft', cost: 2, factions: ['ember'], type: 'spell', subtype: 'Trap',
+      keywords: ['trap'],
+      text: 'Trap\nWhen an opponent attacks you, each attacking creature takes 2 damage.',
+      flavor: 'Open the door. See what happens.',
+      art: 'A wall of flame bursting back out of a stone doorway into a line of charging attackers, embers and smoke billowing.' }),
+  // Glass cannons, and Shields that stack (2026-11-08): a Shield stops the next
+  // damage a creature would take, and several overlap, so a fragile creature
+  // with big Power can live through more than one fight.
+  U({ id: 'sunglass-lancer', n: 137, name: 'Sunglass Lancer', cost: 2, factions: ['radiant'], type: 'creature', subtype: 'Human', power: 4, vitality: 1,
+      text: '',
+      flavor: 'One strike. Make it count.',
+      art: 'A lancer in thin mirrored armour charging with a lance of pure sunlight, the armour already cracking like glass where the light hits it.' }),
+  U({ id: 'prism-duelist', n: 138, name: 'Prism Duelist', cost: 3, factions: ['tide'], type: 'creature', subtype: 'Sylph', power: 3, vitality: 1,
+      keywords: ['soar', 'shield'],
+      text: 'Soar\nShield (it starts with one)',
+      flavor: 'Fragile as a soap bubble, and as hard to catch.',
+      art: 'A slender winged duelist inside a shimmering prism bubble over the sea, a rapier of light in hand, rainbows scattering off the bubble.' }),
+  U({ id: 'aegis-acolyte', n: 139, name: 'Aegis Acolyte', cost: 2, factions: ['radiant'], type: 'creature', subtype: 'Human', power: 1, vitality: 2,
+      text: 'When it enters, give another creature of yours a Shield.',
+      flavor: 'A blessing for the brave, and a bit of glass.',
+      art: 'A young acolyte raising both hands, a translucent golden shield of light forming over a kneeling knight in front of her.' }),
+  U({ id: 'ward-of-dawn', n: 140, name: 'Ward of Dawn', cost: 1, factions: ['radiant'], type: 'spell', ...TRICK,
+      keywords: ['trick'],
+      text: 'Trick\nGive a creature of yours a Shield.',
+      flavor: 'Just in time is still in time.',
+      art: 'A dome of dawn light snapping into place over a soldier as a huge claw comes down on it, sparks flying where they meet.' }),
+  U({ id: 'shieldwright', n: 141, name: 'Shieldwright', cost: 3, factions: ['radiant'], type: 'creature', subtype: 'Dwarf', power: 1, vitality: 3,
+      text: 'At the start of your turn, give a Shield to your creature with the most Power that has none.',
+      flavor: 'She hands the best one to whoever hits hardest.',
+      art: 'A stout smith at a glowing anvil hammering out a round shield of light, finished shields stacked behind her, warriors waiting at the forge door.' }),
 ];
 
 export const TOKENS = {
@@ -802,13 +867,73 @@ export const CHAMPIONS = Object.fromEntries([
 // A deck's Champion: the faction it has most cards of (two-faction cards count
 // for both; a tie goes to the one first in FACTION_ORDER).
 export function championFor(deckIds) {
-  const n = Object.fromEntries(FACTION_ORDER.map((f) => [f, 0]));
-  for (const id of deckIds) for (const f of BY_ID[id]?.factions || []) if (f in n) n[f] += 1;
+  const n = factionCounts(deckIds);
   const best = FACTION_ORDER.reduce((a, f) => (n[f] > n[a] ? f : a), FACTION_ORDER[0]);
   return `champion-${best}`;
 }
+function factionCounts(deckIds) {
+  const n = Object.fromEntries(FACTION_ORDER.map((f) => [f, 0]));
+  for (const id of deckIds) for (const f of BY_ID[id]?.factions || []) if (f in n) n[f] += 1;
+  return n;
+}
 
-export const BY_ID = Object.fromEntries([...CARDS, ...ULTRA, ...Object.values(TOKENS), ...Object.values(CHAMPIONS)].map((c) => [c.id, c]));
+// ── SATTC Ultra Legends (2026-11-08) ────────────────────────────────
+// Every deck in an Ultra game brings one (`legendFor`). A Legend isn't
+// shuffled in: it waits beside the deck from the start, and its player can
+// play it from there on any turn they can pay. Like a Champion it levels up as
+// its player does what its strategy does (`xp`), on the table or not, so one
+// played late arrives stronger; each level brings new stats (`levels`) and an
+// ability (engine.js). Nothing can be fused into it. If it leaves the table it
+// goes back beside the deck, 2 Energy dearer each time it has died. Not part
+// of any pool or deck count.
+const legend = (o) => ({
+  ...o, type: 'creature', champion: true, legend: true, legendary: true,
+  power: o.levels[0][0], vitality: o.levels[0][1], keywords: o.levels[0][2],
+  text: `Legend: waits beside your deck.\n`
+    + `Level 2 (${o.xp.at[0]} ${o.xp.short}${o.xp.at3 ? `; ${o.xp.at3[0]} with 3 players` : ''}): ${o.levels[1][0]}/${o.levels[1][1]}${kwWords(o.levels[1][2])}. ${o.l2}\n`
+    + `Level 3 (${o.xp.at[1]} ${o.xp.short}${o.xp.at3 ? `; ${o.xp.at3[1]} with 3 players` : ''}): ${o.levels[2][0]}/${o.levels[2][1]}${kwWords(o.levels[2][2])}. ${o.l3}`,
+});
+// (`xp.at3`: other thresholds with three or more players, where what it counts comes faster)
+export const LEGENDS = Object.fromEntries([
+  legend({ id: 'legend-halvard', name: 'Halvard, the Unbroken', cost: 3, factions: ['radiant', 'verdant'], subtype: 'Warden',
+    levels: [[1, 6, ['guard']], [2, 7, ['guard']], [3, 9, ['guard']]], xp: { what: 'guard', at: [4, 10], unit: 'Guard creatures of yours at the start of your turns', short: 'Guard-turns' },
+    l2: 'Your creatures with Guard can block three attackers.', l3: 'Your creatures with Guard have Power equal to their Vitality.',
+    flavor: 'Every blow he takes, he remembers.',
+    art: 'A towering armoured warden with a great shield planted in the ground before him, roots and vines climbing his armour, golden light behind him and a line of shields at his back.' }),
+  legend({ id: 'legend-aeris', name: 'Aeris, Queen of the Winds', cost: 4, factions: ['tide'], subtype: 'Sylph',
+    levels: [[1, 3, ['soar']], [2, 4, ['soar']], [3, 5, ['soar']]], xp: { what: 'skyhit', at: [3, 7], unit: 'hits on players by your creatures with Soar', short: 'flier hits' },
+    l2: 'Your other creatures with Soar get +1/+0.', l3: 'When your fliers hit a player in a fight, draw a card.',
+    flavor: 'The sky is hers; she lends it out.',
+    art: 'A winged queen riding a great updraft above sea cliffs, her cloak of wind full of circling gulls and kestrels, storm light on the waves below.' }),
+  legend({ id: 'legend-vesh', name: 'Vesh, the Red Widow', cost: 4, factions: ['umbral', 'ember'], subtype: 'Vampire',
+    levels: [[2, 4, []], [3, 5, ['drain']], [4, 6, ['drain']]], xp: { what: 'wound', at: [5, 12], at3: [8, 18], unit: 'times your creatures take damage', short: 'wounds' },
+    l2: 'Your creatures with damage on them have Drain.', l3: 'Your creatures get +1/+0 for each damage on them.',
+    flavor: 'She has never lost a fight she bled for.',
+    art: 'A pale widow in a red veil standing in a field of thorned roses at dusk, drops of crimson light rising from her hands, ravens on the gravestones behind her.' }),
+  legend({ id: 'legend-ymra', name: 'Ymra, Heart of the Mountain', cost: 5, factions: ['ember', 'verdant'], subtype: 'Giant',
+    levels: [[2, 5, []], [3, 6, ['overrun']], [5, 8, ['overrun']]], xp: { what: 'grow', at: [6, 14], unit: 'permanent boosts to your creatures', short: 'boosts' },
+    l2: 'When you fuse a card into a creature, it gets +1/+1 more.', l3: 'When a creature of yours erupts, your other creatures take no damage and it keeps half its growth.',
+    flavor: 'Forests on her shoulders, fire in her chest.',
+    art: 'A colossal stone giantess rising out of a volcanic mountainside, molten veins glowing in her body and forests growing on her shoulders, tiny villages at her feet.' }),
+  legend({ id: 'legend-lumen', name: 'Lumen, Mother of Moths', cost: 3, factions: ['radiant', 'umbral'], subtype: 'Insect',
+    levels: [[1, 4, ['soar']], [2, 5, ['soar']], [3, 6, ['soar']]], xp: { what: 'token', at: [3, 8], unit: 'tokens you create', short: 'tokens' },
+    l2: 'Your tokens get +1/+0.', l3: 'Whenever one of your tokens dies, each opponent loses 1 Life.',
+    flavor: 'Every light she lets go comes home.',
+    art: 'A great luminous moth with wings like stained-glass lanterns hovering over a dark meadow, hundreds of small glowing moths spiralling out from beneath her wings.' }),
+].map((c) => [c.id, c]));
+
+// A deck's Legend in an Ultra game: a starter's own, or else the one whose
+// factions the deck plays most (a one-faction Legend counts its faction twice).
+export function legendFor(deckIds) {
+  const key = (ids) => [...ids].sort().join(',');
+  const own = ULTRA_STARTERS.find((d) => key(Object.entries(d.counts).flatMap(([id, k]) => Array(k).fill(id))) === key(deckIds));
+  if (own) return own.legend;
+  const n = factionCounts(deckIds);
+  const score = (L) => L.factions.reduce((t, f) => t + n[f], 0) * (L.factions.length === 1 ? 2 : 1);
+  return Object.values(LEGENDS).reduce((a, L) => (score(L) > score(a) ? L : a)).id;
+}
+
+export const BY_ID = Object.fromEntries([...CARDS, ...ULTRA, ...Object.values(TOKENS), ...Object.values(CHAMPIONS), ...Object.values(LEGENDS)].map((c) => [c.id, c]));
 // Every card an Ultra deck can use: the base set without ULTRA_OUT, and the Ultra cards.
 export const ULTRA_POOL = [...CARDS.filter((c) => !ULTRA_OUT.includes(c.id)), ...ULTRA];
 
@@ -850,29 +975,29 @@ export const STARTERS = [
 // Ultra starter decks: each mixes two or three of the ways to build, so what
 // you draw early and what the others do decide which one you lean into.
 export const ULTRA_STARTERS = [
-  { id: 'ultra-the-wall', name: 'The Wall', factions: ['radiant', 'verdant'],
+  { id: 'ultra-the-wall', name: 'The Wall', factions: ['radiant', 'verdant'], legend: 'legend-halvard',
     pitch: 'Guards that strengthen each other, heal every turn and grow each time they hold. Then something huge behind them.',
     counts: deck(['shield-captain', 'bastion-wall', 'field-medic', 'rootmother', 'shieldbearer', 'sproutling', 'menders-hymn'],
       ['deep-roots', 'tithe-of-light', 'sanctuary-spring', 'heartwood-totem', 'patient-giant', 'dawnwatch-knight', 'worldtree-stag', 'bark-graft',
-        'little-gardener', 'season-of-plenty', 'stand-together', 'dawn-captain', 'mossback', 'seedling', 'wild-growth', 'thornback-archer']) },
-  { id: 'ultra-sky-and-arrows', name: 'Sky and Arrows', factions: ['tide', 'verdant', 'radiant'],
-    pitch: 'Fliers covered by archers, borrowed wings, and a library that keeps the cards coming.',
+        'little-gardener', 'season-of-plenty', 'ward-of-dawn', 'mossback', 'wild-growth', 'thornback-archer', 'mirror-shield', 'pitfall']) },
+  { id: 'ultra-sky-and-arrows', name: 'Sky and Arrows', factions: ['tide', 'verdant', 'radiant'], legend: 'legend-aeris',
+    pitch: 'Fliers and glass cannons behind Shields that stack, covered by archers, and a library that keeps the cards coming.',
     counts: deck(['thornback-archer', 'canopy-archer', 'wing-graft', 'windborne-sage', 'lantern-moth', 'the-drowned-clock', 'wavewarden'],
-      ['tidecallers-library', 'sky-warden', 'field-medic', 'flood-rite', 'tide-of-fortune', 'deep-roots', 'sproutling', 'patient-giant', 'sanctuary-spring',
-        'wild-growth', 'seraphine', 'dawn-captain', 'deepwater-leviathan', 'bark-graft', 'menders-hymn', 'dawnwatch-knight']) },
-  { id: 'ultra-blood-and-bone', name: 'Blood and Bone', factions: ['umbral', 'ember'],
+      ['tidecallers-library', 'field-medic', 'flood-rite', 'tide-of-fortune', 'prism-duelist', 'seraphine', 'deepwater-leviathan', 'menders-hymn',
+        'fog-bank', 'riptide', 'sunglass-lancer', 'aegis-acolyte', 'ward-of-dawn', 'shieldwright', 'sky-warden', 'dawnwatch-knight']) },
+  { id: 'ultra-blood-and-bone', name: 'Blood and Bone', factions: ['umbral', 'ember'], legend: 'legend-vesh',
     pitch: 'Get hurt on purpose: wounds make you hit harder, Drain heals you, and every death makes the rest stronger.',
-    counts: deck(['bloodrage-berserker', 'bloodbinder', 'gravewarden', 'vesper-bat', 'blood-pact', 'venom-shard', 'ember-volley', 'carrion-wyrm'],
-      ['kindling-heart', 'grave-rite', 'molten-core', 'scorched-earth', 'marsh-adder', 'grave-rat', 'hungry-ghoul',
-        'kindly-undertaker', 'lantern-ferryman', 'cinderling', 'scorch', 'stoke-the-furnace', 'unearth', 'feed-the-flame']) },
-  { id: 'ultra-the-giant', name: 'The Giant', factions: ['ember', 'verdant'],
+    counts: deck(['bloodrage-berserker', 'bloodbinder', 'gravewarden', 'blood-pact', 'venom-shard', 'ember-volley', 'carrion-wyrm'],
+      ['kindling-heart', 'grave-rite', 'molten-core', 'scorched-earth', 'marsh-adder', 'grave-rat', 'hungry-ghoul', 'vesper-bat', 'unearth',
+        'kindly-undertaker', 'lantern-ferryman', 'cinderling', 'scorch', 'stoke-the-furnace', 'grave-snare', 'backdraft']) },
+  { id: 'ultra-the-giant', name: 'The Giant', factions: ['ember', 'verdant'], legend: 'legend-ymra',
     pitch: 'Grow one creature into a monster: fuse pieces into it, feed it boosts, and keep an unstable heart ticking.',
     counts: deck(['molten-core', 'bark-graft', 'kindling-heart', 'sproutling', 'deep-roots', 'little-gardener', 'grove-druid', 'stoke-the-furnace', 'patient-giant'],
-      ['overgrowth', 'wild-growth', 'apex-predator', 'ironhide-charger', 'seedling', 'cinderling',
-        'ember-volley', 'sudden-growth', 'canopy-archer', 'scorch', 'mossback', 'smoldering-golem']) },
-  { id: 'ultra-endless-swarm', name: 'Endless Swarm', factions: ['radiant', 'umbral'],
+      ['overgrowth', 'wild-growth', 'apex-predator', 'ironhide-charger', 'cinderling',
+        'ember-volley', 'sudden-growth', 'canopy-archer', 'scorch', 'mossback', 'pitfall', 'backdraft']) },
+  { id: 'ultra-endless-swarm', name: 'Endless Swarm', factions: ['radiant', 'umbral'], legend: 'legend-lumen',
     pitch: 'Moths that multiply and Spirits that keep coming; every one that falls makes the rest stronger.',
     counts: deck(['lantern-moth', 'gravewarden', 'twin-souls', 'choirmother', 'lantern-ferryman', 'grave-rite', 'tithe-of-light', 'standard-keeper'],
       ['dawnsinger', 'field-medic', 'menders-hymn', 'sanctuary-spring', 'beacon-of-hope', 'the-bright-choir', 'lightweaver', 'street-recruit',
-        'kindly-undertaker', 'bone-altar', 'borrowed-time', 'shackles', 'blood-pact', 'a-thousand-lights']) },
+        'kindly-undertaker', 'aegis-acolyte', 'shackles', 'a-thousand-lights', 'ambush-at-dawn', 'grave-snare']) },
 ];

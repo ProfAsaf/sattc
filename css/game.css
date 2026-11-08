@@ -731,3 +731,6 @@ body:has(#game .g-sheet) .g-beat { display: none; }
 /* the big hand: what you have to spend, next to what a card costs */
 .hv-have { flex: none; display: flex; justify-content: center; align-items: center; gap: 3px; margin-bottom: 6px; font-size: 14px; color: var(--muted); }
 .hv-have .en-hex { --h: 24px; margin: 0 2px; }
+/* SATTC Ultra: an opponent's Legend still waiting beside their deck, and Dig on the strip */
+.pb-leg { color: #ffd77a; font-weight: 700; }
+.g-dig .en-hex { --h: 20px; margin-left: 4px; }

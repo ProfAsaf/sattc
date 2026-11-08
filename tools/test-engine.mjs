@@ -2,8 +2,8 @@
 //   node tools/test-engine.mjs            all tests + 400 fuzz games
 //   node tools/test-engine.mjs 3000       more fuzz games
 
-import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack, canBlock, useOptions, champLevel, draw, needs, helpers, unstableClock } from '../js/engine.js';
-import { BY_ID, RULES, STARTERS, ULTRA_STARTERS } from '../js/cards.js';
+import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack, canBlock, blockLimit, useOptions, champLevel, draw, needs, helpers, unstableClock } from '../js/engine.js';
+import { BY_ID, LEGENDS, RULES, STARTERS, ULTRA_STARTERS, ULTRA_V, legendFor } from '../js/cards.js';
 import { canAdd, cardList, validate } from '../js/decks.js';
 
 let pass = 0, fail = 0;
@@ -1859,6 +1859,298 @@ test('Helping it: a tapped creature’s sheet names what is boosting it, and onl
   ok(!h.some((x) => /Field Medic|Shield Captain/.test(x)), 'no Ultra lines outside Ultra');
 });
 
+// ── SATTC Ultra, version 2: Legends, Fuse from the hand, Dig, ganging up, Traps ──
+function u2scene(opts = {}) {
+  const s = uscene(opts);
+  s.uv = 2;
+  return s;
+}
+// (Level 2 or 3 by the Legend's own thresholds, so retuning them doesn't break these tests)
+const lvl = (s, p, L) => { s.players[p].cxp = L < 2 ? 0 : BY_ID[s.players[p].champ].xp.at[L - 2]; };
+const spark = (s, p = A) => play(s, addCard(s, 'spark', p, 'hand').uid); // (any move: deaths are settled after it)
+
+test('Ultra v2: every player has their deck’s Legend beside the deck; version 1 games don’t', () => {
+  const players = ULTRA_STARTERS.slice(0, 2).map((d) => ({ name: d.name, deck: cardList(d.counts) }));
+  const s = newGame({ seed: 9, players, startEnergy: 3, ultra: ULTRA_V });
+  eq(s.uv, 2, 'a new Ultra game is version 2');
+  for (const [i, P] of s.players.entries()) {
+    const c = s.cards[P.legend];
+    eq(c?.cid, ULTRA_STARTERS[i].legend, `${P.name} has its own Legend`);
+    eq(c.zone, 'legend', 'it waits beside the deck');
+    ok(!P.deck.includes(c.uid) && !P.hand.includes(c.uid), 'not in the deck or the hand');
+    eq(champLevel(s, i), 1, 'at Level 1');
+  }
+  const v1 = newGame({ seed: 9, players, startEnergy: 3, ultra: true });
+  ok(v1.uv === 1 && v1.players.every((P) => P.legend == null), 'a version 1 game (an old save) has no Legends');
+  eq(replay({ seed: 9, players, startEnergy: 3, ultra: ULTRA_V }, []).players[0].legend, s.players[0].legend, 'a replay sets them up the same');
+  for (const d of ULTRA_STARTERS) eq(legendFor(cardList(d.counts)), d.legend, `${d.name}’s deck gets its Legend`);
+  eq(legendFor(cardList(ULTRA_STARTERS[0].counts).slice(1)), 'legend-halvard', 'a deck that isn’t a starter gets the Legend of the factions it plays most');
+  ok(Object.values(LEGENDS).every((L) => L.xp.at[0] < L.xp.at[1]), 'every Legend levels twice');
+});
+
+test('Ultra v2: a Legend is played from beside the deck; dying sends it back 2 dearer, a bounce as it was', () => {
+  let s = u2scene({ energy: 10 });
+  const h = addCard(s, 'legend-halvard', A, 'legend'), hc = BY_ID['legend-halvard'].cost;
+  eq(costOf(s, A, h, 'legend'), hc, 'Halvard costs what his card says');
+  ok(legalActions(s, A).some((a) => a.t === 'play' && a.uid === h.uid && a.from === 'legend'), 'it can be played from beside the deck');
+  ok(err(s, { t: 'play', p: A, uid: h.uid }), 'but not as if it were in the hand');
+  s = play(s, h.uid, { from: 'legend' });
+  eq(zoneOf(s, h.uid), 'board', 'on the table');
+  eq(s.players[A].energy, 10 - hc, 'paid for');
+  ok(hasKw(s, s.cards[h.uid], 'guard') && vitality(s, s.cards[h.uid]) === 6, 'Level 1: 1/6 Guard');
+  s.cards[h.uid].dmg = 6;
+  s = spark(s);
+  eq(zoneOf(s, h.uid), 'legend', 'dying sends it back beside the deck');
+  ok(!s.players[A].discard.includes(h.uid) && !s.players[A].hand.includes(h.uid), 'not to the discard pile or the hand');
+  eq(costOf(s, A, s.cards[h.uid], 'legend'), hc + 2, 'and it costs 2 more');
+  s = play(s, h.uid, { from: 'legend' });
+  Object.assign(s.cards[h.uid], { played: 0, pP: 2, pV: 2 });
+  delete s.cards[h.uid].shelter;
+  addCard(s, 'riptide', B, 'traps');
+  s = attack(s, h.uid);
+  eq(zoneOf(s, h.uid), 'legend', 'Riptide sends it back beside the deck too');
+  eq(costOf(s, A, s.cards[h.uid], 'legend'), hc + 2, 'no dearer: it didn’t die');
+  s = end(s); s = end(s);
+  s.players[A].energy = 10;
+  s = play(s, h.uid, { from: 'legend' });
+  eq(power(s, s.cards[h.uid]), 3, 'and back on the table it keeps its growth, like any bounce in Ultra');
+});
+
+test('Ultra v2: a Legend levels as its player does its thing, even before it is played', () => {
+  let s = u2scene();
+  addCard(s, 'legend-vesh', A, 'legend');
+  const r = ub(s, 'grave-rat', A);
+  s.active = B;
+  const sc = addCard(s, 'scorch', B, 'hand');
+  s = play(s, sc.uid, { target: { uid: r.uid } });
+  eq(s.players[A].cxp, 1, 'Vesh: a creature of A’s took damage (a wound)');
+  s = u2scene();
+  addCard(s, 'legend-halvard', A, 'legend');
+  ub(s, 'bastion-wall', A); ub(s, 'shield-captain', A); ub(s, 'mossback', A);
+  deckOf(s, A, 3); deckOf(s, B, 3);
+  s = endT(s); s = endT(s);
+  eq(s.players[A].cxp, 2, 'Halvard: A started a turn with two Guard creatures');
+  s = u2scene();
+  addCard(s, 'legend-aeris', A, 'legend');
+  const f = ub(s, 'wing-graft', A);
+  s = fight(attack(s, f.uid));
+  eq(s.players[A].cxp, 1, 'Aeris: a flier hit a player');
+  s = u2scene();
+  addCard(s, 'legend-lumen', A, 'legend');
+  ub(s, 'choirmother', A);
+  s = act(s, { t: 'use', p: A, uid: s.players[A].board[0] });
+  eq(s.players[A].cxp, 1, 'Lumen: a token was made');
+  s = u2scene();
+  addCard(s, 'legend-ymra', A, 'legend');
+  const t = ub(s, 'grave-rat', A);
+  s = play(s, addCard(s, 'wild-growth', A, 'hand').uid, { target: { uid: t.uid } });
+  eq(s.players[A].cxp, 1, 'Ymra: a creature grew for good');
+  lvl(s, A, 2);
+  eq(champLevel(s, A), 2, 'Level 2 at its first threshold');
+  lvl(s, A, 3);
+  eq(champLevel(s, A), 3, 'Level 3 at its second');
+});
+
+test('Ultra v2, Legends: Halvard, Aeris, Vesh, Lumen at Levels 2 and 3', () => {
+  let s = u2scene();
+  const h = addCard(s, 'legend-halvard', A, 'legend');
+  s = play(s, h.uid, { from: 'legend' });
+  const wall = ub(s, 'bastion-wall', A);
+  eq(blockLimit(s, s.cards[wall.uid]), 2, 'Level 1: Guard blocks two');
+  lvl(s, A, 2);
+  eq(blockLimit(s, s.cards[wall.uid]), 3, 'Level 2: three');
+  eq(power(s, s.cards[wall.uid]), 0, 'a Bastion Wall still hits for 0');
+  lvl(s, A, 3);
+  eq(power(s, s.cards[wall.uid]), 6, 'Level 3: Guards have Power equal to their Vitality');
+  s = u2scene();
+  const ae = addCard(s, 'legend-aeris', A, 'legend');
+  s = play(s, ae.uid, { from: 'legend' });
+  const w = ub(s, 'wing-graft', A), w2 = ub(s, 'lantern-moth', A), g = ub(s, 'grave-rat', A);
+  eq(power(s, s.cards[w.uid]), 1, 'Level 1: fliers as printed');
+  lvl(s, A, 2);
+  eq(power(s, s.cards[w.uid]), 2, 'Level 2: other fliers +1 Power');
+  eq(power(s, s.cards[g.uid]), 1, 'not a creature without Soar');
+  eq(power(s, s.cards[ae.uid]), BY_ID['legend-aeris'].levels[1][0], 'nor Aeris herself (her own Level 2 Power)');
+  lvl(s, A, 3);
+  deckOf(s, A, 5);
+  const hand0 = s.players[A].hand.length;
+  s = fight(attack(s, [w.uid, w2.uid]));
+  eq(s.players[A].hand.length, hand0 + 1, 'Level 3: fliers hitting a player draw one card a fight');
+  s = u2scene();
+  const v = addCard(s, 'legend-vesh', A, 'legend');
+  s = play(s, v.uid, { from: 'legend' });
+  const hurt = ub(s, 'grave-rat', A, { dmg: 1 }), fine = ub(s, 'mossback', A);
+  lvl(s, A, 2);
+  ok(hasKw(s, s.cards[hurt.uid], 'drain') && !hasKw(s, s.cards[fine.uid], 'drain'), 'Level 2: a wounded creature has Drain, an unhurt one doesn’t');
+  eq(power(s, s.cards[hurt.uid]), 1, 'no extra Power yet');
+  lvl(s, A, 3);
+  eq(power(s, s.cards[hurt.uid]), 2, 'Level 3: +1 Power for each damage on it');
+  s = u2scene();
+  const lu = addCard(s, 'legend-lumen', A, 'legend');
+  s = play(s, lu.uid, { from: 'legend' });
+  ub(s, 'choirmother', A);
+  s = act(s, { t: 'use', p: A, uid: s.players[A].board[1] });
+  const sp = s.players[A].board.find((u) => s.cards[u].token);
+  const p0 = power(s, s.cards[sp]);
+  lvl(s, A, 2);
+  eq(power(s, s.cards[sp]), p0 + 1, 'Level 2: tokens +1 Power');
+  lvl(s, A, 3);
+  s.cards[sp].dmg = 9;
+  const life = s.players[B].life;
+  s = spark(s);
+  eq(s.players[B].life, life - 1, 'Level 3: a token of A’s dying costs B 1 Life');
+});
+
+test('Ultra v2, Ymra: a fuse gives +1/+1 more at Level 2; at Level 3 an eruption spares her side and keeps half', () => {
+  let s = u2scene();
+  const y = addCard(s, 'legend-ymra', A, 'legend');
+  s = play(s, y.uid, { from: 'legend' });
+  const host = ub(s, 'mossback', A), sym = ub(s, 'molten-core', A), prey = ub(s, 'grave-rat', B);
+  lvl(s, A, 2);
+  s = act(s, { t: 'use', p: A, uid: sym.uid, prey: prey.uid, target: { uid: host.uid } });
+  eq(power(s, s.cards[host.uid]), 3 + 2 + 1, 'Mossback 3 + Molten Core 2 + Ymra 1');
+  lvl(s, A, 3);
+  const heart = ub(s, 'kindling-heart', A, { pP: 9, pV: 9 });
+  const mine = ub(s, 'lightweaver', A), theirs = ub(s, 'lightweaver', B);
+  s = endT(s); s = endT(s); // (A's next turn: the heart swells to 11 and erupts)
+  eq(s.cards[mine.uid].dmg || 0, 0, 'A’s creatures take nothing');
+  eq(zoneOf(s, theirs.uid), 'discard', 'B’s Lightweaver dies');
+  eq(s.cards[heart.uid].pP, 5, 'the heart keeps half its growth (11 → 5)');
+});
+
+test('Ultra v2, Symbiotes: no Shelter; from the next turn, kill a weak creature to fuse; nothing else fuses from the hand', () => {
+  let s = u2scene({ energy: 6 });
+  deckOf(s, A, 3); deckOf(s, B, 3);
+  const host = ub(s, 'mossback', A);
+  const core = addCard(s, 'molten-core', A, 'hand');
+  s = play(s, core.uid);
+  ok(!s.cards[core.uid].shelter, 'a Symbiote arrives without Shelter');
+  const rat = ub(s, 'grave-rat', B), big = ub(s, 'mossback', B), shielded = ub(s, 'grave-rat', B, { shield: 1 });
+  ok(err(s, { t: 'use', p: A, uid: core.uid, prey: rat.uid, target: { uid: host.uid } }), 'it can’t fuse the turn it arrives');
+  s = endT(s);
+  ok(!check(s, { t: 'play', p: B, uid: addCard(s, 'scorch', B, 'hand').uid, target: { uid: core.uid } }), 'so on their turn, opponents can aim at it');
+  s = endT(s);
+  const opts = useOptions(s, A, s.cards[core.uid]);
+  ok(opts.some((a) => a.prey === rat.uid), 'on its next turn it can kill a 1/1');
+  ok(!opts.some((a) => a.prey === big.uid), 'not a 3/4: too strong for one hit');
+  ok(!opts.some((a) => a.prey === shielded.uid), 'not one with a Shield');
+  s = act(s, { t: 'use', p: A, uid: core.uid, prey: rat.uid, target: { uid: host.uid } });
+  eq(zoneOf(s, rat.uid), 'discard', 'the 1/1 dies');
+  eq(zoneOf(s, core.uid), 'discard', 'the Symbiote has gone into its host');
+  ok(power(s, s.cards[host.uid]) === 5 && hasKw(s, s.cards[host.uid], 'swift'), 'Mossback has 5 Power and Swift for good');
+  const s2 = u2scene(); const h2 = ub(s2, 'grave-rat', A), c2 = addCard(s2, 'mossback', A, 'hand');
+  ok(err(s2, { t: 'play', p: A, uid: c2.uid, fuse: h2.uid }), 'an ordinary creature card can’t be fused in from the hand');
+  let v1 = uscene(); const h1 = ub(v1, 'mossback', A), c1 = ub(v1, 'molten-core', A);
+  v1 = act(v1, { t: 'use', p: A, uid: c1.uid, target: { uid: h1.uid } });
+  eq(power(v1, v1.cards[h1.uid]), 5, 'in a version 1 game, Fuse needs no kill');
+});
+
+test('Ultra v2, Dig: once a turn, 3 Energy for a card', () => {
+  let s = u2scene({ energy: 7 });
+  deckOf(s, A, 3);
+  ok(legalActions(s, A).some((a) => a.t === 'dig'), 'Dig is a move');
+  s = act(s, { t: 'dig', p: A });
+  eq(s.players[A].hand.length, 1, 'a card drawn');
+  eq(s.players[A].energy, 4, 'for 3 Energy');
+  ok(err(s, { t: 'dig', p: A }), 'only once a turn');
+  let s2 = u2scene({ energy: 2 }); deckOf(s2, A, 3);
+  ok(err(s2, { t: 'dig', p: A }), 'not with less than 3 Energy');
+  s2 = u2scene({ energy: 5 });
+  ok(err(s2, { t: 'dig', p: A }), 'not from an empty deck');
+  s2 = uscene({ energy: 5 }); deckOf(s2, A, 3);
+  ok(err(s2, { t: 'dig', p: A }), 'not in a version 1 game');
+});
+
+test('Ultra v2: two or more creatures ganging up on one attacker each strike 1 harder', () => {
+  const run = (v2, two) => {
+    const s0 = v2 ? u2scene() : uscene();
+    const a = ub(s0, 'mossback', A, { pP: 2, pV: 1 }); // (5/5)
+    const b1 = ub(s0, 'grave-rat', B, { pP: 1, pV: 2 }), b2 = ub(s0, 'grave-rat', B, { pP: 1, pV: 2 }); // (2/3 each)
+    const s = fight(attack(s0, a.uid), two ? [[b1.uid, a.uid], [b2.uid, a.uid]] : [[b1.uid, a.uid]]);
+    return s.cards[a.uid];
+  };
+  eq(run(true, true).zone, 'discard', 'version 2: two 2/3s ganging up deal 3 each and kill a 5/5');
+  eq(run(false, true).zone, 'board', 'version 1: they deal 4, and it lives');
+  eq(run(true, false).dmg, 2, 'a lone blocker gets nothing extra');
+});
+
+test('Ultra Traps: Pitfall, Mirror Shield, Fog Bank, Grave Snare, Backdraft', () => {
+  // Pitfall: only for an attacker with 5 or more Power
+  let s = uscene();
+  const small = ub(s, 'mossback', A), big = ub(s, 'mossback', A, { pP: 2 });
+  deckOf(s, A, 4); deckOf(s, B, 4);
+  addCard(s, 'pitfall', B, 'traps');
+  s = attack(s, small.uid);
+  eq(s.players[B].traps.length, 1, 'Pitfall waits: a 3-Power attacker is too small');
+  s = fight(s); s = endT(s); s = endT(s);
+  s = attack(s, [big.uid, small.uid]);
+  eq(s.players[B].traps.length, 0, 'a 5-Power attacker springs it');
+  ok(!s.combat || !s.combat.att.includes(big.uid), 'and leaves the fight');
+  s = fight(s);
+  eq(s.players[B].life, 30 - 3 - 3, 'only the small one hit B');
+  s = endT(s); s = endT(s);
+  ok(s.cards[big.uid].ex, 'it didn’t ready on its next turn');
+  // Mirror Shield: the biggest attacker leaves and takes half its Power
+  s = uscene();
+  const m = ub(s, 'mossback', A, { pP: 5, pV: 5 }); // (8/9)
+  addCard(s, 'mirror-shield', B, 'traps');
+  s = fight(attack(s, m.uid));
+  eq(s.players[B].life, 30, 'Mirror Shield: no damage through');
+  eq(s.cards[m.uid].dmg, 4, 'the attacker took half its Power');
+  // Fog Bank: blockers still fight, but nothing reaches the player
+  s = uscene();
+  const f1 = ub(s, 'mossback', A, { pP: 1 }), f2 = ub(s, 'mossback', A), fb = ub(s, 'grave-rat', B);
+  addCard(s, 'fog-bank', B, 'traps');
+  s = fight(attack(s, [f1.uid, f2.uid]), [[fb.uid, f1.uid]]);
+  eq(s.players[B].life, 30, 'Fog Bank: no damage to B');
+  eq(zoneOf(s, fb.uid), 'discard', 'the blocked fight still happened');
+  // Grave Snare: the biggest attacker leaves the fight, Hexed 3
+  s = uscene();
+  const g1 = ub(s, 'mossback', A, { pP: 2 }), g2 = ub(s, 'grave-rat', A);
+  addCard(s, 'grave-snare', B, 'traps');
+  s = fight(attack(s, [g1.uid, g2.uid]));
+  eq(s.cards[g1.uid].hex, 3, 'Grave Snare: Hex 3 on the biggest');
+  eq(s.players[B].life, 29, 'only the Grave Rat hit');
+  // Backdraft: 2 damage to each attacker
+  s = uscene();
+  const k1 = ub(s, 'grave-rat', A), k2 = ub(s, 'mossback', A);
+  addCard(s, 'backdraft', B, 'traps');
+  s = fight(attack(s, [k1.uid, k2.uid]));
+  eq(zoneOf(s, k1.uid), 'discard', 'Backdraft kills a 1/1 attacker');
+  eq(s.players[B].life, 27, 'the Mossback still hits');
+});
+
+test('Ultra Shields: each stops one hit; they stack; Prism Duelist starts with one; Shieldwright and Ward of Dawn give them', () => {
+  let s = u2scene();
+  const d = addCard(s, 'prism-duelist', A, 'hand');
+  s = play(s, d.uid);
+  eq(s.cards[d.uid].shield, 1, 'Prism Duelist starts with a Shield');
+  s = play(s, addCard(s, 'ward-of-dawn', A, 'hand').uid, { target: { uid: d.uid } });
+  eq(s.cards[d.uid].shield, 2, 'Ward of Dawn adds one: they stack');
+  delete s.cards[d.uid].shelter; // (past its Shelter, so B's Spells can aim at it)
+  s.active = B;
+  s = play(s, addCard(s, 'scorch', B, 'hand').uid, { target: { uid: d.uid } });
+  eq(s.cards[d.uid].dmg, 0, 'Scorch is stopped');
+  eq(s.cards[d.uid].shield, 1, 'and one Shield breaks');
+  s = play(s, addCard(s, 'scorch', B, 'hand').uid, { target: { uid: d.uid } });
+  s = play(s, addCard(s, 'scorch', B, 'hand').uid, { target: { uid: d.uid } });
+  eq(zoneOf(s, d.uid), 'discard', 'the third hit kills the 3/1');
+  // a shielded blocker lives through a big attacker
+  s = u2scene();
+  const big = ub(s, 'mossback', A, { pP: 6, pV: 6 }), wall = ub(s, 'grave-rat', B, { shield: 1 });
+  s = fight(attack(s, big.uid), [[wall.uid, big.uid]]);
+  ok(zoneOf(s, wall.uid) === 'board' && !s.cards[wall.uid].shield, 'a 1/1 with a Shield blocks a 9/10 and lives (the Shield breaks)');
+  // Shieldwright: a Shield for the strongest creature that has none, every turn
+  s = u2scene();
+  ub(s, 'shieldwright', A); const top = ub(s, 'sunglass-lancer', A);
+  deckOf(s, A, 3); deckOf(s, B, 3);
+  s = endT(s); s = endT(s);
+  eq(s.cards[top.uid].shield, 1, 'Shieldwright shields the Sunglass Lancer (4 Power)');
+  const acolyte = addCard(s, 'aegis-acolyte', A, 'hand');
+  s = play(s, acolyte.uid, { target: { uid: top.uid } });
+  eq(s.cards[top.uid].shield, 2, 'Aegis Acolyte gives another');
+});
+
 // ── fuzz: random legal play ─────────────────────────────────────────
 // (`ultra`: SATTC Ultra games, with the Ultra starter decks)
 function fuzz(games, ultra = false) {
@@ -1898,6 +2190,7 @@ function fuzz(games, ultra = false) {
         }
         if (s.phase === 'combat' && (s.players[s.combat.a].out || s.players[s.combat.d].out)) throw new Error('fight with a player who is out');
         if (s.field != null && s.cards[s.field].zone !== 'field') throw new Error('the Field is not in play');
+        for (const P of s.players) if (P.legend != null && !P.out && !['legend', 'board'].includes(s.cards[P.legend].zone)) throw new Error(`a Legend went astray: ${s.cards[P.legend].zone}`);
         for (const P of s.players) for (const u of P.board) if (s.cards[u].dmg < 0 || (s.cards[u].poison || 0) > s.cards[u].dmg) throw new Error('wounds out of order');
       }
       if (s.phase !== 'over') unfinished++;
@@ -1914,8 +2207,11 @@ const games = Number(process.argv[2] || 400);
 const t0 = Date.now();
 const f = fuzz(games);
 const t1 = Date.now();
-const fu = fuzz(Math.ceil(games / 2), true);
+const fu = fuzz(Math.ceil(games / 4), true);
+const t2 = Date.now();
+const fu2 = fuzz(Math.ceil(games / 2), ULTRA_V);
 console.log(`scenario + invariant checks: ${pass} passed, ${fail} failed`);
 console.log(`fuzz: ${f.games} random games, ${f.totalActions} actions, ${f.fights} attacks, ${f.crashes} crashes, ${f.unfinished} unfinished, ${((t1 - t0) / 1000).toFixed(1)}s`);
-console.log(`Ultra fuzz: ${fu.games} random games, ${fu.totalActions} actions, ${fu.fights} attacks, ${fu.crashes} crashes, ${fu.unfinished} unfinished, ${((Date.now() - t1) / 1000).toFixed(1)}s`);
+console.log(`Ultra fuzz (version 1): ${fu.games} random games, ${fu.totalActions} actions, ${fu.fights} attacks, ${fu.crashes} crashes, ${fu.unfinished} unfinished, ${((t2 - t1) / 1000).toFixed(1)}s`);
+console.log(`Ultra fuzz (version 2): ${fu2.games} random games, ${fu2.totalActions} actions, ${fu2.fights} attacks, ${fu2.crashes} crashes, ${fu2.unfinished} unfinished, ${((Date.now() - t2) / 1000).toFixed(1)}s`);
 if (failures.length) { console.log('\nFAILURES:'); for (const m of failures) console.log(' - ' + m); process.exit(1); }

@@ -1,7 +1,7 @@
 // The Collective — app shell: hash router and the non-game views
 // (home, card gallery, deck list, deckbuilder, rules; Insights is in insights.js).
 
-import { BY_ID, CARDS, CHAMPIONS, FACTIONS, FACTION_ORDER, KEYWORDS, RULES, SET, STARTERS, TOKENS, ULTRA, ULTRA_OUT, ULTRA_POOL, ULTRA_RULES, ULTRA_STARTERS, isTrick } from './cards.js';
+import { BY_ID, CARDS, CHAMPIONS, FACTIONS, FACTION_ORDER, KEYWORDS, LEGENDS, RULES, SET, STARTERS, TOKENS, ULTRA, ULTRA_OUT, ULTRA_POOL, ULTRA_RULES, ULTRA_STARTERS, ULTRA_V2, isTrick } from './cards.js';
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, demo, playPage, startTutorial } from './game-ui.js';
@@ -422,8 +422,17 @@ function rules() {
       <li><b>Energy</b> grows by itself to ${ULTRA_RULES.energyGrowsTo}. Cards with <b>Invest</b> raise your maximum by 1 for good, up to ${ULTRA_RULES.maxEnergy}.</li>
       <li><b>The Field.</b> One Field card is in play for the whole table and changes the rules for everyone; a new one replaces it.</li>
       <li><b>No answer erases a build for free.</b> A <b>Hex</b> lasts until its owner pays to break it. Venom poisons (its damage doesn't heal) instead of killing outright. A creature sent back to the hand keeps its growth. ${ULTRA_OUT.map((id) => esc(BY_ID[id].name)).join(', ')} stay out of Ultra decks.</li>
-      <li><b>New words:</b> ${['invest', 'grows', 'multiply', 'unstable', 'fuse', 'ritual', 'hex', 'field', 'bodyguard'].map((k) => `<b>${KEYWORDS[k].name}</b>: ${esc(KEYWORDS[k].text)}`).join(' ')}</li>
+      <li><b>New words:</b> ${['invest', 'grows', 'multiply', 'unstable', 'fuse', 'ritual', 'hex', 'field', 'bodyguard', 'shield'].map((k) => `<b>${KEYWORDS[k].name}</b>: ${esc(KEYWORDS[k].text)}`).join(' ')}</li>
     </ul>
+    <p>Added on 8 November 2026 (games started before then keep the first rules):</p>
+    <ul>
+      <li><b>★ Legends.</b> Every deck brings one; it isn't in the deck. It waits beside the deck (at the left of your hand) and can be played whenever you can pay. It levels up as you play its way, even before it's out, so one played late arrives stronger. Nothing can be fused into a Legend. If it dies it goes back to wait, 2 Energy dearer each time.</li>
+      <li><b>Symbiotes.</b> The creatures with Fuse are Symbiotes. From the turn after one arrives, pay 1 Energy: it kills a creature it can kill in one hit (its Vitality left no more than the Symbiote's Power, and no Shield; on either side), then joins another creature of yours, which gets its Power, Vitality and keywords for good. A Symbiote arrives without Shelter, so opponents can kill it first. What it gave is lost with the creature it joined.</li>
+      <li><b>Dig.</b> Once a turn, on your turn, pay ${ULTRA_V2.digCost} Energy to draw a card.</li>
+      <li><b>Ganging up.</b> When two or more creatures block the same attacker, each hits ${ULTRA_V2.together} harder.</li>
+      <li><b>Traps</b> that stop a big attacker for a while, and <b>Shields</b> that stack, for glass cannons.</li>
+    </ul>
+    <ul>${Object.values(LEGENDS).map((c) => `<li><b>${esc(c.name)}</b> (${c.cost} Energy, ${esc(c.factions.map((f) => FACTIONS[f].name).join('/'))}) levels up with ${esc(c.xp.unit)}: at ${c.xp.at[0]}, ${esc(c.l2)} At ${c.xp.at[1]}, ${esc(c.l3)}</li>`).join('')}</ul>
 
     <h2>★ Champions (new)</h2>
     <p>With Champions on (a switch on the Play page, and in a game's room), every deck starts with a <b>Champion</b> on the table: the one of the faction the deck has most cards of. It can block from the start but can't attack until <b>Level 2</b>. It levels up as you do what its faction does, and each level makes it bigger and changes how your other cards work. Its powers work only while it's on the table; if it leaves, it goes back to your hand and costs 2 more each time.</p>

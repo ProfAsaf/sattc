@@ -167,7 +167,33 @@ Added 2026-11-08:
 
 Not done yet:
 - (Done since: draft night and "Draft my deck" deal from the Ultra pool, stats and Insights know Ultra games, and suggestions word the Ultra moves.)
-- People haven't played it.
+- (Done since: the user played it, 2026-11-08; see below.)
+
+## Version 2 (2026-11-08), "stage 1"
+
+After the first game, the user's five problems:
+- empty late game;
+- no Legends;
+- few strategies;
+- one big creature crushes;
+- not tricky.
+
+Stage 1 answers them with:
+- **★ Legends:** one per deck, waiting beside it and levelling with its strategy.
+- **Symbiotes** (the user's design, chosen over fusing any card from the hand): they kill a weak creature to fuse, from the turn after they arrive, and have no Shelter.
+- **Dig:** 3 Energy for a card.
+- **Ganging up:** +2 for each of 2 or more blockers.
+- **Five Traps** that stop a big attacker for a while.
+- **Shields that stack, with glass cannons:** the user's idea.
+
+The README, "SATTC Ultra, second version", has the rules, numbers and tests.
+
+Still open:
+- Three-player balance: Blood and Bone 44%, The Wall and Endless Swarm 26–27%.
+- The first big creature still usually wins in bot games: 72–80%, against a target of 60%.
+- Stage 2:
+  - four starters for the missing strategies (tricksters, spell growth, the Field, hitting early);
+  - "look at 2, keep 1" for the draw, if plans still don't show up.
 
 ## Building it
 

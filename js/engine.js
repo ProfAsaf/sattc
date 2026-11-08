@@ -12,7 +12,7 @@
 // (the defender choosing blockers, then both sides taking turns to play
 // Tricks until both pass).
 
-import { BY_ID, RULES, championFor, isTrick } from './cards.js';
+import { BY_ID, KEYWORDS, RULES, ULTRA_RULES, championFor, isTrick } from './cards.js';
 
 // ── small helpers ───────────────────────────────────────────────────
 const def = (c) => BY_ID[c.cid];
@@ -37,6 +37,13 @@ function log(s, p, text) {
   if (s.log.length > 400) s.log.splice(0, s.log.length - 400);
 }
 const ev = (s, e) => s.events.push(e);
+
+// ── SATTC Ultra (setup.ultra; ultra-plan.md) ────────────────────────
+const fieldIs = (s, cid) => s.field != null && s.cards[s.field]?.cid === cid;
+const ritualOf = (s, P) => P.relics.find((u) => def(s.cards[u]).stages);
+const handMax = (s, P) => RULES.handMax + 2 * P.relics.filter((u) => s.cards[u].cid === 'tidecallers-library').length;
+// Max Energy grows by itself to RULES.maxEnergy (Ultra: to 6, and each Invest raises that by 1, up to 12).
+const energyCap = (s, P) => (s.ultra ? Math.min(ULTRA_RULES.maxEnergy, ULTRA_RULES.energyGrowsTo + (P.invest || 0)) : RULES.maxEnergy);
 
 export const opponents = (s, i) => s.players.filter((p) => p.i !== i && !p.out);
 export const living = (s) => s.players.filter((p) => !p.out);
@@ -65,16 +72,17 @@ function mk(s, cid, owner, zone) {
 // saved before the change replay as they were played (the lesson too).
 // `champions`: every player starts with their deck's Champion on the table
 // (a player's `champion` picks one; otherwise championFor). Off unless asked.
-export function newGame({ seed = 1, players, stacked = false, first = null, crown = null, startEnergy = 1, champions = false }) {
+// `ultra`: SATTC Ultra, the bigger rule changes (s.ultra). Off unless asked.
+export function newGame({ seed = 1, players, stacked = false, first = null, crown = null, startEnergy = 1, champions = false, ultra = false }) {
   const s = {
     v: 2, rng: seed | 0, mode: players.length > 2 ? 'ffa' : 'duel',
     turn: 0, active: 0, first: 0, phase: 'mulligan', winner: null, combat: null,
-    crownOn: crown ?? players.length > 2, crown: null,
+    crownOn: crown ?? players.length > 2, crown: null, ultra: !!ultra, ...(ultra ? { field: null } : {}),
     players: [], cards: {}, nextUid: 1, died: 0, diedOwn: [], log: [], events: [],
   };
   players.forEach((pl, i) => {
     const P = {
-      i, name: pl.name || `Player ${i + 1}`, life: RULES.startLife, maxEnergy: startEnergy - 1, energy: 0,
+      i, name: pl.name || `Player ${i + 1}`, life: ultra ? (players.length > 2 ? ULTRA_RULES.startLife3 : ULTRA_RULES.startLife) : RULES.startLife, maxEnergy: startEnergy - 1, energy: 0, ...(ultra ? { invest: 0 } : {}),
       deck: [], hand: [], discard: [], exile: [], board: [], traps: [], relics: [],
       out: false, mull: null, turns: 0, spells: 0, mirror: false, attackedOn: -1, extra: 0,
     };
@@ -149,12 +157,14 @@ export function power(s, c) {
     for (const u of board) if (u !== c.uid && s.cards[u].cid === 'standard-keeper') p += 1;
     if (c.cid === 'street-recruit' && board.length > 1) p += 1;
     if (c.cid === 'spirit') p += countOn(s, board, 'choirmother') + (champOn(s, c.ctrl, 'champion-radiant', 2) ? 1 : 0);
+    if (c.cid === 'bloodrage-berserker') p += c.dmg || 0;
   }
   return Math.max(0, p);
 }
 export function vitality(s, c) {
   let v = (isChamp(c) ? champStat(s, c, 1) : def(c).vitality) + (c.pV || 0) + (c.tV || 0);
   if (c.zone === 'board' && c.cid === 'spirit') v += countOn(s, boardOf(s, c), 'choirmother') + (champOn(s, c.ctrl, 'champion-radiant', 2) ? 1 : 0);
+  if (c.zone === 'board' && s.ultra && hasKw(s, c, 'guard')) v += 2 * (countOn(s, boardOf(s, c), 'shield-captain') - (c.cid === 'shield-captain' ? 1 : 0));
   return v;
 }
 
@@ -163,6 +173,7 @@ export function hasKw(s, c, kw) {
   if (def(c).keywords.includes(kw)) return true;
   if (isChamp(c) && champStat(s, c, 2).includes(kw)) return true;
   if (c.tKw && c.tKw.includes(kw)) return true;
+  if (c.fuseKw && c.fuseKw.includes(kw)) return true;
   if (c.zone !== 'board') return false;
   if (kw === 'soar' && c.cid === 'spirit' && (countOn(s, boardOf(s, c), 'choirmother') || champOn(s, c.ctrl, 'champion-radiant', 2))) return true;
   if (kw === 'rush' && s.players[c.ctrl].relics.some((u) => s.cards[u].cid === 'banner-of-the-charge')) return true;
@@ -197,7 +208,8 @@ export const costOf = (s, pi, c, from = 'hand') => price(s, pi, c, from).cost;
 
 // ── zones ───────────────────────────────────────────────────────────
 const TABLE_STATE = ['dmg', 'pP', 'pV', 'tP', 'tV', 'played', 'rush', 'awake', 'grown', 'sacEnd', 'gTurn', 'aTurn', 'hurt',
-  'ex', 'frozen', 'tKw', 'ctrl', 'stolen', 'venomed', 'chimes', 'usedOn'];
+  'ex', 'frozen', 'tKw', 'ctrl', 'stolen', 'venomed', 'chimes', 'usedOn',
+  'fuseKw', 'shelter', 'hex', 'poison', 'erupting', 'stage', 'stageOn']; // (the last line: Ultra)
 function resetPlay(c) {
   for (const k of TABLE_STATE) delete c[k];
   if (c.baseCid) { c.cid = c.baseCid; delete c.baseCid; }
@@ -206,6 +218,13 @@ function resetPlay(c) {
 function enterPlay(s, c, pi) {
   resetPlay(c);
   Object.assign(c, { zone: 'board', ctrl: pi, dmg: 0, pP: 0, pV: 0, tP: 0, tV: 0, played: s.turn, ex: false, gTurn: -1, aTurn: -1 });
+  if (s.ultra) {
+    c.shelter = true; // (until its controller's next turn)
+    // a creature sent back to the hand kept its growth
+    if (c.keepP || c.keepV) { c.pP = c.keepP || 0; c.pV = c.keepV || 0; c.grown = true; }
+    if (c.keepKw) c.fuseKw = c.keepKw;
+  }
+  delete c.keepP; delete c.keepV; delete c.keepKw;
   s.players[pi].board.push(c.uid);
 }
 
@@ -214,6 +233,7 @@ function enterPlay(s, c, pi) {
 // for cards leaving hand or deck.
 function toDiscard(s, c, from) {
   const P = s.players[c.owner];
+  delete c.keepP; delete c.keepV; delete c.keepKw;
   if (isChamp(c)) { // (a Champion goes back to its owner's hand instead, dearer each time)
     if (from === 'board') c.deaths = (c.deaths || 0) + 1;
     c.zone = 'hand';
@@ -232,7 +252,7 @@ function toHand(s, c, from) {
   const P = s.players[c.owner];
   c.echoed = false;
   if (c.token) { c.zone = 'gone'; return; }
-  if (P.hand.length >= RULES.handMax) { log(s, c.owner, `${P.name}'s hand is full; ${nameOf(c)} goes to the discard pile.`); toDiscard(s, c, from); return; }
+  if (P.hand.length >= handMax(s, P)) { log(s, c.owner, `${P.name}'s hand is full; ${nameOf(c)} goes to the discard pile.`); toDiscard(s, c, from); return; }
   c.zone = 'hand';
   P.hand.push(c.uid);
 }
@@ -247,7 +267,7 @@ export function draw(s, pi, n = 1, turnDraw = false) {
       continue;
     }
     const c = s.cards[P.deck.shift()];
-    if (P.hand.length >= RULES.handMax) {
+    if (P.hand.length >= handMax(s, P)) {
       log(s, pi, `${P.name}'s hand is full; ${nameOf(c)} goes to the discard pile.`);
       toDiscard(s, c, 'deck');
       continue;
@@ -351,7 +371,9 @@ function buff(s, c, dP, dV, permanent, fromBramble = false) {
     c.awake = true;
     if (c.cid === 'mossback') { log(s, c.ctrl, 'Mossback awakens: gain 2 Life.'); gainLife(s, c.ctrl, 2); }
   }
+  if (s.ultra && !c.erupting && hasKw(s, c, 'unstable') && power(s, c) >= ULTRA_RULES.unstableAt) { erupt(s, c); return; }
   if (!permanent) return;
+  if (s.ultra && !fromBramble && fieldIs(s, 'overgrowth')) { log(s, c.ctrl, `Overgrowth: ${nameOf(c)} gets +1/+1 more.`); buff(s, c, 1, 1, true, true); }
   c.grown = true;
   gainXP(s, c.ctrl, 'grow', 1);
   const board = s.players[c.ctrl].board;
@@ -377,14 +399,82 @@ function buff(s, c, dP, dV, permanent, fromBramble = false) {
 
 const giveKw = (c, ...kws) => { if (c && c.zone === 'board') c.tKw = [...(c.tKw || []), ...kws]; };
 
+// Ultra: at 10 Power an Unstable creature erupts, then starts again from its printed size.
+function erupt(s, c) {
+  c.erupting = true;
+  log(s, c.ctrl, `${nameOf(c)} erupts: 3 damage to every other creature and every player!`);
+  ev(s, { k: 'erupt', uid: c.uid });
+  for (const Q of s.players) for (const u of [...Q.board]) if (u !== c.uid) damage(s, s.cards[u], 3);
+  for (const Q of living(s)) damagePlayer(s, Q.i, 3);
+  Object.assign(c, { pP: 0, pV: 0, tP: 0, tV: 0 });
+  delete c.erupting;
+}
+
+// Ultra: wounds stay until they heal. Poison (Venom's damage) only a cure takes away.
+function heal(s, c, n, cure = false) {
+  if (!c || c.zone !== 'board' || n <= 0 || c.dmg <= 0) return 0;
+  const k = cure ? c.dmg : Math.min(n, Math.max(0, c.dmg - (c.poison || 0)));
+  if (cure) c.poison = 0;
+  if (k <= 0) return 0;
+  c.dmg -= k;
+  ev(s, { k: 'heal', uid: c.uid, n: k });
+  const roots = countOn(s, s.players[c.ctrl].board, 'rootmother');
+  if (roots) { log(s, c.ctrl, `Rootmother: ${nameOf(c)} heals and grows +${roots}/+${roots}.`); buff(s, c, roots, roots, true); }
+  return k;
+}
+
+// Ultra: +1 max Energy for good (up to 12). Outside Ultra, the old rule (up to 8).
+function invest(s, pi) {
+  const P = s.players[pi];
+  if (!s.ultra) { P.maxEnergy = Math.min(RULES.maxEnergy, P.maxEnergy + 1); return; }
+  if (P.maxEnergy >= ULTRA_RULES.maxEnergy) { log(s, pi, `${P.name}'s Energy is already as high as it goes.`); return; }
+  P.invest = (P.invest || 0) + 1;
+  P.maxEnergy += 1;
+  log(s, pi, `${P.name} invests: maximum Energy ${P.maxEnergy}, for good.`);
+  ev(s, { k: 'invest', p: pi });
+}
+
+// Ultra: opponents can't aim Spells or abilities at a Sheltered creature (one
+// that arrived since its controller's turn began), and a Bodyguard is the only
+// creature on its side they can aim at.
+function aimable(s, pi, uids) {
+  if (!s.ultra) return uids;
+  return uids.filter((u) => {
+    const c = s.cards[u];
+    if (c.ctrl === pi) return true;
+    if (c.shelter) return false;
+    const guards = s.players[c.ctrl].board.filter((x) => hasKw(s, s.cards[x], 'bodyguard'));
+    return !guards.length || guards.includes(u);
+  });
+}
+
+// Ultra: a creature with Fuse joins another of yours, which keeps its Power, Vitality and keywords.
+function fuse(s, pi, c, t) {
+  if (!t || t.zone !== 'board' || c.zone !== 'board' || t.uid === c.uid) return;
+  const dP = Math.max(0, power(s, c) - (c.tP || 0)), dV = Math.max(0, vitality(s, c) - (c.tV || 0));
+  const kws = [...new Set([...def(c).keywords, ...(c.fuseKw || [])])].filter((k) => k !== 'fuse' && KEYWORDS[k]);
+  removeFrom(s.players[c.ctrl].board, c.uid);
+  ev(s, { k: 'fuse', uid: c.uid, to: t.uid });
+  resetPlay(c);
+  toDiscard(s, c, 'board');
+  t.fuseKw = [...new Set([...(t.fuseKw || []), ...kws])];
+  log(s, pi, `${nameOf(c)} fuses into ${nameOf(t)}: +${dP}/+${dV}${kws.length ? `, ${kws.map((k) => KEYWORDS[k].name).join(', ')}` : ''}, for good.`);
+  buff(s, t, dP, dV, true);
+}
+
 // `src` is the creature dealing the damage, for Venom and Drain.
 function damage(s, c, n, src = null) {
   if (n <= 0 || !c || c.zone !== 'board') return;
   c.dmg += n;
   c.hurt = true;
-  if (src && hasKw(s, src, 'venom')) c.venomed = true;
+  if (src && hasKw(s, src, 'venom')) { if (s.ultra) c.poison = (c.poison || 0) + n; else c.venomed = true; }
   ev(s, { k: 'dmg', uid: c.uid, n, src: src ? src.uid : null });
-  if (src && hasKw(s, src, 'drain')) gainLife(s, src.ctrl ?? src.owner, n);
+  if (src && hasKw(s, src, 'drain')) { gainLife(s, src.ctrl ?? src.owner, n); bloodbound(s, src, n); }
+}
+
+// Ultra: with a Bloodbinder out, your Drain creatures heal themselves for what they deal.
+function bloodbound(s, src, n) {
+  if (s.ultra && src.zone === 'board' && countOn(s, s.players[src.ctrl].board, 'bloodbinder')) heal(s, src, n);
 }
 
 function damagePlayer(s, pi, n, src = null) {
@@ -392,7 +482,7 @@ function damagePlayer(s, pi, n, src = null) {
   log(s, pi, `${s.players[pi].name} takes ${n} damage.`);
   ev(s, { k: 'hitPlayer', p: pi, n, src: src ? src.uid : null });
   loseLife(s, pi, n);
-  if (src && hasKw(s, src, 'drain')) gainLife(s, src.ctrl ?? src.owner, n);
+  if (src && hasKw(s, src, 'drain')) { gainLife(s, src.ctrl ?? src.owner, n); bloodbound(s, src, n); }
 }
 
 // target: { p } for a player, { uid } for a creature
@@ -415,12 +505,20 @@ function killBatch(s, dead) {
     s.diedOwn[ctrl] += 1;
     log(s, ctrl, `${nameOf(c)} dies.`);
     ev(s, { k: 'die', uid: c.uid, cid: as, owner: c.owner, ctrl });
+    // Ultra, Legacy: half of what it grew (rounded up) passes on
+    const legacy = s.ultra && (c.pP > 0 || c.pV > 0) ? [Math.ceil(Math.max(0, c.pP) / 2), Math.ceil(Math.max(0, c.pV) / 2)] : null;
     resetPlay(c);
     toDiscard(s, c, 'board');
-    gone.push({ c, as, ctrl });
+    gone.push({ c, as, ctrl, legacy });
   }
-  for (const { c, as, ctrl } of gone) {
+  for (const { c, as, ctrl, legacy } of gone) {
     const P = s.players[ctrl];
+    if (legacy && P.board.length) {
+      const heir = P.board.map((u) => s.cards[u]).reduce((m, x) => (power(s, x) < power(s, m) ? x : m));
+      log(s, ctrl, `Legacy: ${BY_ID[as].name} passes +${legacy[0]}/+${legacy[1]} on to ${nameOf(heir)}.`);
+      ev(s, { k: 'legacy', uid: heir.uid, from: c.uid });
+      buff(s, heir, legacy[0], legacy[1], true);
+    }
     for (const Q of s.players) gainXP(s, Q.i, 'death', 1);
     if (champOn(s, ctrl, 'champion-umbral', 2)) {
       log(s, ctrl, `${BY_ID['champion-umbral'].name}: each opponent loses 1 Life.`);
@@ -435,6 +533,10 @@ function killBatch(s, dead) {
       if (o.cid === 'the-pale-abbess') {
         log(s, ctrl, 'The Pale Abbess takes her tithe: each opponent loses 1 Life.');
         for (const o2 of opponents(s, ctrl)) loseLife(s, o2.i, 1);
+      }
+      if (o.cid === 'gravewarden' && o.zone === 'board' && o.ctrl === ctrl) {
+        log(s, ctrl, 'Gravewarden: the rest heal 2 and get +1/+0 for good.');
+        for (const x of [...P.board]) { heal(s, s.cards[x], 2); buff(s, s.cards[x], 1, 0, true); }
       }
     }
     for (const u of P.relics) if (s.cards[u].cid === 'the-kiln') {
@@ -495,6 +597,7 @@ function sacrifice(s, c) {
 
 function bounce(s, c) {
   if (!c) return;
+  if (s.ultra && c.zone === 'board') { c.keepP = Math.max(0, c.pP || 0); c.keepV = Math.max(0, c.pV || 0); if (c.fuseKw) c.keepKw = [...c.fuseKw]; }
   if (c.zone === 'board') removeFrom(s.players[c.ctrl].board, c.uid);
   else if (c.zone === 'relic') removeFrom(s.players[c.ctrl].relics, c.uid);
   else return;
@@ -558,14 +661,14 @@ function makeTokens(s, pi, cid, n, answer = false) {
 
 // ── fighting ────────────────────────────────────────────────────────
 export function canAttack(s, pi, c) {
-  return !!c && c.zone === 'board' && c.ctrl === pi && !c.ex &&
+  return !!c && c.zone === 'board' && c.ctrl === pi && !c.ex && !c.hex &&
     (c.played < s.turn || !!c.rush || hasKw(s, c, 'rush')) &&
     !(isChamp(c) && champLevel(s, c.owner) < 2); // (a Champion defends until Level 2)
 }
 
 // Can creature b block attacker a?
 export function canBlock(s, b, a) {
-  if (!b || b.zone !== 'board' || b.ex || def(b).cantBlock) return false;
+  if (!b || b.zone !== 'board' || b.ex || b.hex || def(b).cantBlock) return false;
   if (a && hasKw(s, a, 'soar') && !hasKw(s, b, 'soar') && !hasKw(s, b, 'reach')) return false;
   return true;
 }
@@ -658,6 +761,13 @@ function declareBlocks(s, pi, blocks) {
   }
   const said = Object.entries(C.blk).map(([at, bs]) => `${listNames(bs.map((b) => nameOf(s.cards[b])))} ${bs.length > 1 ? 'block' : 'blocks'} ${nameOf(s.cards[at])}`);
   log(s, pi, said.length ? `${Q.name}: ${said.join('; ')}.` : `${Q.name} doesn't block.`);
+  if (s.ultra) {
+    const captains = countOn(s, Q.board, 'shield-captain');
+    for (const b of [...new Set(blocks.map(([u]) => u))].map((u) => s.cards[u])) {
+      if (captains && hasKw(s, b, 'guard')) { log(s, pi, `Shield Captain: ${nameOf(b)} holds and gets +0/+${captains} for good.`); buff(s, b, 0, captains, true); }
+      if (b.cid === 'bastion-wall') { log(s, pi, `Bastion Wall: ${s.players[C.a].name} loses 2 Life.`); loseLife(s, C.a, 2); }
+    }
+  }
   C.step = 'tricks';
   C.prio = C.a;
   C.passes = 0;
@@ -670,6 +780,24 @@ function fight(s) {
   const groups = C.att.map((u) => s.cards[u]).filter((c) => live(c, C.a))
     .map((a) => ({ a, bs: (C.blk[a.uid] || []).map((u) => s.cards[u]) }));
   ev(s, { k: 'fight', a: C.a, d });
+  if (s.ultra) {
+    // Thornback Archer covers a flier: 2 damage to whatever it fights, before anyone strikes
+    const cover = (side, flier, foe) => {
+      for (const u of [...s.players[side].board]) {
+        const ar = s.cards[u];
+        if (ar.cid !== 'thornback-archer' || foe.zone !== 'board') continue;
+        log(s, side, `Thornback Archer covers ${nameOf(flier)}: 2 damage to ${nameOf(foe)}.`);
+        ev(s, { k: 'strike', uid: ar.uid, to: foe.uid });
+        damage(s, foe, 2, ar);
+      }
+    };
+    for (const { a, bs } of groups) for (const b of bs) {
+      if (live(a, C.a) && live(b, d) && hasKw(s, a, 'soar')) cover(C.a, a, b);
+      if (live(a, C.a) && live(b, d) && hasKw(s, b, 'soar')) cover(d, b, a);
+    }
+    settle(s);
+    if (combatOver(s, C)) return;
+  }
   for (const first of [true, false]) {
     for (const { a, bs } of groups) {
       const standing = bs.filter((b) => live(b, d));
@@ -704,7 +832,7 @@ function strike(s, a, bs, standing, d) {
 // the costliest blockers it can, one after another; what is left lands on
 // the next blocker, or with Overrun (once every blocker has its fill) on the player.
 export function splitDamage(s, a, bs, pw) {
-  const venom = hasKw(s, a, 'venom');
+  const venom = hasKw(s, a, 'venom') && !s.ultra; // (in Ultra, Venom poisons instead of killing)
   const lethal = (b) => { const left = Math.max(0, vitality(s, b) - b.dmg); return venom ? Math.min(1, left) : left; };
   const order = [...bs].sort((x, y) => def(y).cost - def(x).cost || power(s, y) - power(s, x) || x.uid - y.uid);
   const got = new Map();
@@ -777,10 +905,10 @@ export function abilityNeeds(s, pi, c) {
   const T = (uids) => uids.map((u) => ({ uid: u }));
   const others = s.players[pi].board.filter((u) => u !== c.uid);
   switch (c.cid) {
-    case 'ember-duelist': return { target: T(s.players.flatMap((Q) => Q.board)) };
-    case 'canopy-archer': return { target: T(s.players.flatMap((Q) => Q.board).filter((u) => hasKw(s, s.cards[u], 'soar'))) };
+    case 'canopy-archer': return { target: T(aimable(s, pi, s.players.flatMap((Q) => Q.board)).filter((u) => hasKw(s, s.cards[u], 'soar'))) };
     case 'hungry-ghoul': case 'dawnwatch-knight': return { target: T(others) };
-    default: return {};
+    case 'ember-duelist': return { target: T(aimable(s, pi, s.players.flatMap((Q) => Q.board))) };
+    default: return def(c).keywords.includes('fuse') ? { target: T(others) } : {};
   }
 }
 
@@ -792,6 +920,13 @@ export function useOptions(s, pi, c, limit = Infinity) {
   const push = (a) => { if (out.length < limit && !checkUse(s, a)) out.push(a); };
   if (c.zone === 'relic') {
     if (c.cid === 'bone-altar') for (const sac of s.players[pi].board) push({ ...base, sac });
+    if (def(c).stages) {
+      const n = stageNeeds(s, pi, c);
+      if (n.target) { for (const target of n.target) push({ ...base, target }); if (n.optional || !n.target.length) push(base); }
+      else if (n.pick) { for (const pick of n.pick) push({ ...base, pick }); push(base); }
+      else if (n.picks) push({ ...base, picks: [...n.picks].sort((x, y) => def(s.cards[y]).cost - def(s.cards[x]).cost).slice(0, n.max) });
+      else push(base);
+    }
     return out;
   }
   if (!def(c).ability || c.zone !== 'board') return out;
@@ -809,11 +944,12 @@ export function useOptions(s, pi, c, limit = Infinity) {
 // (cards in a discard pile), targets (several of your creatures), keep /
 // bottom / discard (looking at your own cards).
 export function needs(s, pi, c, from = 'hand') {
+  if (def(c).stages) return stageNeeds(s, pi, c, 0);
   const P = s.players[pi];
-  const all = s.players.flatMap((Q) => Q.board);
+  const all = aimable(s, pi, s.players.flatMap((Q) => Q.board));
   const own = [...P.board];
-  const enemy = opponents(s, pi).flatMap((Q) => Q.board);
-  const relics = s.players.flatMap((Q) => Q.relics);
+  const enemy = aimable(s, pi, opponents(s, pi).flatMap((Q) => Q.board));
+  const relics = s.players.flatMap((Q) => Q.relics).filter((u) => !def(s.cards[u]).stages); // (a Ritual is not a Relic to aim at)
   const T = (uids) => uids.map((u) => ({ uid: u }));
   const anyTarget = [...living(s).map((Q) => ({ p: Q.i })), ...T(all)];
   const discardOf = (pred) => P.discard.filter((u) => pred(def(s.cards[u])));
@@ -866,8 +1002,28 @@ export function needs(s, pi, c, from = 'hand') {
       return { bottom: P.deck.slice(0, 1) };
     case 'second-thought':
       return { discard: [...P.hand.filter((u) => u !== c.uid), ...P.deck.slice(0, 2)] };
+    // SATTC Ultra
+    case 'ember-volley':
+      return { targets: enemy, count: Math.min(3, enemy.length) };
+    case 'shackles':
+      return pickOne(enemy);
+    case 'menders-hymn':
+      return pickOne(own);
     default:
       return {};
+  }
+}
+
+// A Ritual's stage `k` (0 = the one it starts with; on the table, the next one).
+export function stageNeeds(s, pi, c, k = c.zone === 'relic' ? c.stage : 0) {
+  const P = s.players[pi];
+  const T = (uids) => uids.map((u) => ({ uid: u }));
+  const dead = P.discard.filter((u) => def(s.cards[u]).type === 'creature');
+  switch (`${c.cid}:${k}`) {
+    case 'flood-rite:1': return { target: T(aimable(s, pi, s.players.flatMap((Q) => Q.board))), optional: true };
+    case 'grave-rite:0': return { pick: dead, optional: true };
+    case 'grave-rite:2': return { picks: dead, max: 2 };
+    default: return {};
   }
 }
 
@@ -889,7 +1045,8 @@ function checkPlay(s, a) {
   if (s.phase === 'combat' && !isTrick(d)) return 'During a fight you can only play Tricks.';
   if (price(s, a.p, c, from).cost > P.energy) return 'Not enough Energy.';
   if (d.type === 'creature' && P.board.length >= RULES.boardMax) return `You already have ${RULES.boardMax} creatures.`;
-  if (d.type === 'relic' && P.relics.length >= RULES.relicMax) return `You already have ${RULES.relicMax} Relics.`;
+  if (d.type === 'relic' && P.relics.filter((u) => !def(s.cards[u]).stages).length >= RULES.relicMax) return `You already have ${RULES.relicMax} Relics.`;
+  if (d.stages && ritualOf(s, P) != null) return 'You already have a Ritual going.';
   if (c.cid === 'mutiny' && P.board.length >= RULES.boardMax) return 'You have no room for another creature.';
   const n = needs(s, a.p, c, from);
   if (n.sac || n.fighter) {
@@ -936,6 +1093,7 @@ function checkAttack(s, a) {
     if (hunted.has(au)) return 'Each hunter chooses one creature.';
     hunted.add(au);
     if (!tc || tc.zone !== 'board' || tc.ctrl !== a.target || !canBlock(s, tc, ac)) return 'Hunt a creature that could block it.';
+    if (s.ultra && tc.shelter) return `${nameOf(tc)} is Sheltered: it can't be hunted yet.`;
   }
   return null;
 }
@@ -967,6 +1125,19 @@ function checkUse(s, a) {
   const c = s.cards[a.uid];
   if (c?.zone === 'relic') {
     if (!P.relics.includes(a.uid)) return 'That Relic is not yours.';
+    if (def(c).stages) {
+      const st = def(c).stages[c.stage];
+      if (!st) return 'That Ritual is complete.';
+      if (a.p !== s.active || s.phase !== 'main') return 'A Ritual moves on only on your turn.';
+      if (c.stageOn === s.turn) return 'One stage a turn: the next one comes on a later turn.';
+      if (st.cost > P.energy) return 'Not enough Energy.';
+      const n = stageNeeds(s, a.p, c);
+      if (n.target && a.target != null && !n.target.some((t) => sameTarget(t, a.target))) return 'That is not a legal target.';
+      if (n.target && a.target == null && !n.optional) return 'Choose a target.';
+      if (n.pick && a.pick != null && !n.pick.includes(a.pick)) return 'Choose a creature from your discard pile.';
+      if (n.picks) { const ps = a.picks || []; if (ps.length > n.max || new Set(ps).size !== ps.length || ps.some((u) => !n.picks.includes(u))) return `Choose up to ${n.max} creatures.`; }
+      return null;
+    }
     if (c.cid !== 'bone-altar') return 'That Relic works by itself.';
     if (a.p !== s.active) return 'Only on your turn.';
     if (c.usedOn === s.turn) return 'Already used this turn.';
@@ -1011,10 +1182,15 @@ export function check(s, a) {
     case 'play': return checkPlay(s, a);
     case 'attack': return checkAttack(s, a);
     case 'use': return checkUse(s, a);
+    case 'unhex': {
+      const c = s.cards[a.uid];
+      if (!c || c.zone !== 'board' || c.ctrl !== a.p || !c.hex) return 'There is no Hex on it.';
+      return c.hex > P.energy ? `Breaking the Hex takes ${c.hex} Energy.` : null;
+    }
     case 'phoenix':
       if (!phoenixReady(s, a.p).includes(a.uid)) return 'The Phoenix cannot return now.';
       if (P.energy < 2) return 'Not enough Energy.';
-      if (P.hand.length >= RULES.handMax) return 'Your hand is full.';
+      if (P.hand.length >= handMax(s, P)) return 'Your hand is full.';
       return null;
     case 'block': case 'pass': return 'Nobody is attacking.';
   }
@@ -1065,7 +1241,7 @@ function resolveSpell(s, pi, c, a) {
       buff(s, t, 2, 2, true);
       break;
     case 'ancient-roots':
-      P.maxEnergy = Math.min(RULES.maxEnergy, P.maxEnergy + 1);
+      invest(s, pi);
       break;
     case 'not-yet':
       bounce(s, t);
@@ -1175,7 +1351,99 @@ function resolveSpell(s, pi, c, a) {
     case 'dawns-judgment':
       if (t?.zone === 'board') { log(s, pi, `Dawn’s Judgment destroys ${nameOf(t)}.`); killBatch(s, [t]); }
       break;
+    // ── SATTC Ultra ──
+    case 'stoke-the-furnace':
+      invest(s, pi);
+      for (const o of opponents(s, pi)) damagePlayer(s, o.i, 1);
+      break;
+    case 'ember-volley':
+      for (const u of a.targets || []) { const x = s.cards[u]; if (x?.zone === 'board') { log(s, null, `${nameOf(x)} takes 1 damage.`); damage(s, x, 1); } }
+      break;
+    case 'deep-roots': {
+      invest(s, pi);
+      const small = P.board.map((u) => s.cards[u]).reduce((m, x) => (!m || power(s, x) < power(s, m) ? x : m), null);
+      if (small) buff(s, small, 1, 1, true);
+      break;
+    }
+    case 'tide-of-fortune':
+      invest(s, pi);
+      draw(s, pi, 2);
+      break;
+    case 'blood-pact':
+      invest(s, pi);
+      loseLife(s, pi, 3);
+      break;
+    case 'tithe-of-light':
+      invest(s, pi);
+      gainLife(s, pi, 3);
+      break;
+    case 'shackles':
+      if (t?.zone === 'board') {
+        t.hex = def(c).hex;
+        log(s, pi, `${nameOf(t)} is shackled: it can't attack or block until ${s.players[t.ctrl].name} pays ${t.hex} Energy.`);
+        ev(s, { k: 'freeze', uid: t.uid });
+      }
+      break;
+    case 'menders-hymn':
+      if (t?.zone === 'board') { heal(s, t, Infinity, true); buff(s, t, 0, 2, false); }
+      break;
+    case 'flood-rite': case 'grave-rite':
+      resolveStage(s, pi, c, 0, a);
+      break;
   }
+}
+
+// A Ritual's stages (Ultra). Stage I comes with playing the card; the rest are
+// paid for later, one a turn.
+function resolveStage(s, pi, c, k, a) {
+  const P = s.players[pi];
+  const t = a.target?.uid != null ? s.cards[a.target.uid] : null;
+  log(s, pi, `${nameOf(c)}, stage ${['I', 'II', 'III'][k]}: ${def(c).stages[k].text}`);
+  switch (`${c.cid}:${k}`) {
+    case 'flood-rite:0': draw(s, pi, 2); break;
+    case 'flood-rite:1': if (t) bounce(s, t); break;
+    case 'flood-rite:2': P.extra += 1; break;
+    case 'grave-rite:0':
+      if (a.pick != null && removeFrom(P.discard, a.pick)) { log(s, pi, `${nameOf(s.cards[a.pick])} returns to ${P.name}'s hand.`); toHand(s, s.cards[a.pick], 'discard'); }
+      break;
+    case 'grave-rite:1':
+      for (const o of opponents(s, pi)) loseLife(s, o.i, 2);
+      gainLife(s, pi, 2);
+      break;
+    case 'grave-rite:2':
+      for (const u of (a.picks || []).slice(0, 2)) {
+        if (P.board.length >= RULES.boardMax || !removeFrom(P.discard, u)) continue;
+        const b = s.cards[u];
+        enterPlay(s, b, pi);
+        log(s, pi, `${nameOf(b)} rises from ${P.name}'s discard pile.`);
+        ev(s, { k: 'token', uid: b.uid, p: pi });
+      }
+      break;
+  }
+}
+
+function advanceRitual(s, pi, c, a) {
+  const P = s.players[pi], stages = def(c).stages, k = c.stage;
+  P.energy -= stages[k].cost;
+  c.stage += 1;
+  c.stageOn = s.turn;
+  ev(s, { k: 'use', uid: c.uid, p: pi, cid: c.cid, target: a.target || null });
+  resolveStage(s, pi, c, k, a);
+  if (c.stage >= stages.length && c.zone === 'relic') {
+    removeFrom(P.relics, c.uid);
+    log(s, pi, `${nameOf(c)} is complete.`);
+    resetPlay(c);
+    toDiscard(s, c, 'relic');
+  }
+  settle(s);
+}
+
+function unhex(s, pi, a) {
+  const P = s.players[pi], c = s.cards[a.uid];
+  P.energy -= c.hex;
+  log(s, pi, `${P.name} pays ${c.hex} Energy and breaks the Hex on ${nameOf(c)}.`);
+  delete c.hex;
+  ev(s, { k: 'buff', uid: c.uid, dP: 0, dV: 0 });
 }
 
 function creatureEnters(s, pi, c, a, from) {
@@ -1224,6 +1492,7 @@ function creatureEnters(s, pi, c, a, from) {
     // ── the second half ──
     case 'grove-druid':
       if (t?.zone === 'relic') destroyRelic(s, t);
+      else if (s.ultra) invest(s, pi);
       else { P.maxEnergy = Math.min(RULES.maxEnergy, P.maxEnergy + 1); log(s, pi, `${P.name}'s maximum Energy grows to ${P.maxEnergy}.`); }
       break;
     case 'windborne-sage':
@@ -1294,6 +1563,17 @@ function play(s, pi, a) {
     settle(s);
     return;
   }
+  if (d.type === 'field') { // (Ultra: one Field for the whole table; a new one replaces it)
+    const old = s.field != null ? s.cards[s.field] : null;
+    if (old) { log(s, old.owner, `${nameOf(old)} gives way.`); resetPlay(old); toDiscard(s, old, 'field'); }
+    c.zone = 'field';
+    c.ctrl = pi;
+    s.field = c.uid;
+    log(s, pi, `The Field is now ${d.name}.`);
+    ev(s, { k: 'field', uid: c.uid, p: pi });
+    settle(s);
+    return;
+  }
 
   // Spells
   c.zone = 'stack';
@@ -1330,6 +1610,7 @@ function play(s, pi, a) {
   }
   resolveSpell(s, pi, c, a);
   if (set) { c.zone = 'trap'; P.traps.push(c.uid); }
+  else if (d.stages) { c.zone = 'relic'; c.ctrl = pi; c.stage = 1; c.stageOn = s.turn; P.relics.push(c.uid); } // (a Ritual stays, in stages)
   else toDiscard(s, c, 'stack');
   settle(s);
 }
@@ -1338,6 +1619,7 @@ function use(s, pi, a) {
   const c = s.cards[a.uid];
   const P = s.players[pi];
   c.usedOn = s.turn;
+  if (c.zone === 'relic' && def(c).stages) { advanceRitual(s, pi, c, a); return; }
   if (c.zone === 'relic') {
     const sac = s.cards[a.sac];
     log(s, pi, `Bone Altar: ${P.name} sacrifices ${nameOf(sac)} and draws a card.`);
@@ -1366,6 +1648,7 @@ function use(s, pi, a) {
     case 'hungry-ghoul': if (t?.zone === 'board') sacrifice(s, t); break;
     case 'choirmother': makeTokens(s, pi, 'spirit', 1); break;
     case 'dawnwatch-knight': buff(s, t, 0, 2, false); break;
+    default: if (d.keywords.includes('fuse')) fuse(s, pi, c, t);
   }
   settle(s);
 }
@@ -1378,7 +1661,7 @@ function startTurn(s, i) {
   P.spells = 0;
   P.mirror = false;
   P.ripple = 0;
-  P.maxEnergy = Math.min(RULES.maxEnergy, P.maxEnergy + 1);
+  P.maxEnergy = Math.max(P.maxEnergy, Math.min(energyCap(s, P), P.maxEnergy + 1));
   P.energy = P.maxEnergy;
   for (const u of P.board) {
     const c = s.cards[u];
@@ -1387,6 +1670,7 @@ function startTurn(s, i) {
   }
   log(s, i, `${P.name}'s turn.`);
   ev(s, { k: 'turn', p: i });
+  if (s.ultra) ultraTurnStart(s, i);
   for (const u of [...P.relics]) {
     const r = s.cards[u];
     if (r.zone !== 'relic') continue;
@@ -1443,6 +1727,40 @@ function startTurn(s, i) {
   if (P.out && s.phase !== 'over') nextTurn(s);
 }
 
+// Ultra, at the start of a turn: Shelter ends; wounds heal (half, rounded up;
+// all of them at Sanctuary Spring, none under Scorched Earth; 2 more for each
+// Field Medic); creatures that Grow grow, Unstable ones swell, Multiply ones
+// copy themselves; a Library draws its card.
+function ultraTurnStart(s, i) {
+  const P = s.players[i];
+  for (const u of P.board) delete s.cards[u].shelter;
+  const medics = countOn(s, P.board, 'field-medic');
+  for (const u of [...P.board]) {
+    const c = s.cards[u];
+    if (c.zone !== 'board' || c.dmg <= 0) continue;
+    const open = Math.max(0, c.dmg - (c.poison || 0));
+    const natural = fieldIs(s, 'scorched-earth') ? 0 : fieldIs(s, 'sanctuary-spring') ? open : Math.ceil(open / 2);
+    heal(s, c, natural + 2 * medics);
+  }
+  for (const u of [...P.board]) {
+    const c = s.cards[u];
+    if (c.zone !== 'board') continue;
+    const d = def(c);
+    if (d.grows) { log(s, i, `${nameOf(c)} grows +${d.grows}/+${d.grows}.`); buff(s, c, d.grows, d.grows, true); }
+    if (c.zone === 'board' && hasKw(s, c, 'unstable')) { log(s, i, `${nameOf(c)} swells +2/+2.`); buff(s, c, 2, 2, true); }
+  }
+  for (const c of P.board.map((u) => s.cards[u]).filter((x) => hasKw(s, x, 'multiply'))) {
+    if (P.board.length >= RULES.boardMax) break;
+    const t = mk(s, c.cid, i, 'board');
+    t.token = true;
+    enterPlay(s, t, i);
+    log(s, i, `${nameOf(c)} multiplies.`);
+    ev(s, { k: 'token', uid: t.uid, p: i });
+  }
+  for (const u of [...P.relics]) if (s.cards[u].cid === 'tidecallers-library') { log(s, i, `Tidecaller’s Library: ${P.name} draws an extra card.`); draw(s, i, 1); }
+  settle(s);
+}
+
 function nextTurn(s) {
   if (s.phase === 'over') return;
   const cur = s.players[s.active];
@@ -1482,7 +1800,8 @@ function endTurn(s) {
   }
   for (const Q of s.players) for (const u of Q.board) {
     const c = s.cards[u];
-    c.dmg = 0; c.tP = 0; c.tV = 0;
+    if (!s.ultra) c.dmg = 0; // (in Ultra, wounds stay until they heal)
+    c.tP = 0; c.tV = 0;
     delete c.tKw;
     delete c.venomed;
   }
@@ -1542,6 +1861,7 @@ export function apply(state, a) {
     case 'block': declareBlocks(s, a.p, a.blocks || []); break;
     case 'pass': s.combat.passes += 1; s.combat.prio = otherSide(s.combat); break;
     case 'use': use(s, a.p, a); break;
+    case 'unhex': unhex(s, a.p, a); break;
     case 'phoenix': {
       const P = s.players[a.p];
       P.energy -= 2;
@@ -1642,7 +1962,7 @@ export function attackOptions(s, pi) {
       for (const u of att) {
         const a = s.cards[u];
         if (!hasKw(s, a, 'hunt')) continue;
-        const prey = Q.board.map((x) => s.cards[x]).filter((b) => canBlock(s, b, a));
+        const prey = Q.board.map((x) => s.cards[x]).filter((b) => canBlock(s, b, a) && !(s.ultra && b.shelter));
         if (prey.length) hunt.push([u, prey.reduce((m, b) => (power(s, b) > power(s, m) ? b : m)).uid]);
       }
       out.push({ t: 'attack', p: pi, target: Q.i, att, ...(hunt.length ? { hunt } : {}) });
@@ -1686,6 +2006,7 @@ export function legalActions(s, pi) {
     return out;
   }
   for (const u of phoenixReady(s, pi)) { const a = { t: 'phoenix', p: pi, uid: u }; if (!check(s, a)) out.push(a); }
+  for (const u of P.board) { const a = { t: 'unhex', p: pi, uid: u }; if (s.cards[u].hex && !check(s, a)) out.push(a); }
   out.push(...attackOptions(s, pi));
   out.push({ t: 'end', p: pi });
   return out;

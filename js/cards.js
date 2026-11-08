@@ -51,10 +51,22 @@ export const KEYWORDS = {
   legendary:  { name: 'Legendary',   text: 'One of a kind. (Just for glory: no extra rules.)' },
   sacrifice:  { name: 'Sacrifice',   text: 'Destroy a creature you control. It still counts as dying.' },
   ability:    { name: 'Ability',     text: '“Pay N Energy: …” on a creature. Pay the Energy to use it, once each turn: on your turn, or during a fight you are in (like a Trick).' },
+  // SATTC Ultra
+  invest:     { name: 'Invest',      text: 'Your maximum Energy goes up by 1 for good (up to 12).' },
+  grows:      { name: 'Grows',       text: 'At the start of your turn, it gets +N/+N for good.' },
+  multiply:   { name: 'Multiply',    text: 'At the start of your turn, it makes a token copy of itself, while you have room. The copies multiply too.' },
+  unstable:   { name: 'Unstable',    text: 'It grows +2/+2 each turn. At 10 Power it erupts: 3 damage to every other creature and every player, you too. Then it shrinks back to its printed size.' },
+  fuse:       { name: 'Fuse',        text: 'Pay 1 Energy: this creature joins another of yours, which keeps its Power, Vitality and keywords for good.' },
+  ritual:     { name: 'Ritual',      text: 'A Spell in stages. It stays in front of you; pay one stage a turn (not the turn you start it) to get its effect. One Ritual at a time.' },
+  hex:        { name: 'Hex',         text: 'It lasts until the creature’s controller pays N Energy on their turn to break it.' },
+  field:      { name: 'Field',       text: 'Changes the rules for everyone at the table. One Field at a time: a new one replaces it.' },
+  bodyguard:  { name: 'Bodyguard',   text: 'Opponents’ Spells and abilities can’t target your other creatures; they have to target this one.' },
 };
+// Ultra changes what Venom does: its wounds never heal, instead of killing outright.
+export const ULTRA_KEYWORDS = { venom: 'Damage it deals to a creature is poison: it never heals (until cured).' };
 
 // Words in rules text that get keyword styling and a tap-to-explain hint.
-export const KEYWORD_PATTERN = /\b(Rush|Soar|Reach|Guard|Swift|Venom|Drain|Overrun|Watchful|Hunt|Last Breath|Awaken|Echo|Bond|Trick|Trap|Relic|Sacrifice|sacrifice)\b/g;
+export const KEYWORD_PATTERN = /\b(Rush|Soar|Reach|Guard|Swift|Venom|Drain|Overrun|Watchful|Hunt|Last Breath|Awaken|Echo|Bond|Trick|Trap|Relic|Sacrifice|sacrifice|Invest|Grows|Multiply|Unstable|Fuse|Ritual|Hex|Field|Bodyguard)\b/g;
 
 // Shared look for every painting; each card adds its own subject.
 export const ART_STYLE =
@@ -558,6 +570,178 @@ export const CARDS = [
       art: 'A small fern bursting in an instant into a towering flowering plant, petals and light exploding outward from its heart.' }),
 ];
 
+// ── SATTC Ultra (2026-11-07) ────────────────────────────────────────
+// The switch on Home. Ultra games (setup.ultra) play by bigger rules (engine.js:
+// lasting wounds that heal half each turn, Sheltered newcomers, Legacy, Energy
+// that grows to 6 by itself and to 12 by Investing, one shared Field) and add
+// these cards, built to be weak alone and strong together: growth that has
+// time to pay off, creatures that protect, heal and strengthen each other, and
+// answers that slow a build down without wiping it out (ultra-plan.md).
+export const ULTRA_RULES = { startLife: 30, startLife3: 25, energyGrowsTo: 6, maxEnergy: 12, unstableAt: 10 }; // (startLife3: with three players)
+// Base cards that destroy or steal for good stay out of Ultra decks.
+export const ULTRA_OUT = ['death-is-a-door', 'the-culling', 'dawns-judgment', 'nerissa'];
+const FUSE = { cost: 1, short: 'fuse into another of your creatures' };
+const U = (o) => C({ ultra: true, ...o });
+export const ULTRA = [
+  // Ember
+  U({ id: 'kindling-heart', n: 101, name: 'Kindling Heart', cost: 3, factions: ['ember'], type: 'creature', subtype: 'Elemental', power: 0, vitality: 1,
+      keywords: ['unstable'],
+      text: 'Unstable',
+      flavor: 'It never stops climbing.',
+      art: 'A small stone heart cracked open with molten fire inside, glowing brighter and brighter, heat shimmer and sparks rising from it.' }),
+  U({ id: 'bloodrage-berserker', n: 102, name: 'Bloodrage Berserker', cost: 2, factions: ['ember'], type: 'creature', subtype: 'Human', power: 2, vitality: 3,
+      text: 'Gets +1/+0 for each damage on it.',
+      flavor: 'Every wound is fuel.',
+      art: 'A scarred berserker roaring with a burning axe raised, his wounds glowing like embers, sparks flying around him.' }),
+  U({ id: 'stoke-the-furnace', n: 103, name: 'Stoke the Furnace', cost: 5, factions: ['ember'], type: 'spell',
+      keywords: ['invest'],
+      text: 'Invest\nDeal 1 damage to each opponent.',
+      flavor: 'Feed it today; it feeds you forever.',
+      art: 'A great forge furnace being stoked by a smith with a long iron poker, flames roaring up a stone chimney into a red sky.' }),
+  U({ id: 'ember-volley', n: 104, name: 'Ember Volley', cost: 2, factions: ['ember'], type: 'spell',
+      text: 'Deal 1 damage to each of up to three enemy creatures.',
+      flavor: 'A little fire, everywhere at once.',
+      art: 'A volley of small flaming arrows arcing across a dusky sky toward a distant line of figures.' }),
+  U({ id: 'molten-core', n: 105, name: 'Molten Core', cost: 2, factions: ['ember'], type: 'creature', subtype: 'Elemental', power: 2, vitality: 1,
+      keywords: ['swift', 'fuse'], ability: FUSE,
+      text: 'Swift\nFuse',
+      flavor: 'It fits inside anything.',
+      art: 'A glowing orb of molten rock floating between two cupped hands, about to be pressed into the chest of a stone giant.' }),
+  U({ id: 'scorched-earth', n: 106, name: 'Scorched Earth', cost: 3, factions: ['ember'], type: 'field', subtype: 'Field',
+      keywords: ['field'],
+      text: 'Field\nCreatures don’t heal at the start of turns.',
+      flavor: 'Nothing grows back here.',
+      art: 'A blackened plain of burnt ground and smoking stumps under an orange haze, embers drifting on the wind.' }),
+  // Verdant
+  U({ id: 'sproutling', n: 107, name: 'Sproutling', cost: 1, factions: ['verdant'], type: 'creature', subtype: 'Plant', power: 0, vitality: 1,
+      keywords: ['grows'], grows: 1,
+      text: 'Grows 1',
+      flavor: 'Give it time.',
+      art: 'A tiny sprout with two bright leaves pushing up out of dark soil, a single beam of sunlight falling on it.' }),
+  U({ id: 'mycelium-bud', n: 108, name: 'Mycelium Bud', cost: 2, factions: ['verdant'], type: 'creature', subtype: 'Fungus', power: 1, vitality: 1,
+      keywords: ['multiply'],
+      text: 'Multiply',
+      flavor: 'There is never just one.',
+      art: 'A cluster of glowing mushrooms on a mossy forest floor, spores drifting and new little caps sprouting all around them.' }),
+  U({ id: 'rootmother', n: 109, name: 'Rootmother', cost: 4, factions: ['verdant'], type: 'creature', subtype: 'Treefolk', power: 2, vitality: 5,
+      text: 'Whenever a creature of yours heals, it also gets +1/+1 for good.',
+      flavor: 'What she mends comes back stronger.',
+      art: 'A tall tree-woman with roots for hair gently wrapping vines around a wounded stag, its wounds glowing green as they close.' }),
+  U({ id: 'thornback-archer', n: 110, name: 'Thornback Archer', cost: 3, factions: ['verdant'], type: 'creature', subtype: 'Human', power: 2, vitality: 3,
+      keywords: ['reach'],
+      text: 'Reach\nWhenever a creature of yours with Soar fights, Thornback Archer first deals 2 damage to the creature it fights.',
+      flavor: 'Nothing reaches the birds without passing her.',
+      art: 'An archer in bark armour kneeling on a cliff edge, loosing an arrow at a dark beast that lunges at a great eagle above her.' }),
+  U({ id: 'deep-roots', n: 111, name: 'Deep Roots', cost: 4, factions: ['verdant'], type: 'spell',
+      keywords: ['invest'],
+      text: 'Invest\nYour weakest creature gets +1/+1 for good.',
+      flavor: 'Slow, then unstoppable.',
+      art: 'Huge tree roots spreading deep underground through glowing soil and stone, a small young tree standing in the light above.' }),
+  U({ id: 'bark-graft', n: 112, name: 'Bark Graft', cost: 2, factions: ['verdant'], type: 'creature', subtype: 'Plant', power: 1, vitality: 3,
+      keywords: ['reach', 'fuse'], ability: FUSE,
+      text: 'Reach\nFuse',
+      flavor: 'Wear the forest.',
+      art: 'A living plate of bark and moss crawling up a warrior’s arm and shoulder like armour, small leaves unfurling on it.' }),
+  U({ id: 'overgrowth', n: 113, name: 'Overgrowth', cost: 4, factions: ['verdant'], type: 'field', subtype: 'Field',
+      keywords: ['field'],
+      text: 'Field\nEvery permanent boost gives +1/+1 more.',
+      flavor: 'Everything here grows too much.',
+      art: 'A ruined stone city overrun by giant flowering vines and trees, warm sunlight streaming through the leaves.' }),
+  // Tide
+  U({ id: 'tidecallers-library', n: 114, name: 'Tidecaller’s Library', cost: 4, factions: ['tide'], type: 'relic', subtype: 'Relic',
+      keywords: ['relic'],
+      text: 'Relic\nAt the start of your turn, draw an extra card. You can hold 12 cards.',
+      flavor: 'Every tide brings a book.',
+      art: 'A great underwater library with shelves of glowing scrolls, silver fish drifting between the stacks, light falling from above.' }),
+  U({ id: 'flood-rite', n: 115, name: 'Flood Rite', cost: 2, factions: ['tide'], type: 'spell', subtype: 'Ritual',
+      keywords: ['ritual'],
+      stages: [{ cost: 2, text: 'Draw 2 cards.' }, { cost: 3, text: 'Return a creature to its owner’s hand.' }, { cost: 5, text: 'Take an extra turn after this one.' }],
+      text: 'Ritual\nI (2): Draw 2 cards.\nII (3): Return a creature to its owner’s hand.\nIII (5): Take an extra turn.',
+      flavor: 'The sea rises slowly, then all at once.',
+      art: 'Robed figures in a circle on a moonlit beach, arms raised, a gigantic wave rising behind them.' }),
+  U({ id: 'tide-of-fortune', n: 116, name: 'Tide of Fortune', cost: 5, factions: ['tide'], type: 'spell',
+      keywords: ['invest'],
+      text: 'Invest\nDraw 2 cards.',
+      flavor: 'The sea pays its debts.',
+      art: 'A wave breaking on a rocky shore and leaving behind gold coins and pearls glinting in the foam.' }),
+  U({ id: 'wavewarden', n: 117, name: 'Wavewarden', cost: 3, factions: ['tide'], type: 'creature', subtype: 'Merfolk', power: 1, vitality: 5,
+      keywords: ['bodyguard'],
+      text: 'Bodyguard',
+      flavor: 'Through me, or not at all.',
+      art: 'A merfolk guard with a great shell shield standing in front of smaller sea creatures, a spear of water shattering on the shield.' }),
+  U({ id: 'wing-graft', n: 118, name: 'Wing Graft', cost: 2, factions: ['tide'], type: 'creature', subtype: 'Bird', power: 1, vitality: 1,
+      keywords: ['soar', 'fuse'], ability: FUSE,
+      text: 'Soar\nFuse',
+      flavor: 'Borrowed wings fly just as well.',
+      art: 'A pair of shimmering wings made of sea spray and light unfolding from a figure’s shoulders over the ocean.' }),
+  // Umbral
+  U({ id: 'blood-pact', n: 119, name: 'Blood Pact', cost: 3, factions: ['umbral'], type: 'spell',
+      keywords: ['invest'],
+      text: 'Invest\nLose 3 Life.',
+      flavor: 'Paid in full. Forever.',
+      art: 'Two hands clasping over a dark altar, a thin thread of red light binding them together, candles guttering.' }),
+  U({ id: 'bloodbinder', n: 120, name: 'Bloodbinder', cost: 3, factions: ['umbral'], type: 'creature', subtype: 'Vampire', power: 2, vitality: 3,
+      keywords: ['drain'],
+      text: 'Drain\nYour creatures with Drain heal themselves for the damage they deal.',
+      flavor: 'Hunger, then healing.',
+      art: 'A pale vampire mage drawing a stream of red light from a fallen foe into her own wounds, which close as she watches.' }),
+  U({ id: 'gravewarden', n: 121, name: 'Gravewarden', cost: 4, factions: ['umbral'], type: 'creature', subtype: 'Shade', power: 2, vitality: 4,
+      text: 'Whenever another creature of yours dies, your creatures heal 2 and get +1/+0 for good.',
+      flavor: 'Each loss is a lesson.',
+      art: 'A hooded shade with a lantern standing over a fresh grave, violet light flowing from the grave into a line of soldiers behind it.' }),
+  U({ id: 'grave-rite', n: 122, name: 'Grave Rite', cost: 2, factions: ['umbral'], type: 'spell', subtype: 'Ritual',
+      keywords: ['ritual'],
+      stages: [{ cost: 2, text: 'Return a creature card from your discard pile to your hand.' }, { cost: 3, text: 'Each opponent loses 2 Life. You gain 2.' }, { cost: 4, text: 'Two creatures from your discard pile return to play.' }],
+      text: 'Ritual\nI (2): A creature card from your discard pile to your hand.\nII (3): Each opponent loses 2 Life; you gain 2.\nIII (4): Two creatures from your discard pile return to play.',
+      flavor: 'The dead keep their appointments.',
+      art: 'Cloaked figures around a ring of graves under a violet moon, pale hands breaking up through the earth.' }),
+  U({ id: 'shackles', n: 123, name: 'Shackles', cost: 3, factions: ['umbral'], type: 'spell',
+      keywords: ['hex'], hex: 4,
+      text: 'Hex 4: an enemy creature can’t attack or block.',
+      flavor: 'Iron is patient.',
+      art: 'Heavy iron shackles carved with violet runes clamped on the legs of a huge beast, chains running down into the ground.' }),
+  U({ id: 'venom-shard', n: 124, name: 'Venom Shard', cost: 1, factions: ['umbral'], type: 'creature', subtype: 'Crystal', power: 1, vitality: 1,
+      keywords: ['venom', 'fuse'], ability: FUSE,
+      text: 'Venom\nFuse',
+      flavor: 'A sting looking for a body.',
+      art: 'A sliver of black crystal dripping green poison, hovering over an open palm, faint fumes curling up from it.' }),
+  // Radiant
+  U({ id: 'shield-captain', n: 125, name: 'Shield Captain', cost: 3, factions: ['radiant'], type: 'creature', subtype: 'Human', power: 1, vitality: 4,
+      keywords: ['guard'],
+      text: 'Guard\nYour other creatures with Guard get +0/+2. Whenever one of your creatures with Guard blocks, it gets +0/+1 for good.',
+      flavor: 'Hold the line, and the line holds you.',
+      art: 'A captain with a tower shield raised, a row of shield-bearers locking shields beside her, golden light on their armour.' }),
+  U({ id: 'bastion-wall', n: 126, name: 'Bastion Wall', cost: 3, factions: ['radiant'], type: 'creature', subtype: 'Construct', power: 0, vitality: 6,
+      keywords: ['guard'],
+      text: 'Guard\nWhenever Bastion Wall blocks, the attacking player loses 2 Life.',
+      flavor: 'It does not move. You do.',
+      art: 'A living wall of golden stone blocks with a carved stern face, arrows and spears breaking against it.' }),
+  U({ id: 'field-medic', n: 127, name: 'Field Medic', cost: 2, factions: ['radiant'], type: 'creature', subtype: 'Human', power: 1, vitality: 2,
+      text: 'At the start of your turn, your creatures heal 2 more.',
+      flavor: 'Hold still.',
+      art: 'A field medic in a white tabard kneeling beside a wounded knight, binding a glowing golden bandage around his arm.' }),
+  U({ id: 'lantern-moth', n: 128, name: 'Lantern Moth', cost: 2, factions: ['radiant'], type: 'creature', subtype: 'Insect', power: 1, vitality: 1,
+      keywords: ['soar', 'multiply'],
+      text: 'Soar\nMultiply',
+      flavor: 'Light finds light.',
+      art: 'A swarm of glowing moths with lantern-like bodies flying over a dark meadow at dusk, more joining them.' }),
+  U({ id: 'menders-hymn', n: 129, name: 'Mender’s Hymn', cost: 1, factions: ['radiant'], type: 'spell', ...TRICK,
+      keywords: ['trick'],
+      text: 'Trick\nHeal a creature you control fully, poison too. It gets +0/+2 this turn.',
+      flavor: 'Sung softly, it is enough.',
+      art: 'A priestess singing with her hands raised, golden notes of light settling on a wounded soldier.' }),
+  U({ id: 'tithe-of-light', n: 130, name: 'Tithe of Light', cost: 4, factions: ['radiant'], type: 'spell',
+      keywords: ['invest'],
+      text: 'Invest\nGain 3 Life.',
+      flavor: 'Give a little light; keep it forever.',
+      art: 'Villagers placing small glowing candles into a great golden bowl in a temple, light rising to the rafters.' }),
+  U({ id: 'sanctuary-spring', n: 131, name: 'Sanctuary Spring', cost: 3, factions: ['radiant'], type: 'field', subtype: 'Field',
+      keywords: ['field'],
+      text: 'Field\nAt the start of their owner’s turn, creatures heal fully (but not poison).',
+      flavor: 'Drink, and be whole.',
+      art: 'A clear spring in a sunlit grotto, golden light dancing on the water, a wounded deer drinking from it.' }),
+];
+
 export const TOKENS = {
   spirit: { id: 'spirit', name: 'Spirit', cost: 0, factions: ['radiant'], type: 'creature', subtype: 'Spirit', power: 1, vitality: 1, token: true, keywords: [],
             text: '', flavor: 'A small light, but not alone.',
@@ -624,7 +808,9 @@ export function championFor(deckIds) {
   return `champion-${best}`;
 }
 
-export const BY_ID = Object.fromEntries([...CARDS, ...Object.values(TOKENS), ...Object.values(CHAMPIONS)].map((c) => [c.id, c]));
+export const BY_ID = Object.fromEntries([...CARDS, ...ULTRA, ...Object.values(TOKENS), ...Object.values(CHAMPIONS)].map((c) => [c.id, c]));
+// Every card an Ultra deck can use: the base set without ULTRA_OUT, and the Ultra cards.
+export const ULTRA_POOL = [...CARDS.filter((c) => !ULTRA_OUT.includes(c.id)), ...ULTRA];
 
 export const isTrick = (card) => card.keywords.includes('trick');
 
@@ -659,4 +845,34 @@ export const STARTERS = [
       ['seedling', 'reckless-initiate', 'cinderling', 'scorch', 'kindle', 'sudden-growth', 'little-gardener', 'spark-runner', 'savage-clash', 'mossback',
         'wild-bloom', 'heartwood-totem', 'ember-duelist', 'ash-collector', 'the-kiln', 'season-of-plenty', 'grandmother-bramble', 'smoldering-golem', 'ironhide-charger',
         'apex-predator', 'worldtree-stag', 'the-forest-remembers']) },
+];
+
+// Ultra starter decks: each mixes two or three of the ways to build, so what
+// you draw early and what the others do decide which one you lean into.
+export const ULTRA_STARTERS = [
+  { id: 'ultra-the-wall', name: 'The Wall', factions: ['radiant', 'verdant'],
+    pitch: 'Guards that strengthen each other, heal every turn and grow each time they hold. Then something huge behind them.',
+    counts: deck(['shield-captain', 'bastion-wall', 'field-medic', 'rootmother', 'shieldbearer', 'sproutling', 'menders-hymn'],
+      ['deep-roots', 'tithe-of-light', 'sanctuary-spring', 'heartwood-totem', 'patient-giant', 'dawnwatch-knight', 'worldtree-stag', 'bark-graft',
+        'little-gardener', 'season-of-plenty', 'stand-together', 'dawn-captain', 'mossback', 'seedling', 'wild-growth', 'thornback-archer']) },
+  { id: 'ultra-sky-and-arrows', name: 'Sky and Arrows', factions: ['tide', 'verdant', 'radiant'],
+    pitch: 'Fliers covered by archers, borrowed wings, and a library that keeps the cards coming.',
+    counts: deck(['thornback-archer', 'canopy-archer', 'wing-graft', 'sky-warden', 'windborne-sage', 'lantern-moth', 'tidecallers-library'],
+      ['field-medic', 'flood-rite', 'tide-of-fortune', 'deep-roots', 'sproutling', 'patient-giant', 'wavewarden', 'sanctuary-spring',
+        'wild-growth', 'seraphine', 'dawn-captain', 'deepwater-leviathan', 'the-drowned-clock', 'bark-graft', 'menders-hymn', 'dawnwatch-knight']) },
+  { id: 'ultra-blood-and-bone', name: 'Blood and Bone', factions: ['umbral', 'ember'],
+    pitch: 'Get hurt on purpose: wounds make you hit harder, Drain heals you, and every death makes the rest stronger.',
+    counts: deck(['bloodrage-berserker', 'bloodbinder', 'gravewarden', 'vesper-bat', 'blood-pact', 'venom-shard', 'ember-volley'],
+      ['kindling-heart', 'grave-rite', 'molten-core', 'scorched-earth', 'the-pale-abbess', 'marsh-adder', 'grave-rat', 'hungry-ghoul',
+        'kindly-undertaker', 'lantern-ferryman', 'carrion-wyrm', 'cinderling', 'scorch', 'stoke-the-furnace', 'unearth', 'feed-the-flame']) },
+  { id: 'ultra-the-giant', name: 'The Giant', factions: ['ember', 'verdant'],
+    pitch: 'Grow one creature into a monster: fuse pieces into it, feed it boosts, and keep an unstable heart ticking.',
+    counts: deck(['molten-core', 'bark-graft', 'kindling-heart', 'sproutling', 'deep-roots', 'little-gardener', 'grove-druid'],
+      ['overgrowth', 'stoke-the-furnace', 'wild-growth', 'apex-predator', 'ironhide-charger', 'patient-giant', 'seedling', 'cinderling',
+        'ember-volley', 'kindle', 'sudden-growth', 'canopy-archer', 'scorch', 'reckless-initiate', 'ash-collector', 'mossback']) },
+  { id: 'ultra-endless-swarm', name: 'Endless Swarm', factions: ['radiant', 'umbral'],
+    pitch: 'Moths that multiply and Spirits that keep coming; every one that falls makes the rest stronger.',
+    counts: deck(['lantern-moth', 'gravewarden', 'twin-souls', 'dawnsinger', 'lantern-ferryman', 'grave-rite', 'tithe-of-light'],
+      ['field-medic', 'menders-hymn', 'sanctuary-spring', 'choirmother', 'beacon-of-hope', 'the-bright-choir', 'lightweaver', 'street-recruit',
+        'standard-keeper', 'kindly-undertaker', 'the-pale-abbess', 'bone-altar', 'borrowed-time', 'shackles', 'blood-pact', 'a-thousand-lights']) },
 ];

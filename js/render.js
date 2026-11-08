@@ -1,7 +1,7 @@
 // Card rendering: full cards, compact rows, the card back and faction glyphs.
 // Everything is drawn in HTML/CSS; paintings come from art/ when they exist.
 
-import { FACTIONS, KEYWORDS, KEYWORD_PATTERN, SET } from './cards.js';
+import { FACTIONS, KEYWORDS, KEYWORD_PATTERN, SET, ULTRA } from './cards.js';
 import { ART } from './art-manifest.js';
 import { artImage, artSVG } from './art/index.js';
 
@@ -37,13 +37,13 @@ export function factionVars(card) {
 }
 
 export function typeLine(card) {
-  const t = card.type === 'creature' ? 'Creature' : card.type === 'relic' ? 'Relic' : 'Spell';
+  const t = card.type === 'creature' ? 'Creature' : card.type === 'relic' ? 'Relic' : card.type === 'field' ? 'Field' : 'Spell';
   const pre = (card.token ? 'Token ' : '') + (card.legendary ? 'Legendary ' : '');
-  return card.subtype && card.type !== 'relic' ? `${pre}${t} — ${card.subtype}` : `${pre}${t}`;
+  return card.subtype && card.type !== 'relic' && card.type !== 'field' ? `${pre}${t} — ${card.subtype}` : `${pre}${t}`;
 }
 
-// A one-word label for a non-creature: Spell, Trick, Trap or Relic.
-export const kindOf = (card) => (card.type === 'relic' ? 'Relic' : card.subtype === 'Trick' || card.subtype === 'Trap' ? card.subtype : card.type === 'creature' ? 'Creature' : 'Spell');
+// A one-word label for a non-creature: Spell, Trick, Trap, Ritual, Relic or Field.
+export const kindOf = (card) => (card.type === 'relic' ? 'Relic' : card.type === 'field' ? 'Field' : ['Trick', 'Trap', 'Ritual'].includes(card.subtype) ? card.subtype : card.type === 'creature' ? 'Creature' : 'Spell');
 
 // Rules text: one paragraph per line, keywords set in bold so a tap can explain them.
 // An ability line ("Pay 2 Energy: …") starts with a ⚡ cost.
@@ -103,7 +103,7 @@ export function cardHTML(card, opts = {}) {
     ? `<div class="c-pv">${opts.power ?? card.power}<span>/</span>${opts.vitality ?? card.vitality}</div>` : '';
   const flavor = card.flavor && !opts.noFlavor ? `<div class="c-flavor">${esc(card.flavor)}</div>` : '';
   const coins = (card.factions.length ? card.factions : ['neutral']).map(factionCoin).join('');
-  const num = card.n ? `${String(card.n).padStart(2, '0')}/90` : 'token';
+  const num = card.ultra ? `${String(card.n - 100).padStart(2, '0')}/${ULTRA.length}` : card.n ? `${String(card.n).padStart(2, '0')}/90` : 'token';
   return `<div class="card${multi}${card.legendary ? ' legendary' : ''}${opts.cls ? ' ' + opts.cls : ''}" data-id="${esc(card.id)}" data-type="${card.type}" style="${factionVars(card)}">
     <div class="card-face">
       <div class="c-frame">
@@ -117,7 +117,7 @@ export function cardHTML(card, opts = {}) {
           <div class="c-rules">${rulesHTML(card.text)}</div>
           ${flavor}
         </div>
-        <div class="c-foot">${esc(SET.week)} · ${num}</div>
+        <div class="c-foot">${card.ultra ? 'SATTC Ultra' : esc(SET.week)} · ${num}</div>
       </div>
       ${pv}
     </div>

@@ -7,8 +7,8 @@
 // table first (cards flying in, lunges, hits, deaths), then the table is
 // redrawn and everything glides into place.
 
-import { BY_ID, KEYWORDS, RULES, STARTERS, isTrick } from './cards.js';
-import { abilityNeeds, actor, apply, blockLimit, canAttack, canBlock, champLevel, costOf, forcedBlocks, hasKw, living, needs, newGame, opponents, phoenixReady, playOptions, power, replay, useOptions, vitality } from './engine.js';
+import { BY_ID, KEYWORDS, RULES, STARTERS, ULTRA_KEYWORDS, ULTRA_STARTERS, isTrick } from './cards.js';
+import { abilityNeeds, actor, apply, blockLimit, canAttack, canBlock, champLevel, costOf, stageNeeds, forcedBlocks, hasKw, living, needs, newGame, opponents, phoenixReady, playOptions, power, replay, useOptions, vitality } from './engine.js';
 import { chooseAction } from './ai.js';
 import { artTag, cardBackHTML, cardHTML, esc, factionCoin, factionVars } from './render.js';
 import * as FX from './fx.js';
@@ -21,6 +21,7 @@ import * as St from './stats.js';
 import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
 import * as Push from './push.js';
+import * as Mode from './mode.js';
 
 const SAVE = 'collective.practice.v2';
 const store = {
@@ -62,9 +63,11 @@ if (typeof window !== 'undefined') {
 // ── play page ───────────────────────────────────────────────────────
 // Friends first (a new game for 2 or 3 players, or join one by its code),
 // then Bots (1 or 2, or draft a deck against them). Few words, one screen.
-function deckChoices() {
-  const mine = Decks.loadDecks().filter((d) => Decks.validate(d.counts).ok).map((d) => ({ id: d.id, name: d.name, counts: d.counts }));
-  return [...mine, ...STARTERS.map((d) => ({ id: d.id, name: `${d.name} (starter)`, counts: d.counts }))];
+// Your decks and the starters that fit a game's rules (SATTC Ultra or the standard game).
+const startersFor = (ultra) => (ultra ? ULTRA_STARTERS : STARTERS);
+function deckChoices(ultra = Mode.ultra()) {
+  const mine = Decks.loadDecks().filter((d) => Decks.validate(d.counts, { ultra }).ok).map((d) => ({ id: d.id, name: d.name, counts: d.counts }));
+  return [...mine, ...startersFor(ultra).map((d) => ({ id: d.id, name: `${d.name} (starter)`, counts: d.counts }))];
 }
 
 // ── online lobby ────────────────────────────────────────────────────
@@ -112,7 +115,7 @@ function inviteHTML() {
 function onlinePanelHTML(choices, chosen) {
   if (!Net.isConfigured()) return '<div class="pp-in"><h3>Friends</h3><p class="muted small" style="margin:0">Online play is not set up yet.</p></div>';
   if (L && L.info) {
-    if (L.info.draft) return Draft.roomPanelHTML(L.code, L.info, inviteHTML() + tonightHTML()); // Draft night has its own lobby
+    if (L.info.draft) return Draft.roomPanelHTML(L.code, L.info, (L.info.ultra ? '<p class="muted small ultra-note">This room plays <b>SATTC Ultra</b>.</p>' : '') + inviteHTML() + tonightHTML()); // Draft night has its own lobby
     const info = L.info;
     const meSeat = (info.players || []).findIndex((p) => p && p.id === Net.clientId());
     const host = info.host === Net.clientId();
@@ -127,22 +130,29 @@ function onlinePanelHTML(choices, chosen) {
     const full = (info.players || []).length === info.seats;
     const link = `${location.origin}${location.pathname}?room=${L.code}`;
     const myDeck = info.players?.[meSeat]?.deck;
-    const current = choices.find((d) => Decks.encode(d.counts) === myDeck)?.id || chosen;
+    // the room's rules decide which decks fit (the host's switch, not this phone's)
+    choices = deckChoices(!!info.ultra);
+    const current = choices.find((d) => Decks.encode(d.counts) === myDeck)?.id || choices[0].id;
+    const misfits = (info.players || []).filter((p) => p && !Decks.validate(Decks.decode(p.deck) || {}, { ultra: !!info.ultra }).ok);
+    const mineMisfit = misfits.some((p) => p.id === Net.clientId());
     const hostName = (info.players || []).find((p) => p && p.id === info.host)?.name || 'The host';
     const odd = Net.otherVersions(info);
     const next = info.status === 'playing' ? '<button class="btn primary" data-act="rejoin-table">Back to the table</button>'
       : host && odd.length ? '<button class="btn primary" disabled>Reload every phone first</button>'
+        : host && misfits.length ? `<button class="btn primary" disabled>${misfits.length === 1 && misfits[0].id !== Net.clientId() ? `Waiting for ${esc(misfits[0].name)} to pick a deck` : 'Every deck has to fit the rules first'}</button>`
         : host ? `<button class="btn primary" data-act="start" ${full ? '' : 'disabled'}>${full ? `Start game ${(info.round || 0) + 1}` : 'Waiting for everyone to join'}</button>`
           : `<p class="muted small pp-wait">${esc(hostName)} starts the game.</p>`;
     return `<div class="pp-in">
-      <div class="pp-title"><h3>Game <b>${esc(L.code)}</b></h3><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
+      <div class="pp-title"><h3>Game <b>${esc(L.code)}</b>${info.ultra ? ' <i class="ultra-pill">Ultra</i>' : ''}</h3><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
       ${inviteHTML()}
       ${tonightHTML()}
       <div class="deck-cards">${seats}</div>
       ${Draft.versionNoteHTML(info)}
       ${host && info.status === 'lobby' ? Draft.modeSwitchHTML(false) : ''}
       ${info.status === 'lobby' ? `<label class="dr-switch mini"><input type="checkbox" id="room-champions"${info.champions ? ' checked' : ''}${host ? '' : ' disabled'}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>Champions</b> (new)${host ? '' : ': the host decides'}</span></label>` : ''}
+      ${info.status === 'lobby' ? `<label class="dr-switch mini"><input type="checkbox" id="room-ultra"${info.ultra ? ' checked' : ''}${host ? '' : ' disabled'}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>SATTC Ultra</b>${host ? '' : ': the host decides'}</span></label>` : ''}
       <div class="pp-group"><label class="pp-row"><span>Deck</span>${deckSelect('room-deck', choices, current)}</label></div>
+      ${mineMisfit ? `<p class="small pp-misfit">Your deck doesn’t fit ${info.ultra ? 'SATTC Ultra' : 'the standard game'}: pick one above.</p>` : ''}
       ${next}
       ${alertsHTML()}
       <button class="btn ghost" data-act="leave-room">Leave this game</button>
@@ -191,7 +201,7 @@ function botsPanelHTML(choices, chosen) {
     <div class="pp-group" id="bot-decks"${PF.decksOpen && !PF.botDraft ? '' : ' hidden'}>
       <label class="pp-row"><span>You</span>${deckSelect('my-deck', choices, chosen)}</label>
       <label class="pp-row"><span>Bots</span><select id="bot-deck" class="select"><option value="random">Random starter decks</option>
-        ${STARTERS.map((d) => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label>
+        ${startersFor(Mode.ultra()).map((d) => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label>
     </div>
   </div>`;
 }
@@ -290,7 +300,7 @@ async function onlineAct(act, el, choices) {
       Net.setMyName(name);
       const deck = deckOf('net-deck');
       const dcode = Decks.encode(deck.counts);
-      if (act === 'create') { const code = await Net.createRoom({ seats: Number(el.dataset.seats), name, deck: dcode, draft: !!document.getElementById('draft-new')?.checked }); await enterRoom(code); }
+      if (act === 'create') { const code = await Net.createRoom({ seats: Number(el.dataset.seats), name, deck: dcode, draft: !!document.getElementById('draft-new')?.checked, ultra: Mode.ultra() }); await enterRoom(code); }
       else {
         const code = act === 'rejoin' ? el.dataset.code : Net.cleanCode(document.getElementById('join-code').value);
         if (code.length !== 4) { flash('Game codes have four letters.'); return; }
@@ -323,7 +333,7 @@ export function playPage(view) {
   const active = Decks.getActiveId();
   const chosen = choices.find((d) => d.id === active) ? active : choices[0].id;
   view.innerHTML = `
-    <header class="pagehead"><a class="back" href="#/" aria-label="Home">${BACK}</a><h2>Play</h2></header>
+    <header class="pagehead"><a class="back" href="#/" aria-label="Home">${BACK}</a><h2>Play${Mode.ultra() ? ' <i class="ultra-pill">Ultra</i>' : ''}</h2></header>
     <section class="panel pp">${onlinePanelHTML(choices, chosen)}</section>
     <section class="panel pp">${botsPanelHTML(choices, chosen)}</section>`;
   // "Draft my deck" brings no deck, so it hides the deck choice
@@ -340,8 +350,9 @@ export function playPage(view) {
     if (t.id === 'bot-draft') { PF.botDraft = t.checked; showDecks(); return; }
     if (t.id === 'champions-practice') { PF.champions = t.checked; try { localStorage.setItem('collective.champions', t.checked ? '1' : '0'); } catch { /* fine */ } return; }
     if (t.id === 'room-champions') { if (L) Net.setChampions(L.code, t.checked).catch((err) => flash(err.message)); return; }
+    if (t.id === 'room-ultra') { if (L) Net.setUltra(L.code, t.checked).catch((err) => flash(err.message)); return; }
     if (t.id !== 'room-deck' || !L) return;
-    const d = choices.find((x) => x.id === t.value);
+    const d = deckChoices(!!L.info?.ultra).find((x) => x.id === t.value);
     Net.setDeck(L.code, Decks.encode(d.counts)).then(() => flash(`${d.name.replace(/ \(starter\)$/, '')} is your deck for the next game.`), (err) => flash(err.message));
   };
   view.onkeydown = (e) => {
@@ -377,15 +388,16 @@ export function playPage(view) {
 
 // Bots get different starters, and not yours if there is a choice.
 function pickBots(n, which, mine) {
-  if (which !== 'random') return Array.from({ length: n }, () => STARTERS.find((d) => d.id === which));
-  const pool = [...STARTERS].filter((d) => d.id !== mine?.id).sort(() => Math.random() - 0.5);
+  const starters = startersFor(Mode.ultra());
+  if (which !== 'random') return Array.from({ length: n }, () => starters.find((d) => d.id === which) || starters[0]);
+  const pool = [...starters].filter((d) => d.id !== mine?.id).sort(() => Math.random() - 0.5);
   return pool.slice(0, n);
 }
 
 function startPractice(mine, bots) {
   const players = [{ name: 'You', deck: Decks.cardList(mine.counts) },
     ...bots.map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
-  const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, champions: PF.champions };
+  const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, champions: PF.champions, ultra: Mode.ultra() };
   begin({ mode: 'practice', setup, actions: [], me: 0, bots: bots.map((_, i) => i + 1) });
 }
 
@@ -479,10 +491,11 @@ export function demo(params) {
   const seed = Number(params.get('demo')) || 1;
   const nBots = Number(params.get('bots')) || 1;
   const moves = Number(params.get('moves')) || 24;
-  const decks = [STARTERS[1], STARTERS[4], STARTERS[0]];
+  const starters = startersFor(params.get('ultra') === '1');
+  const decks = [starters[1], starters[4], starters[0]];
   const players = [{ name: 'You', deck: Decks.cardList(decks[0].counts) },
     ...decks.slice(1, 1 + nBots).map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
-  const setup = { seed, players, startEnergy: RULES.startEnergy, champions: params.get('champions') === '1' };
+  const setup = { seed, players, startEnergy: RULES.startEnergy, champions: params.get('champions') === '1', ultra: params.get('ultra') === '1' };
   let s = newGame(setup);
   const actions = [];
   for (let k = 0; s.phase !== 'over' && (k < moves || actor(s) !== 0 || s.phase !== 'main'); k++) {
@@ -555,7 +568,7 @@ function begin(rec) {
 function beginOnline(info, seat) {
   const round = info.round;
   // (every phone in a game runs the same version, so they agree on the rules: see G.stale)
-  const setup = { seed: info.seeds[round], players: info.players.map((p) => ({ name: p.name, deck: Decks.cardList(Decks.decode(p.deck) || {}) })), startEnergy: RULES.startEnergy, champions: !!info.champions };
+  const setup = { seed: info.seeds[round], players: info.players.map((p) => ({ name: p.name, deck: Decks.cardList(Decks.decode(p.deck) || {}) })), startEnergy: RULES.startEnergy, champions: !!info.champions, ultra: !!info.ultra };
   clearTimeout(G?.timer);
   G?.unsubActions?.();
   endGate?.(false);
@@ -1052,6 +1065,9 @@ const PROMPTS = {
   'apex-predator': [null, 'Apex Predator fights which creature?'],
   'we-grow-together': [null, null, 'Choose your creatures to grow +1/+2.'],
   scorch: [null, 'Scorch which creature (2 damage)?'],
+  'ember-volley': [null, null, 'Ember Volley: choose the enemy creatures (1 damage each).'],
+  shackles: [null, 'Shackle which enemy creature?'],
+  'menders-hymn': [null, 'Heal which of your creatures?'],
   kindle: [null, 'Which of your creatures gets +2 Power and Swift?'],
   mutiny: [null, 'Take which enemy creature until the end of the turn?'],
   'sudden-growth': [null, 'Which of your creatures gets +3/+3?'],
@@ -1073,7 +1089,35 @@ const ABILITY_PROMPTS = {
   'canopy-archer': 'Canopy Archer: shoot which creature with Soar?',
   'hungry-ghoul': 'Hungry Ghoul: sacrifice which of your creatures?',
   'dawnwatch-knight': 'Which of your creatures gets +0/+2 this turn?',
+  'molten-core': 'Molten Core fuses into which of your creatures?',
+  'bark-graft': 'Bark Graft fuses into which of your creatures?',
+  'wing-graft': 'Wing Graft fuses into which of your creatures?',
+  'venom-shard': 'Venom Shard fuses into which of your creatures?',
 };
+
+// SATTC Ultra: a Ritual's next stage, and why it can't happen now.
+function riteBlocked(s, c) {
+  const st = BY_ID[c.cid].stages?.[c.stage];
+  if (!st) return 'That Ritual is complete.';
+  if (s.active !== G.me || s.phase !== 'main' || !myMove()) return 'On your own turn.';
+  if (c.stageOn === s.turn) return 'One stage a turn: this one can happen next turn.';
+  if (st.cost > s.players[G.me].energy) return `Needs ${st.cost} Energy; you have ${s.players[G.me].energy}.`;
+  return null;
+}
+function startRite(uid) {
+  const s = S(), c = s.cards[uid];
+  const why = riteBlocked(s, c);
+  if (why) { flash(why); return; }
+  const n = stageNeeds(s, G.me, c);
+  const steps = [];
+  if (n.target && n.target.length) steps.push({ kind: 'target', options: n.target, optional: !!n.optional, prompt: `${BY_ID[c.cid].name}: return which creature to its owner’s hand?` });
+  if (n.pick && n.pick.length) steps.push({ kind: 'pick', options: n.pick, optional: !!n.optional });
+  if (n.picks && n.picks.length) steps.push({ kind: 'picks', options: n.picks, max: n.max, title: `Bring back up to ${n.max} creatures`, verb: 'Bring back' });
+  G.sheet = null;
+  if (!steps.length) { tryMove({ t: 'use', p: G.me, uid }); return; }
+  G.flow = { a: { t: 'use', p: G.me, uid }, steps, i: 0, multi: [] };
+  nextChoice();
+}
 
 // Why can't I use this creature's ability right now? (null: I can)
 function abilityBlocked(uid) {
@@ -1352,7 +1396,8 @@ function aimDrop(uid, toEl) {
 function relicHTML(s, r, hl) {
   const d = BY_ID[r.cid];
   const isT = hl.targets.some((t) => t.uid === r.uid);
-  const note = r.cid === 'the-drowned-clock' ? `<b class="relic-n">${r.chimes || 0}/3</b>` : r.cid === 'bone-altar' && r.usedOn === s.turn ? '<b class="relic-n">✓</b>' : '';
+  const note = r.cid === 'the-drowned-clock' ? `<b class="relic-n">${r.chimes || 0}/3</b>` : r.cid === 'bone-altar' && r.usedOn === s.turn ? '<b class="relic-n">✓</b>'
+    : d.stages ? `<b class="relic-n rite">${r.stage}/${d.stages.length}</b>` : '';
   return `<button class="relic${isT ? ' target' : ''}" data-uid="${r.uid}" data-cid="${r.cid}" style="${factionVars(d)}" aria-label="${esc(d.name)}">
     <span class="relic-art">${artTag(r.cid) || ''}</span>${note}</button>`;
 }
@@ -1412,6 +1457,7 @@ function creatureHTML(s, c, hl, inBattle = false) {
   return FX.tcardHTML(d, {
     uid: c.uid, states: st, power: power(s, c), vitality: vitality(s, c) - (c.dmg || 0), dmg: c.dmg,
     keywords: kws, leaving: !!(c.sacEnd || c.stolen), foe: !mine, ability, champ: d.champion ? champLevel(s, c.owner) : 0,
+    shelter: !!(s.ultra && c.shelter), hex: c.hex || 0, poison: c.poison || 0,
     ...(inBattle ? { cls: 'in-battle', rest: false } : {}),
   });
 }
@@ -1763,7 +1809,9 @@ function handHTML(s) {
     const st = can ? ['can'] : myMove() ? ['dim'] : [];
     if (G.flow?.a.uid === u) st.push('selected');
     if (u === peek) st.push('peek');
-    return FX.tcardHTML(d, { uid: u, zone: 'hand', cost: costOf(s, G.me, c), states: st });
+    // (Ultra: a creature sent back to the hand shows the growth it kept)
+    const kept = c.keepP || c.keepV ? { power: d.power + (c.keepP || 0), vitality: d.vitality + (c.keepV || 0) } : {};
+    return FX.tcardHTML(d, { uid: u, zone: 'hand', cost: costOf(s, G.me, c), states: st, ...kept });
   }).join('');
 }
 
@@ -2050,6 +2098,13 @@ function focusSwipe(e) {
   addEventListener('pointerup', up, true);
 }
 
+// SATTC Ultra: the Field everyone plays under, as a banner in the middle (a tap reads it).
+function fieldHTML(s) {
+  if (s.field == null) return '';
+  const f = s.cards[s.field], d = BY_ID[f.cid];
+  return `<button class="g-field" data-key="field" data-act="field-info" data-uid="${f.uid}" style="${factionVars(d)}"><span>Field</span><b>${esc(d.name)}</b></button>`;
+}
+
 function tableHTML() {
   const s = S(), me = s.players[G.me];
   const hl = highlights();
@@ -2071,7 +2126,7 @@ function tableHTML() {
     </div>
     <div class="g-table">
       ${others.map((P) => `<section class="g-side opp${s.active === P.i ? ' active' : ''}${P.out ? ' out' : ''}${s.combat && (s.combat.a === P.i || s.combat.d === P.i) ? ' in-fight' : ''}${folded(P) ? ' folded' : ''}${low(P)}" data-side="${P.i}"${order(P.i)}>${pbarHTML(s, P, hl, folded(P))}${row(P)}</section>`).join('')}
-      <div class="g-mid"${order('mid')}>${bv ? battleHTML(s, bv, hl) : ''}<div class="g-say" data-key="say">${midHTML()}</div></div>
+      <div class="g-mid"${order('mid')}>${bv ? battleHTML(s, bv, hl) : ''}${fieldHTML(s)}<div class="g-say" data-key="say">${midHTML()}</div></div>
       <section class="g-side me${s.active === G.me ? ' active' : ''}${me.out ? ' out' : ''}${folded(me) ? ' folded' : ''}" data-side="${G.me}"${order(G.me)}>${row(me)}${pbarHTML(s, me, hl, folded(me))}</section>
       ${st && !decision() ? coachHTML(st) : ''}${recapHTML()}
     </div>
@@ -2190,7 +2245,7 @@ function draw(root) {
   const duel = s.players.length === 2 || openSides(s).size === 2;
   // (`quiet`: in a fight the opponents' other creatures step out of view, unless a move touches one)
   const quiet = s.players.length > 2 && s.combat && !G.reveal && !G.showAll;
-  const cls = (duel ? 'g-duel' : 'g-ffa') + (s.players.length > 2 ? ' g-three' : '') + (G.busy ? ' busy' : '') + (s.combat || G.atk ? ' fighting' : '') + (s.combat ? ' in-combat' : '') + (quiet ? ' quiet' : '') + (tutStep() ? ' lesson' : '');
+  const cls = (duel ? 'g-duel' : 'g-ffa') + (s.players.length > 2 ? ' g-three' : '') + (G.busy ? ' busy' : '') + (s.combat || G.atk ? ' fighting' : '') + (s.combat ? ' in-combat' : '') + (quiet ? ' quiet' : '') + (tutStep() ? ' lesson' : '') + (s.ultra ? ' ultra' : '');
   if (root.className !== cls) root.className = cls; // an unchanged class costs nothing to restyle
   morphChildren(root, tableHTML());
   FX.layoutHand(root.querySelector('.tc-hand'));
@@ -2482,6 +2537,22 @@ async function animateOld(root, events, after = G.state) {
         break;
       }
       case 'chime': { const n = el(root, e.uid); if (n) await FX.number(n, `🔔 ${e.n || 3}/3`, { kind: 'buff' }); break; }
+      // SATTC Ultra
+      case 'heal': { const n = el(root, e.uid); if (n) await FX.number(n, `+${e.n}`, { kind: 'heal' }); break; }
+      case 'invest': { const b = barEl(root, e.p); if (b) await FX.number(b, '⚡ +1 for good', { kind: 'buff' }); break; }
+      case 'field': {
+        const d = BY_ID[S().cards[e.uid]?.cid];
+        if (d) await FX.banner(`The Field: ${d.name}`, { sub: d.text.replace(/^Field\n/, ''), tone: e.p === G.me ? 'mine' : 'foe' });
+        break;
+      }
+      case 'fuse': { const n = el(root, e.to); if (n) await FX.burst(n, { color: '#ffb35c' }); break; }
+      case 'erupt': {
+        const n = el(root, e.uid);
+        if (n) FX.burst(n, { color: '#ff5a2a' });
+        await Promise.race([FX.wave(root.querySelector('.g-table'), { color: '#ff5a2a' }), FX.wait(700)]);
+        break;
+      }
+      case 'legacy': { const n = el(root, e.uid); if (n) await FX.number(n, 'Legacy', { kind: 'buff' }); break; }
       default: break;
     }
   }
@@ -2648,7 +2719,8 @@ function kwHelp(card, extra = []) {
   const text = `${card.text || ''} ${extra.map((k) => KEYWORDS[k]?.name || '').join(' ')}`;
   const list = Object.values(KEYWORDS).filter((k) => k !== KEYWORDS.ability && new RegExp('\\b' + k.name + '\\b', 'i').test(text));
   if (card.ability) list.push(KEYWORDS.ability);
-  return list.map((k) => `<div><b>${k.name}</b> — ${esc(k.text)}</div>`).join('');
+  const ultra = G?.state?.ultra || (!G && Mode.ultra());
+  return list.map((k) => `<div><b>${k.name}</b> — ${esc((ultra && ULTRA_KEYWORDS[Object.keys(KEYWORDS).find((id) => KEYWORDS[id] === k)]) || k.text)}</div>`).join('');
 }
 
 // The Play button for one of your cards (or Echo from the discard pile), and why not if it can't be played.
@@ -2757,7 +2829,10 @@ function cardSheet(uid, { from = 'hand' } = {}) {
   if (c.owner === G.me && s.phase !== 'mulligan' && (c.zone === 'hand' || (from === 'discard' && d.echo))) ({ actions, note } = playPanel(uid, from));
   if (onBoard) {
     const bits = [];
-    if (c.dmg) bits.push(`${c.dmg} damage this turn (heals at the end of the turn)`);
+    if (c.dmg) bits.push(s.ultra ? `${c.dmg} damage: wounds heal by half at the start of its owner’s turn${c.poison ? ` (${c.poison} of it is poison, which doesn’t)` : ''}` : `${c.dmg} damage this turn (heals at the end of the turn)`);
+    if (s.ultra && c.shelter) bits.push('Sheltered: opponents can’t aim Spells or abilities at it until its owner’s next turn');
+    if (c.hex) bits.push(`Hexed: it can’t attack or block until ${c.ctrl === G.me ? 'you pay' : `${shortName(s.players[c.ctrl].name)} pays`} ${c.hex} Energy`);
+    if (c.fuseKw?.length) bits.push(`Fused: ${c.fuseKw.map((k) => KEYWORDS[k]?.name).filter(Boolean).join(', ')}`);
     if (c.ex) bits.push(c.frozen ? 'Exhausted, and pinned: it stays down through its next turn' : 'Exhausted: it can’t attack or block until its controller’s next turn');
     if (c.stolen) bits.push(`Borrowed from ${shortName(s.players[c.stolen.back].name)} until the end of the turn`);
     if (c.owner !== c.ctrl && !c.stolen) bits.push(`Taken from ${shortName(s.players[c.owner].name)} for good`);
@@ -2766,6 +2841,7 @@ function cardSheet(uid, { from = 'hand' } = {}) {
     if (d.champion) bits.push(champLine(s, c));
     if (c.ctrl === G.me) {
       if (myMain() && !attackedThisTurn() && canAttack(s, G.me, c)) actions = `<button class="btn primary" data-act="attack-from-sheet" data-uid="${uid}">${G.atk?.att.includes(uid) ? 'Keep it home' : 'Send it into the attack'}</button>`;
+      if (c.hex && myMain()) actions += `<button class="btn primary" data-act="unhex" data-uid="${uid}" ${s.players[G.me].energy >= c.hex ? '' : 'disabled'}>Break the Hex: pay ${c.hex} Energy</button>`;
       else if (c.played === s.turn && s.active === G.me && !hasKw(s, c, 'rush')) bits.push('Arrived this turn: it can attack next turn (it can block already)');
       if (d.ability) {
         const why = abilityBlocked(uid);
@@ -2775,9 +2851,19 @@ function cardSheet(uid, { from = 'hand' } = {}) {
     } else if (d.ability) bits.push(c.usedOn === s.turn ? 'Its ability was used this turn' : `Its ability: pay ${d.ability.cost} Energy for ${d.ability.short}`);
     if (bits.length) note = `<div class="sheet-note">${bits.map(esc).join('<br>')}</div>`;
   }
+  if (c.zone === 'field') note = '<div class="sheet-note">The Field: it changes the rules for everyone at the table, until someone plays another Field.</div>';
   if (c.zone === 'relic') {
     const bits = [];
     if (c.cid === 'the-drowned-clock') bits.push(`Chimes so far: ${c.chimes || 0} of 3`);
+    if (d.stages) {
+      const next = d.stages[c.stage];
+      bits.push(`Ritual: stage ${c.stage} of ${d.stages.length} done`);
+      if (next && c.ctrl === G.me) {
+        const why = riteBlocked(s, c);
+        actions = `<button class="btn primary" data-act="rite" data-uid="${uid}" ${why ? 'disabled' : ''}>Stage ${['I', 'II', 'III'][c.stage]}: pay ${next.cost} Energy</button>`;
+        bits.push(`Next: ${next.text}${why ? ` (${why})` : ''}`);
+      } else if (next) bits.push(`Next, for ${next.cost} Energy: ${next.text}`);
+    }
     if (c.cid === 'bone-altar' && c.ctrl === G.me) {
       const ok = myMove() && s.active === G.me && c.usedOn !== s.turn && s.players[G.me].board.length > 0;
       actions = `<button class="btn primary" data-act="use" data-uid="${uid}" ${ok ? '' : 'disabled'}>Sacrifice a creature to draw a card</button>`;
@@ -2803,8 +2889,8 @@ function choiceSheet(st) {
       return `<h3>${title}</h3>${cards(st.options)}<div class="btn-col">${st.optional ? '<button class="btn" data-act="skip">Bring nothing back</button>' : ''}${cancel}</div>`;
     }
     case 'picks':
-      return `<h3>Return up to three Spells</h3>${cards(st.options, G.flow.multi)}
-        <div class="btn-col"><button class="btn primary" data-act="done-picks">Return ${G.flow.multi.length}</button>${cancel}</div>`;
+      return `<h3>${esc(st.title || 'Return up to three Spells')}</h3>${cards(st.options, G.flow.multi)}
+        <div class="btn-col"><button class="btn primary" data-act="done-picks">${esc(st.verb || 'Return')} ${G.flow.multi.length}</button>${cancel}</div>`;
     case 'keep':
       return `<h3>Memory Diver</h3><p class="sheet-note">The top ${st.options.length} cards of your deck. Keep one; the rest go to your discard pile.</p>${cards(st.options)}<div class="btn-col">${cancel}</div>`;
     case 'bottom':
@@ -2888,7 +2974,7 @@ function playerSheet(pi) {
 }
 
 function menuSheet() {
-  return `<h3>Menu</h3><div class="btn-col">
+  return `<h3>Menu</h3>${S().ultra ? '<p class="sheet-note ultra-note">This game plays <b>SATTC Ultra</b>.</p>' : ''}<div class="btn-col">
     ${tutStep() ? '<button class="btn" data-act="coach-skip">Skip the lesson (play on against the bot)</button>' : ''}
     ${G.mode === 'practice' ? '<button class="btn" data-act="undo">↶ Take back my last move</button>' : ''}
     <button class="btn" data-act="help">How the table works</button>
@@ -2919,6 +3005,7 @@ function helpSheet() {
       <div><b>The fight</b>: before it starts, a screen shows the <b>Tricks</b> and abilities you could use (only when you have one): play one, or tap <b>Fight</b>. It comes up big, a pair at a time, with what happened and why: tap to go on, Skip to close. The note under the table afterwards plays it again.</div>
       <div><b>The others’ moves wait for you</b>: a card someone plays stays up big, and an attack between the other two stays on the table, until you <b>tap anywhere</b>. <b>Skip to your move</b> passes over the rest. In ☰ you can let them play by themselves instead.</div>
       <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card, which shows the Energy it takes (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
+      ${S().ultra ? '<div><b>SATTC Ultra</b>: 30 Life. <b>Wounds stay</b> on creatures and heal by half at the start of their owner’s turn. A new creature is <b>Sheltered</b> (🛡) from opponents’ Spells and abilities until its owner’s next turn. When a creature that grew dies, half its growth passes to your weakest creature (<b>Legacy</b>). Energy grows by itself to 6; <b>Invest</b> cards raise it for good, up to 12. One <b>Field</b> (the banner in the middle) changes the rules for everyone. A <b>Ritual</b> stays in your Relic row: tap it to pay its next stage, one a turn. A <b>Hex</b> (⛓) lasts until its owner pays to break it: tap the creature. Venom’s damage is poison (☠): it doesn’t heal.</div>' : ''}
       ${S().players.some((P) => P.champ) ? '<div><b>★ Champions</b> (new): every deck starts with a Champion on the table. It can block from the start, but can’t attack until Level 2. It levels up as you do what its faction does (tap it to see how far along it is), and each level changes how your other cards work. If it leaves the table it goes back to your hand, costing 2 more each time.</div>' : ''}
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
       <div><b>The button at the bottom right</b> moves the game on: End turn, Attack, Block, Fight. While you could still play a card or attack, End turn asks for a second tap.</div>
@@ -3196,6 +3283,9 @@ function onAct(act, el) {
       break;
     }
     case 'use-ability': startAbility(uid); break;
+    case 'rite': startRite(uid); break;
+    case 'unhex': G.sheet = null; dispatch({ t: 'unhex', p: G.me, uid }); break;
+    case 'field-info': G.sheet = cardSheet(uid); redraw(); break;
     case 'suggest': if (G.suggest) { G.suggest = null; redraw(); } else startSuggest(); break;
     case 'suggest-close': G.suggest = null; redraw(); break;
     case 'suggest-do': {

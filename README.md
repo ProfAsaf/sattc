@@ -389,6 +389,73 @@ says nothing about alerts until `js/push-config.js` points at it. No alert
 while your game is open in front of you. iPhones: iOS 16.4+, the game opened
 from its Home Screen icon.
 
+## SATTC Ultra (2026-11-07)
+
+A switch on Home (`js/mode.js`) for trying bigger changes beside the standard
+game. Its design notes are in `ultra-plan.md`. The aims:
+
+- Strategies you steer into as the game goes, from your deck, your early draws
+  and what the others do, with no tracks.
+- Cards that are weak alone and strong together.
+- Constant trade-offs between ways to grow.
+- Many different powers, none beaten for free, like the web serial Worm.
+- Party-style combos, as in an RPG.
+
+**The switch.** This phone remembers it. New practice games and new rooms take
+it, and a room keeps its own (`info.ultra`, which the host can flip in the
+lobby), so a table always plays one set of rules. Engine: `setup.ultra` →
+`s.ultra`. A setup without it plays the standard rules: every saved game, and
+the lesson.
+
+**Rules** (engine.js, all behind `s.ultra`):
+
+- 30 Life, or 25 with three players.
+- Energy grows by itself to 6; **Invest** raises it for good, up to 12.
+- **Wounds stay**, healing half (rounded up) at the start of their owner's turn.
+  Venom's damage is poison, which doesn't heal.
+- **Sheltered** until its owner's next turn: no opponent's Spell or ability can
+  target it, and it can't be hunted.
+- **Legacy**: half a dying creature's growth passes to the weakest of its side.
+- A creature sent back to the hand keeps its growth.
+- One shared **Field** at a time.
+- **Hexes** last until paid off.
+- Death Is a Door, The Culling, Dawn's Judgment and Nerissa stay out of Ultra
+  decks.
+
+**Cards.** There are 31 Ultra cards (`ULTRA` in cards.js, numbered 101–131;
+`ULTRA_POOL` is what an Ultra deck may use). Their new words are Invest,
+Grows N, Multiply, Unstable, Fuse, Ritual, Hex, Field and Bodyguard. There are
+also party pieces: Shield Captain, Field Medic, Rootmother, Thornback Archer,
+Bloodbinder and Gravewarden. Five Ultra starters (`ULTRA_STARTERS`) each mix
+two or three ways to build.
+
+**Deck codes.** Decks with Ultra cards add a `~` part to their share code.
+`Decks.validate(counts, { ultra })` keeps Ultra cards out of standard games and
+`ULTRA_OUT` out of Ultra ones. An Ultra room won't start until every deck fits.
+
+**Bot games** (`ultra-sim.mjs`, `pace.mjs`, `lifespan.mjs` in the session
+scratchpad):
+
+| | standard | Ultra |
+|---|---|---|
+| Rounds, duels | about 7.5 | about 10 |
+| Rounds, three players | about 8 | about 12 |
+| Creatures that ever grow | 15% | 42% |
+
+- Every new mechanic turns up in a typical game. Per duel: 1.5 Invests, 1
+  Ritual, 1.2 Fuses, about 5 Legacies and 2.5 Multiply copies.
+- Starter decks win 36–58% in duels and 20–44% with three players (33% is even).
+  Sky and Arrows is weakest with three players, and Endless Swarm in duels.
+
+**On the table.**
+
+- The Field is a banner in the middle; tap it to read it.
+- A Ritual sits in the Relic row with its stage count; tap it to pay the next
+  stage.
+- Marks on creatures: 🛡 Sheltered, ⛓N a Hex (tap the creature to break it),
+  ☠N poison.
+- Wounds show in the Vitality number.
+
 ## Champions, a prototype (2026-11-07)
 
 "Starting everybody with one defender or something… what I like about Dominion

@@ -2,8 +2,8 @@
 //   node tools/test-engine.mjs            all tests + 400 fuzz games
 //   node tools/test-engine.mjs 3000       more fuzz games
 
-import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack, useOptions, champLevel, draw } from '../js/engine.js';
-import { BY_ID, RULES, STARTERS } from '../js/cards.js';
+import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack, canBlock, useOptions, champLevel, draw, needs } from '../js/engine.js';
+import { BY_ID, RULES, STARTERS, ULTRA_STARTERS } from '../js/cards.js';
 import { canAdd, cardList, validate } from '../js/decks.js';
 
 let pass = 0, fail = 0;
@@ -1280,6 +1280,14 @@ function champ(s, p, cid) {
   return c;
 }
 
+test('SATTC Ultra: off unless a game asks for it, and kept on the game', () => {
+  const players = [{ name: 'A', deck: cardList(STARTERS[0].counts) }, { name: 'B', deck: cardList(STARTERS[1].counts) }];
+  eq(newGame({ seed: 3, players }).ultra, false, 'a setup without it (every saved game) plays the standard rules');
+  const s = newGame({ seed: 3, players, startEnergy: 3, ultra: true });
+  eq(s.ultra, true, 'an Ultra setup');
+  eq(replay({ seed: 3, players, startEnergy: 3, ultra: true }, []).ultra, true, 'a replay keeps it');
+});
+
 test('Champions start on the table, one each, from the deck', () => {
   const ed = cardList(STARTERS[0].counts), mm = cardList(STARTERS[1].counts);
   const s = newGame({ seed: 3, players: [{ name: 'A', deck: ed }, { name: 'B', deck: mm }], startEnergy: 3, champions: true });
@@ -1492,16 +1500,326 @@ test('Wild Bloom doubles Power and Vitality for the turn', () => {
   eq(power(s, s.cards[m.uid]), 5, 'back after the turn');
 });
 
+// ── SATTC Ultra ─────────────────────────────────────────────────────
+// A blank mid-game position with the Ultra rules on, and a creature on the
+// table that is past its Shelter.
+function uscene(opts = {}) {
+  const s = scene(opts);
+  s.ultra = true;
+  s.field = null;
+  for (const P of s.players) { P.invest = 0; P.life = 30; }
+  return s;
+}
+const ub = (s, cid, p, extra = {}) => { const c = addCard(s, cid, p, 'board', extra); delete c.shelter; return c; };
+const endT = (s) => act(s, { t: 'end', p: s.active });
+const onBoard = (s, p, cid) => s.players[p].board.filter((u) => s.cards[u].cid === cid);
+
+test('Ultra: 30 Life; Energy grows to 6 by itself, and each Invest raises that for good', () => {
+  const players = [{ name: 'A', deck: cardList(ULTRA_STARTERS[0].counts) }, { name: 'B', deck: cardList(ULTRA_STARTERS[1].counts) }];
+  let s = newGame({ seed: 5, players, startEnergy: 3, ultra: true });
+  eq(s.players[A].life, 30, 'Ultra starts at 30 Life');
+  eq(newGame({ seed: 5, players }).players[A].life, 20, 'the standard game still starts at 20');
+  s = act(s, { t: 'mulligan', p: A, redraw: false });
+  s = act(s, { t: 'mulligan', p: B, redraw: false });
+  for (let k = 0; k < 14; k++) s = endT(s);
+  const me = s.active;
+  eq(s.players[me].maxEnergy, 6, 'max Energy stops at 6');
+  const life = s.players[me].life, bp = addCard(s, 'blood-pact', me, 'hand');
+  s = play(s, bp.uid);
+  eq(s.players[me].maxEnergy, 7, 'Blood Pact: 7 now');
+  eq(s.players[me].invest, 1, 'one Investment');
+  eq(s.players[me].life, life - 3, 'Blood Pact costs 3 Life');
+  s = endT(endT(s));
+  eq(s.players[me].maxEnergy, 7, 'and it stays 7');
+});
+
+test('Ultra: wounds stay, and heal half (rounded up) at the start of their owner’s turn', () => {
+  let s = uscene();
+  const w = ub(s, 'bastion-wall', B);
+  w.dmg = 3;
+  s = endT(s);
+  eq(s.cards[w.uid].dmg, 1, '3 damage: 2 heal');
+  s = endT(s);
+  eq(s.cards[w.uid].dmg, 1, 'only on its owner’s turn');
+  s = endT(s);
+  eq(s.cards[w.uid].dmg, 0, 'then the last 1');
+});
+
+test('Ultra: a new creature is Sheltered from opponents’ Spells until its owner’s next turn', () => {
+  let s = uscene();
+  s.active = B;
+  const c = addCard(s, 'shieldbearer', B, 'hand');
+  s = play(s, c.uid);
+  ok(s.cards[c.uid].shelter, 'Sheltered when it arrives');
+  s = endT(s);
+  const sc = addCard(s, 'scorch', A, 'hand');
+  ok(!needs(s, A, s.cards[sc.uid]).target.some((t) => t.uid === c.uid), 'Scorch can’t aim at it');
+  ok(needs(s, B, s.cards[c.uid]) && true, '(its owner still can)');
+  s = endT(s);
+  ok(!s.cards[c.uid].shelter, 'its owner’s next turn ends the Shelter');
+});
+
+test('Ultra, Legacy: half of a dying creature’s growth passes to the weakest of its side', () => {
+  let s = uscene();
+  const big = ub(s, 'bastion-wall', A, { pP: 4, pV: 2 });
+  const small = ub(s, 'shieldbearer', A);
+  const f = addCard(s, 'feed-the-flame', A, 'hand');
+  s = play(s, f.uid, { sac: big.uid, target: { p: B } });
+  eq(s.cards[small.uid].pP, 2, 'half of +4 Power');
+  eq(s.cards[small.uid].pV, 1, 'half of +2 Vitality');
+});
+
+test('Ultra: Venom poisons instead of killing, and only a cure heals poison', () => {
+  let s = uscene();
+  const adder = ub(s, 'marsh-adder', A);
+  const w = ub(s, 'bastion-wall', B);
+  s = attack(s, [adder.uid]);
+  s = fight(s, [[w.uid, adder.uid]]);
+  ok(s.cards[w.uid].zone === 'board', 'the Wall survives the Venom');
+  eq(s.cards[w.uid].poison, 1, 'poisoned: 1');
+  s = endT(s);
+  eq(s.cards[w.uid].dmg, 1, 'poison doesn’t heal');
+  const h = addCard(s, 'menders-hymn', B, 'hand');
+  s = play(s, h.uid, { target: { uid: w.uid } });
+  eq(s.cards[w.uid].dmg, 0, 'Mender’s Hymn cures it');
+});
+
+test('Ultra: a creature sent back to its owner’s hand keeps its growth', () => {
+  let s = uscene();
+  const g = ub(s, 'shieldbearer', A, { pP: 2, pV: 2 });
+  const ny = addCard(s, 'not-yet', A, 'hand');
+  s = play(s, ny.uid, { target: { uid: g.uid } });
+  ok(s.cards[g.uid].zone === 'hand', 'back in hand');
+  s = play(s, g.uid);
+  eq(power(s, s.cards[g.uid]), 3, 'played again with its +2 Power');
+  eq(vitality(s, s.cards[g.uid]), 6, 'and +2 Vitality');
+});
+
+test('Ultra, Hex: Shackles stops a creature attacking or blocking until its controller pays 4', () => {
+  let s = uscene();
+  const t = ub(s, 'ironhide-charger', B);
+  const sh = addCard(s, 'shackles', A, 'hand');
+  s = play(s, sh.uid, { target: { uid: t.uid } });
+  eq(s.cards[t.uid].hex, 4, 'Hex 4');
+  ok(!canBlock(s, s.cards[t.uid], null), 'it can’t block');
+  s = endT(s);
+  ok(!canAttack(s, B, s.cards[t.uid]), 'or attack');
+  ok(legalActions(s, B).some((a) => a.t === 'unhex' && a.uid === t.uid), 'its controller may break it');
+  const e = s.players[B].energy;
+  s = act(s, { t: 'unhex', p: B, uid: t.uid });
+  ok(!s.cards[t.uid].hex && s.players[B].energy === e - 4, 'paying 4 breaks it');
+  ok(canAttack(s, B, s.cards[t.uid]), 'and it can attack again');
+});
+
+test('Ultra, Fields: one for the table; Scorched Earth stops healing, Sanctuary Spring heals fully', () => {
+  let s = uscene();
+  const w = ub(s, 'bastion-wall', B);
+  w.dmg = 4;
+  const se = addCard(s, 'scorched-earth', A, 'hand');
+  s = play(s, se.uid);
+  eq(s.field, se.uid, 'Scorched Earth is the Field');
+  s = endT(s);
+  eq(s.cards[w.uid].dmg, 4, 'no healing under Scorched Earth');
+  const sp = addCard(s, 'sanctuary-spring', B, 'hand');
+  s = play(s, sp.uid);
+  eq(s.field, sp.uid, 'a new Field replaces it');
+  ok(s.players[A].discard.includes(se.uid), 'the old one goes to its owner’s discard pile');
+  s = endT(endT(s));
+  eq(s.cards[w.uid].dmg, 0, 'Sanctuary Spring heals it fully');
+});
+
+test('Ultra: Overgrowth makes every permanent boost +1/+1 bigger', () => {
+  let s = uscene();
+  const c = ub(s, 'shieldbearer', A);
+  const o = addCard(s, 'overgrowth', A, 'hand');
+  s = play(s, o.uid);
+  const wg = addCard(s, 'wild-growth', A, 'hand');
+  s = play(s, wg.uid, { target: { uid: c.uid } });
+  eq(s.cards[c.uid].pP, 3, 'Wild Growth’s +2 becomes +3');
+});
+
+test('Ultra: Grows and Multiply at the start of their owner’s turn', () => {
+  let s = uscene();
+  const sp = ub(s, 'sproutling', B);
+  ub(s, 'mycelium-bud', B);
+  s = endT(s);
+  eq(s.cards[sp.uid].pP, 1, 'Sproutling grows 1');
+  eq(onBoard(s, B, 'mycelium-bud').length, 2, 'Mycelium Bud makes a copy');
+  ok(onBoard(s, B, 'mycelium-bud').some((u) => s.cards[u].token), 'the copy is a token');
+  s = endT(endT(s));
+  eq(onBoard(s, B, 'mycelium-bud').length, 4, 'and the copies multiply too');
+  eq(s.cards[sp.uid].pP, 2, 'Sproutling again');
+});
+
+test('Ultra: an Unstable creature erupts at 10 Power and starts again', () => {
+  let s = uscene();
+  const heart = ub(s, 'kindling-heart', B, { pP: 8, pV: 8 });
+  const w = ub(s, 'bastion-wall', A), mine = ub(s, 'bastion-wall', B);
+  const lifeA = s.players[A].life;
+  s = endT(s);
+  eq(power(s, s.cards[heart.uid]), 0, 'it reached 10, erupted, and is back to 0/1');
+  eq(s.cards[w.uid].dmg, 3, 'every other creature took 3');
+  eq(s.cards[mine.uid].dmg, 3, 'its own side’s too');
+  eq(s.players[A].life, lifeA - 3, 'and every player');
+});
+
+test('Ultra, Fuse: Molten Core joins another creature, which keeps its stats and Swift', () => {
+  let s = uscene();
+  const core = ub(s, 'molten-core', A), host = ub(s, 'ironhide-charger', A);
+  const p0 = power(s, s.cards[host.uid]), v0 = vitality(s, s.cards[host.uid]);
+  s = act(s, { t: 'use', p: A, uid: core.uid, target: { uid: host.uid } });
+  eq(power(s, s.cards[host.uid]), p0 + 2, '+2 Power');
+  eq(vitality(s, s.cards[host.uid]), v0 + 1, '+1 Vitality');
+  ok(hasKw(s, s.cards[host.uid], 'swift'), 'and Swift');
+  ok(!hasKw(s, s.cards[host.uid], 'fuse'), 'but not Fuse');
+  ok(s.players[A].discard.includes(core.uid), 'Molten Core goes to the discard pile');
+});
+
+test('Ultra, Rituals: Flood Rite in three stages, one a turn, ending in an extra turn', () => {
+  let s = uscene();
+  for (let k = 0; k < 6; k++) addCard(s, 'scorch', A, 'deck');
+  const fr = addCard(s, 'flood-rite', A, 'hand');
+  const t = ub(s, 'shieldbearer', B);
+  const hand0 = s.players[A].hand.length;
+  s = play(s, fr.uid);
+  eq(s.players[A].hand.length, hand0 + 1, 'stage I: draw 2');
+  ok(s.players[A].relics.includes(fr.uid) && s.cards[fr.uid].stage === 1, 'it stays in front of A');
+  eq(useOptions(s, A, s.cards[fr.uid]).length, 0, 'not again this turn');
+  const gr = addCard(s, 'grave-rite', A, 'hand');
+  ok(check(s, { t: 'play', p: A, uid: gr.uid }) != null, 'one Ritual at a time');
+  s = endT(endT(s));
+  s = act(s, { t: 'use', p: A, uid: fr.uid, target: { uid: t.uid } });
+  eq(s.cards[t.uid].zone, 'hand', 'stage II: back to its owner’s hand');
+  s = endT(endT(s));
+  s = act(s, { t: 'use', p: A, uid: fr.uid });
+  ok(s.players[A].discard.includes(fr.uid), 'stage III completes it');
+  s = endT(s);
+  eq(s.active, A, 'A takes an extra turn');
+});
+
+test('Ultra, Rituals: Grave Rite brings creatures back from the discard pile', () => {
+  let s = uscene();
+  const d1 = addCard(s, 'shieldbearer', A, 'discard'), d2 = addCard(s, 'marsh-adder', A, 'discard'), d3 = addCard(s, 'ironhide-charger', A, 'discard');
+  const gr = addCard(s, 'grave-rite', A, 'hand');
+  s = play(s, gr.uid, { pick: d1.uid });
+  ok(s.players[A].hand.includes(d1.uid), 'stage I: a creature card back to hand');
+  s = endT(endT(s));
+  const lifeB = s.players[B].life, lifeA = s.players[A].life;
+  s = act(s, { t: 'use', p: A, uid: gr.uid });
+  ok(s.players[B].life === lifeB - 2 && s.players[A].life === lifeA + 2, 'stage II: 2 Life from each opponent');
+  s = endT(endT(s));
+  s = act(s, { t: 'use', p: A, uid: gr.uid, picks: [d2.uid, d3.uid] });
+  ok(s.players[A].board.includes(d2.uid) && s.players[A].board.includes(d3.uid), 'stage III: two creatures return to play');
+});
+
+test('Ultra: Thornback Archer covers a flier, striking what it fights first', () => {
+  let s = uscene();
+  ub(s, 'thornback-archer', A);
+  const flier = ub(s, 'cloud-ray', A);
+  const blocker = ub(s, 'canopy-archer', B);
+  s = attack(s, [flier.uid]);
+  s = fight(s, [[blocker.uid, flier.uid]]);
+  ok(s.cards[blocker.uid].zone !== 'board', 'the blocker falls to the cover before it strikes');
+  eq(s.cards[flier.uid].zone, 'board', 'and the flier lives');
+});
+
+test('Ultra: Shield Captain strengthens the other Guards; Guards grow as they block; Bastion Wall bites', () => {
+  let s = uscene();
+  ub(s, 'shield-captain', B);
+  const w = ub(s, 'bastion-wall', B);
+  eq(vitality(s, s.cards[w.uid]), 8, 'Bastion Wall gets +0/+2');
+  const att = ub(s, 'spark-runner', A);
+  const lifeA = s.players[A].life;
+  s = attack(s, [att.uid]);
+  s = fight(s, [[w.uid, att.uid]]);
+  eq(s.cards[w.uid].pV, 1, 'blocking: +0/+1 for good');
+  eq(s.players[A].life, lifeA - 2, 'Bastion Wall: the attacker loses 2 Life');
+});
+
+test('Ultra: Field Medic heals 2 more, and Rootmother grows whatever heals', () => {
+  let s = uscene();
+  ub(s, 'field-medic', B);
+  ub(s, 'rootmother', B);
+  const w = ub(s, 'bastion-wall', B);
+  w.dmg = 5;
+  s = endT(s);
+  eq(s.cards[w.uid].dmg, 0, '3 (half of 5) and 2 more');
+  eq(s.cards[w.uid].pP, 1, 'Rootmother: +1/+1 for healing');
+});
+
+test('Ultra: with Bloodbinder, a Drain creature heals itself for what it deals', () => {
+  let s = uscene();
+  ub(s, 'bloodbinder', A);
+  const bat = ub(s, 'vesper-bat', A);
+  bat.dmg = 1;
+  s = attack(s, [bat.uid]);
+  s = fight(s, []);
+  eq(s.cards[bat.uid].dmg, 0, 'Vesper Bat heals the 1 it deals');
+});
+
+test('Ultra: Gravewarden, Bloodrage Berserker, Wavewarden, Ember Volley', () => {
+  let s = uscene();
+  ub(s, 'gravewarden', A);
+  const x = ub(s, 'shieldbearer', A), y = ub(s, 'bastion-wall', A);
+  y.dmg = 2;
+  const f = addCard(s, 'feed-the-flame', A, 'hand');
+  s = play(s, f.uid, { sac: x.uid, target: { p: B } });
+  eq(s.cards[y.uid].dmg, 0, 'Gravewarden: Bastion Wall heals 2');
+  eq(s.cards[y.uid].pP, 1, 'and gets +1/+0 for good');
+  const br = ub(s, 'bloodrage-berserker', A);
+  br.dmg = 2;
+  eq(power(s, br), 4, 'Bloodrage Berserker: +1/+0 for each damage on it');
+  let t = uscene();
+  ub(t, 'wavewarden', B);
+  ub(t, 'shieldbearer', B);
+  const sc = addCard(t, 'scorch', A, 'hand');
+  const ts = needs(t, A, t.cards[sc.uid]).target.filter((x2) => x2.uid != null);
+  ok(ts.length === 1 && t.cards[ts[0].uid].cid === 'wavewarden', 'Wavewarden: Scorch can aim only at it');
+  let v = uscene();
+  const e = [1, 2, 3].map(() => ub(v, 'shieldbearer', B));
+  const vol = addCard(v, 'ember-volley', A, 'hand');
+  v = play(v, vol.uid, { targets: e.map((c) => c.uid) });
+  ok(e.every((c) => v.cards[c.uid].dmg === 1), 'Ember Volley: 1 damage to each of three');
+});
+
+test('Ultra: the Invest cards, and Tidecaller’s Library', () => {
+  const others = {
+    'stoke-the-furnace': (s0, s) => s.players[B].life === s0.players[B].life - 1,
+    'tide-of-fortune': (s0, s) => s.players[A].hand.length === s0.players[A].hand.length + 1,
+    'tithe-of-light': (s0, s) => s.players[A].life === s0.players[A].life + 3,
+    'deep-roots': (s0, s) => s.cards[s.players[A].board[0]].pP === 1,
+  };
+  for (const [cid, fn] of Object.entries(others)) {
+    let s = uscene();
+    for (let k = 0; k < 3; k++) addCard(s, 'scorch', A, 'deck');
+    ub(s, 'shieldbearer', A);
+    const c = addCard(s, cid, A, 'hand');
+    const s0 = s;
+    s = play(s, c.uid);
+    eq(s.players[A].maxEnergy, 9, `${cid}: Invest (8 → 9)`);
+    ok(fn(s0, s), `${cid}: and its other half`);
+  }
+  let s = uscene();
+  for (let k = 0; k < 6; k++) addCard(s, 'scorch', A, 'deck');
+  addCard(s, 'tidecallers-library', A, 'relics');
+  s = endT(s);
+  const h0 = s.players[A].hand.length;
+  s = endT(s);
+  eq(s.players[A].hand.length, h0 + 2, 'Library: an extra card each turn');
+});
+
 // ── fuzz: random legal play ─────────────────────────────────────────
-function fuzz(games) {
+// (`ultra`: SATTC Ultra games, with the Ultra starter decks)
+function fuzz(games, ultra = false) {
   let crashes = 0, unfinished = 0, totalActions = 0, fights = 0;
-  const decks = STARTERS.map((d) => cardList(d.counts));
+  const decks = (ultra ? ULTRA_STARTERS : STARTERS).map((d) => cardList(d.counts));
   let seed = 1;
   for (let g = 0; g < games; g++) {
     const n = g % 4 === 3 ? 3 : 2;
     const players = Array.from({ length: n }, (_, i) => ({ name: `P${i}`, deck: decks[(g + i * 2) % decks.length] }));
-    let s = newGame({ seed: seed++, players, startEnergy: g % 2 ? RULES.startEnergy : 1, champions: g % 3 !== 0 });
+    let s = newGame({ seed: seed++, players, startEnergy: g % 2 ? RULES.startEnergy : 1, champions: g % 3 !== 0, ultra });
     let rand = g * 2654435761 >>> 0;
+    const libs = s.players.map(() => 0); // (the most Libraries each player has had: a hand can stay over 10 after one goes)
     const R = () => (rand = (Math.imul(rand, 1103515245) + 12345) >>> 0) / 4294967296;
     try {
       for (let k = 0; k < 3000 && s.phase !== 'over'; k++) {
@@ -1517,8 +1835,10 @@ function fuzz(games) {
         totalActions++;
         for (const P of s.players) {
           if (P.board.length > 7) throw new Error('board over 7');
-          if (P.relics.length > 3) throw new Error('relics over 3');
-          if (P.hand.filter((u) => !BY_ID[s.cards[u].cid]?.champion).length > 10) throw new Error('hand over 10'); // (a Champion goes back even to a full hand)
+          if (P.relics.filter((u) => !BY_ID[s.cards[u].cid].stages).length > 3) throw new Error('relics over 3');
+          if (P.relics.filter((u) => BY_ID[s.cards[u].cid].stages).length > 1) throw new Error('two Rituals at once');
+          libs[P.i] = Math.max(libs[P.i], P.relics.filter((u) => s.cards[u].cid === 'tidecallers-library').length);
+          if (P.hand.filter((u) => !BY_ID[s.cards[u].cid]?.champion).length > 10 + 2 * libs[P.i]) throw new Error('hand over 10'); // (a Champion goes back even to a full hand)
           for (const [z, want] of [['hand', 'hand'], ['deck', 'deck'], ['discard', 'discard'], ['board', 'board'], ['exile', 'exile'], ['relics', 'relic'], ['traps', 'trap']]) for (const u of P[z]) {
             if (s.cards[u].zone !== want) throw new Error(`zone mismatch ${s.cards[u].cid} in ${z} says ${s.cards[u].zone}`);
             if ((z === 'board' || z === 'relics') && s.cards[u].ctrl !== P.i) throw new Error(`control mismatch ${s.cards[u].cid}`);
@@ -1526,6 +1846,8 @@ function fuzz(games) {
           if (!Number.isFinite(P.life)) throw new Error('life not finite');
         }
         if (s.phase === 'combat' && (s.players[s.combat.a].out || s.players[s.combat.d].out)) throw new Error('fight with a player who is out');
+        if (s.field != null && s.cards[s.field].zone !== 'field') throw new Error('the Field is not in play');
+        for (const P of s.players) for (const u of P.board) if (s.cards[u].dmg < 0 || (s.cards[u].poison || 0) > s.cards[u].dmg) throw new Error('wounds out of order');
       }
       if (s.phase !== 'over') unfinished++;
     } catch (e) {
@@ -1540,6 +1862,9 @@ function fuzz(games) {
 const games = Number(process.argv[2] || 400);
 const t0 = Date.now();
 const f = fuzz(games);
+const t1 = Date.now();
+const fu = fuzz(Math.ceil(games / 2), true);
 console.log(`scenario + invariant checks: ${pass} passed, ${fail} failed`);
-console.log(`fuzz: ${f.games} random games, ${f.totalActions} actions, ${f.fights} attacks, ${f.crashes} crashes, ${f.unfinished} unfinished, ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+console.log(`fuzz: ${f.games} random games, ${f.totalActions} actions, ${f.fights} attacks, ${f.crashes} crashes, ${f.unfinished} unfinished, ${((t1 - t0) / 1000).toFixed(1)}s`);
+console.log(`Ultra fuzz: ${fu.games} random games, ${fu.totalActions} actions, ${fu.fights} attacks, ${fu.crashes} crashes, ${fu.unfinished} unfinished, ${((Date.now() - t1) / 1000).toFixed(1)}s`);
 if (failures.length) { console.log('\nFAILURES:'); for (const m of failures) console.log(' - ' + m); process.exit(1); }

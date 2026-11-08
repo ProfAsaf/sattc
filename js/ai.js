@@ -11,10 +11,15 @@ import { BY_ID, isTrick } from './cards.js';
 const lifeValue = (l) => (l <= 0 ? -200 : Math.sqrt(l) * 7 + l * 0.5);
 const CROWN = 4.5; // a card at the end of every turn, for as long as you keep it
 
-const KW_VALUE = { soar: 1.3, venom: 1.2, drain: 0.8, swift: 0.8, overrun: 0.6, watchful: 0.5, reach: 0.4, guard: 0.6, hunt: 0.7, lastBreath: 0.8 };
+const KW_VALUE = { soar: 1.3, venom: 1.2, drain: 0.8, swift: 0.8, overrun: 0.6, watchful: 0.5, reach: 0.4, guard: 0.6, hunt: 0.7, lastBreath: 0.8,
+  grows: 1.8, multiply: 2.4, unstable: 1.4, bodyguard: 0.8, fuse: 0.4 }; // (the last line: SATTC Ultra)
 const ENGINES = new Set(['standard-keeper', 'lightning-theorist', 'mirror-mage', 'forbidden-archivist', 'kindly-undertaker', 'little-gardener',
-  'ash-collector', 'grandmother-bramble', 'choirmother', 'the-pale-abbess', 'hungry-ghoul', 'brook-hydra', 'patient-giant', 'dawnsinger', 'lantern-ferryman']);
-const RELIC_VALUE = { 'the-kiln': 3, 'heartwood-totem': 4, 'the-drowned-clock': 6, 'bone-altar': 2, 'beacon-of-hope': 5, 'banner-of-the-charge': 3, 'the-bright-choir': 4, 'season-of-plenty': 4 };
+  'ash-collector', 'grandmother-bramble', 'choirmother', 'the-pale-abbess', 'hungry-ghoul', 'brook-hydra', 'patient-giant', 'dawnsinger', 'lantern-ferryman',
+  'rootmother', 'shield-captain', 'field-medic', 'gravewarden', 'bloodbinder', 'thornback-archer']);
+const RELIC_VALUE = { 'the-kiln': 3, 'heartwood-totem': 4, 'the-drowned-clock': 6, 'bone-altar': 2, 'beacon-of-hope': 5, 'banner-of-the-charge': 3, 'the-bright-choir': 4, 'season-of-plenty': 4,
+  'tidecallers-library': 5 };
+// SATTC Ultra: a permanent +1 Energy, a Ritual on its way, the Field you chose.
+const INVEST = 2.6, RITUAL_STAGE = 2.4, OWN_FIELD = 2.2;
 
 // One-turn boosts are worth nothing here: they only matter through the fight
 // they win, and fights are played out before positions are scored.
@@ -22,27 +27,29 @@ export function creatureValue(s, c) {
   const d = BY_ID[c.cid];
   const p = power(s, c) - (c.tP || 0);
   const v = vitality(s, c) - (c.tV || 0);
-  let val = 1.2 + Math.max(0, p) * 1.5 + Math.max(1, v);
-  for (const k in KW_VALUE) if (d.keywords.includes(k) || (k === 'soar' && hasKw(s, c, 'soar'))) val += KW_VALUE[k];
+  let val = 1.2 + Math.max(0, p) * 1.5 + Math.max(1, s.ultra ? v - (c.dmg || 0) * 0.7 : v); // (Ultra: wounds last)
+  for (const k in KW_VALUE) if (d.keywords.includes(k) || ((k === 'soar' || c.fuseKw) && hasKw(s, c, k))) val += KW_VALUE[k] * (k === 'grows' ? d.grows || 1 : 1);
   if (d.cantBlock) val -= 1;
   if (ENGINES.has(c.cid)) val += 1.5;
   if (d.champion) val += 2.5; // (its level-ups work on the whole deck)
   if (d.ability) val += 0.8;
   if (c.sacEnd || c.stolen) val *= 0.2;
+  if (c.hex) val *= 0.45; // (until it's paid off)
   return val;
 }
 
 const boardValue = (s, i) => s.players[i].board.reduce((sum, u) => sum + creatureValue(s, s.cards[u]), 0);
 const relicValue = (s, i) => s.players[i].relics.reduce((sum, u) => {
   const r = s.cards[u];
+  if (BY_ID[r.cid].stages) return sum + 2 + RITUAL_STAGE * (r.stage || 0); // (a Ritual in progress)
   return sum + (RELIC_VALUE[r.cid] || 3) + (r.cid === 'the-drowned-clock' ? (r.chimes || 0) * 2.5 : 0);
 }, 0);
 
 // Damage `atk`'s creatures could push past `def`'s ready blockers next time they attack.
 function threat(s, atk, def, allBlock) {
-  const attackers = s.players[atk].board.map((u) => s.cards[u]).filter((c) => !c.frozen && !c.stolen && !c.sacEnd)
+  const attackers = s.players[atk].board.map((u) => s.cards[u]).filter((c) => !c.frozen && !c.stolen && !c.sacEnd && !c.hex)
     .sort((x, y) => power(s, y) - power(s, x));
-  const blockers = s.players[def].board.map((u) => s.cards[u]).filter((b) => (allBlock || !b.ex) && !BY_ID[b.cid].cantBlock);
+  const blockers = s.players[def].board.map((u) => s.cards[u]).filter((b) => (allBlock || !b.ex) && !BY_ID[b.cid].cantBlock && !b.hex);
   const used = new Set();
   let through = 0;
   for (const a of attackers) {
@@ -62,9 +69,13 @@ export function evaluate(s, me) {
   let v = lifeValue(P.life) + boardValue(s, me) + relicValue(s, me) + P.hand.length * 1.6 + P.traps.length * 2.2 + (P.extra || 0) * 9;
   v += Math.min(P.deck.length, 6) * 0.3;
   if (s.crown === me) v += CROWN;
+  if (s.ultra) {
+    v += (P.invest || 0) * INVEST;
+    if (s.field != null) v += s.cards[s.field].ctrl === me ? OWN_FIELD : -OWN_FIELD / 2;
+  }
   const w = 1 / opps.length;
   for (const o of opps) {
-    v -= (lifeValue(o.life) + boardValue(s, o.i) * 1.05 + relicValue(s, o.i) + o.hand.length * 1.2 + o.traps.length * 2 + (o.extra || 0) * 9 + (s.crown === o.i ? CROWN : 0)) * w;
+    v -= (lifeValue(o.life) + boardValue(s, o.i) * 1.05 + relicValue(s, o.i) + o.hand.length * 1.2 + o.traps.length * 2 + (o.extra || 0) * 9 + (s.crown === o.i ? CROWN : 0) + (o.invest || 0) * INVEST) * w;
     if (s.active === me) {
       // Creatures that attacked can't block on the turns in between: count the risk.
       const inc = threat(s, o.i, me, false);

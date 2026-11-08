@@ -198,6 +198,11 @@ const KW = {
   watchful:   { name: 'Watchful', c: '#c9b0ff', svg: '<path fill-rule="evenodd" d="M12 4.8C6.5 4.8 2.6 9.3 1.2 12c1.4 2.7 5.3 7.2 10.8 7.2s9.4-4.5 10.8-7.2C21.4 9.3 17.5 4.8 12 4.8zm0 3a4.2 4.2 0 1 1 0 8.4 4.2 4.2 0 0 1 0-8.4z"/><circle cx="12" cy="12" r="2.1"/>' },
   rush:       { name: 'Rush', c: '#ffb36b', svg: '<path d="M11.2 4.2 21.5 12l-10.3 7.8z"/><path d="M2.6 8h6M1.6 12h7.6M2.6 16h6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>' },
   lastBreath: { name: 'Last Breath', c: '#dcc9ff', svg: '<path d="M12 1.8l2.3 7.9 7.9 2.3-7.9 2.3L12 22.2l-2.3-7.9L1.8 12l7.9-2.3z"/>' },
+  // SATTC Ultra
+  grows:      { name: 'Grows', c: '#9fe08a', svg: '<path d="M12 22v-9"/><path d="M12 13c0-5 3.5-8.5 9-9-.4 5.6-3.9 9-9 9zM12 15c0-4-2.8-6.8-7.2-7.2.3 4.5 3.1 7.2 7.2 7.2z"/>' },
+  multiply:   { name: 'Multiply', c: '#c6f0a0', svg: '<circle cx="8.5" cy="12" r="6"/><circle cx="16.5" cy="12" r="5" fill-opacity=".75"/>' },
+  unstable:   { name: 'Unstable', c: '#ff7a3a', svg: '<path d="M12 1.5l2.4 6.3 6.6-2.2-3.9 5.6 5.4 3.9-6.7.6.8 6.8-4.6-5-4.6 5 .8-6.8-6.7-.6 5.4-3.9L3 5.6l6.6 2.2z"/>' },
+  bodyguard:  { name: 'Bodyguard', c: '#9ad7e8', svg: '<path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/><path d="M12 7v9M7.5 11.5h9" fill="none" stroke="#123" stroke-width="2.4" stroke-linecap="round"/>' },
   leaving:    { name: 'Leaves at the end of the turn', c: '#d8cfbd', svg: HOURGLASS },
 };
 const SPENT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.6 12.4a7.6 7.6 0 1 1-2.3-6.1" fill="none" stroke="currentColor" stroke-width="2.9" stroke-linecap="round"/><path d="M20.9 2.9v7.1h-7.1z" fill="currentColor"/></svg>';
@@ -234,7 +239,8 @@ function nameTier(name, hand) {
 
 function typeText(card) {
   if (card.type === 'relic') return 'Relic';
-  if (card.type !== 'creature') return card.subtype === 'Trap' || card.subtype === 'Trick' ? card.subtype : 'Spell';
+  if (card.type === 'field') return 'Field';
+  if (card.type !== 'creature') return ['Trap', 'Trick', 'Ritual'].includes(card.subtype) ? card.subtype : 'Spell';
   return card.token ? `Token · ${card.subtype || 'Creature'}` : card.subtype || 'Creature';
 }
 
@@ -262,6 +268,7 @@ function typeText(card) {
  *   cls        extra classes
  *   ability    { cost, on, used } → a ⚡ chip for a "Pay N Energy" ability, N in a hexagon
  *   champ      a Champion's level (1–3): a gold star with the number
+ *   shelter / hex / poison   SATTC Ultra: Sheltered (🛡), a Hex and what breaks it (⛓4), poison that won't heal (☠2)
  *              (on: usable now, glows; used: already used this turn).
  *              Tapping it fires data-act="ability" with data-ab = uid.
  */
@@ -311,6 +318,7 @@ export function tcardHTML(card, state = {}) {
     + (hand ? `<div class="tc-cost${costCls}"><span>${cost}</span></div>` : '')
     + (creature ? `<b class="tc-p${pCls}">${p}</b><b class="tc-v${vCls}">${v}</b>` : '')
     + (s.champ && !hand ? `<i class="tc-lvl" aria-label="Champion, Level ${s.champ}">★${s.champ}</i>` : '')
+    + (!hand && (s.shelter || s.hex || s.poison) ? `<i class="tc-flags">${s.shelter ? '<b class="fl-shelter" aria-label="Sheltered">🛡</b>' : ''}${s.hex ? `<b class="fl-hex" aria-label="Hex: ${s.hex} Energy to break">⛓${s.hex}</b>` : ''}${s.poison ? `<b class="fl-poison" aria-label="${s.poison} poison">☠${s.poison}</b>` : ''}</i>` : '')
     + (s.ability && !hand ? `<i class="tc-ab${s.ability.on ? ' on' : ''}${s.ability.used ? ' used' : ''}" data-act="ability"${s.uid != null ? ` data-ab="${esc(s.uid)}"` : ''} role="button" aria-label="Ability: pay ${s.ability.cost} Energy">${BOLT}<span class="en-hex"><b>${s.ability.cost}</b></span></i>` : '')
     + (badges ? `<div class="tc-kws">${badges}</div>` : '')
     + `<i class="tc-ex">${SPENT}<b>Spent</b></i>`

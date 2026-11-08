@@ -975,3 +975,24 @@
   .tcard::after, .tc-sheen::before, .fx-a-core, .fx-shine::before, .tc-zz { animation: none !important; }
   .tcard, .tc-hand > .tcard { transition-duration: .01s !important; }
 }
+
+/* SATTC Ultra: the Field banner in the middle of the table; Sheltered, Hex and poison marks on a card */
+.g-field {
+  display: flex; align-items: baseline; justify-content: center; gap: 6px; width: max-content; max-width: 92%; margin: 2px auto 0;
+  padding: 3px 12px 4px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--fl, #c9a35a) 60%, transparent);
+  background: color-mix(in srgb, var(--f, #6b4f2a) 40%, #17110c); color: #f3e8d0; cursor: pointer;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--fl, #c9a35a) 35%, transparent);
+}
+.g-field span { font: 600 9.5px/1 system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; opacity: .75; }
+.g-field b { font: 600 13.5px/1.1 'EB Garamond', Georgia, serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tc-flags {
+  position: absolute; z-index: 8; left: calc(var(--w) * -.07); top: calc(var(--w) * .2); display: flex; flex-direction: column; gap: 2px;
+  font-style: normal; pointer-events: none;
+}
+.tc-flags b {
+  font: 700 max(9px, calc(var(--w) * .13))/1 system-ui, sans-serif; padding: 2px 3px; border-radius: 6px;
+  background: rgba(14, 11, 8, .85); box-shadow: 0 0 0 1px rgba(255, 255, 255, .2); color: #f3e8d0;
+}
+.tc-flags .fl-hex { color: #e2c7ff; }
+.tc-flags .fl-poison { color: #bff08e; }
+.relic-n.rite { color: #1b1206; background: linear-gradient(180deg, #ffe9a8, #e8b24a); }

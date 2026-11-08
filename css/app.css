@@ -172,6 +172,25 @@ body[data-page="home"] main { display: flex; flex-direction: column; min-height:
 .fan .card:nth-child(3) { transform: translateX(18%) rotate(11deg) translateY(18px); }
 
 .home-actions { display: grid; gap: 10px; width: 100%; max-width: 420px; margin: 0 auto 8px; }
+
+/* SATTC Ultra: the switch under Play, and what the app wears while it's on */
+.home-ultra { justify-self: center; padding: 6px 4px 0; }
+.home-ultra .dr-switch-text small { font-size: 12px; }
+.ultra-tag {
+  display: none; width: max-content; margin: 2px auto 6px; padding: 3px 14px 4px; border-radius: 999px;
+  font: 700 13px/1 'EB Garamond', Georgia, serif; letter-spacing: .42em; text-indent: .42em; text-transform: uppercase;
+  color: #120a24; background: linear-gradient(90deg, #8fd3ff, #c59bff 55%, #ff9bd2);
+  box-shadow: 0 0 18px rgba(170, 130, 255, .55);
+}
+body.ultra .ultra-tag { display: block; }
+body.ultra .hero h1 { text-shadow: 0 0 22px rgba(160, 120, 255, .55); }
+body.ultra .home-ultra input:checked + .dr-knob { background: linear-gradient(90deg, #6aa9ff, #a477ff); }
+.ultra-pill {
+  display: inline-block; vertical-align: middle; margin-left: 6px; padding: 2px 8px 3px; border-radius: 999px;
+  font: 700 11px/1.1 system-ui, sans-serif; font-style: normal; letter-spacing: .08em; text-transform: uppercase;
+  color: #120a24; background: linear-gradient(90deg, #8fd3ff, #c59bff 55%, #ff9bd2);
+}
+.ultra-note b { color: #c9a8ff; }
 .home-actions .btn { min-height: 52px; font-size: 17px; border-radius: 14px; }
 @media (max-height: 600px) { /* Safari's toolbars on a small iPhone: still one screen */
   .home-show { padding: 10px 0 0; }
@@ -600,3 +619,5 @@ details.fine li { font-size: 14px; }
   margin-top: -.08em;
   color: #f7ead0;
 }
+
+.pp-misfit { margin: -4px 0 0; color: #ffb38a; }

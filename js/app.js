@@ -1,12 +1,13 @@
 // The Collective — app shell: hash router and the non-game views
 // (home, card gallery, deck list, deckbuilder, rules; Insights is in insights.js).
 
-import { BY_ID, CARDS, CHAMPIONS, FACTIONS, FACTION_ORDER, KEYWORDS, RULES, SET, STARTERS, TOKENS, isTrick } from './cards.js';
+import { BY_ID, CARDS, CHAMPIONS, FACTIONS, FACTION_ORDER, KEYWORDS, RULES, SET, STARTERS, TOKENS, ULTRA, ULTRA_OUT, ULTRA_POOL, ULTRA_RULES, ULTRA_STARTERS, isTrick } from './cards.js';
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
 import * as Push from './push.js';
+import * as Mode from './mode.js';
 
 const view = document.getElementById('view');
 
@@ -158,6 +159,7 @@ function home() {
         <section class="hero">
           <div class="kicker">${esc(SET.week)}</div>
           <h1>THE COLLECTIVE</h1>
+          <div class="ultra-tag">Ultra</div>
           <div class="sub">${esc(SET.title)}</div>
         </section>
         <div class="fan">${fan}</div>
@@ -165,11 +167,12 @@ function home() {
       <div class="home-actions">
         <button class="btn primary" data-act="tutorial">Learn to play</button>
         <a class="btn" href="#/play">Play</a>
+        <label class="dr-switch mini home-ultra"><input type="checkbox" id="ultra-switch"${Mode.ultra() ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>SATTC Ultra</b><small>Bigger rule changes to try</small></span></label>
       </div>
     </div>
     <div class="menu" id="home-menu" hidden>
       <nav class="menu-in" aria-label="More">
-        <a href="#/cards">${ICONS.cards}All 90 cards</a>
+        <a href="#/cards">${ICONS.cards}${Mode.ultra() ? 'All the Ultra cards' : 'All 90 cards'}</a>
         <a href="#/decks">${ICONS.decks}Decks</a>
         <a href="#/rules">${ICONS.rules}Rules</a>
         <a href="#/insights">${ICONS.insights}Insights</a>
@@ -183,13 +186,18 @@ function home() {
     const c = e.target.closest('.card[data-id]');
     if (c) openZoom(c.dataset.id);
   };
+  document.getElementById('ultra-switch').onchange = (e) => {
+    Mode.setUltra(e.target.checked);
+    const a = document.querySelector('#home-menu a[href="#/cards"]');
+    if (a) a.lastChild.textContent = Mode.ultra() ? 'All the Ultra cards' : 'All 90 cards';
+  };
 }
 
 // ── gallery ─────────────────────────────────────────────────────────
 const galleryState = { f: 'all', t: 'all' };
 function gallery() {
   const render = () => {
-    const list = CARDS.filter((c) => matches(c, galleryState));
+    const list = poolNow().filter((c) => matches(c, galleryState));
     view.innerHTML = `
       ${pageHead('Cards')}
       ${chipsHTML(galleryState)}
@@ -209,13 +217,17 @@ function gallery() {
   };
 }
 
+// The cards on show: the base set, or with SATTC Ultra on, the Ultra pool.
+const poolNow = () => (Mode.ultra() ? ULTRA_POOL : CARDS);
+
 // ── deck list ───────────────────────────────────────────────────────
 function deckCardHTML(d, activeId) {
   const fs = [...Decks.factionsOf(d.counts)];
-  const v = Decks.validate(d.counts);
+  const ultraDeck = Decks.isUltraDeck(d.counts);
+  const v = Decks.validate(d.counts, { ultra: ultraDeck });
   const sp = Decks.split(d.counts);
   const badge = d.id === activeId ? '<span class="badge">In use</span>'
-    : v.ok ? '' : `<span class="badge bad">${Decks.total(d.counts)}/30</span>`;
+    : !v.ok ? `<span class="badge bad">${Decks.total(d.counts)}/30</span>` : ultraDeck ? '<i class="ultra-pill">Ultra</i>' : '';
   return `<a class="deck-card${d.id === activeId ? ' active' : ''}" href="#/deck/${encodeURIComponent(d.id)}">
       <div class="deck-coins">${fs.map(factionCoin).join('') || '<span class="fac-slot-empty"></span>'}</div>
       <div><div class="deck-name">${esc(d.name)}</div>
@@ -234,6 +246,9 @@ function deckList() {
     <div class="sect-title"><h2>Starter decks</h2></div>
     <p class="muted small" style="margin-top:-6px">Ready to play. Changing one saves your own copy.</p>
     <div class="deck-cards">${STARTERS.map((s) => deckCardHTML(s, active)).join('')}</div>
+    ${Mode.ultra() ? `<div class="sect-title"><h2>Ultra starter decks</h2></div>
+    <p class="muted small" style="margin-top:-6px">For SATTC Ultra games: each can go two or three ways.</p>
+    <div class="deck-cards">${ULTRA_STARTERS.map((s) => deckCardHTML(s, active)).join('')}</div>` : ''}
     <div class="sect-title"><h3>Got a deck code?</h3></div>
     <div class="btn-row">
       <input class="name-input" style="flex:1;min-width:0;font-size:18px" id="code-in" placeholder="W1-…" autocapitalize="off" autocomplete="off" spellcheck="false">
@@ -288,18 +303,18 @@ function builder(id) {
     const counts = deck.counts;
     const n = Decks.total(counts);
     const fs = Decks.factionsOf(counts);
-    const v = Decks.validate(counts);
+    const v = Decks.validate(counts, { ultra: Decks.isUltraDeck(counts) });
     const isActive = Decks.getActiveId() === deck.id;
     let body = '';
     if (builderState.mode === 'pool') {
-      const list = CARDS.filter((c) => matches(c, builderState));
+      const list = (Mode.ultra() || Decks.isUltraDeck(counts) ? ULTRA_POOL : CARDS).filter((c) => matches(c, builderState));
       body = chipsHTML(builderState) + `<div class="rows">${list.map((c) => {
         const can = Decks.canAdd(counts, c.id);
         const factionBlocked = !can.ok && /factions/.test(can.reason);
         return cardRowHTML(c, counts[c.id] || 0, { blocked: !can.ok }).replace('class="row"', `class="row${factionBlocked && !counts[c.id] ? ' dim' : ''}"`);
       }).join('')}</div>`;
     } else {
-      const inDeck = CARDS.filter((c) => counts[c.id]).sort((a, b) => a.cost - b.cost || a.n - b.n);
+      const inDeck = [...CARDS, ...ULTRA].filter((c) => counts[c.id]).sort((a, b) => a.cost - b.cost || a.n - b.n);
       const group = (label, cards) => cards.length ? `<div class="group-label">${label} · ${cards.reduce((s, c) => s + counts[c.id], 0)}</div>
         <div class="rows">${cards.map((c) => cardRowHTML(c, counts[c.id], { blocked: !Decks.canAdd(counts, c.id).ok })).join('')}</div>` : '';
       body = (inDeck.length ? group('Creatures', inDeck.filter((c) => c.type === 'creature')) + group('Spells', inDeck.filter((c) => c.type === 'spell')) + group('Relics', inDeck.filter((c) => c.type === 'relic'))
@@ -397,6 +412,19 @@ function rules() {
       <li><b>Damage.</b> A blocked attacker and its blocker hit each other, each dealing its Power; a creature dies when the damage reaches its Vitality. Unblocked attackers hit the player. A blocked attacker never hits the player (unless it has <b>Overrun</b>), even if its blocker is gone.</li>
     </ul>
 
+    <h2>SATTC Ultra</h2>
+    <p>The switch on Home tries out bigger changes to the rules. A room plays the way its host set it, so everyone at the table plays the same game. In Ultra:</p>
+    <ul>
+      <li><b>30 Life</b>, so there's time to build something.</li>
+      <li><b>Wounds stay.</b> Damage stays on a creature and heals by half (rounded up) at the start of its owner's turn. Healers heal more, and a Field can stop it.</li>
+      <li><b>Sheltered.</b> A new creature can't be targeted by opponents' Spells or abilities, or forced to block, until its owner's next turn.</li>
+      <li><b>Legacy.</b> When a creature that has grown dies, half its growth (rounded up) passes to your weakest creature.</li>
+      <li><b>Energy</b> grows by itself to ${ULTRA_RULES.energyGrowsTo}. Cards with <b>Invest</b> raise your maximum by 1 for good, up to ${ULTRA_RULES.maxEnergy}.</li>
+      <li><b>The Field.</b> One Field card is in play for the whole table and changes the rules for everyone; a new one replaces it.</li>
+      <li><b>No answer erases a build for free.</b> A <b>Hex</b> lasts until its owner pays to break it. Venom poisons (its damage doesn't heal) instead of killing outright. A creature sent back to the hand keeps its growth. ${ULTRA_OUT.map((id) => esc(BY_ID[id].name)).join(', ')} stay out of Ultra decks.</li>
+      <li><b>New words:</b> ${['invest', 'grows', 'multiply', 'unstable', 'fuse', 'ritual', 'hex', 'field', 'bodyguard'].map((k) => `<b>${KEYWORDS[k].name}</b>: ${esc(KEYWORDS[k].text)}`).join(' ')}</li>
+    </ul>
+
     <h2>★ Champions (new)</h2>
     <p>With Champions on (a switch on the Play page, and in a game's room), every deck starts with a <b>Champion</b> on the table: the one of the faction the deck has most cards of. It can block from the start but can't attack until <b>Level 2</b>. It levels up as you do what its faction does, and each level makes it bigger and changes how your other cards work. Its powers work only while it's on the table; if it leaves, it goes back to your hand and costs 2 more each time.</p>
     <ul>${Object.values(CHAMPIONS).map((c) => `<li><b>${esc(c.name)}</b> (${esc(FACTIONS[c.factions[0]].name)}) levels up with ${esc(c.xp.unit)}: at ${c.xp.at[0]}, ${esc(c.l2)} At ${c.xp.at[1]}, ${esc(c.l3)}</li>`).join('')}</ul>
@@ -485,6 +513,7 @@ function route() {
   document.body.classList.remove('scrolled');
 }
 
+Mode.paint();
 window.addEventListener('hashchange', route);
 // A page's title bar gets its backdrop once the page scrolls under it.
 window.addEventListener('scroll', () => document.body.classList.toggle('scrolled', window.scrollY > 4), { passive: true });

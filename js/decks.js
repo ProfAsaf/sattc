@@ -1,7 +1,7 @@
 // Decks: validation against the Week One rules, local storage, and short
 // share codes (2 bits per design, in collector-number order).
 
-import { BY_ID, CARDS, RULES, STARTERS } from './cards.js';
+import { BY_ID, CARDS, RULES, STARTERS, ULTRA, ULTRA_OUT, ULTRA_STARTERS } from './cards.js';
 
 const KEY = 'collective.decks.v1';
 const ACTIVE = 'collective.activeDeck';
@@ -47,7 +47,8 @@ export function canAdd(counts, id) {
   return { ok: true };
 }
 
-export function validate(counts) {
+// `ultra`: for a SATTC Ultra game (Ultra cards allowed, ULTRA_OUT not); otherwise no Ultra cards.
+export function validate(counts, { ultra = false } = {}) {
   const errors = [];
   const n = total(counts);
   if (n !== RULES.deckSize) errors.push(n < RULES.deckSize ? `${RULES.deckSize - n} more card${RULES.deckSize - n === 1 ? '' : 's'} needed.` : `${n - RULES.deckSize} too many cards.`);
@@ -56,9 +57,14 @@ export function validate(counts) {
   for (const [id, c] of Object.entries(counts)) {
     if (!BY_ID[id] || BY_ID[id].token) errors.push(`Unknown card: ${id}.`);
     else if (c > maxCopies(BY_ID[id])) errors.push(`${BY_ID[id].name}: at most ${maxCopies(BY_ID[id])}.`);
+    else if (c > 0 && BY_ID[id].ultra && !ultra) errors.push(`${BY_ID[id].name} is an Ultra card.`);
+    else if (c > 0 && ultra && ULTRA_OUT.includes(id)) errors.push(`${BY_ID[id].name} stays out of Ultra games.`);
   }
   return { ok: errors.length === 0, errors };
 }
+
+// Does a deck use Ultra cards (so it plays only in Ultra games)?
+export const isUltraDeck = (counts) => Object.entries(counts).some(([id, n]) => n > 0 && BY_ID[id]?.ultra);
 
 // Drafted decks (Draft night): your 30 picks, one of each card, any factions.
 export function validateDrafted(counts) {
@@ -75,16 +81,17 @@ export function validateDrafted(counts) {
 // Expand counts into a 30-card list of ids (deterministic order).
 export function cardList(counts) {
   const out = [];
-  for (const c of CARDS) for (let i = 0; i < (counts[c.id] || 0); i++) out.push(c.id);
+  for (const c of [...CARDS, ...ULTRA]) for (let i = 0; i < (counts[c.id] || 0); i++) out.push(c.id);
   return out;
 }
 
 // ── share codes ─────────────────────────────────────────────────────
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
-export function encode(counts) {
-  const bytes = new Uint8Array(Math.ceil((CARDS.length * 2) / 8));
-  CARDS.forEach((c, i) => {
+// The base cards, then (after a "~", only when the deck has any) the Ultra cards.
+function pack(cards, counts) {
+  const bytes = new Uint8Array(Math.ceil((cards.length * 2) / 8));
+  cards.forEach((c, i) => {
     const v = Math.min(3, counts[c.id] || 0);
     bytes[(i * 2) >> 3] |= v << ((i * 2) & 7);
   });
@@ -94,25 +101,33 @@ export function encode(counts) {
     while (bits >= 6) { s += B64[acc & 63]; acc >>= 6; bits -= 6; }
   }
   if (bits > 0) s += B64[acc & 63];
-  return 'W1-' + s;
+  return s;
 }
-
-export function decode(code) {
-  const m = String(code).trim().match(/^W1-([A-Za-z0-9_-]+)$/);
-  if (!m) return null;
+function unpack(cards, str, counts) {
   const bytes = [];
   let bits = 0, acc = 0;
-  for (const ch of m[1]) {
+  for (const ch of str) {
     const v = B64.indexOf(ch);
-    if (v < 0) return null;
+    if (v < 0) return false;
     acc |= v << bits; bits += 6;
     while (bits >= 8) { bytes.push(acc & 255); acc >>= 8; bits -= 8; }
   }
-  const counts = {};
-  CARDS.forEach((c, i) => {
+  cards.forEach((c, i) => {
     const v = ((bytes[(i * 2) >> 3] || 0) >> ((i * 2) & 7)) & 3;
     if (v) counts[c.id] = v;
   });
+  return true;
+}
+
+export function encode(counts) {
+  return 'W1-' + pack(CARDS, counts) + (isUltraDeck(counts) ? '~' + pack(ULTRA, counts) : '');
+}
+
+export function decode(code) {
+  const m = String(code).trim().match(/^W1-([A-Za-z0-9_-]+)(?:~([A-Za-z0-9_-]+))?$/);
+  if (!m) return null;
+  const counts = {};
+  if (!unpack(CARDS, m[1], counts) || (m[2] && !unpack(ULTRA, m[2], counts))) return null;
   return counts;
 }
 
@@ -126,7 +141,7 @@ function saveDecks(decks) {
 }
 
 export function getDeck(id) {
-  const s = STARTERS.find((d) => d.id === id);
+  const s = [...STARTERS, ...ULTRA_STARTERS].find((d) => d.id === id);
   if (s) return { ...s, starter: true };
   return loadDecks().find((d) => d.id === id) || null;
 }

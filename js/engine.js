@@ -306,11 +306,12 @@ function archivist(s, pi) {
 }
 
 // ── life ────────────────────────────────────────────────────────────
-function loseLife(s, pi, n) {
+// `by`: whose card made them lose it, when that isn't plain from the move (stats.js)
+function loseLife(s, pi, n, by = null) {
   const P = s.players[pi];
   if (n <= 0 || P.out) return;
   P.life -= n;
-  ev(s, { k: 'life', p: pi, n: -n });
+  ev(s, by != null ? { k: 'life', p: pi, n: -n, by } : { k: 'life', p: pi, n: -n });
   if (P.life <= 0) eliminate(s, pi);
 }
 function gainLife(s, pi, n) {
@@ -404,8 +405,8 @@ function erupt(s, c) {
   c.erupting = true;
   log(s, c.ctrl, `${nameOf(c)} erupts: 3 damage to every other creature and every player!`);
   ev(s, { k: 'erupt', uid: c.uid });
-  for (const Q of s.players) for (const u of [...Q.board]) if (u !== c.uid) damage(s, s.cards[u], 3);
-  for (const Q of living(s)) damagePlayer(s, Q.i, 3);
+  for (const Q of s.players) for (const u of [...Q.board]) if (u !== c.uid) damage(s, s.cards[u], 3, c);
+  for (const Q of living(s)) damagePlayer(s, Q.i, 3, c);
   Object.assign(c, { pP: 0, pV: 0, tP: 0, tV: 0 });
   delete c.erupting;
 }
@@ -765,7 +766,7 @@ function declareBlocks(s, pi, blocks) {
     const captains = countOn(s, Q.board, 'shield-captain');
     for (const b of [...new Set(blocks.map(([u]) => u))].map((u) => s.cards[u])) {
       if (captains && hasKw(s, b, 'guard')) { log(s, pi, `Shield Captain: ${nameOf(b)} holds and gets +0/+${captains} for good.`); buff(s, b, 0, captains, true); }
-      if (b.cid === 'bastion-wall') { log(s, pi, `Bastion Wall: ${s.players[C.a].name} loses 2 Life.`); loseLife(s, C.a, 2); }
+      if (b.cid === 'bastion-wall') { log(s, pi, `Bastion Wall: ${s.players[C.a].name} loses 2 Life.`); loseLife(s, C.a, 2, pi); }
     }
   }
   C.step = 'tricks';
@@ -1371,7 +1372,7 @@ function resolveSpell(s, pi, c, a) {
       break;
     case 'blood-pact':
       invest(s, pi);
-      loseLife(s, pi, 3);
+      loseLife(s, pi, 3, pi);
       break;
     case 'tithe-of-light':
       invest(s, pi);
@@ -1407,7 +1408,7 @@ function resolveStage(s, pi, c, k, a) {
       if (a.pick != null && removeFrom(P.discard, a.pick)) { log(s, pi, `${nameOf(s.cards[a.pick])} returns to ${P.name}'s hand.`); toHand(s, s.cards[a.pick], 'discard'); }
       break;
     case 'grave-rite:1':
-      for (const o of opponents(s, pi)) loseLife(s, o.i, 2);
+      for (const o of opponents(s, pi)) loseLife(s, o.i, 2, pi);
       gainLife(s, pi, 2);
       break;
     case 'grave-rite:2':

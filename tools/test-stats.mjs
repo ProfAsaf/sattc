@@ -4,11 +4,11 @@
 // Checks the counts add up (damage dealt vs Life lost, kills vs deaths, the
 // Life line vs the final Life), times the review, and prints how the bot
 // grades a careful bot, a noisy one and a random player, which is what the
-// grade thresholds are tuned against.
+// grade thresholds are tuned against. Half the games and drafts are SATTC Ultra.
 
 import { newGame, apply, actor, legalActions } from '../js/engine.js';
 import { chooseAction } from '../js/ai.js';
-import { STARTERS } from '../js/cards.js';
+import { STARTERS, ULTRA_STARTERS } from '../js/cards.js';
 import { cardList } from '../js/decks.js';
 import { botPick, botRand, replay as replayDraft, newSeed } from '../js/draft.js';
 import { analyzeGame, reviewPlay, reviewDraft, summarize, roomResult, nightAwards } from '../js/stats.js';
@@ -21,9 +21,10 @@ const check = (ok, msg) => { if (ok) oks++; else { fails++; if (fails < 25) cons
 function rng(seed) { let x = seed >>> 0; return () => (x = (Math.imul(x, 1103515245) + 12345) >>> 0) / 4294967296; }
 
 // seat 0 plays with `style`: 'bot' (no noise), 'noisy' (the practice bot), 'random' (any legal move, ending turns often)
-function playGame(seed, n, style) {
-  const decks = [0, 1, 2].map((k) => STARTERS[(seed + k * 3) % STARTERS.length]);
-  const setup = { seed, players: decks.slice(0, n).map((d, i) => ({ name: i ? `Bot · ${d.name}` : 'You', deck: cardList(d.counts) })) };
+function playGame(seed, n, style, ultra = false) {
+  const starters = ultra ? ULTRA_STARTERS : STARTERS;
+  const decks = [0, 1, 2].map((k) => starters[(seed + k * 3) % starters.length]);
+  const setup = { seed, players: decks.slice(0, n).map((d, i) => ({ name: i ? `Bot · ${d.name}` : 'You', deck: cardList(d.counts) })), ...(ultra ? { ultra: true, startEnergy: 3 } : {}) };
   let s = newGame(setup);
   const rand = rng(seed * 7 + 1);
   const actions = [];
@@ -50,7 +51,8 @@ let reviewMs = 0, reviewMax = 0, analyzeMs = 0;
 for (let g = 0; g < GAMES; g++) {
   const style = ['bot', 'noisy', 'random'][g % 3];
   const n = g % 4 === 3 ? 3 : 2;
-  const { setup, actions, final } = playGame(1000 + g * 31, n, style);
+  const ultra = (g >> 1) % 2 === 1;
+  const { setup, actions, final } = playGame(1000 + g * 31, n, style, ultra);
   const ta = Date.now();
   const rec = analyzeGame(setup, actions, { me: 0 });
   analyzeMs += Date.now() - ta;
@@ -58,9 +60,11 @@ for (let g = 0; g < GAMES; g++) {
   const lifeEnd = rec.life[rec.life.length - 1];
   check(lifeEnd.every((l, i) => l === Math.max(0, final.players[i].life)), `game ${g}: the Life line ends on the final Life`);
   check(rec.winner === final.winner && rec.over === (final.phase === 'over'), `game ${g}: winner`);
-  const dealt = rec.players.reduce((t, P) => t + P.dealt, 0), taken = rec.players.reduce((t, P) => t + P.taken, 0);
-  check(dealt <= taken, `game ${g}: damage dealt ${dealt} ≤ Life lost ${taken}`);
-  check(taken - dealt <= Math.max(6, taken * 0.25), `game ${g}: most Life lost is credited to someone (${taken - dealt} of ${taken} not)`);
+  check(!!rec.ultra === ultra, `game ${g}: the record says ${ultra ? 'Ultra' : 'standard'}`);
+  check(rec.players.every((P, i) => P.low <= rec.life[0][i] && rec.life[0][i] === (ultra ? (n > 2 ? 25 : 30) : 20)), `game ${g}: Life starts at ${rec.life[0].join('/')} and the lowest is counted from there`);
+  const dealt = rec.players.reduce((t, P) => t + P.dealt, 0), taken = rec.players.reduce((t, P) => t + P.taken, 0), paid = rec.players.reduce((t, P) => t + P.paid, 0);
+  check(dealt + paid <= taken, `game ${g}: damage dealt ${dealt} + Life paid ${paid} ≤ Life lost ${taken}`);
+  check(taken - dealt - paid <= Math.max(6, taken * 0.25), `game ${g}: most Life lost is credited to someone (${taken - dealt - paid} of ${taken} not)`);
   const kills = rec.players.reduce((t, P) => t + P.kills, 0), lost = rec.players.reduce((t, P) => t + P.lost, 0);
   check(kills <= lost, `game ${g}: kills ${kills} ≤ creatures lost ${lost}`);
   check(rec.adv.length === rec.life.length && rec.adv.every((x) => x >= -1 && x <= 1), `game ${g}: the advantage line`);
@@ -68,7 +72,7 @@ for (let g = 0; g < GAMES; g++) {
   check(rec.players.every((P) => P.spent <= P.had + 12), `game ${g}: Energy spent ≤ Energy had (plus Sparks)`);
   const cardDmg = Object.values(rec.mine).reduce((t, c) => t + c[1], 0);
   check(cardDmg <= rec.players[0].dealt, `game ${g}: my cards' damage ≤ my damage`);
-  check(JSON.stringify(rec).length < 9000, `game ${g}: the record is small (${JSON.stringify(rec).length} bytes)`);
+  check(JSON.stringify(rec).length < (ultra ? 12000 : 9000), `game ${g}: the record is small (${JSON.stringify(rec).length} bytes)`);
   const tr = Date.now();
   const review = await reviewPlay(setup, actions, 0, { pause: () => Promise.resolve() });
   const ms = Date.now() - tr;
@@ -101,6 +105,9 @@ check(sum.w + sum.l === sum.n, 'wins + losses');
 check(sum.rivals.length > 0 && sum.cards.all.length > 0, 'rivals and cards');
 const fr = summarize(records, [], 'friends'), bo = summarize(records, [], 'bots');
 check(fr.n + bo.n === sum.n, 'friends + bots = all');
+const su = summarize(records, [], 'all', 'ultra'), ss = summarize(records, [], 'all', 'standard');
+check(su.n + ss.n === sum.n && su.n > 0 && ss.n > 0, `Ultra ${su.n} + standard ${ss.n} = all ${sum.n}`);
+console.log(`Ultra games: ${su.n}, ${su.rate}% won, accuracy ${su.play.acc}%, mvp ${su.cards.mvp.map((c) => c.cid).join(', ')}`);
 console.log(`summary: ${sum.n} games, ${sum.rate}% won, accuracy ${sum.play.acc}%, Energy ${sum.play.energy}% (bots ${sum.play.botEnergy}%), first ${sum.when.first.w}/${sum.when.first.n}, mvp ${sum.cards.mvp.map((c) => c.cid).join(', ')}`);
 const night = nightAwards(Object.fromEntries(records.slice(0, 6).map((r, i) => [i + 1, roomResult(r)])));
 check(night.people.reduce((t, P) => t + P.wins, 0) <= night.games && night.people.length >= 2, "night wins");
@@ -113,19 +120,21 @@ for (let d = 0; d < DRAFTS; d++) {
   const n = d % 2 ? 3 : 2;
   const seed = 5000 + d * 17;
   const style = ['careful', 'noisy', 'random'][d % 3];
+  const ultra = (d >> 1) % 2 === 1;
   const rand = rng(seed);
   const picks = [];
-  let st = replayDraft({ seed, n }, picks);
+  let st = replayDraft({ seed, n, ultra }, picks);
   while (!st.done) {
     const p = st.who;
     const cid = p === 0 && style === 'random' ? st.table[Math.floor(rand() * st.table.length)]
       : p === 0 && style === 'careful' ? botPick(st.table, st.pools[p], () => 0.5, 0)
         : botPick(st.table, st.pools[p], botRand(seed, st.round, p));
     picks.push({ p, k: st.round, cid });
-    st = replayDraft({ seed, n }, picks);
+    st = replayDraft({ seed, n, ultra }, picks);
   }
   const td = Date.now();
-  const rv = reviewDraft({ seed, n }, picks, 0);
+  const rv = reviewDraft({ seed, n, ultra }, picks, 0);
+  check(!ultra || rv.pool.some((id) => /^(kindling|bloodrage|stoke|ember-volley|molten|scorched|sproutling|mycelium|rootmother|thornback|deep-roots|bark|overgrowth|tidecallers|flood|tide-of|wavewarden|wing|blood-pact|bloodbinder|gravewarden|grave-rite|shackles|venom-shard|shield-captain|bastion-wall|field-medic|lantern-moth|menders|tithe|sanctuary)/.test(id)), `draft ${d}: an Ultra draft's deck has Ultra cards`);
   draftMs += Date.now() - td;
   check(rv.done && rv.picks.length === 30, `draft ${d}: 30 picks reviewed`);
   check(style !== 'careful' || rv.score === 100, `draft ${d}: the bot's own picks score 100 (${rv.score})`);

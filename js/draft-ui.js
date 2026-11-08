@@ -24,9 +24,10 @@ import * as Decks from './decks.js';
 import * as Net from './net.js';
 import * as St from './stats.js';
 import * as Ins from './insights.js';
+import * as Mode from './mode.js';
 import {
   KINDS, KIND_INFO, PICKS, botChoice, byCost, deckCounts, deckName, factionCounts, kindCounts, lastPicks,
-  newSeed, poolKey, replay, roundPicks, adviceFor,
+  newSeed, poolKey, replay, roundPicks, adviceFor, draftPool, kindInfo,
 } from './draft.js';
 
 const SAVE = 'collective.draft.snake.v1';
@@ -72,7 +73,7 @@ const myDone = (d) => mine(d).length >= PICKS;
 const sending = (d) => !!(d.sent && !d.st.done && d.sent.k === d.st.round && d.st.who === d.me);
 // This phone's card list is not the one the draft was dealt from (an old version
 // of the app on one of the phones): its table would be wrong, so it must not pick.
-const stale = (d) => !!(d?.kind === 'online' && d.info?.draft?.pool && d.info.draft.pool !== poolKey());
+const stale = (d) => !!(d?.kind === 'online' && d.info?.draft?.pool && d.info.draft.pool !== poolKey(!!d.ultra));
 const STALE = 'This phone’s cards don’t match the draft’s: one of the phones has an older version of the game. Reload the page on every phone, then carry on.';
 const myTurn = (d) => !d.st.done && d.st.who === d.me;
 const canPickNow = (d) => d.me >= 0 && myTurn(d) && !sending(d) && !stale(d) && d.st.table.length > 0;
@@ -80,10 +81,12 @@ const canPickNow = (d) => d.me >= 0 && myTurn(d) && !sending(d) && !stale(d) && 
 const onTable = (d) => d.st.table.filter((c) => !(sending(d) && c === d.sent.cid));
 const hostName = (info) => (info.players || []).find((p) => p && p.id === info.host)?.name || 'the host';
 
-function explain(n) {
+function explain(n, ultra = false) {
+  const all = draftPool(ultra).length;
   return 'Each round, up to 6 cards of one kind (small, medium or big creatures, spells, tricks, relics) go on the table, and everyone takes one, in turn. '
     + 'The order snakes: whoever picks last in a round picks first in the next. 30 rounds, and your 30 picks are your deck, any factions. '
-    + (n === 3 ? 'With three of you, every one of the 90 cards gets picked.' : 'With two of you, 60 of the 90 cards get picked.');
+    + (ultra ? `SATTC Ultra: the cards are the Week One 90 without the four Ultra leaves out, and the 31 Ultra cards; ${n * PICKS} of those ${all} get picked.`
+      : n === 3 ? 'With three of you, every one of the 90 cards gets picked.' : 'With two of you, 60 of the 90 cards get picked.');
 }
 
 function curveHTML(pool) {
@@ -215,7 +218,7 @@ function headHTML(d) {
       ${myDone(d) ? '<span></span>' : `<button class="g-icon g-bulb dr-bulb${adviceOpen(d) ? ' on' : ''}" data-act="draft-advice" aria-label="Advice for this round">💡</button>`}
     </div>`;
   if (myDone(d)) return `${top}<div class="dr-title">Your deck</div>`;
-  const kind = KIND_INFO[st.kind];
+  const kind = kindInfo(st.kind, st.ultra);
   const took = new Set(roundPicks(st).map((e) => e.p));
   if (sending(d)) took.add(d.me);
   const strip = st.order.map((p) => {
@@ -249,7 +252,7 @@ function adviceHTML(d) {
   if (!adviceOpen(d)) return '';
   const { kind, lines } = adviceFor(d.st, d.me);
   return `<div class="suggest dr-advice" data-act="draft-advice" role="button" aria-label="Put the advice away"><span class="suggest-t">`
-    + `<span class="suggest-h">💡 ${esc(KIND_INFO[kind].name)}</span>${lines.map((l) => `<span class="dr-adv">${esc(l)}</span>`).join('')}</span></div>`;
+    + `<span class="suggest-h">💡 ${esc(kindInfo(kind, d.st.ultra).name)}</span>${lines.map((l) => `<span class="dr-adv">${esc(l)}</span>`).join('')}</span></div>`;
 }
 
 function tableHTML(d) {
@@ -426,8 +429,8 @@ function noteDraft(d) {
   const old = St.findDraft(id);
   if (old) { d.reviewed = old; return; }
   try {
-    const review = St.reviewDraft({ seed: d.seed, n: d.n }, d.picks, d.me);
-    d.reviewed = { id, at: Date.now(), mode: d.kind, n: d.n, deck: Decks.encode(deckCounts(review.pool)), review: { score: review.score, counts: review.counts, picks: review.picks } };
+    const review = St.reviewDraft({ seed: d.seed, n: d.n, ultra: !!d.ultra }, d.picks, d.me);
+    d.reviewed = { id, at: Date.now(), mode: d.kind, n: d.n, ...(d.ultra ? { ultra: true } : {}), deck: Decks.encode(deckCounts(review.pool)), review: { score: review.score, counts: review.counts, picks: review.picks } };
     St.saveDraft(d.reviewed);
   } catch (e) { console.error(e); }
 }
@@ -543,7 +546,7 @@ function loadPractice() {
 function practiceFrom(saved, ctx) {
   const bots = Array.from({ length: saved.n - 1 }, (_, i) => i + 1);
   const d = {
-    kind: 'practice', seed: saved.seed, n: saved.n, picks: [...saved.picks], me: 0,
+    kind: 'practice', seed: saved.seed, n: saved.n, ultra: !!saved.ultra, picks: [...saved.picks], me: 0,
     names: ['You', ...bots.map((p) => `Bot ${p}`)], bots, play: ctx.play, timer: null,
   };
   d.st = replay(d, d.picks);
@@ -552,11 +555,11 @@ function practiceFrom(saved, ctx) {
 }
 
 function savePractice() {
-  if (P) store.set({ seed: P.seed, n: P.n, picks: P.picks, at: Date.now() });
+  if (P) store.set({ seed: P.seed, n: P.n, ultra: !!P.ultra, picks: P.picks, at: Date.now() });
 }
 
 function startPracticeDraft(bots, ctx) {
-  P = practiceFrom({ seed: newSeed(), n: bots + 1, picks: [] }, ctx);
+  P = practiceFrom({ seed: newSeed(), n: bots + 1, ultra: Mode.ultra(), picks: [] }, ctx);
   savePractice();
   openScreen('practice');
   botsTick();
@@ -599,12 +602,12 @@ function playPractice() {
   const bots = P.bots.map((p) => ({ id: `draft-bot-${p}`, name: `${deckName(st.pools[p])} draft`, counts: deckCounts(st.pools[p]) }));
   const bad = [you, ...bots].map((d) => Decks.validateDrafted(d.counts)).find((v) => !v.ok);
   if (bad) { toast(bad.errors[0]); return; }
-  const play = P.play;
+  const play = P.play, ultra = !!P.ultra;
   clearTimeout(P.timer);
   P = null;
   store.clear();
   closeScreen();
-  play(you, bots);
+  play(you, bots, { ultra }); // (the game plays by the rules the draft was dealt with)
 }
 
 // ── online: the room's draft ────────────────────────────────────────
@@ -628,7 +631,7 @@ export function onRoomInfo(code, info, refresh) {
 
 function watchDraft(code, draft) {
   const d = {
-    kind: 'online', code, id: draft.id, seed: draft.seed, n: draft.order.length, order: draft.order,
+    kind: 'online', code, id: draft.id, seed: draft.seed, n: draft.order.length, ultra: !!draft.ultra, order: draft.order,
     info: null, picks: [], st: null, me: -1, names: [], sent: null, armed: null, dismissed: false, unsub: null, deckBusy: false,
   };
   R = d;
@@ -711,10 +714,10 @@ export function onPlayAct(act, el, ctx = {}) {
     case 'draft-reload': location.reload(); break;
     case 'draft-open': if (R && R.me >= 0) { R.dismissed = false; openScreen('online'); } break;
     case 'draft-mode': if (ctx.code) Net.setDraftMode(ctx.code, !!el.checked).catch(fail); break;
-    case 'draft-start': if (ctx.code) { el.disabled = true; Net.startDraft(ctx.code, { pool: poolKey() }).catch((e) => { el.disabled = false; fail(e); }); } break;
+    case 'draft-start': if (ctx.code) { el.disabled = true; Net.startDraft(ctx.code, { pool: poolKey(!!ctx.ultra), ultra: !!ctx.ultra }).catch((e) => { el.disabled = false; fail(e); }); } break;
     case 'draft-again':
       if (el.dataset.confirm !== '1') { el.dataset.confirm = '1'; el.textContent = 'Tap again: a new draft for everyone'; break; }
-      if (ctx.code) Net.startDraft(ctx.code, { again: true, pool: poolKey() }).catch(fail);
+      if (ctx.code) Net.startDraft(ctx.code, { again: true, pool: poolKey(!!ctx.ultra), ultra: !!ctx.ultra }).catch(fail);
       break;
   }
 }
@@ -749,7 +752,8 @@ export function modeSwitchHTML(on) {
 }
 
 // The lobby of a draft room: seats with draft progress, then the next step.
-export function roomPanelHTML(code, info, tonight = '') {
+// `rules`: the room's rules (the SATTC Ultra switch, or a note), shown with the draft's own switch.
+export function roomPanelHTML(code, info, tonight = '', rules = '') {
   const me = Net.clientId();
   const players = info.players || [];
   const meSeat = players.findIndex((p) => p && p.id === me);
@@ -782,19 +786,19 @@ export function roomPanelHTML(code, info, tonight = '') {
   }).join('');
 
   let next;
-  if (started && draft.pool && draft.pool !== poolKey()) {
+  if (started && draft.pool && draft.pool !== poolKey(!!draft.ultra)) {
     next = `<p class="dr-stale">${STALE}</p><button class="btn primary" data-act="draft-reload">Reload this page</button>`;
   } else if (info.status === 'playing') next = '<button class="btn primary" data-act="rejoin-table">Back to the table</button>';
   else if (!started) {
     // how it works is a tap away, for whoever hasn't drafted before
-    next = `<details class="dr-how"><summary>How the draft works</summary><p class="muted small">${explain(info.seats)}</p></details>${host
-      ? `${modeSwitchHTML(true)}${odd ? '<button class="btn primary" disabled>Reload every phone first</button>' : `<button class="btn primary" data-act="draft-start" ${full ? '' : 'disabled'}>${full ? 'Start the draft' : 'Waiting for everyone to join'}</button>`}`
+    next = `<details class="dr-how"><summary>How the draft works</summary><p class="muted small">${explain(info.seats, !!info.ultra)}</p></details>${host
+      ? `${modeSwitchHTML(true)}${rules}${odd ? '<button class="btn primary" disabled>Reload every phone first</button>' : `<button class="btn primary" data-act="draft-start" ${full ? '' : 'disabled'}>${full ? 'Start the draft' : 'Waiting for everyone to join'}</button>`}`
       : '<p class="muted small" style="margin:0">The host starts the draft when everyone is in.</p>'}`;
   } else if (!st) next = '<p class="muted small" style="margin:0">Loading the draft…</p>';
   else if (!st.done) {
     const up = order[st.who] === me ? 'your pick' : `${esc(R.names[st.who])} is picking`;
     next = `${inDraft ? '<button class="btn primary" data-act="draft-open">Back to the draft</button>' : ''}
-      <p class="muted small" style="margin:0">Round ${st.round + 1} of ${PICKS} (${esc(KIND_INFO[st.kind].name)}): ${up}.</p>`;
+      <p class="muted small" style="margin:0">Round ${st.round + 1} of ${PICKS} (${esc(kindInfo(st.kind, st.ultra).name)}): ${up}.</p>`;
   } else {
     next = `<div class="dr-handoff"><b>Draft complete!</b> Host: tap Start game.</div>
       ${host ? (odd ? '<button class="btn primary" disabled>Reload every phone first</button>' : `<button class="btn primary" data-act="start" ${full ? '' : 'disabled'}>${full ? `Start game ${(info.round || 0) + 1}` : 'Waiting for everyone to come back'}</button>`)

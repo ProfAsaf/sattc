@@ -161,7 +161,7 @@ Bot games:
 - Weakest: Endless Swarm in duels; Sky and Arrows and The Giant with three players.
 
 Not done yet:
-- Draft night and "Draft my deck" still draft from the Week One 90 cards.
+- (Done since: draft night and "Draft my deck" deal from the Ultra pool, stats and Insights know Ultra games, and suggestions word the Ultra moves.)
 - People haven't played it.
 
 ## Building it

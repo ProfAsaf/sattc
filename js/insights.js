@@ -46,6 +46,7 @@ function altText(rec, a) {
     case 'play': return `played ${card(a.cid)}`;
     case 'use': return `used ${card(a.cid)}`;
     case 'phoenix': return 'brought the Phoenix back';
+    case 'unhex': return `broken the Hex on ${card(a.cid)}`;
     case 'attack': return `attacked${rec.n > 2 ? ` ${who(rec, a.v, true)}` : ''} with ${list(a.cids.map(card))}`;
     case 'hold': return 'held back';
     case 'block': return list(a.pairs.map(([b, x]) => `blocked ${card(x)} with ${card(b)}`));
@@ -316,7 +317,7 @@ export function tonightLine(results, myName) {
 }
 
 // ── the Insights page ──────────────────────────────────────────────
-const F = { filter: 'all' };
+const F = { filter: 'all', rules: 'any' };
 const bar = (p, cls = '') => `<span class="ins-bar${cls ? ` ${cls}` : ''}"><i style="width:${Math.max(2, p ?? 0)}%"></i></span>`;
 const wr = (x) => (x.n ? `${Math.round((100 * x.w) / x.n)}%` : '–');
 const wl = (x) => `${x.w}–${x.n - x.w}`;
@@ -431,9 +432,11 @@ function recentHTML(S) {
 export function insightsPage(view) {
   const games = St.loadGames(), drafts = St.loadDrafts();
   const render = () => {
-    const S = St.summarize(games, drafts, F.filter);
+    const S = St.summarize(games, drafts, F.filter, F.rules);
     const anyFriends = games.some((g) => g.mode === 'online'), anyBots = games.some((g) => g.mode !== 'online');
-    const chips = anyFriends && anyBots ? `<div class="chips ins-filter">${[['all', 'All games'], ['friends', 'Friends'], ['bots', 'Bots']].map(([k, label]) => `<button class="chip${F.filter === k ? ' on' : ''}" data-f="${k}">${label}</button>`).join('')}</div>` : '';
+    const anyUltra = [...games, ...drafts].some((g) => g.ultra), anyStandard = [...games, ...drafts].some((g) => !g.ultra);
+    const chips = (anyFriends && anyBots ? `<div class="chips ins-filter">${[['all', 'All games'], ['friends', 'Friends'], ['bots', 'Bots']].map(([k, label]) => `<button class="chip${F.filter === k ? ' on' : ''}" data-f="${k}">${label}</button>`).join('')}</div>` : '')
+      + (anyUltra && anyStandard ? `<div class="chips ins-filter">${[['any', 'Both rules'], ['standard', 'Standard'], ['ultra', 'SATTC Ultra']].map(([k, label]) => `<button class="chip${F.rules === k ? ' on' : ''}" data-r="${k}">${label}</button>`).join('')}</div>` : '');
     view.innerHTML = `
       <header class="pagehead"><a class="back" href="#/" aria-label="Home">${BACK}</a><h2>Insights</h2></header>
       ${chips}
@@ -445,6 +448,8 @@ export function insightsPage(view) {
   view.onclick = (e) => {
     const chip = e.target.closest('.chip[data-f]');
     if (chip) { F.filter = chip.dataset.f; render(); return; }
+    const rc = e.target.closest('.chip[data-r]');
+    if (rc) { F.rules = rc.dataset.r; render(); return; }
     const g = e.target.closest('[data-act="ins-game"]');
     if (g) { const rec = games.find((x) => x.id === g.dataset.id); if (rec) openSheet(reviewHTML(rec)); return; }
     const d = e.target.closest('[data-act="ins-draft"]');

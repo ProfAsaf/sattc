@@ -16,8 +16,12 @@
 // A draft is its seed, its number of players and its pick list, a list of
 // { p, k, cid }: seat p's pick in round k was card cid. Every phone replays
 // the same list and agrees on the table, like the game's move list.
+//
+// SATTC Ultra drafts (`ultra`) deal from ULTRA_DRAFT_POOL instead: the same 90
+// without the four cards Ultra leaves out, and the 31 Ultra cards (117, so
+// three players' 90 picks leave some over). Fields go in the Relics pile.
 
-import { BY_ID, CARDS, FACTION_ORDER, KEYWORDS, RULES } from './cards.js';
+import { BY_ID, CARDS, FACTION_ORDER, KEYWORDS, RULES, ULTRA, ULTRA_OUT } from './cards.js';
 
 export const TABLE = 6; // cards laid out each round, at most
 export const KINDS = ['small', 'medium', 'big', 'spells', 'tricks', 'relics'];
@@ -38,9 +42,13 @@ export const KIND_INFO = {
   relics: { name: 'Relics', short: 'Relics', line: 'Relics: they stay on the table and keep working.' },
   last: { name: 'Last call', short: 'Last call', line: 'Last call: anything left over.' },
 };
+// In a SATTC Ultra draft the Relics pile has the Fields in it too.
+export const kindInfo = (kind, ultra = false) => (ultra && kind === 'relics'
+  ? { name: 'Relics & Fields', short: 'Relics', line: 'Relics & Fields: they stay on the table and keep working; a Field changes the rules for everyone.' }
+  : KIND_INFO[kind]);
 
 export function kindOf(card) {
-  if (card.type === 'relic') return 'relics';
+  if (card.type === 'relic' || card.type === 'field') return 'relics';
   if (card.type === 'creature') return card.cost <= 2 ? 'small' : card.cost <= 4 ? 'medium' : 'big';
   const kw = card.keywords || [];
   return card.subtype === 'Trick' || card.subtype === 'Trap' || kw.includes('trick') || kw.includes('trap') ? 'tricks' : 'spells';
@@ -71,22 +79,24 @@ function shuffle(list, rand) {
 // use up exactly these (the piles and rounds are built around them), so the
 // later cards (n 91 on, for decks you build) stay out of the draft.
 export const DRAFT_POOL = CARDS.filter((c) => !c.token && c.n <= 90);
+export const ULTRA_DRAFT_POOL = [...DRAFT_POOL.filter((c) => !ULTRA_OUT.includes(c.id)), ...ULTRA];
+export const draftPool = (ultra = false) => (ultra ? ULTRA_DRAFT_POOL : DRAFT_POOL);
 
 // A fingerprint of this draft format and the card list (ids, in order): the
 // piles come from it, so every phone in a draft must have the same one. Card
 // text may differ.
 const FORMAT = 'snake-1';
-export function poolKey() {
+export function poolKey(ultra = false) {
   let h = 2166136261;
-  for (const ch of `${FORMAT}|${DRAFT_POOL.map((c) => c.id).join(',')}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  for (const ch of `${FORMAT}|${draftPool(ultra).map((c) => c.id).join(',')}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
   return (h >>> 0).toString(36);
 }
 
 // The six piles, top card first, each shuffled from the seed.
-export function makePiles(seed) {
+export function makePiles(seed, ultra = false) {
   const rand = rng(seed);
   const piles = Object.fromEntries(KINDS.map((k) => [k, []]));
-  for (const c of DRAFT_POOL) piles[kindOf(c)].push(c.id);
+  for (const c of draftPool(ultra)) piles[kindOf(c)].push(c.id);
   for (const k of KINDS) shuffle(piles[k], rand);
   return piles;
 }
@@ -105,9 +115,9 @@ const isPick = (x, n) => x && Number.isInteger(x.p) && Number.isInteger(x.k) && 
 // of the list doesn't matter. When only one card is left for you, it is yours
 // without a pick. The replay stops at the first turn with no pick: whose turn
 // it is.
-export function replay({ seed, n }, picks = []) {
+export function replay({ seed, n, ultra = false }, picks = []) {
   if (n < 2 || n > 3) throw new Error('A draft is for two or three players.');
-  const piles = makePiles(seed);
+  const piles = makePiles(seed, ultra);
   if (KINDS.reduce((s, k) => s + piles[k].length, 0) < n * PICKS) throw new Error(`A ${n}-player draft needs ${n * PICKS} cards.`);
   const first = firstOrder(seed, n);
   const wanted = new Map(); // "p:k" -> card ids, in list order
@@ -120,7 +130,7 @@ export function replay({ seed, n }, picks = []) {
   const pools = Array.from({ length: n }, () => []);
   const log = []; // every pick so far: { r, p, cid, auto }
   let last = null; // the last-call pile: everything left when last call starts
-  const base = { seed, n, first, pools, log, piles };
+  const base = { seed, n, ultra: !!ultra, first, pools, log, piles };
   for (let r = 0; r < PICKS; r++) {
     const kind = ROUNDS[r];
     if (kind === 'last' && !last) last = piles.last = shuffle(KINDS.flatMap((k) => piles[k].splice(0)), rng((seed ^ 0x1a57ca11) | 0));
@@ -185,6 +195,8 @@ export function deckName(pool) {
 const KW_VALUE = {
   rush: 0.5, soar: 1.4, reach: 0.4, guard: 0.7, swift: 0.9, venom: 1.4, drain: 0.9, overrun: 0.7,
   watchful: 0.7, hunt: 0.7, lastBreath: 0.5, awaken: 0.4, echo: 1, bond: 0.2, trick: 0.5, trap: 0.3,
+  // SATTC Ultra (a creature that grows, copies itself or swells is worth more than its printed size)
+  invest: 1.4, grows: 2.2, multiply: 2.6, unstable: 3, fuse: 0.9, ritual: 1.2, hex: 0.4, field: 1.2, bodyguard: 0.9,
 };
 const has = (re, t) => re.test(t);
 
@@ -216,6 +228,9 @@ function textValue(card) {
   if (has(/when played/i, t)) v += 0.4;
   if (has(/costs? \d less/i, t)) v += 0.3;
   if (has(/your other creatures have|your spirits have/i, t)) v += 1;
+  if (has(/\bHex \d/i, t)) v += 2.2; // (Ultra: an answer that holds until it is paid off)
+  if (has(/\bheals?\b/i, t)) v += 0.7;
+  if (has(/your other creatures with|whenever (a|another) creature of yours/i, t)) v += 0.8;
   if (has(/can.t block/i, t)) v -= 0.8;
   if (has(/takes 1 damage/i, t)) v -= 0.3;
   if (card.type === 'relic') v += 0.8;
@@ -296,9 +311,15 @@ const ROUND_ADVICE = {
   relics: 'Relics stay on the table and work every turn, so a cheap one pays off over a long game.',
   last: 'Last call: anything left over. Take what your deck is most short of.',
 };
+// In a SATTC Ultra draft some rounds say it differently.
+const ULTRA_ADVICE = {
+  spells: 'Spells happen once, on your turn. In Ultra nothing wipes out a creature for free: look for damage (wounds last), a Hex that holds one down, or a card that grows your own side for good (Invest, a Ritual).',
+  relics: 'Relics and Fields stay on the table and keep working. A Field changes the rules for everyone, so take one that suits your deck better than theirs.',
+  big: 'Big creatures win games, but each takes a whole turn to play. In Ultra games last longer and wounds heal, so a big one that survives keeps paying off.',
+};
 
 const kws = (c) => (c.keywords || []).filter((k) => k !== 'trick' && k !== 'trap');
-const removes = (c) => /\bdestroys? (a|an|every|each) (attacking )?creature|\bdeals? \d+ damage\b|\bfights?\b|take control|becomes a 1\/1 Fish/i.test(c.text || '');
+const removes = (c) => /\bdestroys? (a|an|every|each) (attacking )?creature|\bdeals? \d+ damage\b|\bfights?\b|take control|becomes a 1\/1 Fish|\bHex \d/i.test(c.text || '');
 const draws = (c) => /\bdraws? (a|\d|two|three) cards?\b/i.test(c.text || '');
 const pumps = (c) => /\+\d+\/\+\d+|\bgets? \+\d/i.test(c.text || '');
 const saves = (c) => /return .* to (its owner's|your) hand|can'?t be (blocked|destroyed|targeted)|\bprevent/i.test(c.text || '');
@@ -393,5 +414,5 @@ export function adviceFor(st, p) {
   const kind = st.kind;
   const pool = (st.pools[p] || []).map((id) => BY_ID[id]).filter(Boolean);
   const table = (st.table || []).map((id) => BY_ID[id]).filter(Boolean);
-  return { kind, lines: [ROUND_ADVICE[kind], needFor(kind, pool, table), tableSummary(kind, table)].filter(Boolean) };
+  return { kind, lines: [(st.ultra && ULTRA_ADVICE[kind]) || ROUND_ADVICE[kind], needFor(kind, pool, table), tableSummary(kind, table)].filter(Boolean) };
 }

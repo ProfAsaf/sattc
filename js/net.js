@@ -82,7 +82,7 @@ export async function createRoom({ seats, name, deck, draft = false, ultra = fal
   for (let tries = 0; tries < 6; tries++) {
     const code = newCode();
     const res = await fb.runTransaction(infoRef(code), (cur) => (cur === null
-      ? { created: Date.now(), status: 'lobby', seats, host: clientId(), round: 0, champions: true, players: [{ id: clientId(), name, deck, v: version() }], ...(draft ? { draft: { on: true } } : {}), ...(ultra ? { ultra: true } : {}) }
+      ? { created: Date.now(), status: 'lobby', seats, host: clientId(), round: 0, champions: !ultra, players: [{ id: clientId(), name, deck, v: version() }], ...(draft ? { draft: { on: true } } : {}), ...(ultra ? { ultra: true } : {}) }
       : undefined));
     if (res.committed) { setLastRoom(code); return code; }
   }
@@ -300,15 +300,16 @@ export async function setDraftMode(code, on) {
 // Host: start the draft (a fresh seed) once everyone is in. `again` starts a
 // new draft in a room that has drafted before. `pool` fingerprints the host's
 // card list, so a phone on an older version can tell (js/draft.js poolKey).
-export async function startDraft(code, { again = false, pool = '' } = {}) {
+export async function startDraft(code, { again = false, pool = '', ultra = false } = {}) {
   await connect();
   await fb.runTransaction(infoRef(code), (room) => {
     if (!room || room.host !== clientId() || room.status !== 'lobby' || !room.draft) return room;
     if (room.draft.id && !again) return room;
     if ((room.players || []).length !== room.seats) return room;
     if (room.players.some((p) => !p || p.v !== version())) return room; // a phone on another version: reload first
+    if (!!room.ultra !== !!ultra) return room; // (the switch moved meanwhile: the host taps again)
     const seed = Math.floor(Math.random() * 2 ** 31);
-    room.draft = { on: true, id: Date.now().toString(36) + seed.toString(36).slice(0, 4), seed, order: room.players.map((p) => p.id), pool };
+    room.draft = { on: true, id: Date.now().toString(36) + seed.toString(36).slice(0, 4), seed, order: room.players.map((p) => p.id), pool, ...(ultra ? { ultra: true } : {}) };
     return room;
   });
 }

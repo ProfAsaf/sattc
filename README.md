@@ -449,6 +449,20 @@ scratchpad):
 
 **On the table.**
 
+- **Drafts.** Draft night and "Draft my deck" deal from `ULTRA_DRAFT_POOL` in Ultra.
+  - That pool is 117 cards: the Week One 90 without `ULTRA_OUT`, plus the 31 Ultra cards. Fields go in the Relics pile.
+  - A room's draft keeps the rules it was dealt with (`draft.ultra`, and a pool key of its own). The game after it plays by the same rules.
+  - The draft bots value the Ultra keywords, and their advice has Ultra lines.
+- **Stats.** A game record carries `ultra`, and Life is counted from the real start.
+  - The stats now credit Life lost to eruptions, Bastion Wall and Grave Rite to whoever caused it. Self-inflicted losses (Blood Pact, an empty deck) count as `paid`.
+  - Insights adds a Standard / SATTC Ultra filter.
+- **Suggestions and pop-ups.** 💡 suggestions and the opponents' move lines put Ritual stages, Fuse and breaking a Hex into words. A Ritual never gets a "would do nothing" pop-up.
+- **Champions.** Ultra games leave them out by default: practice hides the switch, and an Ultra room starts with them off.
+- **Stress tests.**
+  - 1,500 Ultra fuzz games and 2,000 Ultra bot drafts.
+  - 80 drafted Ultra games, counted and reviewed (`ultra-chain.mjs`).
+  - Draft nights on 2 and 3 phones, a two-phone online game and the practice draft, all run with `ULTRA=1`.
+  - Ultra suggestions and the Insights filter, on a phone.
 - The Field is a banner in the middle; tap it to read it.
 - A Ritual sits in the Relic row with its stage count; tap it to pay the next
   stage.

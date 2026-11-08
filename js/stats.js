@@ -55,10 +55,10 @@ export function analyzeGame(setup, actions, { me = 0 } = {}) {
   let s = newGame(setup);
   const first = s.first;
   const pl = setup.players.map((p) => ({
-    name: p.name, dealt: 0, taken: 0, gained: 0, kills: 0, lost: 0,
+    name: p.name, dealt: 0, taken: 0, paid: 0, gained: 0, kills: 0, lost: 0, // (paid: Life lost to your own cards, or to an empty deck)
     plays: 0, creatures: 0, spells: 0, tricks: 0, traps: 0, relics: 0, sprung: 0,
     attacks: 0, swings: 0, blocks: 0, drawn: 0, full: 0, crown: 0, spent: 0, had: 0,
-    low: RULES.startLife, big: 0, out: null, mull: null, conceded: false,
+    low: s.players[0].life, big: 0, out: null, mull: null, conceded: false, // (the Life everyone starts with)
   }));
   const cards = setup.players.map(() => ({})); // cid -> { p: played, dmg, k: kills }
   const card = (p, cid) => (cards[p][cid] ||= { p: 0, dmg: 0, k: 0 });
@@ -122,7 +122,9 @@ export function analyzeGame(setup, actions, { me = 0 } = {}) {
         }
         case 'hitPlayer': {
           const src = e.src ?? (played && played.p !== e.p ? played.uid : null);
-          credit(src != null ? ctrlOf(src) : null, src, e.p, e.n);
+          const by = src != null ? ctrlOf(src) : null;
+          if (by === e.p) pl[e.p].paid += e.n; // (your own Unstable creature erupting)
+          credit(by, src, e.p, e.n);
           if (fight && e.p === fight.d) fight.hit += e.n;
           break;
         }
@@ -132,8 +134,10 @@ export function analyzeGame(setup, actions, { me = 0 } = {}) {
           // Life lost without damage (the Drowned Clock, a tithe): count it for whoever made it happen
           const prev = evs[k - 1];
           if (!(prev?.k === 'hitPlayer' && prev.p === e.p && prev.n === -e.n)) {
-            const by = played && played.p !== e.p ? played.p : after.active !== e.p ? after.active : null;
-            if (by != null) pl[by].dealt -= e.n;
+            const by = e.by ?? (played && played.p !== e.p ? played.p : after.active !== e.p ? after.active : null);
+            const own = e.by === e.p || (e.by == null && played?.p === e.p) || (by == null && after.log.some((l) => l.p === e.p && /no cards left/.test(l.text)));
+            if (own) pl[e.p].paid -= e.n;
+            else if (by != null && by !== e.p) pl[by].dealt -= e.n;
           }
           break;
         }
@@ -205,7 +209,7 @@ export function analyzeGame(setup, actions, { me = 0 } = {}) {
   const mine = {};
   for (const [cid, c] of Object.entries(cards[me])) mine[cid] = [c.p, c.dmg, c.k];
   const rec = {
-    v: 1, n, me, first, winner: s.winner, over: s.phase === 'over', how, turns: s.turn,
+    v: 1, n, me, first, winner: s.winner, over: s.phase === 'over', how, turns: s.turn, ...(setup.ultra ? { ultra: true } : {}),
     rounds: Math.max(0, ...s.players.map((P) => P.turns)),
     players, life, adv, marks, outs,
     fights: [...fights].sort((x, y) => y.hit - x.hit || y.deaths.length - x.deaths.length).slice(0, 6),
@@ -288,6 +292,7 @@ function sayAction(s, a) {
     case 'attack': return { t: 'attack', cids: a.att.map(cid), v: a.target };
     case 'block': return a.blocks.length ? { t: 'block', pairs: a.blocks.map(([b, x]) => [cid(b), cid(x)]) } : { t: 'noblock' };
     case 'phoenix': return { t: 'phoenix' };
+    case 'unhex': return { t: 'unhex', cid: cid(a.uid) };
     case 'pass': return { t: 'pass' };
     default: return { t: 'end' };
   }
@@ -483,6 +488,8 @@ const won = (g) => g.winner === g.me;
 const isBot = (P) => /^Bot · /.test(P.name);
 const keyName = (name) => String(name || '').trim().toLowerCase();
 export const FILTERS = { all: () => true, friends: (g) => g.mode === 'online', bots: (g) => g.mode !== 'online' };
+// Which rules: both, the standard game, or SATTC Ultra (games and drafts carry `ultra`).
+export const RULESETS = { any: () => true, standard: (g) => !g.ultra, ultra: (g) => !!g.ultra };
 
 /**
  * Everything the Insights page shows, from your saved games (filtered: all,
@@ -491,8 +498,9 @@ export const FILTERS = { all: () => true, friends: (g) => g.mode === 'online', b
  * hands), rivals, cards (17lands-style: win rate when drawn and not drawn),
  * records, and the recent games.
  */
-export function summarize(allGames, drafts = [], filter = 'all') {
-  const games = allGames.filter((g) => g.over && g.winner !== undefined && FILTERS[filter](g)).sort((x, y) => x.at - y.at);
+export function summarize(allGames, drafts = [], filter = 'all', rules = 'any') {
+  const games = allGames.filter((g) => g.over && g.winner !== undefined && FILTERS[filter](g) && RULESETS[rules](g)).sort((x, y) => x.at - y.at);
+  drafts = drafts.filter(RULESETS[rules]);
   const n = games.length, w = games.filter(won).length;
   const form = games.slice(-10).map(won);
   let streak = 0;

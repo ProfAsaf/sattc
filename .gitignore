@@ -7,3 +7,5 @@ __pycache__/
 *.log
 tools/*.jpg
 .wrangler/
+# phone and bot test scripts (local only; they hold this computer's paths)
+.phone-tests/

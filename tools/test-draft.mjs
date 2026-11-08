@@ -4,12 +4,12 @@
 //   node tools/test-draft.mjs           all checks + 300 bot drafts of each size
 //   node tools/test-draft.mjs 2000      more bot drafts
 
-import { BY_ID, CARDS } from '../js/cards.js';
+import { BY_ID, CARDS, ULTRA, ULTRA_OUT } from '../js/cards.js';
 import { decode, encode, validateDrafted } from '../js/decks.js';
 import {
   KINDS, PICKS, ROUNDS, TABLE, botChoice, botPick, botRand, byCost, canPick, cardValue, deckCounts, deckName,
   factionCounts, firstOrder, kindCounts, kindOf, lastPicks, makePiles, pickScore, poolKey, replay, rng, roundOrder,
-  roundPicks, tipFor, adviceFor,
+  roundPicks, tipFor, adviceFor, ULTRA_DRAFT_POOL,
 } from '../js/draft.js';
 
 let pass = 0, fail = 0;
@@ -24,15 +24,15 @@ function test(name, fn) {
 const ALL = CARDS.filter((c) => !c.token && c.n <= 90).map((c) => c.id); // the draft's pool (Week One's 90)
 const RECIPE = { small: 5, medium: 6, spells: 6, big: 4, tricks: 4, relics: 2, last: 3 };
 
-// Everyone picks with the bot, turn by turn; returns the pick list.
-function botDraft(seed, n) {
+// Everyone picks with the bot, turn by turn; returns the pick list. (`ultra`: a SATTC Ultra draft)
+function botDraft(seed, n, ultra = false) {
   const picks = [];
-  let st = replay({ seed, n }, picks);
+  let st = replay({ seed, n, ultra }, picks);
   while (!st.done) {
     const cid = botChoice(st);
     if (!st.table.includes(cid)) throw new Error(`bot ${st.who} picked ${cid}, not on the table in round ${st.round + 1}`);
     picks.push({ p: st.who, k: st.round, cid });
-    const next = replay({ seed, n }, picks);
+    const next = replay({ seed, n, ultra }, picks);
     if (next.log.length <= st.log.length) throw new Error(`round ${st.round + 1}: the pick did not count`);
     st = next;
   }
@@ -301,6 +301,75 @@ test('advice', () => {
     }
   }
   ok(rounds > 1000, `advice checked in ${rounds} rounds`);
+});
+
+// ── SATTC Ultra drafts ──────────────────────────────────────────────
+// Ultra's pool (the 90 without the four cards Ultra leaves out, and the Ultra
+// cards): its piles, a key of its own, whole bot drafts that make legal decks
+// with Ultra cards in them, and advice that names no card.
+test('Ultra: the pool and its piles', () => {
+  eq(ULTRA_DRAFT_POOL.length, 117, 'the Ultra draft deals from 117 cards');
+  ok(poolKey(true) !== poolKey(false), 'with a pool key of its own');
+  const piles = makePiles(5, true);
+  const all = Object.values(piles).flat();
+  eq(all.length, 117, 'every card is in a pile');
+  ok(!all.some((id) => ULTRA_OUT.includes(id)), 'none of the cards Ultra leaves out');
+  ok(ULTRA.every((c) => all.includes(c.id)), 'all the Ultra cards');
+  ok(['scorched-earth', 'overgrowth', 'sanctuary-spring', 'tidecallers-library'].every((id) => piles.relics.includes(id)), 'the Fields and the Library go in the Relics pile');
+  ok(['flood-rite', 'grave-rite'].every((id) => piles.spells.includes(id)), 'the Rituals in the Spells pile');
+  const need = {};
+  for (const k of ROUNDS) need[k] = (need[k] || 0) + 3;
+  for (const k of KINDS) ok(piles[k].length >= need[k], `Ultra ${k}: ${piles[k].length} cards for ${need[k]} picks`);
+  ok(same(makePiles(5, true), makePiles(5, true)) && !same(makePiles(5, true), makePiles(6, true)), 'the piles come from the seed');
+  ok(same(makePiles(5), makePiles(5, false)), 'a standard draft is dealt as before');
+});
+
+test('Ultra: legal decks from many whole bot drafts', () => {
+  let decks = 0, cheap = 0, ultraCards = 0;
+  const sorted = (c) => JSON.stringify(Object.entries(c).sort());
+  for (let g = 0; g < runs; g++) {
+    for (const n of [2, 3]) {
+      const seed = (g * 104729 + n * 31) | 0;
+      const st = replay({ seed, n, ultra: true }, botDraft(seed, n, true));
+      ok(st.done && st.ultra && st.pools.every((pool) => pool.length === PICKS), `Ultra seed ${seed}, n=${n}: finished`);
+      for (const pool of st.pools) {
+        decks++;
+        const counts = deckCounts(pool);
+        ok(validateDrafted(counts).ok, `Ultra seed ${seed}: legal deck`);
+        ok(!pool.some((id) => ULTRA_OUT.includes(id)), `Ultra seed ${seed}: nothing Ultra leaves out`);
+        ok(sorted(decode(encode(counts))) === sorted(counts), `Ultra seed ${seed}: the deck code carries it`);
+        ultraCards += pool.filter((id) => BY_ID[id].ultra).length;
+        if (byCost(pool).filter((c) => c.cost <= 3).length >= 12) cheap++;
+      }
+    }
+  }
+  ok(ultraCards / decks >= 5, `bots take Ultra cards: ${(ultraCards / decks).toFixed(1)} a deck`);
+  ok(cheap / decks > 0.85, `Ultra decks keep cheap cards: ${cheap}/${decks}`);
+  console.log(`Ultra bot drafts: ${runs * 2} drafts, ${decks} decks; ${(ultraCards / decks).toFixed(1)} Ultra cards a deck; ${(100 * cheap / decks).toFixed(0)}% with 12+ cards costing 3 or less`);
+});
+
+test('Ultra: advice names no card', () => {
+  let rounds = 0, ultraLines = 0;
+  for (const n of [2, 3]) {
+    for (let seed = 1; seed <= 20; seed++) {
+      const picks = [];
+      let st = replay({ seed, n, ultra: true }, picks);
+      while (!st.done) {
+        for (let p = 0; p < n; p++) {
+          const { lines } = adviceFor(st, p);
+          rounds++;
+          ok(lines.length >= 1 && lines.length <= 3, `Ultra advice ${seed}/${n} round ${st.round}: 1-3 sentences`);
+          const named = ULTRA_DRAFT_POOL.map((c) => c.name).filter((nm) => lines.some((l) => l.includes(nm)));
+          ok(!named.length, `Ultra advice ${seed}/${n} round ${st.round} names ${named.join(', ')}`);
+          if (/In Ultra|Fields stay/.test(lines[0])) ultraLines++;
+        }
+        picks.push({ p: st.who, k: st.round, cid: botChoice(st) });
+        st = replay({ seed, n, ultra: true }, picks);
+      }
+    }
+  }
+  ok(ultraLines > 0, `Ultra rounds say it the Ultra way (${ultraLines} times)`);
+  ok(rounds > 500, `Ultra advice checked in ${rounds} rounds`);
 });
 
 console.log(`draft checks: ${pass} passed, ${fail} failed`);

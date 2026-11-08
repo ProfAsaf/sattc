@@ -115,7 +115,14 @@ function inviteHTML() {
 function onlinePanelHTML(choices, chosen) {
   if (!Net.isConfigured()) return '<div class="pp-in"><h3>Friends</h3><p class="muted small" style="margin:0">Online play is not set up yet.</p></div>';
   if (L && L.info) {
-    if (L.info.draft) return Draft.roomPanelHTML(L.code, L.info, (L.info.ultra ? '<p class="muted small ultra-note">This room plays <b>SATTC Ultra</b>.</p>' : '') + inviteHTML() + tonightHTML()); // Draft night has its own lobby
+    if (L.info.draft) { // Draft night has its own lobby; until the draft starts, the host can still switch the rules
+      const host = L.info.host === Net.clientId(), drafted = !!L.info.draft.id, ultra = drafted ? !!L.info.draft.ultra : !!L.info.ultra;
+      // (the host's switch goes with the draft's own switch; everyone else sees which rules it is)
+      const note = ultra ? '<p class="muted small ultra-note">This room plays <b>SATTC Ultra</b>.</p>' : '';
+      const rules = host && L.info.status === 'lobby' && !drafted
+        ? `<label class="dr-switch mini"><input type="checkbox" id="room-ultra"${ultra ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>SATTC Ultra</b>: the draft deals Ultra’s cards</span></label>` : '';
+      return Draft.roomPanelHTML(L.code, L.info, (rules ? '' : note) + inviteHTML() + tonightHTML(), rules);
+    }
     const info = L.info;
     const meSeat = (info.players || []).findIndex((p) => p && p.id === Net.clientId());
     const host = info.host === Net.clientId();
@@ -195,7 +202,7 @@ function botsPanelHTML(choices, chosen) {
     </div>
     <div class="pp-opts">
       <label class="dr-switch mini"><input type="checkbox" id="bot-draft"${PF.botDraft ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>Draft my deck</b></span></label>
-      <label class="dr-switch mini"><input type="checkbox" id="champions-practice"${PF.champions ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>Champions</b> (new)</span></label>
+      ${Mode.ultra() ? '' : `<label class="dr-switch mini"><input type="checkbox" id="champions-practice"${PF.champions ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>Champions</b> (new)</span></label>`}
       <button class="pp-more" data-act="decks" aria-expanded="${PF.decksOpen}" aria-controls="bot-decks"${PF.botDraft ? ' hidden' : ''}>Decks<i>${PF.decksOpen ? '▴' : '▾'}</i></button>
     </div>
     <div class="pp-group" id="bot-decks"${PF.decksOpen && !PF.botDraft ? '' : ' hidden'}>
@@ -372,7 +379,7 @@ export function playPage(view) {
     if (['create', 'join', 'rejoin', 'start', 'leave-room', 'rejoin-table', 'copy-link', 'invite'].includes(act)) { onlineAct(act, el, choices); return; }
     if (act === 'alerts-on' || act === 'alerts-off') { alertsTap(act === 'alerts-on').catch((er) => flash(er.message)).finally(() => playPage(view)); return; }
     if (act === 'last-review') { if (L?.lastRec) Ins.openSheet(Ins.reviewHTML(L.lastRec)); return; }
-    const ctx = { play: startPractice, refresh: () => playPage(view), code: L?.code };
+    const ctx = { play: startPractice, refresh: () => playPage(view), code: L?.code, ultra: !!L?.info?.ultra };
     if (act === 'bots') {
       if (PF.botDraft) { Draft.onPlayAct('draft-practice', el, ctx); return; } // data-n is the number of bots
       const mine = choices.find((d) => d.id === document.getElementById('my-deck').value);
@@ -394,10 +401,13 @@ function pickBots(n, which, mine) {
   return pool.slice(0, n);
 }
 
-function startPractice(mine, bots) {
+// `ultra`: the rules a drafted deck was dealt under (otherwise Home's switch; an
+// Ultra deck always plays Ultra). Ultra games go without Champions for now.
+function startPractice(mine, bots, { ultra } = {}) {
+  ultra = ultra ?? (Mode.ultra() || [mine, ...bots].some((d) => Decks.isUltraDeck(d.counts)));
   const players = [{ name: 'You', deck: Decks.cardList(mine.counts) },
     ...bots.map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
-  const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, champions: PF.champions, ultra: Mode.ultra() };
+  const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, champions: PF.champions && !ultra, ultra };
   begin({ mode: 'practice', setup, actions: [], me: 0, bots: bots.map((_, i) => i + 1) });
 }
 
@@ -568,7 +578,7 @@ function begin(rec) {
 function beginOnline(info, seat) {
   const round = info.round;
   // (every phone in a game runs the same version, so they agree on the rules: see G.stale)
-  const setup = { seed: info.seeds[round], players: info.players.map((p) => ({ name: p.name, deck: Decks.cardList(Decks.decode(p.deck) || {}) })), startEnergy: RULES.startEnergy, champions: !!info.champions, ultra: !!info.ultra };
+  const setup = { seed: info.seeds[round], players: info.players.map((p) => ({ name: p.name, deck: Decks.cardList(Decks.decode(p.deck) || {}) })), startEnergy: RULES.startEnergy, champions: !!info.champions, ultra: !!(info.draft?.id ? info.draft.ultra : info.ultra) };
   clearTimeout(G?.timer);
   G?.unsubActions?.();
   endGate?.(false);
@@ -783,10 +793,20 @@ function describeMove(s, a) {
     }
     case 'pass': return 'Tap <b>Fight</b>: no Trick or ability is worth it here.';
     case 'use': {
-      const c = s.cards[a.uid];
+      const c = s.cards[a.uid], d = BY_ID[c.cid];
+      if (d.stages) {
+        const st = d.stages[c.stage];
+        let t = `Pay ${st.cost} Energy for stage ${['I', 'II', 'III'][c.stage]} of ${card(a.uid)}: ${esc(st.text.replace(/\.$/, ''))}`;
+        if (a.target?.uid != null) t += ` (${card(a.target.uid)})`;
+        if (a.pick != null) t += ` (${card(a.pick)})`;
+        if (a.picks?.length) t += ` (${listNames(a.picks.map(card))})`;
+        return `${t}.`;
+      }
       if (c.zone === 'relic') return `Use the ${card(a.uid)}: sacrifice ${card(a.sac)} to draw a card.`;
-      return `Use ${card(a.uid)}: ${esc(BY_ID[c.cid].ability.short)}${on(a.target)}.`;
+      if (d.keywords.includes('fuse') && a.target?.uid != null) return `Fuse ${card(a.uid)} into ${card(a.target.uid)} (1 Energy): it keeps the Power, Vitality and keywords.`;
+      return `Use ${card(a.uid)}: ${esc(d.ability.short)}${on(a.target)}.`;
     }
+    case 'unhex': return `Pay ${s.cards[a.uid].hex} Energy to break the Hex on ${card(a.uid)}.`;
     case 'phoenix': return 'Pay 2 Energy to bring the Phoenix back to your hand.';
     case 'end': return 'End your turn: nothing else is worth doing right now.';
   }
@@ -803,6 +823,7 @@ function suggestRings(s, a) {
     case 'block': return a.blocks.length ? a.blocks.flatMap(([b, x]) => [c(b), c(x)]) : ['.g-go'];
     case 'pass': return ['.g-go'];
     case 'use': return [c(a.uid), ...t(a.target), ...(a.sac != null ? [c(a.sac)] : [])];
+    case 'unhex': return [c(a.uid)];
     case 'phoenix': return ['[data-act="phoenix"]'];
     case 'end': return ['.g-go'];
   }
@@ -936,9 +957,13 @@ function moveLine(s0, a, events) {
       return `${by} blocks ${[...by2].map(([x, bs]) => `${card(x)} with ${listNames(bs.map(card))}`).join(', and ')}.`;
     }
     case 'use': {
-      const ab = BY_ID[s0.cards[a.uid]?.cid]?.ability;
+      const c0 = s0.cards[a.uid], d0 = BY_ID[c0?.cid];
+      if (d0?.stages) return `${by} does stage ${['I', 'II', 'III'][c0.stage]} of ${card(a.uid)}: ${esc(d0.stages[c0.stage].text)}`;
+      if (d0?.keywords.includes('fuse') && a.target?.uid != null) return `${by} fuses ${card(a.uid)} into ${card(a.target.uid)}.`;
+      const ab = d0?.ability;
       return `${by} uses ${card(a.uid)}${ab ? `: ${esc(ab.short)}` : ''}.`;
     }
+    case 'unhex': return `${by} pays to break the Hex on ${card(a.uid)}.`;
     case 'phoenix': return `${by} brings the Phoenix back to their hand.`;
   }
   return '';
@@ -2459,10 +2484,10 @@ async function animateOld(root, events, after = G.state) {
       await Promise.race([Promise.all(deaths), FX.wait(1000)]);
       continue;
     }
-    if (e.k === 'dmg' || e.k === 'hitPlayer' || e.k === 'buff' || e.k === 'life') {
-      // Damage from spells and abilities, life changes, boosts: all at once.
+    if (e.k === 'dmg' || e.k === 'hitPlayer' || e.k === 'buff' || e.k === 'life' || e.k === 'heal') {
+      // Damage from spells and abilities, life changes, boosts, healing (Ultra): all at once.
       const group = [];
-      while (i < events.length && ['dmg', 'hitPlayer', 'buff', 'life'].includes(events[i].k)) group.push(events[i++]);
+      while (i < events.length && ['dmg', 'hitPlayer', 'buff', 'life', 'heal'].includes(events[i].k)) group.push(events[i++]);
       const dmg = group.filter((g) => g.k === 'dmg');
       if (dmg.length >= 3 && !dmg[0].src) {
         await Promise.race([FX.wave(root.querySelector('.g-table'), { color: '#ff8a3d', targets: dmg.map((g) => el(root, g.uid)).filter(Boolean) }), FX.wait(650)]);
@@ -2480,6 +2505,7 @@ async function animateOld(root, events, after = G.state) {
           if (!n || (!g.dP && !g.dV)) return n ? FX.burst(n, { color: '#b07cff' }) : null;
           return FX.number(n, g.dV ? `+${g.dP}/+${g.dV}` : `+${g.dP}`, { kind: 'buff' });
         }
+        if (g.k === 'heal') { const n = el(root, g.uid); return n ? FX.number(n, `+${g.n}`, { kind: 'heal' }) : null; }
         return null;
       });
       await FX.wait(group.some((g) => g.k !== 'buff') ? 420 : 260);
@@ -2538,7 +2564,6 @@ async function animateOld(root, events, after = G.state) {
       }
       case 'chime': { const n = el(root, e.uid); if (n) await FX.number(n, `🔔 ${e.n || 3}/3`, { kind: 'buff' }); break; }
       // SATTC Ultra
-      case 'heal': { const n = el(root, e.uid); if (n) await FX.number(n, `+${e.n}`, { kind: 'heal' }); break; }
       case 'invest': { const b = barEl(root, e.p); if (b) await FX.number(b, '⚡ +1 for good', { kind: 'buff' }); break; }
       case 'field': {
         const d = BY_ID[S().cards[e.uid]?.cid];
@@ -3072,7 +3097,7 @@ function slip(s, a, steps) {
   if (r.error) return null; // sending it says why
   const t = r.state, c0 = s.cards[a.uid], d = BY_ID[c0.cid];
   const what = a.t === 'use' ? `${d.name}’s ability` : d.name;
-  if (s.phase === 'main' && (a.t === 'use' || d.type === 'spell')) {
+  if (s.phase === 'main' && (a.t === 'use' ? !!d.ability : d.type === 'spell' && !d.stages)) {
     const paid = a.t === 'use' ? d.ability?.cost || 0 : costOf(s, a.p, c0, a.from || 'hand') + (a.payTax ? 2 : 0);
     if (changesNothing(s, t, a, paid)) {
       const says = a.t === 'use' ? d.ability.short : d.text.replace(/^Trick\n/, '').replace(/\n/g, ' ');

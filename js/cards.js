@@ -583,14 +583,16 @@ export const ULTRA_RULES = { startLife: 30, startLife3: 25, energyGrowsTo: 6, ma
 // Ultra's second version (2026-11-08): Legends, Symbiotes, Dig and
 // ganging up (engine.js). New games are set up with `ultra: ULTRA_V`; a setup
 // with `ultra: true` is version 1, so games saved before then replay unchanged.
-export const ULTRA_V = 2;
+export const ULTRA_V = 3; // (3, later on 2026-11-08: fights strike all at once, and the growth cap below; games set up as 2 keep 2's rules)
 // digCost: Energy for a card, once a turn. together: +Power for each of 2 or more
 // creatures blocking one attacker. fuseTax: a card fused from the hand costs
 // this much more for each card already fused into that creature. fuseFight:
 // fusing from the hand also works in a fight, like a Trick. fuseHand: any
 // creature card can be fused in from the hand; off since the user chose
-// Symbiotes instead (only Symbiotes fuse, and they kill to do it).
-export const ULTRA_V2 = { digCost: 3, together: 2, fuseTax: 0, fuseFight: true, fuseLegend: false, legends: true, fuseHand: false, dig: true }; // (fuseLegend: cards can be fused into a Legend; legends and dig: switches for bot tests)
+// Symbiotes instead (only Symbiotes fuse, and they kill to do it). growthCap:
+// a creature's lasting growth can't go above its controller's maximum Energy,
+// so only Investing makes a monster (the tournament lab, 2026-11-08).
+export const ULTRA_V2 = { digCost: 3, together: 2, fuseTax: 0, fuseFight: true, fuseLegend: false, legends: true, fuseHand: false, dig: true, growthCap: true }; // (fuseLegend: cards can be fused into a Legend; legends and dig: switches for bot tests)
 // Base cards that destroy or steal for good stay out of Ultra decks.
 export const ULTRA_OUT = ['death-is-a-door', 'the-culling', 'dawns-judgment', 'nerissa'];
 const FUSE = { cost: 1, short: 'kill a weak creature, then fuse into one of yours' }; // (Symbiote; in Ultra's first version, just fuse)
@@ -992,9 +994,9 @@ export const ULTRA_STARTERS = [
         'kindly-undertaker', 'lantern-ferryman', 'cinderling', 'scorch', 'stoke-the-furnace', 'grave-snare', 'backdraft']) },
   { id: 'ultra-the-giant', name: 'The Giant', factions: ['ember', 'verdant'], legend: 'legend-ymra',
     pitch: 'Grow one creature into a monster: fuse pieces into it, feed it boosts, and keep an unstable heart ticking.',
-    counts: deck(['molten-core', 'bark-graft', 'kindling-heart', 'sproutling', 'deep-roots', 'little-gardener', 'grove-druid', 'stoke-the-furnace', 'patient-giant'],
-      ['overgrowth', 'wild-growth', 'apex-predator', 'ironhide-charger', 'cinderling',
-        'ember-volley', 'sudden-growth', 'canopy-archer', 'scorch', 'mossback', 'pitfall', 'backdraft']) },
+    counts: deck(['molten-core', 'bark-graft', 'kindling-heart', 'sproutling', 'deep-roots', 'little-gardener', 'stoke-the-furnace'],
+      ['grove-druid', 'patient-giant', 'overgrowth', 'wild-growth', 'apex-predator', 'ironhide-charger', 'cinderling',
+        'ember-volley', 'sudden-growth', 'canopy-archer', 'scorch', 'mossback', 'pitfall', 'backdraft', 'seedling', 'smoldering-golem']) },
   { id: 'ultra-endless-swarm', name: 'Endless Swarm', factions: ['radiant', 'umbral'], legend: 'legend-lumen',
     pitch: 'Moths that multiply and Spirits that keep coming; every one that falls makes the rest stronger.',
     counts: deck(['lantern-moth', 'gravewarden', 'twin-souls', 'choirmother', 'lantern-ferryman', 'grave-rite', 'tithe-of-light', 'standard-keeper'],

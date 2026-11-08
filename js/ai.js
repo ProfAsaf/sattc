@@ -21,6 +21,25 @@ const RELIC_VALUE = { 'the-kiln': 3, 'heartwood-totem': 4, 'the-drowned-clock': 
 // SATTC Ultra: a permanent +1 Energy, a Ritual on its way, the Field you chose.
 const INVEST = 2.6, RITUAL_STAGE = 2.4, OWN_FIELD = 2.2;
 
+// Play styles, for testing the game (the tournament lab, tools/lab.mjs): weights
+// on what the bot values. 1 is the ordinary bot for the first seven, 0 for
+// the extras (per creature on the table, its biggest creature's Power, engine
+// creatures, creature cards in its discard pile to raise again, Tricks held).
+// Without a style (the practice bot, reviews, suggestions) nothing changes.
+export const STYLE_KEYS = ['life', 'aggro', 'board', 'cards', 'invest', 'traps', 'defense', 'width', 'tall', 'combo', 'necro'];
+const NEUTRAL = { life: 1, aggro: 1, board: 1, cards: 1, invest: 1, traps: 1, defense: 1, width: 0, tall: 0, combo: 0, necro: 0 };
+export const STYLES = {
+  balanced: { ...NEUTRAL },
+  brute: { ...NEUTRAL, aggro: 1.3, board: 1.1, tall: 0.8 },
+  swarm: { ...NEUTRAL, board: 0.9, width: 1.2 },
+  trickster: { ...NEUTRAL, traps: 1.6, cards: 1.2, defense: 1.3 },
+  burn: { ...NEUTRAL, aggro: 1.5, cards: 1.3, board: 0.9 },
+  combo: { ...NEUTRAL, cards: 1.2, combo: 1.5 },
+  economy: { ...NEUTRAL, invest: 1.8, cards: 1.5, aggro: 0.8 },
+  necromancer: { ...NEUTRAL, board: 0.9, necro: 0.8 },
+  defender: { ...NEUTRAL, life: 1.3, defense: 1.6, aggro: 0.7 },
+};
+
 // One-turn boosts are worth nothing here: they only matter through the fight
 // they win, and fights are played out before positions are scored.
 export function creatureValue(s, c) {
@@ -62,30 +81,43 @@ function threat(s, atk, def, allBlock) {
   return through;
 }
 
-export function evaluate(s, me) {
+export function evaluate(s, me, st = null) {
   if (s.phase === 'over') return s.winner === me ? 1e6 : -1e6;
   const P = s.players[me];
   if (P.out) return -1e6;
+  const W = st || NEUTRAL;
   const opps = opponents(s, me);
   // an extra turn coming up is worth about a turn's worth of cards and attacks
-  let v = lifeValue(P.life) + boardValue(s, me) + relicValue(s, me) + P.hand.length * 1.6 + P.traps.length * 2.2 + (P.extra || 0) * 9;
+  let v = lifeValue(P.life) * W.life + boardValue(s, me) * W.board + relicValue(s, me) + P.hand.length * 1.6 * W.cards + P.traps.length * 2.2 * W.traps + (P.extra || 0) * 9;
   v += Math.min(P.deck.length, 6) * 0.3;
   if (s.crown === me) v += CROWN;
   if (s.ultra) {
-    v += (P.invest || 0) * INVEST;
+    v += (P.invest || 0) * INVEST * W.invest;
     if (s.field != null) v += s.cards[s.field].ctrl === me ? OWN_FIELD : -OWN_FIELD / 2;
   }
+  if (st) v += styleExtras(s, P, st);
   const w = 1 / opps.length;
   for (const o of opps) {
-    v -= (lifeValue(o.life) + boardValue(s, o.i) * 1.05 + relicValue(s, o.i) + o.hand.length * 1.2 + o.traps.length * 2 + (o.extra || 0) * 9 + (s.crown === o.i ? CROWN : 0) + (o.invest || 0) * INVEST) * w;
+    v -= (lifeValue(o.life) * W.aggro + boardValue(s, o.i) * 1.05 + relicValue(s, o.i) + o.hand.length * 1.2 + o.traps.length * 2 + (o.extra || 0) * 9 + (s.crown === o.i ? CROWN : 0) + (o.invest || 0) * INVEST) * w;
     if (s.active === me) {
       // Creatures that attacked can't block on the turns in between: count the risk.
       const inc = threat(s, o.i, me, false);
-      if (inc > 0) v -= (lifeValue(P.life) - lifeValue(P.life - inc)) * (opps.length > 1 ? 0.45 : 0.7);
+      if (inc > 0) v -= (lifeValue(P.life) - lifeValue(P.life - inc)) * (opps.length > 1 ? 0.45 : 0.7) * W.defense;
       const out = threat(s, me, o.i, true);
-      if (out > 0) v += (lifeValue(o.life) - lifeValue(o.life - out)) * 0.25 * w;
+      if (out > 0) v += (lifeValue(o.life) - lifeValue(o.life - out)) * 0.25 * w * W.aggro;
     }
   }
+  return v;
+}
+// A style's extras: a wide table, one big creature, engines, the dead to raise, Tricks held.
+function styleExtras(s, P, st) {
+  let v = 0;
+  const board = P.board.map((u) => s.cards[u]);
+  if (st.width) v += st.width * board.length;
+  if (st.tall && board.length) v += st.tall * Math.max(...board.map((c) => power(s, c)));
+  if (st.combo) v += st.combo * board.filter((c) => ENGINES.has(c.cid)).length;
+  if (st.necro) v += st.necro * P.discard.filter((u) => BY_ID[s.cards[u].cid].type === 'creature').length;
+  if (st.traps !== 1) v += (st.traps - 1) * 1.5 * P.hand.filter((u) => isTrick(BY_ID[s.cards[u].cid])).length;
   return v;
 }
 
@@ -207,9 +239,9 @@ function finishFight(s) {
   return s;
 }
 
-export function scoreAfterFight(s, me) {
+export function scoreAfterFight(s, me, st = null) {
   const t = s.phase === 'combat' ? finishFight(s) : s;
-  return t ? evaluate(t, me) : -Infinity;
+  return t ? evaluate(t, me, st) : -Infinity;
 }
 
 // Sensible attacks: everyone, the safe ones, each alone, all but one.
@@ -258,7 +290,7 @@ export const trickPlays = (s, me) => [
 ];
 
 // ── deciding ────────────────────────────────────────────────────────
-export function chooseAction(s, me, { noise = 0.4, rand = Math.random } = {}) {
+export function chooseAction(s, me, { noise = 0.4, rand = Math.random, style = null } = {}) {
   const P = s.players[me];
   const jitter = () => (noise ? (rand() - 0.5) * noise : 0);
   if (s.phase === 'mulligan') {
@@ -268,11 +300,11 @@ export function chooseAction(s, me, { noise = 0.4, rand = Math.random } = {}) {
     return { t: 'mulligan', p: me, redraw: cheap < 2 || heavy >= 3 };
   }
   const base = lean(s);
-  if (base.phase === 'combat') return base.combat.step === 'block' ? chooseBlock(base, me, jitter) : chooseTrick(base, me, jitter);
+  if (base.phase === 'combat') return base.combat.step === 'block' ? chooseBlock(base, me, jitter, style) : chooseTrick(base, me, jitter, style);
   // Others' Traps are face down: the bot plans as if they weren't there, so they can catch it.
   if (s.ultra) base.players = base.players.map((Q) => (Q.i === me || !Q.traps.length ? Q : { ...Q, traps: [] }));
 
-  const now = evaluate(base, me);
+  const now = evaluate(base, me, style);
   let best = null, bestV = -Infinity;
   const consider = (a, v) => { v += jitter(); if (v > bestV) { bestV = v; best = a; } };
   for (const a of legalActions(base, me)) {
@@ -280,18 +312,18 @@ export function chooseAction(s, me, { noise = 0.4, rand = Math.random } = {}) {
     // (A Trick that only boosts for a turn scores nothing here, so it waits for a fight.)
     const t = tryApply(base, a);
     if (!t) continue;
-    let v = evaluate(t, me);
-    if (a.t === 'play' && s.cards[a.uid].cid === 'spark') v = bestFollowUp(t, me, v);
+    let v = evaluate(t, me, style);
+    if (a.t === 'play' && s.cards[a.uid].cid === 'spark') v = bestFollowUp(t, me, v, style);
     consider(a, v);
   }
   for (const a of attackCandidates(base, me)) {
     const t = tryApply(base, a);
-    if (t) consider(a, scoreAfterFight(t, me));
+    if (t) consider(a, scoreAfterFight(t, me, style));
   }
   return best && bestV > now + 0.05 ? best : { t: 'end', p: me };
 }
 
-function chooseBlock(s, me, jitter) {
+function chooseBlock(s, me, jitter, style = null) {
   const C = s.combat;
   const options = [];
   const seen = new Set();
@@ -310,7 +342,7 @@ function chooseBlock(s, me, jitter) {
   for (const a of options) {
     const t = tryApply(s, a);
     if (!t) continue;
-    const v = scoreAfterFight(t, me) + jitter();
+    const v = scoreAfterFight(t, me, style) + jitter();
     if (v > bestV) { bestV = v; best = a; }
   }
   // A Trick before blocking (an ambush, a removal spell, a boost for a blocker).
@@ -320,33 +352,33 @@ function chooseBlock(s, me, jitter) {
     let v;
     if (t.phase === 'combat' && t.combat.step === 'block') {
       const blk = tryApply(t, { t: 'block', p: me, blocks: quickBlocks(t, me) });
-      v = blk ? scoreAfterFight(blk, me) : -Infinity;
-    } else v = scoreAfterFight(t, me);
+      v = blk ? scoreAfterFight(blk, me, style) : -Infinity;
+    } else v = scoreAfterFight(t, me, style);
     v += jitter();
     if (v > bestV + 0.3) { bestV = v; best = a; }
   }
   return best || { t: 'block', p: me, blocks: forcedBlocks(s, C) };
 }
 
-function chooseTrick(s, me, jitter) {
+function chooseTrick(s, me, jitter, style = null) {
   const pass = { t: 'pass', p: me };
   const t0 = tryApply(s, pass);
-  let best = pass, bestV = t0 ? scoreAfterFight(t0, me) : -Infinity;
+  let best = pass, bestV = t0 ? scoreAfterFight(t0, me, style) : -Infinity;
   for (const a of trickPlays(s, me)) {
     const t = tryApply(s, a);
     if (!t) continue;
-    const v = scoreAfterFight(t, me) + jitter();
+    const v = scoreAfterFight(t, me, style) + jitter();
     if (v > bestV + 0.3) { bestV = v; best = a; }
   }
   return best;
 }
 
-function bestFollowUp(s, me, fallback) {
+function bestFollowUp(s, me, fallback, style = null) {
   let best = fallback;
   for (const a of legalActions(s, me)) {
     if (a.t !== 'play' || s.cards[a.uid].cid === 'spark') continue;
     const t = tryApply(s, a);
-    if (t) best = Math.max(best, evaluate(t, me));
+    if (t) best = Math.max(best, evaluate(t, me, style));
   }
   return best;
 }

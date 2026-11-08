@@ -431,6 +431,7 @@ function rules() {
       <li><b>Dig.</b> Once a turn, on your turn, pay ${ULTRA_V2.digCost} Energy to draw a card.</li>
       <li><b>Ganging up.</b> When two or more creatures block the same attacker, each hits ${ULTRA_V2.together} harder.</li>
       <li><b>Traps</b> that stop a big attacker for a while, and <b>Shields</b> that stack, for glass cannons.</li>
+      ${ULTRA_V2.growthCap ? `<li><b>Growth has a ceiling.</b> a creature can't grow for good by more than its controller's maximum Energy (6, more with Invest), so a monster takes an economy.</li>` : ''}
     </ul>
     <ul>${Object.values(LEGENDS).map((c) => `<li><b>${esc(c.name)}</b> (${c.cost} Energy, ${esc(c.factions.map((f) => FACTIONS[f].name).join('/'))}) levels up with ${esc(c.xp.unit)}: at ${c.xp.at[0]}, ${esc(c.l2)} At ${c.xp.at[1]}, ${esc(c.l3)}</li>`).join('')}</ul>
 

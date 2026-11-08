@@ -44,6 +44,7 @@ no build step.
 | `tools/test-engine.mjs` | One scenario per card rule, then random-play fuzzing (`node tools/test-engine.mjs 1500`) |
 | `tools/check-tutorial.mjs` | Plays the lesson script against the engine and prints the table at every step |
 | `tools/simulate.mjs` | Bot vs bot across the starter decks (`node tools/simulate.mjs 40`) |
+| `tools/lab.mjs` | The tournament lab: bots with their own Ultra deck and play style (ai.js `STYLES`) evolve in winner-stays duels; it reports the champions (and how they do against the starters), the cards winners keep and drop, and games that look broken (`node tools/lab.mjs 20 24 8 <seed>`; `KNOBS='{"growthCap":true}'` tries a rule switch) |
 | `tools/phone.html` | 390×844 frame for screenshots, e.g. `tools/phone.html?demo=3&moves=14` |
 | `art/` | Baked pictures (`<card-id>.webp`) of the drawn art, shown in every small view; `art/raw/` keeps the PNGs locally |
 | `tools/bake-art.mjs` | Renders each card's drawn art once in headless Chrome and saves it as WebP (+ `js/art-manifest.js`). Re-run after changing any scene |
@@ -602,6 +603,61 @@ Tuning (`bal.mjs` takes `KNOBS` and `CARDS` patches; `skill.mjs` is new):
   - `.phone-tests/ui-ultra2.mjs` 26/26 (Legend, Symbiote, Dig, Shields, What's
     new, help);
   - the two-phone online Ultra game 16/16.
+
+### The tournament lab, and version 3 (2026-11-08)
+
+The user asked for bots of different styles and skills playing big
+winner-stays tournaments, a genetic algorithm to find what always wins and
+what loops forever.
+- **Bots now have play styles.** In ai.js, `chooseAction({ style })` reads
+  `STYLES`: balanced, brute, swarm, trickster, burn, combo, economy,
+  necromancer and defender. A style weighs Life, attacking, the table, cards,
+  Investing, Traps and Tricks, and the threat it faces. It also adds bonuses
+  for a wide table, one big creature, engines, and creatures in the discard
+  pile. Without a style, nothing changes.
+- **`tools/lab.mjs` runs the tournaments.**
+  - Each bot is an Ultra deck of two factions plus a style.
+  - Each generation, every bot plays 8 duels. The better half stays, smoothed
+    over generations.
+  - Children of survivors get 1–3 cards swapped and a nudged style, sometimes
+    a crossed deck. A few random newcomers join each time.
+  - It flags unfinished games, chains of extra turns, a hand of 14+, 60+ Life
+    and 25+ rounds.
+- **What its first runs found** (20 generations of 24 bots, about 2,200 games
+  each):
+  - **A fight bug.** A blocker struck back with Power from the wounds it had
+    just taken (Bloodrage Berserker, Vesh at Level 3), and with Drain from them
+    (Vesh at Level 2). Vesh decks rose to the top, and Life reached 120–218.
+    **Version 3** makes every strike in a step simultaneous, with the Power,
+    Drain and Venom the strikers had before anyone was hurt (`strikePlan`).
+  - **Runaway growth.** The Wall reached 36/34 by round 22. **Version 3 adds
+    the growth cap** (`ULTRA_V2.growthCap`, `growthCap`): no more lasting
+    growth than your maximum Energy. Unstable still swells past it, then
+    erupts and starts again. This is the user's rule that the really powerful
+    things need Energy beyond the normal maximum: with the cap, the evolved
+    winners value Investing, and the peak Life in the same matchup fell from
+    211 to 91.
+  - **Ember/Verdant is the strongest faction pair.** Every run with the fixed
+    fights ended with all survivors there. They keep Apex Predator, Grove
+    Druid, Patient Giant and Sproutling.
+  - **No single winner.** Different runs found different champions, and each
+    had a starter that beat it.
+  - Cards no survivor kept: in the old runs, much of the Shield set, Shield
+    Captain, Carrion Wyrm, Season of Plenty, Blood Pact, Scorched Earth and
+    others; in the fixed runs, The Mountain Is Angry, Heartwood Totem and
+    Backdraft.
+  - The user is fine with long games (13 rounds).
+- **Version 3, by bot games:**
+  - first to an 8-Power creature wins 62%;
+  - late turns with a real choice: 86%;
+  - the Life leader at round 6 wins 55%;
+  - three players 26–39% per starter;
+  - careful beats shaky 72%;
+  - after trimming The Giant (Seedling and Smoldering Golem in for a Grove
+    Druid and a Patient Giant): duels 46–56% and three players 28–40% per
+    starter.
+- Version 3 games are set up with `ultra: 3`. Version 2 games keep the old fight
+  order and no cap.
 
 ## Champions, a prototype (2026-11-07)
 

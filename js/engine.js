@@ -42,6 +42,8 @@ const ev = (s, e) => s.events.push(e);
 const fieldIs = (s, cid) => s.field != null && s.cards[s.field]?.cid === cid;
 // SATTC Ultra's second version: Legends, Fuse from the hand, Dig, ganging up (cards.js ULTRA_V).
 export const ultraV2 = (s) => !!s.ultra && s.uv >= 2;
+// ...and its third (the tournament lab's fixes): simultaneous strikes, and the growth cap.
+const ultraV3 = (s) => !!s.ultra && s.uv >= 3;
 const ritualOf = (s, P) => P.relics.find((u) => def(s.cards[u]).stages);
 const handMax = (s, P) => RULES.handMax + 2 * P.relics.filter((u) => s.cards[u].cid === 'tidecallers-library').length;
 // Max Energy grows by itself to RULES.maxEnergy (Ultra: to 6, and each Invest raises that by 1, up to 12).
@@ -223,7 +225,10 @@ export function helpers(s, c) {
   const on = (cid, self = false) => P.board.filter((u) => (self || u !== c.uid) && s.cards[u].cid === cid).length;
   const relics = (cid) => P.relics.filter((u) => s.cards[u].cid === cid).length;
   const say = (cid, k, text) => { if (k > 0) out.push(`${BY_ID[cid].name}${k > 1 ? ` ×${k}` : ''}: ${text}`); };
-  if (c.pP || c.pV) out.push(`Grown for good: ${signed(c.pP || 0)}/${signed(c.pV || 0)}`);
+  if (c.pP || c.pV) {
+    const cap = ultraV3(s) && ULTRA_V2.growthCap ? growthCap(s, c) : null; // (the growth cap: at its ceiling?)
+    out.push(`Grown for good: ${signed(c.pP || 0)}/${signed(c.pV || 0)}${cap != null && Math.max(c.pP || 0, c.pV || 0) >= cap ? ` (its ceiling: +${cap}, your maximum Energy; Invest raises it)` : ''}`);
+  }
   if (c.tP || c.tV) out.push(`This turn: ${signed(c.tP || 0)}/${signed(c.tV || 0)}`);
   if (c.cid === 'bloodrage-berserker' && c.dmg) out.push(`Its wounds: +${c.dmg}/+0`);
   if (c.cid === 'street-recruit' && P.board.length > 1) out.push('Not alone: +1/+0');
@@ -477,8 +482,15 @@ function setCrown(s, to) {
 }
 
 // ── creatures: buffs, damage, death ─────────────────────────────────
-function buff(s, c, dP, dV, permanent, fromBramble = false) {
+function buff(s, c, dP, dV, permanent, fromBramble = false, uncapped = false) {
   if (!c || c.zone !== 'board' || (dP <= 0 && dV <= 0)) return;
+  if (permanent && !uncapped && ultraV3(s) && ULTRA_V2.growthCap) {
+    // (the growth cap: no more lasting growth than its controller's maximum Energy)
+    const cap = growthCap(s, c);
+    dP = Math.max(0, Math.min(dP, cap - c.pP));
+    dV = Math.max(0, Math.min(dV, cap - c.pV));
+    if (dP <= 0 && dV <= 0) return;
+  }
   if (permanent) { c.pP += dP; c.pV += dV; } else { c.tP += dP; c.tV += dV; }
   ev(s, { k: 'buff', uid: c.uid, dP, dV, perm: !!permanent });
   if (!c.awake) {
@@ -510,6 +522,9 @@ function buff(s, c, dP, dV, permanent, fromBramble = false) {
     buff(s, g, 1, 1, true);
   }
 }
+
+// Ultra (version 2, with ULTRA_V2.growthCap): how much a creature can grow for good.
+export const growthCap = (s, c) => s.players[c.ctrl].maxEnergy;
 
 const giveKw = (c, ...kws) => { if (c && c.zone === 'board') c.tKw = [...(c.tKw || []), ...kws]; };
 
@@ -637,7 +652,8 @@ function fusedMore(s, t) {
 }
 
 // `src` is the creature dealing the damage, for Venom and Drain.
-function damage(s, c, n, src = null) {
+// (`drain` / `venom`: as the striker had them when a simultaneous strike began; otherwise as it has them now)
+function damage(s, c, n, src = null, drain = null, venom = null) {
   if (n <= 0 || !c || c.zone !== 'board') return;
   if (c.shield > 0) { // (Ultra: a Shield stops the whole hit, then breaks)
     c.shield -= 1;
@@ -648,9 +664,9 @@ function damage(s, c, n, src = null) {
   c.dmg += n;
   c.hurt = true;
   gainXP(s, c.ctrl, 'wound', 1);
-  if (src && hasKw(s, src, 'venom')) { if (s.ultra) c.poison = (c.poison || 0) + n; else c.venomed = true; }
+  if (src && (venom ?? hasKw(s, src, 'venom'))) { if (s.ultra) c.poison = (c.poison || 0) + n; else c.venomed = true; }
   ev(s, { k: 'dmg', uid: c.uid, n, src: src ? src.uid : null });
-  if (src && hasKw(s, src, 'drain')) { gainLife(s, src.ctrl ?? src.owner, n); bloodbound(s, src, n); }
+  if (src && (drain ?? hasKw(s, src, 'drain'))) { gainLife(s, src.ctrl ?? src.owner, n); bloodbound(s, src, n); }
 }
 
 // Ultra: with a Bloodbinder out, your Drain creatures heal themselves for what they deal.
@@ -658,12 +674,12 @@ function bloodbound(s, src, n) {
   if (s.ultra && src.zone === 'board' && countOn(s, s.players[src.ctrl].board, 'bloodbinder')) heal(s, src, n);
 }
 
-function damagePlayer(s, pi, n, src = null) {
+function damagePlayer(s, pi, n, src = null, drain = null) {
   if (n <= 0 || s.players[pi].out) return;
   log(s, pi, `${s.players[pi].name} takes ${n} damage.`);
   ev(s, { k: 'hitPlayer', p: pi, n, src: src ? src.uid : null });
   loseLife(s, pi, n);
-  if (src && hasKw(s, src, 'drain')) { gainLife(s, src.ctrl ?? src.owner, n); bloodbound(s, src, n); }
+  if (src && (drain ?? hasKw(s, src, 'drain'))) { gainLife(s, src.ctrl ?? src.owner, n); bloodbound(s, src, n); }
 }
 
 // target: { p } for a player, { uid } for a creature
@@ -1027,19 +1043,48 @@ function fight(s) {
   const together = (bs) => (ultraV2(s) && bs.length >= 2 ? ULTRA_V2.together : 0);
   for (const { a, bs } of groups) if (together(bs)) log(s, d, `${listNames(bs.map(nameOf))} gang up on ${nameOf(a)}: +${together(bs)} Power each.`);
   for (const first of [true, false]) {
-    for (const { a, bs } of groups) {
-      const standing = bs.filter((b) => live(b, d));
-      if (live(a, C.a) && hasKw(s, a, 'swift') === first) strike(s, a, bs, standing, d);
-      for (const b of standing) {
-        if (!live(a, C.a) || hasKw(s, b, 'swift') !== first) continue;
-        ev(s, { k: 'strike', uid: b.uid, to: a.uid });
-        damage(s, a, power(s, b) + together(bs), b);
+    if (ultraV3(s)) {
+      // Ultra (version 3): everyone striking in this step strikes at once, with the
+      // Power, Drain and Venom they had before anyone was hurt (a wound taken in
+      // the same exchange doesn't make the hit back harder: Bloodrage, Vesh)
+      const hits = [];
+      for (const { a, bs } of groups) {
+        const standing = bs.filter((b) => live(b, d));
+        if (live(a, C.a) && hasKw(s, a, 'swift') === first) hits.push(...strikePlan(s, a, bs, standing, d));
+        for (const b of standing) if (live(a, C.a) && hasKw(s, b, 'swift') === first) hits.push({ from: b, to: a, n: power(s, b) + together(bs) });
+      }
+      for (const h of hits) { h.drain = hasKw(s, h.from, 'drain'); h.venom = hasKw(s, h.from, 'venom'); }
+      for (const h of hits) {
+        if (h.to.p == null) { ev(s, { k: 'strike', uid: h.from.uid, to: h.to.uid }); damage(s, h.to, h.n, h.from, h.drain, h.venom); continue; }
+        if (h.overrun) log(s, h.from.ctrl, `${nameOf(h.from)} overruns!`);
+        hitInFight(s, h.from, h.to.p, h.n, h.drain);
+      }
+    } else {
+      for (const { a, bs } of groups) {
+        const standing = bs.filter((b) => live(b, d));
+        if (live(a, C.a) && hasKw(s, a, 'swift') === first) strike(s, a, bs, standing, d);
+        for (const b of standing) {
+          if (!live(a, C.a) || hasKw(s, b, 'swift') !== first) continue;
+          ev(s, { k: 'strike', uid: b.uid, to: a.uid });
+          damage(s, a, power(s, b) + together(bs), b);
+        }
       }
     }
     settle(s);
     if (combatOver(s, C)) return;
   }
   endCombat(s);
+}
+
+// What an attacker's strike will hit (version 3: planned before anyone strikes), like strike below.
+function strikePlan(s, a, bs, standing, d) {
+  const pw = power(s, a);
+  if (!bs.length) return [{ from: a, to: { p: d }, n: pw }];
+  if (!standing.length) return hasKw(s, a, 'overrun') ? [{ from: a, to: { p: d }, n: pw }] : [];
+  const { parts, rest } = splitDamage(s, a, standing, pw);
+  const out = parts.map(([b, n]) => ({ from: a, to: b, n }));
+  if (rest > 0) out.push({ from: a, to: { p: d }, n: rest, overrun: true });
+  return out;
 }
 
 // `bs` are the creatures that blocked `a`; `standing` those still there.
@@ -1078,10 +1123,10 @@ export function splitDamage(s, a, bs, pw) {
 }
 
 // Combat damage to a player. It takes the Crown if they hold it (or if nobody does yet).
-function hitInFight(s, a, d, n) {
+function hitInFight(s, a, d, n, drain = null) {
   if (s.combat?.fog && n > 0) { log(s, d, `The fog swallows ${nameOf(a)}’s blow.`); return; } // (Fog Bank)
   ev(s, { k: 'strike', uid: a.uid, to: { p: d } });
-  damagePlayer(s, d, n, a);
+  damagePlayer(s, d, n, a, drain);
   if (n > 0 && s.ultra && hasKw(s, a, 'soar') && !s.players[a.ctrl].out) {
     gainXP(s, a.ctrl, 'skyhit', 1);
     if (s.combat && !s.combat.skyDraw && champOn(s, a.ctrl, 'legend-aeris', 3)) {
@@ -2043,7 +2088,7 @@ function ultraTurnStart(s, i) {
     if (c.zone !== 'board') continue;
     const g = (def(c).grows || 0) + (c.fuseGrows || 0); // (Grows fused in from the hand adds up)
     if (g) { log(s, i, `${nameOf(c)} grows +${g}/+${g}.`); buff(s, c, g, g, true); }
-    if (c.zone === 'board' && hasKw(s, c, 'unstable')) { log(s, i, `${nameOf(c)} swells +2/+2.`); buff(s, c, 2, 2, true); }
+    if (c.zone === 'board' && hasKw(s, c, 'unstable')) { log(s, i, `${nameOf(c)} swells +2/+2.`); buff(s, c, 2, 2, true, false, true); } // (beyond any cap: it erupts and starts again)
   }
   for (const c of P.board.map((u) => s.cards[u]).filter((x) => hasKw(s, x, 'multiply'))) {
     if (P.board.length >= RULES.boardMax) break;

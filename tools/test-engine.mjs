@@ -3,7 +3,7 @@
 //   node tools/test-engine.mjs 3000       more fuzz games
 
 import { newGame, apply, addCard, power, vitality, costOf, legalActions, replay, check, actor, hasKw, canAttack, canBlock, blockLimit, useOptions, champLevel, draw, needs, helpers, unstableClock } from '../js/engine.js';
-import { BY_ID, LEGENDS, RULES, STARTERS, ULTRA_STARTERS, ULTRA_V, legendFor } from '../js/cards.js';
+import { BY_ID, LEGENDS, RULES, STARTERS, ULTRA_STARTERS, ULTRA_V, ULTRA_V2, legendFor } from '../js/cards.js';
 import { canAdd, cardList, validate } from '../js/decks.js';
 
 let pass = 0, fail = 0;
@@ -1866,13 +1866,18 @@ function u2scene(opts = {}) {
   return s;
 }
 // (Level 2 or 3 by the Legend's own thresholds, so retuning them doesn't break these tests)
+function u3scene(opts = {}) {
+  const s = uscene(opts);
+  s.uv = 3;
+  return s;
+}
 const lvl = (s, p, L) => { s.players[p].cxp = L < 2 ? 0 : BY_ID[s.players[p].champ].xp.at[L - 2]; };
 const spark = (s, p = A) => play(s, addCard(s, 'spark', p, 'hand').uid); // (any move: deaths are settled after it)
 
 test('Ultra v2: every player has their deck’s Legend beside the deck; version 1 games don’t', () => {
   const players = ULTRA_STARTERS.slice(0, 2).map((d) => ({ name: d.name, deck: cardList(d.counts) }));
   const s = newGame({ seed: 9, players, startEnergy: 3, ultra: ULTRA_V });
-  eq(s.uv, 2, 'a new Ultra game is version 2');
+  eq(s.uv, ULTRA_V, `a new Ultra game is the newest version (${ULTRA_V})`);
   for (const [i, P] of s.players.entries()) {
     const c = s.cards[P.legend];
     eq(c?.cid, ULTRA_STARTERS[i].legend, `${P.name} has its own Legend`);
@@ -2151,6 +2156,41 @@ test('Ultra Shields: each stops one hit; they stack; Prism Duelist starts with o
   eq(s.cards[top.uid].shield, 2, 'Aegis Acolyte gives another');
 });
 
+test('Ultra v3, the growth cap (a switch): lasting growth stops at your maximum Energy; Unstable still swells', () => {
+  const was = ULTRA_V2.growthCap;
+  ULTRA_V2.growthCap = true;
+  try {
+    let s = u3scene({ energy: 6 });
+    const c = ub(s, 'mossback', A, { pP: 5, pV: 5 });
+    s = play(s, addCard(s, 'wild-growth', A, 'hand').uid, { target: { uid: c.uid } });
+    eq(s.cards[c.uid].pP, 6, 'Wild Growth (+2/+2) stops at +6, the maximum Energy');
+    s.players[A].maxEnergy = 8;
+    s = play(s, addCard(s, 'wild-growth', A, 'hand').uid, { target: { uid: c.uid } });
+    eq(s.cards[c.uid].pP, 8, 'with more maximum Energy (Invest), it grows further');
+    const heart = ub(s, 'kindling-heart', A, { pP: 8, pV: 8 });
+    deckOf(s, A, 3); deckOf(s, B, 3);
+    s = endT(s); s = endT(s);
+    eq(s.cards[heart.uid].pP, 0, 'an Unstable creature still swells past it, erupts and starts again');
+  } finally { ULTRA_V2.growthCap = was; }
+  let s2 = u2scene({ energy: 6 });
+  const c2 = ub(s2, 'mossback', A, { pP: 5, pV: 5 });
+  s2 = play(s2, addCard(s2, 'wild-growth', A, 'hand').uid, { target: { uid: c2.uid } });
+  eq(s2.cards[c2.uid].pP, 7, 'switched off, it grows as before');
+});
+
+test('Ultra v3: strikes in a fight are simultaneous (a wound taken in the exchange doesn’t make the hit back harder)', () => {
+  let s = u3scene();
+  const big = ub(s, 'mossback', A, { pP: 9, pV: 9 }); // (12/13)
+  const zerk = ub(s, 'bloodrage-berserker', B); // (2/3, +1/+0 for each damage on it)
+  s = fight(attack(s, big.uid), [[zerk.uid, big.uid]]);
+  eq(s.cards[big.uid].dmg, 2, 'the Berserker hits back for 2 (its Power before the fight), not 2 + 12');
+  for (const old of [uscene(), u2scene()]) {
+    const big1 = ub(old, 'mossback', A, { pP: 9, pV: 9 }), zerk1 = ub(old, 'bloodrage-berserker', B);
+    const t = fight(attack(old, big1.uid), [[zerk1.uid, big1.uid]]);
+    eq(t.cards[big1.uid].zone, 'discard', `version ${old.uv || 1} keeps its old order (the Berserker hits back for 2 + the 12 it just took, and kills it), so its games replay the same`);
+  }
+});
+
 // ── fuzz: random legal play ─────────────────────────────────────────
 // (`ultra`: SATTC Ultra games, with the Ultra starter decks)
 function fuzz(games, ultra = false) {
@@ -2213,5 +2253,5 @@ const fu2 = fuzz(Math.ceil(games / 2), ULTRA_V);
 console.log(`scenario + invariant checks: ${pass} passed, ${fail} failed`);
 console.log(`fuzz: ${f.games} random games, ${f.totalActions} actions, ${f.fights} attacks, ${f.crashes} crashes, ${f.unfinished} unfinished, ${((t1 - t0) / 1000).toFixed(1)}s`);
 console.log(`Ultra fuzz (version 1): ${fu.games} random games, ${fu.totalActions} actions, ${fu.fights} attacks, ${fu.crashes} crashes, ${fu.unfinished} unfinished, ${((t2 - t1) / 1000).toFixed(1)}s`);
-console.log(`Ultra fuzz (version 2): ${fu2.games} random games, ${fu2.totalActions} actions, ${fu2.fights} attacks, ${fu2.crashes} crashes, ${fu2.unfinished} unfinished, ${((Date.now() - t2) / 1000).toFixed(1)}s`);
+console.log(`Ultra fuzz (version ${ULTRA_V}): ${fu2.games} random games, ${fu2.totalActions} actions, ${fu2.fights} attacks, ${fu2.crashes} crashes, ${fu2.unfinished} unfinished, ${((Date.now() - t2) / 1000).toFixed(1)}s`);
 if (failures.length) { console.log('\nFAILURES:'); for (const m of failures) console.log(' - ' + m); process.exit(1); }

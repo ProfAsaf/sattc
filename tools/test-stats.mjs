@@ -8,9 +8,10 @@
 
 import { newGame, apply, actor, legalActions } from '../js/engine.js';
 import { chooseAction } from '../js/ai.js';
-import { STARTERS, ULTRA_STARTERS } from '../js/cards.js';
+import { STARTERS, ULTRA, ULTRA_STARTERS } from '../js/cards.js';
 import { cardList } from '../js/decks.js';
 import { botPick, botRand, replay as replayDraft, newSeed } from '../js/draft.js';
+const ULTRA_IDS = new Set(ULTRA.map((c) => c.id)); // (any Ultra card, the newer ones too)
 import { analyzeGame, reviewPlay, reviewDraft, summarize, roomResult, nightAwards } from '../js/stats.js';
 
 const GAMES = Number(process.argv[2] || 40);
@@ -134,7 +135,7 @@ for (let d = 0; d < DRAFTS; d++) {
   }
   const td = Date.now();
   const rv = reviewDraft({ seed, n, ultra }, picks, 0);
-  check(!ultra || rv.pool.some((id) => /^(kindling|bloodrage|stoke|ember-volley|molten|scorched|sproutling|mycelium|rootmother|thornback|deep-roots|bark|overgrowth|tidecallers|flood|tide-of|wavewarden|wing|blood-pact|bloodbinder|gravewarden|grave-rite|shackles|venom-shard|shield-captain|bastion-wall|field-medic|lantern-moth|menders|tithe|sanctuary)/.test(id)), `draft ${d}: an Ultra draft's deck has Ultra cards`);
+  check(!ultra || rv.pool.some((id) => ULTRA_IDS.has(id)), `draft ${d}: an Ultra draft's deck has Ultra cards`);
   draftMs += Date.now() - td;
   check(rv.done && rv.picks.length === 30, `draft ${d}: 30 picks reviewed`);
   check(style !== 'careful' || rv.score === 100, `draft ${d}: the bot's own picks score 100 (${rv.score})`);

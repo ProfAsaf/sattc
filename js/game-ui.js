@@ -36,7 +36,8 @@ const ULTRA_INTRO = 'collective.ultraIntro';
 let ultraIntroSeen = (() => { try { return localStorage.getItem(ULTRA_INTRO) === '1'; } catch { return false; } })();
 // ...and the first game of Ultra's second version, for a phone that saw the first intro: what's new (ultraNewHTML)
 // (with the growth cap on there is more to tell, under a key of its own: a phone that saw the first list sees this once more)
-const ULTRA_INTRO2 = ULTRA_V2.growthCap ? 'collective.ultraIntro3' : 'collective.ultraIntro2';
+// (and with version 4's six decks, once more)
+const ULTRA_INTRO2 = ULTRA_V >= 4 ? 'collective.ultraIntro4' : ULTRA_V2.growthCap ? 'collective.ultraIntro3' : 'collective.ultraIntro2';
 let ultraNewSeen = (() => { try { return localStorage.getItem(ULTRA_INTRO2) === '1'; } catch { return false; } })();
 const SPEEDS = { normal: 1, fast: 1.7 };
 FX.setSpeed(fastOn() ? SPEEDS.fast : SPEEDS.normal);
@@ -783,6 +784,7 @@ function describeMove(s, a) {
       if (a.fuse != null) return `Fuse ${card(a.uid)} into ${card(a.fuse)}: it gets its Power, Vitality and keywords for good.`;
       let t = `Play ${a.from === 'legend' ? 'your Legend, ' : ''}${card(a.uid)}${a.from === 'discard' ? ' from your discard pile (Echo)' : ''}`;
       if (a.sac != null) t += `, sacrificing ${card(a.sac)},`;
+      if (a.offer != null) t += `, offering ${card(a.offer)},`;
       if (a.fighter != null) t += ` with ${card(a.fighter)} fighting`;
       t += on(a.target);
       if (a.pick != null) t += `, bringing back ${card(a.pick)}`;
@@ -817,6 +819,7 @@ function describeMove(s, a) {
       if (d.keywords.includes('fuse') && a.target?.uid != null) return a.prey != null
         ? `Pay 1 Energy: ${card(a.uid)} kills ${card(a.prey)}, then fuses into ${card(a.target.uid)}, which keeps its Power, Vitality and keywords.`
         : `Fuse ${card(a.uid)} into ${card(a.target.uid)} (1 Energy): it keeps the Power, Vitality and keywords.`;
+      if (a.fighter != null && a.target?.uid != null) return `Use ${card(a.uid)}: ${card(a.fighter)} is made to fight ${card(a.target.uid)}.`;
       return `Use ${card(a.uid)}: ${esc(d.ability.short)}${on(a.target)}.`;
     }
     case 'unhex': return `Pay ${s.cards[a.uid].hex} Energy to break the Hex on ${card(a.uid)}.`;
@@ -832,11 +835,11 @@ function suggestRings(s, a) {
   const c = (u) => (s.cards[u]?.zone === 'relic' ? `.relic[data-uid="${u}"]` : `.tcard[data-uid="${u}"]:not(.in-hand), .dec-c[data-u="${u}"] > .tcard`);
   const t = (x) => (!x ? [] : x.p != null ? [`.pbar[data-p="${x.p}"]`] : [c(x.uid)]);
   switch (a.t) {
-    case 'play': return [a.from === 'discard' ? `.tc-pile[data-pile="${G.me}"]` : `.g-hand .tcard[data-uid="${a.uid}"], .dec-c[data-u="${a.uid}"] > .tcard`, ...t(a.target), ...[a.sac, a.fighter, a.fuse, ...(a.targets || [])].filter((u) => u != null).map(c)];
+    case 'play': return [a.from === 'discard' ? `.tc-pile[data-pile="${G.me}"]` : `.g-hand .tcard[data-uid="${a.uid}"], .dec-c[data-u="${a.uid}"] > .tcard`, ...t(a.target), ...[a.sac, a.offer, a.fighter, a.fuse, ...(a.targets || [])].filter((u) => u != null).map(c)];
     case 'attack': return [...a.att.map(c), `.pbar[data-p="${a.target}"]`, ...(a.hunt || []).map(([, y]) => c(y))];
     case 'block': return a.blocks.length ? a.blocks.flatMap(([b, x]) => [c(b), c(x)]) : ['.g-go'];
     case 'pass': return ['.g-go'];
-    case 'use': return [c(a.uid), ...t(a.target), ...[a.sac, a.prey].filter((u) => u != null).map(c)];
+    case 'use': return [c(a.uid), ...t(a.target), ...[a.sac, a.prey, a.fighter].filter((u) => u != null).map(c)];
     case 'unhex': return [c(a.uid)];
     case 'phoenix': return ['[data-act="phoenix"]'];
     case 'dig': return ['[data-act="dig"]'];
@@ -1077,7 +1080,7 @@ function playable(uid, from = 'hand') {
   const d = BY_ID[c.cid];
   if (!myMove()) return actor(s) === G.me ? 'Just a moment…' : 'Wait for your turn.';
   const fusing = fuseTargets(uid).length > 0; // (SATTC Ultra: fused into one of your creatures instead)
-  if (s.phase === 'combat' && !isTrick(d)) return fusing ? null : ultraV2(s) && d.type === 'creature' ? 'In a fight, a creature card can only be fused into one of your creatures in it.' : 'During a fight you can only play Tricks.';
+  if (s.phase === 'combat' && !isTrick(d) && !d.keywords.includes('ambush')) return fusing ? null : ultraV2(s) && d.type === 'creature' ? 'During a fight, only a creature with Ambush can come in.' : 'During a fight you can only play Tricks.';
   const cost = costOf(s, G.me, c, from);
   if (cost > P.energy) return `Needs ${cost} Energy; you have ${P.energy}.`;
   if (d.type === 'creature' && P.board.length >= RULES.boardMax) return fusing ? null : `You already have ${RULES.boardMax} creatures.`;
@@ -1140,6 +1143,13 @@ const PROMPTS = {
   'wild-bloom': [null, 'Which of your creatures doubles its Power and Vitality?'],
   'dawns-judgment': [null, 'Destroy which attacker?'],
   'sky-warden': [null, 'Pin down which enemy creature?'],
+  // (Ultra, version 4)
+  'grave-harvest': ['Make an Offering? Tap a creature of yours to sacrifice and draw 3, or tap No Offering to draw 1.'],
+  'bone-lance': ['Make an Offering? Tap a creature of yours to sacrifice for 5 damage, or tap No Offering for 2.', 'Where does the Bone Lance hit?'],
+  'bone-tithe': ['Sacrifice which of your creatures? (You Invest and draw a card.)'],
+  turnabout: [null, 'Swap the Power and Vitality of which creature?'],
+  'static-spark': [null, 'Where does the spark hit (1 damage)?'],
+  'the-last-storm': [null, 'Which opponent does the storm hit?'],
 };
 // what an ability asks for
 const ABILITY_PROMPTS = {
@@ -1192,6 +1202,7 @@ function abilityBlocked(uid) {
     if (!n.prey.length) return 'Nothing is weak enough for it to kill: it needs a creature with Vitality left no more than its Power, and no Shield.';
     if (!n.target.length) return 'It needs another creature of yours to join.';
   }
+  if (c.cid === 'the-puppeteer' && abilityNeeds(s, G.me, c).fighter.length < 2) return 'It needs two enemy creatures it can aim at (a newcomer is Sheltered until its owner’s next turn).';
   if (!useOptions(s, G.me, c, 1).length) return 'There is nothing to target.';
   return null;
 }
@@ -1209,6 +1220,12 @@ function startAbility(uid) {
     nextChoice();
     return;
   }
+  if (n.fighter) { // (SATTC Ultra, version 4: The Puppeteer)
+    G.flow = { a: { t: 'use', p: G.me, uid }, steps: [{ kind: 'fighter', options: n.fighter.map((u) => ({ uid: u })), prompt: 'Which enemy creature is made to fight?' },
+      { kind: 'target', options: n.target, prompt: 'And which other enemy creature does it fight?' }], i: 0, multi: [] };
+    nextChoice();
+    return;
+  }
   if (!n.target) { tryMove({ t: 'use', p: G.me, uid }); return; }
   G.flow = { a: { t: 'use', p: G.me, uid }, steps: [{ kind: 'target', options: n.target, prompt: ABILITY_PROMPTS[c.cid] || 'Choose a target.' }], i: 0, multi: [] };
   nextChoice();
@@ -1219,12 +1236,13 @@ function stepsFor(uid, from) {
   const n = needs(s, G.me, c, from);
   const pr = PROMPTS[c.cid] || [];
   const steps = [];
+  if (n.offer && n.offer.length) steps.push({ kind: 'offer', options: n.offer.map((u) => ({ uid: u })), optional: true, prompt: pr[0] || 'Make an Offering? Tap a creature of yours to sacrifice for the stronger effect.' });
   if (n.sac) steps.push({ kind: 'sac', options: n.sac.map((u) => ({ uid: u })), prompt: pr[0] || 'Choose a creature to sacrifice.' });
   if (n.fighter) steps.push({ kind: 'fighter', options: n.fighter.map((u) => ({ uid: u })), prompt: pr[0] || 'Which of your creatures?' });
   if (n.target && (n.target.length || !n.optional)) steps.push({ kind: 'target', options: n.target, optional: !!n.optional, prompt: pr[1] || 'Choose a target.' });
   if (n.targets && n.count) steps.push({ kind: 'targets', options: n.targets.map((u) => ({ uid: u })), count: n.count, prompt: pr[2] || `Choose ${n.count} of your creatures.` });
   if (n.pick && n.pick.length) steps.push({ kind: 'pick', options: n.pick, optional: !!n.optional });
-  if (n.picks) steps.push({ kind: 'picks', options: n.picks, max: n.max });
+  if (n.picks) steps.push({ kind: 'picks', options: n.picks, max: n.max, ...(c.cid === 'danse-macabre' ? { title: 'Bring back up to four creatures: they dance (with Rush) until the end of your turn', verb: 'Bring back' } : {}) });
   if (n.keep && n.keep.length) steps.push({ kind: 'keep', options: n.keep });
   if (n.bottom && n.bottom.length) steps.push({ kind: 'bottom', options: n.bottom });
   if (n.discard) steps.push({ kind: 'discard', options: n.discard });
@@ -1239,8 +1257,8 @@ const sameT = (a, b) => (a.p != null ? a.p === b.p : a.uid === b.uid);
 function highlights() {
   const h = { targets: [], picked: [] };
   const st = G.flow?.steps[G.flow.i];
-  if (st && ['sac', 'fighter', 'target', 'targets', 'fuse', 'prey'].includes(st.kind)) {
-    h.targets = st.options.filter((o) => !(st.kind === 'target' && o.uid != null && (o.uid === G.flow.a.sac || o.uid === G.flow.a.fighter || o.uid === G.flow.a.prey)));
+  if (st && ['sac', 'offer', 'fighter', 'target', 'targets', 'fuse', 'prey'].includes(st.kind)) {
+    h.targets = st.options.filter((o) => !(st.kind === 'target' && o.uid != null && (o.uid === G.flow.a.sac || o.uid === G.flow.a.offer || o.uid === G.flow.a.fighter || o.uid === G.flow.a.prey)));
     if (st.kind === 'targets') h.picked = [...G.flow.multi];
   }
   if (G.atk) {
@@ -1281,6 +1299,7 @@ function toggleAttacker(uid) {
   if (!G.atk) { openAttack(uid); return; }
   const k = G.atk.att.indexOf(uid);
   if (k >= 0) { G.atk.att.splice(k, 1); G.atk.hunt = G.atk.hunt.filter(([a]) => a !== uid); }
+  else if (G.atk.att.length >= 2 && S().field != null && S().cards[S().field].cid === 'rolling-fog') { flash('In the Rolling Fog, no more than two creatures can attack in one fight.'); return; }
   else G.atk.att.push(uid);
   redraw();
 }
@@ -1467,7 +1486,8 @@ function aimDrop(uid, toEl) {
 function relicHTML(s, r, hl) {
   const d = BY_ID[r.cid];
   const isT = hl.targets.some((t) => t.uid === r.uid);
-  const note = r.cid === 'the-drowned-clock' ? `<b class="relic-n">${r.chimes || 0}/3</b>` : r.cid === 'bone-altar' && r.usedOn === s.turn ? '<b class="relic-n">✓</b>'
+  const note = r.cid === 'the-drowned-clock' ? `<b class="relic-n">${r.chimes || 0}/3</b>` : (r.cid === 'bone-altar' || r.cid === 'war-chest') && r.usedOn === s.turn ? '<b class="relic-n">✓</b>'
+    : r.cid === 'the-granary' && r.stored ? `<b class="relic-n">+${r.stored}</b>`
     : d.stages ? `<b class="relic-n rite">${r.stage}/${d.stages.length}</b>` : '';
   return `<button class="relic${isT ? ' target' : ''}" data-uid="${r.uid}" data-cid="${r.cid}" style="${factionVars(d)}" aria-label="${esc(d.name)}">
     <span class="relic-art">${artTag(r.cid) || ''}</span>${note}</button>`;
@@ -1762,10 +1782,16 @@ function blockDec(s) {
     return decCard(s, u, { act: 'dec-blk', states: [G.blk.sel === u ? 'selected' : 'ready'], tag: used ? 'can block 1 more' : '' });
   }).join('');
   const atts = C.att.filter((u) => s.cards[u].zone === 'board');
+  // (SATTC Ultra, version 4) an Ambush creature played now can still block
+  const ambush = G.blk.pairs.length ? [] : me.hand.filter((u) => BY_ID[s.cards[u].cid].keywords.includes('ambush'));
+  const ambushCards = ambush.map((u) => {
+    const d = BY_ID[s.cards[u].cid], why = playable(u);
+    return `<div class="dec-c" data-act="${why ? 'dec-why' : 'dec-trick'}" role="button" data-u="${u}"${why ? ` data-why="${esc(why)}"` : ''} data-key="dt-${u}">${FX.tcardHTML(d, { zone: 'hand', cost: costOf(s, G.me, s.cards[u]), states: [why ? 'dim' : 'can'] })}</div>`;
+  }).join('');
   let say;
   if (G.blk.selA != null) say = `Now tap the creature of yours that blocks ${esc(nameOf(G.blk.selA))}.`;
   else if (G.blk.sel != null) say = `Now tap the attacker ${esc(nameOf(G.blk.sel))} blocks.`;
-  else if (!can.length) say = 'None of your creatures can block this. Tap <b>No block</b>.';
+  else if (!can.length) say = ambush.length ? 'None of your creatures can block this: play an Ambush creature below, or tap <b>No block</b>.' : 'None of your creatures can block this. Tap <b>No block</b>.';
   else if (!G.blk.pairs.length) say = `Tap ${can.length > 1 ? 'one of your creatures' : 'your creature'} to block${atts.length > 1 ? ' an attacker' : ''}, or tap <b>No block</b>.`;
   else say = 'Tap <b>Block</b> when you’re done. Tap a blocker to send it back.';
   const clear = G.blk.pairs.some(([b, a]) => !isForced(b, a)) ? '<button class="btn small ghost" data-act="clear-blocks">Clear</button>' : '';
@@ -1775,7 +1801,8 @@ function blockDec(s) {
     say,
     why: `A blocked attacker fights your blocker instead of hitting you.${can.length > 1 && atts.length ? ' Two of yours can team up on one attacker.' : ''}${skullNote(s, t)}`,
     main: `${decFight(s, t, { blocking: true })}
-      ${free.length ? `<div class="dec-label">${can.length ? 'Your creatures' : 'Your creatures can’t block (tap one to see why)'}</div>${decCards('mine', myCards, free.length)}` : ''}`,
+      ${free.length ? `<div class="dec-label">${can.length ? 'Your creatures' : 'Your creatures can’t block (tap one to see why)'}</div>${decCards('mine', myCards, free.length)}` : ''}
+      ${ambush.length ? `<div class="dec-label">Ambush: play one now and it can block</div>${decCards('tricks', ambushCards, ambush.length)}` : ''}`,
     sum: `If no one plays a Trick: ${outcome(s, t)}.`,
     left: clear,
   };
@@ -1787,7 +1814,7 @@ function tricksDec(s) {
   const O = s.players[mineAttack ? C.d : C.a], on = esc(shortName(O.name));
   const P = s.players[G.me];
   const t = fightPreview(s);
-  const tricks = P.hand.filter((u) => isTrick(BY_ID[s.cards[u].cid]) || fuseTargets(u).length); // (SATTC Ultra: a creature card fused in, like a Trick)
+  const tricks = P.hand.filter((u) => isTrick(BY_ID[s.cards[u].cid]) || BY_ID[s.cards[u].cid].keywords.includes('ambush') || fuseTargets(u).length); // (SATTC Ultra: a creature card fused in, like a Trick; an Ambush creature)
   const abil = P.board.filter((u) => BY_ID[s.cards[u].cid].ability && !abilityBlocked(u));
   const cards = tricks.map((u) => {
     const d = BY_ID[s.cards[u].cid], why = playable(u);
@@ -1913,7 +1940,7 @@ function midInner() {
   const s = S();
   const coached = !!tutStep(); // the coach box says what to do
   const st = G.flow?.steps[G.flow.i];
-  if (st && ['sac', 'fighter', 'target', 'targets', 'fuse', 'prey'].includes(st.kind)) return `<div class="banner"><span>${esc(st.prompt)}</span></div>`;
+  if (st && ['sac', 'offer', 'fighter', 'target', 'targets', 'fuse', 'prey'].includes(st.kind)) return `<div class="banner"><span>${esc(st.prompt)}</span></div>`;
   // (picking attackers, blocking and the Tricks before a fight have their own screen: decideHTML)
   // how the last fight went (the full story is in the game log, in the menu)
   if (G.fightNote && s.phase === 'main' && !coached) return `<div class="fight-note"${G.lastFight ? ' data-act="fight-replay" role="button"' : ''}>${G.fightNote}${G.lastFight ? ' <span class="fn-replay">▶ Replay</span>' : ''}</div>`;
@@ -1992,10 +2019,10 @@ function actionsHTML() {
   const lesson = tutStep();
   if (lesson?.next) { right.push(btn('primary coach-next-btn', 'coach-next', lesson.final ? 'Let’s play!' : 'Next')); return row(); }
   const st = G.flow?.steps[G.flow.i];
-  if (st && ['sac', 'fighter', 'target', 'targets', 'fuse', 'prey'].includes(st.kind)) {
+  if (st && ['sac', 'offer', 'fighter', 'target', 'targets', 'fuse', 'prey'].includes(st.kind)) {
     left.push(btn('small ghost', 'cancel', 'Cancel'));
     if (st.kind === 'targets' && G.flow.multi.length) right.push(btn('primary', 'done-targets', `Done (${G.flow.multi.length})`));
-    else if (st.optional) right.push(btn('primary', 'skip', 'Skip'));
+    else if (st.optional) right.push(btn('primary', 'skip', st.kind === 'offer' ? 'No Offering' : 'Skip'));
   } else if (!decision()) {
     // Attack is the button at the right while you can attack: End turn waits on the left
     if (myMain() && canStartAttack() && goAction()?.act === 'attack-open') {
@@ -2181,7 +2208,8 @@ function focusSwipe(e) {
 function fieldHTML(s) {
   if (s.field == null) return '';
   const f = s.cards[s.field], d = BY_ID[f.cid];
-  return `<button class="g-field" data-key="field" data-act="field-info" data-uid="${f.uid}" style="${factionVars(d)}"><span>Field</span><b>${esc(d.name)}</b></button>`;
+  const whose = f.ctrl === G.me ? 'Your Field' : `${esc(poss(shortName(s.players[f.ctrl].name)))} Field`; // (cards that say “your Field” count it as its player’s)
+  return `<button class="g-field" data-key="field" data-act="field-info" data-uid="${f.uid}" style="${factionVars(d)}"><span>${whose}</span><b>${esc(d.name)}</b></button>`;
 }
 
 function tableHTML() {
@@ -2798,12 +2826,16 @@ function ultraNewHTML() {
     <div class="kicker muted small" style="letter-spacing:.2em">SATTC ULTRA HAS GROWN</div>
     <h2>What’s new</h2>
     <ul>
+      ${ULTRA_V >= 4 ? `<li><b>Six new decks</b>, each with its own Legend: <b>The Long Game</b> (Invest, save Energy, draw), <b>Rot and Bloom</b> (sacrifice for power), <b>Smoke and Mirrors</b> (Tricks, Traps, Ambushes), <b>Storm Rising</b> (Spell after Spell), <b>Weathermakers</b> (choose the Field) and <b>The Charge</b> (hit first). Their biggest cards cost 7 or more: Energy beyond the usual 6, so each deck has its own way to Invest.</li>
+      <li><b>New words.</b> <b>Ambush</b>: play it in a fight like a Trick; played before you block, it can block. <b>Offering</b>: as you play the card, you may sacrifice a creature of yours for the stronger effect. <b>Your Field</b>: one you played (the banner says whose).</li>
+      <li><b>From before:</b> ★ Legends beside every deck, Symbiotes, Dig, ganging up, Traps, Shields that stack, and the growth ceiling. The <b>?</b> in a game explains each.</li>` : `
       <li><b>★ A Legend for every deck.</b> Yours waits at the left of your hand (it isn’t a card in your hand): play it whenever you can pay. It levels up as you play its way, even before it’s out. If it dies, it comes back to wait, 2 Energy dearer.</li>
       <li><b>Symbiotes.</b> Molten Core, Bark Graft, Wing Graft and Venom Shard are Symbiotes. From the turn after one arrives, tap its ⚡: it kills a creature it can kill in one hit, then joins one of yours for good (its Power, Vitality and keywords). They arrive without Shelter, so opponents get a turn to kill them, and a swarm of weak creatures is their food. Nothing fuses into a Legend.</li>
       <li><b>Dig</b> (bottom left, on your turn): pay ${ULTRA_V2.digCost} Energy to draw a card, once a turn.</li>
       <li><b>Gang up.</b> Two or more creatures blocking one attacker each hit ${ULTRA_V2.together} harder: many small ones can bring down a giant.</li>
       <li><b>Traps</b> wait face down and stop a big attacker for a while. <b>Shields</b> (◈) each stop one hit and stack, so a glass cannon can live.</li>
       ${ULTRA_V2.growthCap ? `<li><b>Growth has a ceiling:</b> a creature can’t grow for good by more than its controller’s maximum Energy (6, more with Invest), so a monster takes an economy.</li>` : ''}
+      `}
     </ul>
     <button class="btn primary" data-act="ultra-new-ok">Got it: on to my opening hand</button>
   </div>`;
@@ -2998,10 +3030,12 @@ function cardSheet(uid, { from = 'hand' } = {}) {
     const helps = helpers(s, c);
     if (helps.length) note += `<div class="sheet-helps"><b>Helping it</b>${helps.map((h) => `<div>${esc(h)}</div>`).join('')}</div>`;
   }
-  if (c.zone === 'field') note = '<div class="sheet-note">The Field: it changes the rules for everyone at the table, until someone plays another Field.</div>';
+  if (c.zone === 'field') note = `<div class="sheet-note">The Field: it changes the rules for everyone at the table, until someone plays another Field. ${c.ctrl === G.me ? 'You' : esc(shortName(s.players[c.ctrl].name))} played it, so it counts as ${c.ctrl === G.me ? 'your' : 'their'} Field.</div>`;
   if (c.zone === 'relic') {
     const bits = [];
     if (c.cid === 'the-drowned-clock') bits.push(`Chimes so far: ${c.chimes || 0} of 3`);
+    if (c.cid === 'the-granary') bits.push(c.stored ? `Saved for next turn: ${c.stored} Energy` : 'At the end of your turn it saves up to 3 Energy you didn’t spend');
+    if (c.cid === 'war-chest') bits.push(c.usedOn === s.turn ? 'It paid out this turn' : 'It pays out the first time your creatures hit an opponent this turn');
     if (d.stages) {
       const next = d.stages[c.stage];
       bits.push(`Ritual: stage ${c.stage} of ${d.stages.length} done`);
@@ -3032,7 +3066,8 @@ function choiceSheet(st) {
   const cancel = '<button class="btn ghost" data-act="cancel">Cancel</button>';
   switch (st.kind) {
     case 'pick': {
-      const title = G.flow.a.uid && s.cards[G.flow.a.uid].cid === 'the-barrow-queen' ? 'Bring back a creature from any discard pile' : 'Choose a creature from your discard pile';
+      const by = G.flow.a.uid && s.cards[G.flow.a.uid].cid;
+      const title = by === 'the-barrow-queen' ? 'Bring back a creature from any discard pile' : by === 'weatherwitch' ? 'Bring a Field back to your hand' : 'Choose a creature from your discard pile';
       return `<h3>${title}</h3>${cards(st.options)}<div class="btn-col">${st.optional ? '<button class="btn" data-act="skip">Bring nothing back</button>' : ''}${cancel}</div>`;
     }
     case 'picks':
@@ -3156,6 +3191,7 @@ function helpSheet() {
       <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card, which shows the Energy it takes (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
       ${S().ultra ? '<div><b>SATTC Ultra</b>: 30 Life. <b>Wounds stay</b> on creatures and heal by half at the start of their owner’s turn. A new creature is <b>Sheltered</b> (🛡) from opponents’ Spells and abilities until its owner’s next turn. When a creature that grew dies, half its growth passes to your weakest creature (<b>Legacy</b>). Energy grows by itself to 6; <b>Invest</b> cards raise it for good, up to 12. One <b>Field</b> (the banner in the middle) changes the rules for everyone. A <b>Ritual</b> stays in your Relic row: tap it to pay its next stage, one a turn. A <b>Hex</b> (⛓) lasts until its owner pays to break it: tap the creature. Venom’s damage is poison (☠): it doesn’t heal. An <b>Unstable</b> creature shows how close it is to erupting (💥8/10; it pulses red the turn before). Tap a creature to see what’s helping it: the cards on its side, and the Field.</div>' : ''}
       ${ultraV2(S()) ? `<div><b>Ultra’s second version</b>: your <b>Legend</b> waits beside your deck (at the left of your hand) and can be played whenever you can pay; it levels up as you play its way, and if it dies it comes back to wait there, 2 Energy dearer. Nothing can be fused into a Legend. <b>Symbiotes</b> (the creatures with Fuse): from the turn after one arrives, pay 1 Energy and it kills a creature it can kill in one hit (Vitality left no more than its Power, no Shield), then joins another creature of yours, which gets its Power, Vitality and keywords for good. A Symbiote arrives without Shelter. <b>Dig</b> (the button bottom left): once a turn, pay ${ULTRA_V2.digCost} Energy to draw a card. <b>Ganging up</b>: when two or more creatures block one attacker, each hits ${ULTRA_V2.together} harder. A <b>Shield</b> (◈) stops the next hit a creature would take; Shields stack. <b>Traps</b> wait face down and spring when you’re attacked.${ULTRA_V2.growthCap ? ' <b>Growth has a ceiling</b>: a creature can’t grow for good by more than its controller’s maximum Energy (6, more with Invest), so a monster takes an economy.' : ''}</div>` : ''}
+      ${S().uv >= 4 ? `<div><b>Ultra’s fourth version</b>: six more decks, each with its Legend, and their biggest cards cost 7 or more, so they need Energy beyond the usual 6 (Invest). <b>Ambush</b>: a creature you can play during a fight, like a Trick; played when you’re attacked, before you choose blockers, it can block. <b>Offering</b>: as you play the card, you may sacrifice a creature of yours for its stronger effect. <b>Your Field</b> is a Field you played; the banner in the middle says whose it is. The <b>Granary</b> saves up to 3 Energy you didn’t spend for your next turn (its number shows on it).</div>` : ''}
       ${S().players.some((P) => P.champ) ? '<div><b>★ Champions</b> (new): every deck starts with a Champion on the table. It can block from the start, but can’t attack until Level 2. It levels up as you do what its faction does (tap it to see how far along it is), and each level changes how your other cards work. If it leaves the table it goes back to your hand, costing 2 more each time.</div>' : ''}
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
       <div><b>The button at the bottom right</b> moves the game on: End turn, Attack, Block, Fight. While you could still play a card or attack, End turn asks for a second tap.</div>
@@ -3350,11 +3386,12 @@ function chooseOnTable(t) {
   const f = G.flow, st = f.steps[f.i];
   if (!st.options.some((o) => sameT(o, t))) return false;
   if (st.kind === 'sac') { f.a.sac = t.uid; f.i++; nextChoice(); return true; }
+  if (st.kind === 'offer') { f.a.offer = t.uid; f.i++; nextChoice(); return true; }
   if (st.kind === 'fighter') { f.a.fighter = t.uid; f.i++; nextChoice(); return true; }
   if (st.kind === 'fuse') { f.a.fuse = t.uid; f.i++; nextChoice(); return true; }
   if (st.kind === 'prey') { f.a.prey = t.uid; f.i++; nextChoice(); return true; }
   if (st.kind === 'target') {
-    if (t.uid != null && (t.uid === f.a.sac || t.uid === f.a.fighter || t.uid === f.a.prey)) return false;
+    if (t.uid != null && (t.uid === f.a.sac || t.uid === f.a.offer || t.uid === f.a.fighter || t.uid === f.a.prey)) return false;
     f.a.target = t; f.i++; nextChoice(); return true;
   }
   if (st.kind === 'targets') {

@@ -12,14 +12,19 @@ const lifeValue = (l) => (l <= 0 ? -200 : Math.sqrt(l) * 7 + l * 0.5);
 const CROWN = 4.5; // a card at the end of every turn, for as long as you keep it
 
 const KW_VALUE = { soar: 1.3, venom: 1.2, drain: 0.8, swift: 0.8, overrun: 0.6, watchful: 0.5, reach: 0.4, guard: 0.6, hunt: 0.7, lastBreath: 0.8,
-  grows: 1.8, multiply: 2.4, unstable: 1.4, bodyguard: 0.8, fuse: 0.4 }; // (the last line: SATTC Ultra)
-const ENGINES = new Set(['standard-keeper', 'lightning-theorist', 'mirror-mage', 'forbidden-archivist', 'kindly-undertaker', 'little-gardener',
+  grows: 1.8, multiply: 2.4, unstable: 1.4, bodyguard: 0.8, fuse: 0.4, ambush: 0.5 }; // (the last line: SATTC Ultra)
+const ENGINES = new Set(['spellwright-apprentice', 'mire-witch', 'war-drummer', 'weatherwitch', 'keeper-of-the-skies', 'storm-shepherd', 'pearl-diver', 'the-puppeteer', // (version 4)
+  'standard-keeper', 'lightning-theorist', 'mirror-mage', 'forbidden-archivist', 'kindly-undertaker', 'little-gardener',
   'ash-collector', 'grandmother-bramble', 'choirmother', 'the-pale-abbess', 'hungry-ghoul', 'brook-hydra', 'patient-giant', 'dawnsinger', 'lantern-ferryman',
   'rootmother', 'shield-captain', 'field-medic', 'gravewarden', 'bloodbinder', 'thornback-archer', 'shieldwright']);
 const RELIC_VALUE = { 'the-kiln': 3, 'heartwood-totem': 4, 'the-drowned-clock': 6, 'bone-altar': 2, 'beacon-of-hope': 5, 'banner-of-the-charge': 3, 'the-bright-choir': 4, 'season-of-plenty': 4,
-  'tidecallers-library': 5 };
+  'tidecallers-library': 5, 'the-granary': 3, 'the-arcane-well': 4, 'war-chest': 3 };
+// Energy a Granary saves for next turn (version 4), each.
+const SAVED = 0.55;
 // SATTC Ultra: a permanent +1 Energy, a Ritual on its way, the Field you chose.
 const INVEST = 2.6, RITUAL_STAGE = 2.4, OWN_FIELD = 2.2;
+// (version 4) A permanent +1 Energy is worth more the more turns are left to spend it in (games run about 13 rounds); late, the old flat value.
+const investWorth = (s, P) => (s.uv >= 4 ? Math.max(INVEST, 0.75 * (13 - (P.turns || 0))) : INVEST);
 
 // Play styles, for testing the game (the tournament lab, tools/lab.mjs): weights
 // on what the bot values. 1 is the ordinary bot for the first seven, 0 for
@@ -63,7 +68,7 @@ const boardValue = (s, i) => s.players[i].board.reduce((sum, u) => sum + creatur
 const relicValue = (s, i) => s.players[i].relics.reduce((sum, u) => {
   const r = s.cards[u];
   if (BY_ID[r.cid].stages) return sum + 2 + RITUAL_STAGE * (r.stage || 0); // (a Ritual in progress)
-  return sum + (RELIC_VALUE[r.cid] || 3) + (r.cid === 'the-drowned-clock' ? (r.chimes || 0) * 2.5 : 0);
+  return sum + (RELIC_VALUE[r.cid] || 3) + (r.cid === 'the-drowned-clock' ? (r.chimes || 0) * 2.5 : 0) + (r.stored || 0) * SAVED;
 }, 0);
 
 // Damage `atk`'s creatures could push past `def`'s ready blockers next time they attack.
@@ -92,13 +97,17 @@ export function evaluate(s, me, st = null) {
   v += Math.min(P.deck.length, 6) * 0.3;
   if (s.crown === me) v += CROWN;
   if (s.ultra) {
-    v += (P.invest || 0) * INVEST * W.invest;
+    v += (P.invest || 0) * investWorth(s, P) * W.invest;
+    if (s.active === me && s.phase === 'main') { // (what a Granary would save if the turn ended now)
+      const barns = P.relics.filter((u) => s.cards[u].cid === 'the-granary').length;
+      if (barns) v += Math.min(3 * barns, Math.max(0, P.energy)) * SAVED;
+    }
     if (s.field != null) v += s.cards[s.field].ctrl === me ? OWN_FIELD : -OWN_FIELD / 2;
   }
   if (st) v += styleExtras(s, P, st);
   const w = 1 / opps.length;
   for (const o of opps) {
-    v -= (lifeValue(o.life) * W.aggro + boardValue(s, o.i) * 1.05 + relicValue(s, o.i) + o.hand.length * 1.2 + o.traps.length * 2 + (o.extra || 0) * 9 + (s.crown === o.i ? CROWN : 0) + (o.invest || 0) * INVEST) * w;
+    v -= (lifeValue(o.life) * W.aggro + boardValue(s, o.i) * 1.05 + relicValue(s, o.i) + o.hand.length * 1.2 + o.traps.length * 2 + (o.extra || 0) * 9 + (s.crown === o.i ? CROWN : 0) + (o.invest || 0) * (s.ultra ? investWorth(s, o) : INVEST)) * w;
     if (s.active === me) {
       // Creatures that attacked can't block on the turns in between: count the risk.
       const inc = threat(s, o.i, me, false);
@@ -290,7 +299,9 @@ export const trickPlays = (s, me) => [
 ];
 
 // ── deciding ────────────────────────────────────────────────────────
-export function chooseAction(s, me, { noise = 0.4, rand = Math.random, style = null } = {}) {
+// `beam`: a stronger bot (the Elo ladder's Expert, tools/elo.mjs) looks at its
+// best `beam` moves again with the best move each one leads to this turn.
+export function chooseAction(s, me, { noise = 0.4, rand = Math.random, style = null, beam = 0 } = {}) {
   const P = s.players[me];
   const jitter = () => (noise ? (rand() - 0.5) * noise : 0);
   if (s.phase === 'mulligan') {
@@ -305,6 +316,7 @@ export function chooseAction(s, me, { noise = 0.4, rand = Math.random, style = n
   if (s.ultra) base.players = base.players.map((Q) => (Q.i === me || !Q.traps.length ? Q : { ...Q, traps: [] }));
 
   const now = evaluate(base, me, style);
+  if (beam > 0) return lookAhead(base, me, now, beam, jitter, style);
   let best = null, bestV = -Infinity;
   const consider = (a, v) => { v += jitter(); if (v > bestV) { bestV = v; best = a; } };
   for (const a of legalActions(base, me)) {
@@ -371,6 +383,86 @@ function chooseTrick(s, me, jitter, style = null) {
     if (v > bestV + 0.3) { bestV = v; best = a; }
   }
   return best;
+}
+
+// Every move this turn, with the score it leads to (a fight played out).
+function scoredMoves(s, me, style) {
+  const out = [];
+  for (const a of legalActions(s, me)) {
+    if (a.t === 'end' || a.t === 'attack') continue;
+    const t = tryApply(s, a);
+    if (t) out.push({ a, t, v: evaluate(t, me, style) });
+  }
+  for (const a of attackCandidates(s, me)) {
+    const t = tryApply(s, a);
+    if (!t) continue;
+    const after = t.phase === 'combat' ? finishFight(t) : t;
+    if (after) out.push({ a, t: after, v: evaluate(after, me, style) });
+  }
+  return out;
+}
+
+// The beam: the best few moves, each scored by the best place it can lead this turn.
+function lookAhead(s, me, now, beam, jitter, style) {
+  const first = scoredMoves(s, me, style).sort((x, y) => y.v - x.v).slice(0, beam);
+  let best = null, bestV = now + 0.05;
+  for (const { a, t, v } of first) {
+    let w = v;
+    if (t.phase === 'main' && t.active === me) for (const m of scoredMoves(t, me, style)) w = Math.max(w, m.v);
+    w += jitter();
+    if (w > bestV) { bestV = w; best = a; }
+  }
+  return best || { t: 'end', p: me };
+}
+
+// ── the Planner (the Elo ladder's strongest bot, tools/elo.mjs) ─────
+// On its own turn it takes its best `beam` moves (and ending the turn), plays
+// each one on: the rest of its turn and the next opponent's turn, the careful
+// bot moving for both, `tries` times with what it can't see shuffled (the
+// others' hands and decks, its own deck; face-down Traps left out). It keeps
+// the move whose futures score best. Slow: for tests, not for phones.
+export function planAction(s, me, { rand = Math.random, beam = 3, tries = 1 } = {}) {
+  if (s.phase !== 'main' || s.active !== me) return chooseAction(s, me, { rand, noise: 0 });
+  const base = lean(s);
+  if (s.ultra) base.players = base.players.map((Q) => (Q.i === me || !Q.traps.length ? Q : { ...Q, traps: [] }));
+  const end = { t: 'end', p: me };
+  const cands = [...scoredMoves(base, me, null).sort((x, y) => y.v - x.v).slice(0, beam), { a: end, t: tryApply(base, end) }];
+  let best = end, bestV = -Infinity;
+  for (const { a, t } of cands) {
+    if (!t) continue;
+    let v = 0;
+    for (let k = 0; k < tries; k++) v += playOn(t, me, rand);
+    if (v / tries > bestV) { bestV = v / tries; best = a; }
+  }
+  return best;
+}
+// Shuffle what `me` can't see, then play on to the start of its next turn.
+function playOn(s, me, rand) {
+  let t = unseen(s, me, rand);
+  let away = t.active !== me;
+  for (let k = 0; k < 400 && t.phase !== 'over'; k++) {
+    if (t.phase === 'main' && t.active === me && away) break;
+    if (t.active !== me) away = true;
+    const p = actor(t);
+    const a = chooseAction(t, p, { rand, noise: 0 });
+    const r = apply(t, a);
+    if (r.error) break;
+    t = lean(r.state);
+  }
+  return evaluate(t, me);
+}
+function unseen(s, me, rand) {
+  const cards = { ...s.cards };
+  const shuffled = (xs) => { const a = [...xs]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const players = s.players.map((Q) => {
+    if (Q.i === me) return { ...Q, deck: shuffled(Q.deck) };
+    const keep = Q.hand.filter((u) => BY_ID[cards[u].cid].token || BY_ID[cards[u].cid].champion); // (a Spark, a Champion: known)
+    const pool = shuffled([...Q.hand.filter((u) => !keep.includes(u)), ...Q.deck]);
+    const n = Q.hand.length - keep.length;
+    pool.forEach((u, i) => { cards[u] = { ...cards[u], zone: i < n ? 'hand' : 'deck' }; });
+    return { ...Q, hand: [...keep, ...pool.slice(0, n)], deck: pool.slice(n), traps: [] };
+  });
+  return { ...s, cards, players };
 }
 
 function bestFollowUp(s, me, fallback, style = null) {

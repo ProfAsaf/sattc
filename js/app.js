@@ -432,6 +432,8 @@ function rules() {
       <li><b>Ganging up.</b> When two or more creatures block the same attacker, each hits ${ULTRA_V2.together} harder.</li>
       <li><b>Traps</b> that stop a big attacker for a while, and <b>Shields</b> that stack, for glass cannons.</li>
       ${ULTRA_V2.growthCap ? `<li><b>Growth has a ceiling.</b> a creature can't grow for good by more than its controller's maximum Energy (6, more with Invest), so a monster takes an economy.</li>` : ''}
+      <li><b>Six new decks</b>, each with its own Legend: <b>The Long Game</b> (Invest, save Energy, draw extra cards), <b>Rot and Bloom</b> (sacrifice your own for power), <b>Smoke and Mirrors</b> (Tricks, Traps and Ambushes), <b>Storm Rising</b> (Spell after Spell), <b>Weathermakers</b> (choose the Field) and <b>The Charge</b> (hit first). Their biggest cards cost 7 or more: you need Energy beyond the usual 6, so each deck has its own way to Invest.</li>
+      <li><b>New words.</b> <b>Ambush</b>: a creature you can play in a fight, like a Trick; played before you choose blockers, it can block. <b>Offering</b>: as you play the card, you may sacrifice a creature of yours for its stronger effect. <b>Your Field</b>: a Field you played (the banner says whose it is).</li>
     </ul>
     <ul>${Object.values(LEGENDS).map((c) => `<li><b>${esc(c.name)}</b> (${c.cost} Energy, ${esc(c.factions.map((f) => FACTIONS[f].name).join('/'))}) levels up with ${esc(c.xp.unit)}: at ${c.xp.at[0]}, ${esc(c.l2)} At ${c.xp.at[1]}, ${esc(c.l3)}</li>`).join('')}</ul>
 

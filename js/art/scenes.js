@@ -53,7 +53,10 @@ import { champions } from './scenes/champions.js';
 import { ultra_a } from './scenes/ultra-a.js';
 import { ultra_b } from './scenes/ultra-b.js';
 import { ultra_c } from './scenes/ultra-c.js';
+import { ultra_d } from './scenes/ultra-d.js';
+import { ultra_e } from './scenes/ultra-e.js';
+import { ultra_f } from './scenes/ultra-f.js';
 
 export { PAL } from './scenes/shared.js';
 
-export const SCENES = { ...ember, ...verdant, ...tide, ...umbral, ...radiant, ...multi, ...new_a, ...new_b, ...new_c, ...new_d, ...champions, ...ultra_a, ...ultra_b, ...ultra_c };
+export const SCENES = { ...ember, ...verdant, ...tide, ...umbral, ...radiant, ...multi, ...new_a, ...new_b, ...new_c, ...new_d, ...champions, ...ultra_a, ...ultra_b, ...ultra_c, ...ultra_d, ...ultra_e, ...ultra_f };

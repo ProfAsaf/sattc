@@ -61,6 +61,8 @@ export const KEYWORDS = {
   hex:        { name: 'Hex',         text: 'It lasts until the creature’s controller pays N Energy on their turn to break it.' },
   field:      { name: 'Field',       text: 'Changes the rules for everyone at the table. One Field at a time: a new one replaces it.' },
   bodyguard:  { name: 'Bodyguard',   text: 'Opponents’ Spells and abilities can’t target your other creatures; they have to target this one.' },
+  ambush:     { name: 'Ambush',      text: 'You can play it during a fight, like a Trick. Played when you’re attacked, before you choose blockers, it can block.' },
+  offering:   { name: 'Offering',    text: 'As you play it, you may sacrifice a creature of yours for its stronger effect.' },
   shield:     { name: 'Shield',      text: 'Stops the next damage this creature would take, then breaks. Shields stack: two stop two hits.' },
   legend:     { name: 'Legend',      text: 'Waits beside your deck, not in it: play it from there whenever you can pay. It levels up as you play its way, even before it’s out. Nothing can be fused into it. If it dies, it goes back to wait, 2 Energy dearer.' },
 };
@@ -68,7 +70,7 @@ export const KEYWORDS = {
 export const ULTRA_KEYWORDS = { venom: 'Damage it deals to a creature is poison: it never heals (until cured).' };
 
 // Words in rules text that get keyword styling and a tap-to-explain hint.
-export const KEYWORD_PATTERN = /\b(Rush|Soar|Reach|Guard|Swift|Venom|Drain|Overrun|Watchful|Hunt|Last Breath|Awaken|Echo|Bond|Trick|Trap|Relic|Sacrifice|sacrifice|Invest|Grows|Multiply|Unstable|Fuse|Symbiote|Ritual|Hex|Field|Bodyguard|Shield(?! Captain)|Legend)\b/g;
+export const KEYWORD_PATTERN = /\b(Rush|Soar|Reach|Guard|Swift|Venom|Drain|Overrun|Watchful|Hunt|Last Breath|Awaken|Echo|Bond|Trick|Trap|Relic|Sacrifice|sacrifice|Invest|Grows|Multiply|Unstable|Fuse|Symbiote|Ritual|Hex|Field|Bodyguard|Shield(?! Captain)|Legend|Ambush|Offering)\b/g;
 
 // Shared look for every painting; each card adds its own subject.
 export const ART_STYLE =
@@ -583,7 +585,7 @@ export const ULTRA_RULES = { startLife: 30, startLife3: 25, energyGrowsTo: 6, ma
 // Ultra's second version (2026-11-08): Legends, Symbiotes, Dig and
 // ganging up (engine.js). New games are set up with `ultra: ULTRA_V`; a setup
 // with `ultra: true` is version 1, so games saved before then replay unchanged.
-export const ULTRA_V = 3; // (3, later on 2026-11-08: fights strike all at once, and the growth cap below; games set up as 2 keep 2's rules)
+export const ULTRA_V = 4; // (3, later on 2026-11-08: fights strike all at once, and the growth cap below; games set up as 2 keep 2's rules. 4: six more Legends to choose from)
 // digCost: Energy for a card, once a turn. together: +Power for each of 2 or more
 // creatures blocking one attacker. fuseTax: a card fused from the hand costs
 // this much more for each card already fused into that creature. fuseFight:
@@ -807,6 +809,160 @@ export const ULTRA = [
       text: 'At the start of your turn, give a Shield to your creature with the most Power that has none.',
       flavor: 'She hands the best one to whoever hits hardest.',
       art: 'A stout smith at a glowing anvil hammering out a round shield of light, finished shields stacked behind her, warriors waiting at the forge door.' }),
+  // ── Six more ways to build (Ultra version 4, 2026-11-08) ──
+  // The user's rule for all of them: the really powerful things need Energy
+  // beyond the usual 6, so every plan has its own way to Invest and a top card
+  // that costs 7 or more.
+  // The Long Game: economy and extra cards (Verdant and Tide).
+  U({ id: 'the-granary', n: 142, name: 'The Granary', cost: 2, factions: ['verdant'], type: 'relic', subtype: 'Relic',
+      keywords: ['relic'],
+      text: 'Relic\nAt the end of your turn, it saves up to 3 of your unspent Energy for your next turn.',
+      flavor: 'A full barn is a quiet mind.',
+      art: 'A round stone granary on a hill above a river delta, golden grain spilling from its open door into baskets, warm evening light, small boats unloading below.' }),
+  U({ id: 'pearl-diver', n: 143, name: 'Pearl Diver', cost: 2, factions: ['tide'], type: 'creature', subtype: 'Human', power: 1, vitality: 3,
+      ability: { cost: 2, short: 'Invest' },
+      text: 'Pay 2 Energy: Invest.',
+      flavor: 'Every dive, a little deeper.',
+      art: 'A diver in a shell-studded harness rising through teal water toward the light, a large glowing pearl held in one hand, a trail of bubbles above her.' }),
+  U({ id: 'compound-interest', n: 144, name: 'Compound Interest', cost: 2, factions: ['tide'], type: 'spell',
+      text: 'Draw a card for every 3 maximum Energy you have.',
+      flavor: 'Patience, multiplied.',
+      art: 'Glowing pages and coins spiralling up out of an open ledger on a desk in a sea-cave counting house, each page splitting in two as it rises.' }),
+  U({ id: 'the-merchant-tortoise', n: 145, name: 'The Merchant Tortoise', cost: 7, factions: ['verdant', 'tide'], type: 'creature', subtype: 'Tortoise', power: 7, vitality: 7,
+      keywords: ['reach', 'overrun'],
+      text: 'Reach, Overrun\nIts Power and Vitality are each equal to your maximum Energy.',
+      flavor: 'A market town that walks to where the trade is.',
+      art: 'A colossal ancient tortoise wading through a river delta, a whole market town of tents, towers and gardens on its shell, tiny boats beside its feet.' }),
+  // Rot and Bloom: necromancers who sacrifice for power (Umbral and Verdant).
+  U({ id: 'grave-harvest', n: 146, name: 'Grave Harvest', cost: 2, factions: ['umbral'], type: 'spell',
+      keywords: ['offering'],
+      text: 'Offering\nDraw a card. With an Offering, draw 3 instead.',
+      flavor: 'Plant the dead; harvest their secrets.',
+      art: 'A hooded gravedigger pulling glowing violet bulbs out of a grave mound by moonlight, pale roots trailing from them, a lantern on a crooked post.' }),
+  U({ id: 'bone-lance', n: 147, name: 'Bone Lance', cost: 2, factions: ['umbral'], type: 'spell',
+      keywords: ['offering'],
+      text: 'Offering\nDeal 2 damage to any target. With an Offering, deal 5 instead.',
+      flavor: 'Carved from the faithful.',
+      art: 'A long spear of pale bone wreathed in violet fire hurled across a misty graveyard, a trail of ghostly light behind it.' }),
+  U({ id: 'bone-tithe', n: 148, name: 'Bone Tithe', cost: 1, factions: ['umbral'], type: 'spell',
+      text: 'Sacrifice a creature. Invest, and draw a card.',
+      flavor: 'The dead pay forever.',
+      art: 'A skeletal hand setting a glowing coin onto an altar heaped with bones, violet candlelight, a cowled figure watching from the dark.' }),
+  U({ id: 'mire-witch', n: 149, name: 'Mire Witch', cost: 3, factions: ['umbral', 'verdant'], type: 'creature', subtype: 'Human', power: 2, vitality: 4,
+      text: 'Whenever you sacrifice a creature, each opponent loses 1 Life and you gain 2 Life.',
+      flavor: 'The bog gives, the bog takes.',
+      art: 'A witch knee-deep in a misty bog holding a lantern of glowing fungus, pale mushrooms and violet will-o’-wisps rising around her.' }),
+  U({ id: 'danse-macabre', n: 150, name: 'Danse Macabre', cost: 7, factions: ['umbral'], type: 'spell',
+      text: 'Return up to four creatures from your discard pile to play. They have Rush. At the end of your turn, sacrifice them.',
+      flavor: 'One last dance, then the long sleep.',
+      art: 'A ring of dancing skeletons and pale ghosts whirling around a bonfire of violet flame in a moonlit graveyard.' }),
+  // Smoke and Mirrors: tricksters (Tide and Umbral).
+  U({ id: 'turnabout', n: 151, name: 'Turnabout', cost: 1, factions: ['tide'], type: 'spell', ...TRICK,
+      keywords: ['trick'],
+      text: 'Trick\nSwap a creature’s Power and Vitality this turn. Draw a card.',
+      flavor: 'Upside down is just another way up.',
+      art: 'A swordsman in mid-somersault over a breaking wave, the whole scene mirrored upside down in the glassy water below him.' }),
+  U({ id: 'bluff', n: 152, name: 'Bluff', cost: 1, factions: ['umbral'], type: 'spell', subtype: 'Trap',
+      keywords: ['trap'],
+      text: 'Trap\nWhen an opponent attacks you, Invest and draw a card. (Face down, it looks like any other Trap.)',
+      flavor: 'The best trap is the one they fear.',
+      art: 'A figure in a theatrical half-mask in a moonlit alley holding a small closed box behind their back, violet light leaking from under its lid.' }),
+  U({ id: 'reed-lurker', n: 153, name: 'Reed Lurker', cost: 3, factions: ['tide'], type: 'creature', subtype: 'Merfolk', power: 3, vitality: 3,
+      keywords: ['ambush'],
+      text: 'Ambush',
+      flavor: 'The reeds have eyes.',
+      art: 'A lean merfolk hunter crouched among tall reeds at the water’s edge, only his eyes and a bone spear above the surface, mist over the marsh.' }),
+  U({ id: 'gloom-stalker', n: 154, name: 'Gloom Stalker', cost: 2, factions: ['umbral'], type: 'creature', subtype: 'Shade', power: 2, vitality: 4,
+      keywords: ['ambush', 'venom'],
+      text: 'Ambush, Venom',
+      flavor: 'You never see it before it bites.',
+      art: 'A thin shadow-creature unfolding out of a dark doorway, long fingers dripping green poison, two pale eyes in the blackness.' }),
+  U({ id: 'the-puppeteer', n: 155, name: 'The Puppeteer', cost: 4, factions: ['umbral'], type: 'creature', subtype: 'Human', power: 2, vitality: 4,
+      ability: { cost: 2, short: 'one enemy creature fights another' },
+      text: 'Pay 2 Energy: an enemy creature fights another enemy creature.',
+      flavor: 'Dance for me. Now fight.',
+      art: 'A masked puppeteer on a dark stage working the strings of two marionette knights that duel each other, a violet spotlight from above.' }),
+  U({ id: 'grand-illusion', n: 156, name: 'Grand Illusion', cost: 7, factions: ['tide'], type: 'spell',
+      text: 'Return all creatures to their owners’ hands. Draw a card for each of yours.',
+      flavor: 'Was any of it real?',
+      art: 'A great curtain of seawater sweeping across a battlefield, warriors and beasts dissolving into bubbles and glittering spray behind it.' }),
+  // Storm Rising: Spells that build on Spells (Ember and Tide).
+  U({ id: 'spellwright-apprentice', n: 157, name: 'Spellwright Apprentice', cost: 1, factions: ['tide'], type: 'creature', subtype: 'Human Wizard', power: 1, vitality: 2,
+      text: 'Whenever you play a Spell, it gets +1/+1 for good.',
+      flavor: 'Every spell leaves a mark.',
+      art: 'A young apprentice wizard in a sea-cave study, glowing runes curling up out of an open spellbook and settling onto her sleeves like tattoos.' }),
+  U({ id: 'static-spark', n: 158, name: 'Static Spark', cost: 0, factions: ['ember'], type: 'spell',
+      text: 'Deal 1 damage to any target.',
+      flavor: 'Small, free, and sudden.',
+      art: 'A tiny crackling spark leaping from an outstretched fingertip toward a candle wick in a dark room, the air around it shimmering.' }),
+  U({ id: 'the-arcane-well', n: 159, name: 'The Arcane Well', cost: 3, factions: ['tide'], type: 'relic', subtype: 'Relic',
+      keywords: ['relic'],
+      text: 'Relic\nYour Spells cost 1 less (but not less than 1).',
+      flavor: 'Drink deep; the next spell comes easier.',
+      art: 'A round stone well in a moonlit courtyard brimming with glowing blue water, runes circling its rim, small lights rising out of it.' }),
+  U({ id: 'the-last-storm', n: 160, name: 'The Last Storm', cost: 7, factions: ['ember', 'tide'], type: 'spell',
+      text: 'Deal damage to an opponent equal to the number of Spells in your discard pile.',
+      flavor: 'Every word you ever spoke, at once.',
+      art: 'A colossal storm over a dark sea, lightning and fire twisting together into one huge bolt that strikes a distant tower.' }),
+  // Weathermakers: the Field (Tide and Radiant). "Your Field" is one you played.
+  U({ id: 'weatherwitch', n: 161, name: 'Weatherwitch', cost: 2, factions: ['tide'], type: 'creature', subtype: 'Human', power: 1, vitality: 3,
+      text: 'Your Fields cost 1 less. When played, you may return a Field from your discard pile to your hand.',
+      flavor: 'She keeps the seasons in jars.',
+      art: 'A weather witch on a windy cliff holding up a glass jar with a tiny storm cloud swirling inside it, her cloak and hair whipping in the wind.' }),
+  U({ id: 'storm-shepherd', n: 162, name: 'Storm Shepherd', cost: 3, factions: ['radiant'], type: 'creature', subtype: 'Human', power: 2, vitality: 3,
+      keywords: ['soar'],
+      text: 'Soar\nWhile your Field is in play, it has +2/+1.',
+      flavor: 'She knows which way the wind will turn.',
+      art: 'A shepherdess riding a great white bird through golden storm clouds, her crook raised, sunlight breaking through behind her.' }),
+  U({ id: 'gale-winds', n: 163, name: 'Gale Winds', cost: 2, factions: ['tide'], type: 'field', subtype: 'Field',
+      keywords: ['field'],
+      text: 'Field\nCreatures with Soar get +1/+1. When it arrives, draw a card.',
+      flavor: 'Good weather for flying.',
+      art: 'Strong winds sweeping over a sea cliff, gulls and kites riding long streaks of wind across a bright teal sky.' }),
+  U({ id: 'rolling-fog', n: 164, name: 'Rolling Fog', cost: 3, factions: ['tide'], type: 'field', subtype: 'Field',
+      keywords: ['field'],
+      text: 'Field\nNo more than two creatures can attack in one fight.',
+      flavor: 'In the fog, an army is just a crowd.',
+      art: 'A thick bank of fog rolling over a coastal hillside, two warriors clear in front and the shapes of many more lost in the mist behind them.' }),
+  U({ id: 'hallowed-ground', n: 165, name: 'Hallowed Ground', cost: 2, factions: ['radiant'], type: 'field', subtype: 'Field',
+      keywords: ['field'],
+      text: 'Field\nCreatures can’t attack the turn they arrive, even with Rush.',
+      flavor: 'Here, everyone waits their turn.',
+      art: 'A ring of tall standing stones on a dawn hill, golden light pouring through the gaps onto a calm field of grass inside.' }),
+  U({ id: 'keeper-of-the-skies', n: 166, name: 'Keeper of the Skies', cost: 4, factions: ['tide', 'radiant'], type: 'creature', subtype: 'Human', power: 2, vitality: 5,
+      keywords: ['reach'],
+      text: 'Reach\nOpponents’ Fields cost 3 more.',
+      flavor: 'The weather here answers to her.',
+      art: 'A tall robed woman on a lighthouse gallery, one hand raised to hold back a dark storm front while the sky behind her stays golden.' }),
+  U({ id: 'the-eye-of-the-storm', n: 167, name: 'The Eye of the Storm', cost: 8, factions: ['tide', 'radiant'], type: 'field', subtype: 'Field',
+      keywords: ['field'],
+      text: 'Field\nOpponents can’t play Fields. Your creatures get +1/+1 and Soar.',
+      flavor: 'At the centre, perfect calm. Everywhere else, the storm.',
+      art: 'Looking up from the calm centre of a gigantic hurricane: a circle of golden sky high above, ringed by walls of churning cloud and lightning.' }),
+  // The Charge: hitting early (Ember and Radiant).
+  U({ id: 'ash-squire', n: 168, name: 'Ash Squire', cost: 1, factions: ['ember'], type: 'creature', subtype: 'Human', power: 2, vitality: 1,
+      keywords: ['rush'],
+      text: 'Rush',
+      flavor: 'First into the smoke.',
+      art: 'A young squire with a torch and a short sword sprinting out of a cloud of smoke and embers, leaning into the run.' }),
+  U({ id: 'war-drummer', n: 169, name: 'War Drummer', cost: 2, factions: ['radiant'], type: 'creature', subtype: 'Human', power: 2, vitality: 2,
+      text: 'Your other creatures have +1/+0 while attacking.',
+      flavor: 'Faster, louder, forward!',
+      art: 'A drummer in a gold tabard beating a great war drum on a dawn hill, banners flying behind her and soldiers marching past.' }),
+  U({ id: 'war-chest', n: 170, name: 'War Chest', cost: 2, factions: ['radiant'], type: 'relic', subtype: 'Relic',
+      keywords: ['relic'],
+      text: 'Relic\nThe first time each turn your creatures hit an opponent in a fight, Invest.',
+      flavor: 'Every victory pays for the next.',
+      art: 'An iron-bound chest overflowing with gold coins and captured banners inside a war tent, lantern light glinting off the coins.' }),
+  U({ id: 'blitz-captain', n: 171, name: 'Blitz Captain', cost: 3, factions: ['ember', 'radiant'], type: 'creature', subtype: 'Human Knight', power: 3, vitality: 2,
+      keywords: ['rush'],
+      text: 'Rush\nWhen played, your other creatures get +1/+0 and Rush this turn.',
+      flavor: 'Now. All of us. Now!',
+      art: 'A knight on a rearing warhorse raising a burning banner, a charge of riders pouring past her toward a smoky red horizon.' }),
+  U({ id: 'hour-of-glory', n: 172, name: 'Hour of Glory', cost: 7, factions: ['ember', 'radiant'], type: 'spell',
+      text: 'Your creatures get +3/+0 and Rush this turn.',
+      flavor: 'For one hour, everyone is a hero.',
+      art: 'A whole army charging down a hillside at sunrise, gold light and ember sparks streaming from their raised weapons, banners blazing.' }),
 ];
 
 export const TOKENS = {
@@ -898,7 +1054,7 @@ const legend = (o) => ({
 // (`xp.at3`: other thresholds with three or more players, where what it counts comes faster)
 export const LEGENDS = Object.fromEntries([
   legend({ id: 'legend-halvard', name: 'Halvard, the Unbroken', cost: 3, factions: ['radiant', 'verdant'], subtype: 'Warden',
-    levels: [[1, 6, ['guard']], [2, 7, ['guard']], [3, 9, ['guard']]], xp: { what: 'guard', at: [4, 10], unit: 'Guard creatures of yours at the start of your turns', short: 'Guard-turns' },
+    levels: [[1, 6, ['guard']], [2, 7, ['guard']], [3, 9, ['guard']]], xp: { what: 'guard', at: [5, 11], unit: 'Guard creatures of yours at the start of your turns', short: 'Guard-turns' },
     l2: 'Your creatures with Guard can block three attackers.', l3: 'Your creatures with Guard have Power equal to their Vitality.',
     flavor: 'Every blow he takes, he remembers.',
     art: 'A towering armoured warden with a great shield planted in the ground before him, roots and vines climbing his armour, golden light behind him and a line of shields at his back.' }),
@@ -922,17 +1078,49 @@ export const LEGENDS = Object.fromEntries([
     l2: 'Your tokens get +1/+0.', l3: 'Whenever one of your tokens dies, each opponent loses 1 Life.',
     flavor: 'Every light she lets go comes home.',
     art: 'A great luminous moth with wings like stained-glass lanterns hovering over a dark meadow, hundreds of small glowing moths spiralling out from beneath her wings.' }),
+  // (`since`: the Ultra version that brought it; older games choose among the first five)
+  legend({ id: 'legend-marisol', since: 4, name: 'Marisol, the Harbormistress', cost: 3, factions: ['verdant', 'tide'], subtype: 'Human',
+    levels: [[2, 4, ['reach']], [3, 5, ['reach']], [4, 6, ['reach']]], xp: { what: 'invest', at: [3, 6], unit: 'times you Invest', short: 'Invests' },
+    l2: 'Whenever you Invest, draw a card.', l3: 'Your cards that cost 7 or more cost 2 less.',
+    flavor: 'Every ship that docks pays her a little.',
+    art: 'A harbormistress on a busy river dock with a ledger under one arm and a lantern raised, barges loaded with grain and fish behind her, sunset over the delta.' }),
+  legend({ id: 'legend-morrow', since: 4, name: 'Morrow, the Bone Gardener', cost: 3, factions: ['umbral', 'verdant'], subtype: 'Human',
+    levels: [[2, 3, []], [3, 4, []], [4, 5, ['venom']]], xp: { what: 'sac', at: [3, 7], unit: 'creatures you sacrifice', short: 'sacrifices' },
+    l2: 'Whenever you sacrifice a creature that isn’t a token, create a 1/1 Spirit.', l3: 'With an Offering, your cards do their stronger effect twice.',
+    flavor: 'What she buries, blooms.',
+    art: 'An old gardener in a hooded cloak tending a moonlit graveyard garden, pale flowers and glowing mushrooms growing out of the graves, a lantern hanging from her spade.' }),
+  legend({ id: 'legend-mirelle', since: 4, name: 'Mirelle, the Mask-Maker', cost: 3, factions: ['tide', 'umbral'], subtype: 'Human',
+    levels: [[2, 3, []], [3, 4, ['swift']], [4, 5, ['swift']]], xp: { what: 'trick', at: [3, 7], unit: 'Tricks you play and Traps of yours that spring', short: 'tricks' },
+    l2: 'Your Tricks and Traps cost 1 less.', l3: 'Whenever you play a Trick, draw a card.',
+    flavor: 'She has a face for every occasion.',
+    art: 'A slender figure in a long coat holding a glowing half-mask up before her face, dozens of masks hanging on the walls of a moonlit workshop by the sea.' }),
+  legend({ id: 'legend-seren', since: 4, name: 'Seren, the Storm-Scholar', cost: 3, factions: ['ember', 'tide'], subtype: 'Human Wizard',
+    levels: [[2, 3, []], [3, 4, []], [4, 5, ['soar']]], xp: { what: 'spell', at: [5, 12], unit: 'Spells you play', short: 'Spells' },
+    l2: 'Whenever you play your second Spell in a turn, draw a card.', l3: 'Whenever you play a Spell, deal 1 damage to each opponent.',
+    flavor: 'She took notes on the lightning. Then it took notes on her.',
+    art: 'A scholar on top of a sea tower in a storm, an open book in one hand, lightning and fire coiling around her raised staff.' }),
+  legend({ id: 'legend-oriel', since: 4, name: 'Oriel, Lady of Storms', cost: 4, factions: ['tide', 'radiant'], subtype: 'Sylph',
+    levels: [[1, 4, ['soar']], [2, 5, ['soar']], [3, 6, ['soar']]], xp: { what: 'field', at: [3, 8], unit: 'Fields you play, and turns you start with your Field in play', short: 'storms' },
+    l2: 'Whenever you play a Field, draw a card.', l3: 'At the start of your turn, if your Field is in play, deal 2 damage to each opponent.',
+    flavor: 'She doesn’t predict the weather. She orders it.',
+    art: 'A winged lady in a cloak of cloud floating above a sunlit sea, one hand calling down rain and the other calling up the sun.' }),
+  legend({ id: 'legend-kasimir', since: 4, name: 'Kasimir, the First Blade', cost: 2, factions: ['ember', 'radiant'], subtype: 'Human Knight',
+    levels: [[2, 3, ['rush']], [3, 4, ['rush']], [4, 5, ['rush', 'overrun']]], xp: { what: 'hit', at: [4, 10], unit: 'times your creatures hit an opponent', short: 'hits' },
+    l2: 'Your creatures that cost 2 or less get +1/+0.', l3: 'Each of your creatures that hits an opponent in a fight deals 1 more.',
+    flavor: 'He has never once arrived second.',
+    art: 'A young knight in scorched gold armour leaping down from a broken wall into battle, sword blazing, a banner streaming behind him at dawn.' }),
 ].map((c) => [c.id, c]));
 
 // A deck's Legend in an Ultra game: a starter's own, or else the one whose
 // factions the deck plays most (a one-faction Legend counts its faction twice).
-export function legendFor(deckIds) {
+// `v`: the game's Ultra version (older games choose among the Legends they had).
+export function legendFor(deckIds, v = ULTRA_V) {
   const key = (ids) => [...ids].sort().join(',');
-  const own = ULTRA_STARTERS.find((d) => key(Object.entries(d.counts).flatMap(([id, k]) => Array(k).fill(id))) === key(deckIds));
+  const own = ULTRA_STARTERS.find((d) => (BY_ID[d.legend].since || 2) <= v && key(Object.entries(d.counts).flatMap(([id, k]) => Array(k).fill(id))) === key(deckIds));
   if (own) return own.legend;
   const n = factionCounts(deckIds);
   const score = (L) => L.factions.reduce((t, f) => t + n[f], 0) * (L.factions.length === 1 ? 2 : 1);
-  return Object.values(LEGENDS).reduce((a, L) => (score(L) > score(a) ? L : a)).id;
+  return Object.values(LEGENDS).filter((L) => (L.since || 2) <= v).reduce((a, L) => (score(L) > score(a) ? L : a)).id;
 }
 
 export const BY_ID = Object.fromEntries([...CARDS, ...ULTRA, ...Object.values(TOKENS), ...Object.values(CHAMPIONS), ...Object.values(LEGENDS)].map((c) => [c.id, c]));
@@ -979,8 +1167,8 @@ export const STARTERS = [
 export const ULTRA_STARTERS = [
   { id: 'ultra-the-wall', name: 'The Wall', factions: ['radiant', 'verdant'], legend: 'legend-halvard',
     pitch: 'Guards that strengthen each other, heal every turn and grow each time they hold. Then something huge behind them.',
-    counts: deck(['shield-captain', 'bastion-wall', 'field-medic', 'rootmother', 'shieldbearer', 'sproutling', 'menders-hymn'],
-      ['deep-roots', 'tithe-of-light', 'sanctuary-spring', 'heartwood-totem', 'patient-giant', 'dawnwatch-knight', 'worldtree-stag', 'bark-graft',
+    counts: deck(['shield-captain', 'field-medic', 'rootmother', 'shieldbearer', 'sproutling', 'menders-hymn'],
+      ['bastion-wall', 'seedling', 'deep-roots', 'tithe-of-light', 'sanctuary-spring', 'heartwood-totem', 'patient-giant', 'dawnwatch-knight', 'worldtree-stag', 'bark-graft',
         'little-gardener', 'season-of-plenty', 'ward-of-dawn', 'mossback', 'wild-growth', 'thornback-archer', 'mirror-shield', 'pitfall']) },
   { id: 'ultra-sky-and-arrows', name: 'Sky and Arrows', factions: ['tide', 'verdant', 'radiant'], legend: 'legend-aeris',
     pitch: 'Fliers and glass cannons behind Shields that stack, covered by archers, and a library that keeps the cards coming.',
@@ -1000,6 +1188,37 @@ export const ULTRA_STARTERS = [
   { id: 'ultra-endless-swarm', name: 'Endless Swarm', factions: ['radiant', 'umbral'], legend: 'legend-lumen',
     pitch: 'Moths that multiply and Spirits that keep coming; every one that falls makes the rest stronger.',
     counts: deck(['lantern-moth', 'gravewarden', 'twin-souls', 'choirmother', 'lantern-ferryman', 'grave-rite', 'tithe-of-light', 'standard-keeper'],
-      ['dawnsinger', 'field-medic', 'menders-hymn', 'sanctuary-spring', 'beacon-of-hope', 'the-bright-choir', 'lightweaver', 'street-recruit',
+      ['shieldbearer', 'field-medic', 'menders-hymn', 'sanctuary-spring', 'beacon-of-hope', 'the-bright-choir', 'lightweaver', 'street-recruit',
         'kindly-undertaker', 'aegis-acolyte', 'shackles', 'a-thousand-lights', 'ambush-at-dawn', 'grave-snare']) },
+  // (version 4, 2026-11-08: one for each way to build that had no deck of its own)
+  { id: 'ultra-the-long-game', name: 'The Long Game', factions: ['verdant', 'tide'], legend: 'legend-marisol',
+    pitch: 'Build an economy first: Invest, save Energy, draw extra cards. Then spend 10 or 12 Energy a turn on things nobody else can afford.',
+    counts: deck(['pearl-diver', 'grove-druid', 'brook-hydra', 'compound-interest', 'tide-of-fortune', 'wavewarden', 'patient-giant', 'canopy-archer', 'the-merchant-tortoise'],
+      ['the-granary', 'ancient-roots', 'grand-illusion', 'tidecallers-library', 'mossback', 'windborne-sage',
+        'deepwater-leviathan', 'worldtree-stag', 'one-more-wave', 'the-forest-remembers', 'pitfall', 'fog-bank']) },
+  { id: 'ultra-rot-and-bloom', name: 'Rot and Bloom', factions: ['umbral', 'verdant'], legend: 'legend-morrow',
+    pitch: 'Sacrifice your own creatures for power: every Offering draws cards, hits harder or Invests, and the dead come back to dance.',
+    counts: deck(['mycelium-bud', 'hungry-ghoul', 'mire-witch', 'grave-harvest', 'bone-lance', 'bone-tithe', 'seedling', 'gravewarden'],
+      ['sproutling', 'kindly-undertaker', 'bone-altar', 'unearth', 'gloomweb-spider', 'lantern-ferryman', 'borrowed-time',
+        'something-beneath', 'the-barrow-queen', 'danse-macabre', 'grave-snare', 'pitfall', 'blood-pact', 'grove-druid']) },
+  { id: 'ultra-smoke-and-mirrors', name: 'Smoke and Mirrors', factions: ['tide', 'umbral'], legend: 'legend-mirelle',
+    pitch: 'Tricks, Traps and Ambushes: nothing on your side is what it looks like, and their biggest creature ends up fighting their other one.',
+    counts: deck(['turnabout', 'bluff', 'gloom-stalker', 'reed-lurker', 'not-yet', 'the-puppeteer', 'curious-wisp', 'carrion-wyrm'],
+      ['hungry-ghoul', 'fog-bank', 'grave-snare', 'bonepicker', 'kiss-of-night', 'marsh-adder',
+        'forbidden-archivist', 'memory-diver', 'tidal-mimic', 'windborne-sage', 'tide-of-fortune', 'blood-pact', 'deepwater-leviathan', 'grand-illusion']) },
+  { id: 'ultra-storm-rising', name: 'Storm Rising', factions: ['ember', 'tide'], legend: 'legend-seren',
+    pitch: 'Spell after spell in one turn: each one grows your apprentices, the next one costs less, and the last storm counts them all.',
+    counts: deck(['static-spark', 'ripple', 'spellwright-apprentice', 'scorch', 'crescendo', 'lightning-theorist', 'mirror-mage', 'wavewarden', 'stoke-the-furnace'],
+      ['second-thought', 'the-arcane-well', 'curious-wisp', 'memory-diver', 'wildfire',
+        'tide-of-fortune', 'windborne-sage', 'phoenix-of-the-last-spark', 'one-more-wave', 'the-last-storm', 'backdraft', 'fog-bank']) },
+  { id: 'ultra-weathermakers', name: 'Weathermakers', factions: ['tide', 'radiant'], legend: 'legend-oriel',
+    pitch: 'Choose the weather: Fields that suit your fliers and slow everyone else, and the Eye of the Storm, where only you decide.',
+    counts: deck(['weatherwitch', 'storm-shepherd', 'gale-winds', 'lantern-moth', 'prism-duelist', 'keeper-of-the-skies', 'cloud-ray'],
+      ['rolling-fog', 'hallowed-ground', 'sanctuary-spring', 'the-eye-of-the-storm', 'sky-warden', 'windborne-sage', 'seraphine', 'tithe-of-light',
+        'tide-of-fortune', 'aegis-acolyte', 'ward-of-dawn', 'mirror-shield', 'fog-bank', 'curious-wisp', 'shieldwright', 'wavewarden']) },
+  { id: 'ultra-the-charge', name: 'The Charge', factions: ['ember', 'radiant'], legend: 'legend-kasimir',
+    pitch: 'Hit first and hit often: Rush, drums and banners, and a War Chest that turns every hit into Energy for the final charge.',
+    counts: deck(['ash-squire', 'street-recruit', 'spark-runner', 'war-drummer', 'blitz-captain', 'sunglass-lancer', 'war-chest', 'cinderling', 'dawnwatch-knight'],
+      ['shieldbearer', 'kindle', 'rally', 'scorch', 'banner-of-the-charge', 'standard-keeper',
+        'ember-duelist', 'dawn-captain', 'phoenix-of-the-last-spark', 'hour-of-glory', 'backdraft', 'mirror-shield']) },
 ];

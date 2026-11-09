@@ -2191,6 +2191,289 @@ test('Ultra v3: strikes in a fight are simultaneous (a wound taken in the exchan
   }
 });
 
+// ── SATTC Ultra, version 4: six more ways to build ───────────────────
+function u4scene(opts = {}) {
+  const s = uscene(opts);
+  s.uv = 4;
+  return s;
+}
+const inHand = (s, cid, p = A) => addCard(s, cid, p, 'hand');
+// a Legend already on the table, as its player's Legend
+const legendOn = (s, cid, p = A) => { const L = ub(s, cid, p); Object.assign(s.players[p], { champ: cid, legend: L.uid, cxp: 0 }); return L; };
+
+test('Ultra v4: the six new starters bring their Legends; an older game chooses among the first five', () => {
+  const fresh = ULTRA_STARTERS.filter((d) => (BY_ID[d.legend].since || 2) >= 4);
+  eq(fresh.length, 6, 'six new starters');
+  for (const d of fresh) {
+    eq(legendFor(cardList(d.counts)), d.legend, `${d.name}’s deck gets its own Legend`);
+    ok((BY_ID[legendFor(cardList(d.counts), 3)].since || 2) < 4, `in a version 3 game ${d.name} gets one of the first five Legends`);
+  }
+  const players = fresh.slice(0, 2).map((d) => ({ name: d.name, deck: cardList(d.counts) }));
+  const s = newGame({ seed: 4, players, startEnergy: 3, ultra: ULTRA_V });
+  eq(s.cards[s.players[0].legend].cid, fresh[0].legend, 'a new game gives the new Legend');
+  const old = newGame({ seed: 4, players, startEnergy: 3, ultra: 3 });
+  ok(!(BY_ID[old.cards[old.players[0].legend].cid].since >= 4), 'a version 3 game (an old save) keeps an old one');
+});
+
+test('Ultra v4, The Long Game: the Granary saves Energy; Pearl Diver Invests; Compound Interest; the Tortoise', () => {
+  let s = u4scene({ energy: 6 });
+  const barn = addCard(s, 'the-granary', A, 'relics');
+  deckOf(s, A, 6); deckOf(s, B, 6);
+  s.players[A].energy = 5;
+  s = endT(s);
+  eq(s.cards[barn.uid].stored, 3, 'the Granary saves 3 of the 5 left');
+  s = endT(s);
+  eq(s.players[A].energy, s.players[A].maxEnergy + 3, 'its owner starts the next turn with 3 more');
+  eq(s.cards[barn.uid].stored, 0, 'and it is empty again');
+  let t = u4scene({ energy: 6 });
+  const diver = ub(t, 'pearl-diver', A);
+  t = act(t, { t: 'use', p: A, uid: diver.uid });
+  eq(t.players[A].maxEnergy, 7, 'Pearl Diver: Invest');
+  eq(t.players[A].energy, 6 - BY_ID['pearl-diver'].ability.cost, 'for its ability’s cost');
+  ok(err(t, { t: 'use', p: A, uid: diver.uid }), 'once a turn');
+  let u = u4scene({ energy: 9 });
+  deckOf(u, A, 5);
+  u = play(u, inHand(u, 'compound-interest').uid);
+  eq(u.players[A].hand.length, 3, 'Compound Interest: a card for every 3 maximum Energy (9: three)');
+  const w = u4scene({ energy: 10 });
+  const tort = ub(w, 'the-merchant-tortoise', A);
+  eq(power(w, tort), 10, 'the Tortoise’s Power is its controller’s maximum Energy');
+  eq(vitality(w, tort), 10, 'and so is its Vitality');
+});
+
+test('Ultra v4, Rot and Bloom: Offerings, Bone Tithe, the Mire Witch, Danse Macabre', () => {
+  const s = u4scene({ energy: 8 });
+  deckOf(s, A, 10);
+  const fod = ub(s, 'grave-rat', A);
+  const gh = inHand(s, 'grave-harvest');
+  ok(legalActions(s, A).some((a) => a.uid === gh.uid && a.offer === fod.uid), 'an Offering is one of the ways to play it');
+  let t = play(s, gh.uid);
+  eq(t.players[A].hand.length, 1, 'Grave Harvest without an Offering: draw 1');
+  t = play(s, gh.uid, { offer: fod.uid });
+  eq(t.cards[fod.uid].zone, 'discard', 'the Offering is sacrificed');
+  eq(t.players[A].hand.length, 3, 'with an Offering: draw 3');
+  let u = u4scene({ energy: 8 });
+  const f2 = ub(u, 'grave-rat', A);
+  u = play(u, inHand(u, 'bone-lance').uid, { offer: f2.uid, target: { p: B } });
+  eq(u.players[B].life, 25, 'Bone Lance with an Offering: 5 damage');
+  const u2 = u4scene({ energy: 8 });
+  const f3 = ub(u2, 'grave-rat', A), bl = inHand(u2, 'bone-lance');
+  ok(err(u2, { t: 'play', p: A, uid: bl.uid, offer: f3.uid, target: { uid: f3.uid } }), 'an Offering can’t also be the target');
+  let w = u4scene({ energy: 6 });
+  deckOf(w, A, 3);
+  const witch = ub(w, 'mire-witch', A), rat = ub(w, 'grave-rat', A);
+  w = play(w, inHand(w, 'bone-tithe').uid, { sac: rat.uid });
+  eq(w.players[A].maxEnergy, 7, 'Bone Tithe: Invest');
+  eq(w.players[A].hand.length, 1, 'and draw a card');
+  eq(w.players[B].life, 29, 'the Mire Witch: each opponent loses 1 Life');
+  eq(w.players[A].life, 32, 'and you gain 2');
+  eq(w.cards[witch.uid].zone, 'board', 'the Witch stays');
+  let d = u4scene({ energy: 8 });
+  deckOf(d, A, 3); deckOf(d, B, 3);
+  const dead = ['grave-rat', 'mossback', 'hungry-ghoul', 'marsh-adder', 'seedling'].map((cid) => addCard(d, cid, A, 'discard'));
+  ub(d, 'mire-witch', A);
+  d = play(d, inHand(d, 'danse-macabre').uid, { picks: dead.slice(0, 4).map((c) => c.uid) });
+  eq(d.players[A].board.length, 5, 'Danse Macabre: four rise (beside the Witch)');
+  ok(canAttack(d, A, d.cards[dead[1].uid]), 'they have Rush');
+  const life = d.players[B].life;
+  d = endT(d);
+  ok(dead.slice(0, 4).every((c) => d.cards[c.uid].zone === 'discard'), 'at the end of the turn they are sacrificed');
+  eq(d.players[B].life, life - 4, 'each one a sacrifice: the Witch drains 4');
+});
+
+test('Ultra v4, Morrow: levels with sacrifices; a Spirit from each that isn’t a token; Offerings pay twice', () => {
+  let s = u4scene({ energy: 8 });
+  addCard(s, 'legend-morrow', A, 'legend');
+  deckOf(s, A, 10);
+  const rat = ub(s, 'grave-rat', A);
+  s = play(s, inHand(s, 'bone-tithe').uid, { sac: rat.uid });
+  eq(s.players[A].cxp, 1, 'a sacrifice is XP, even with Morrow still waiting');
+  let t = u4scene({ energy: 12 });
+  legendOn(t, 'legend-morrow');
+  lvl(t, A, 2);
+  deckOf(t, A, 12);
+  const r2 = ub(t, 'grave-rat', A);
+  t = play(t, inHand(t, 'bone-tithe').uid, { sac: r2.uid });
+  eq(onBoard(t, A, 'spirit').length, 1, 'Level 2: a Spirit rises from the sacrificed creature');
+  t = play(t, inHand(t, 'bone-tithe').uid, { sac: onBoard(t, A, 'spirit')[0] });
+  eq(onBoard(t, A, 'spirit').length, 0, 'but none from a token');
+  lvl(t, A, 3);
+  const r3 = ub(t, 'grave-rat', A), before = t.players[A].hand.length;
+  t = play(t, inHand(t, 'grave-harvest').uid, { offer: r3.uid });
+  eq(t.players[A].hand.length - before, 6, 'Level 3: an Offering pays twice (Grave Harvest draws 3 and 3)');
+});
+
+test('Ultra v4, Smoke and Mirrors: Turnabout, Bluff, Ambush, the Puppeteer, Grand Illusion', () => {
+  let s = u4scene({ energy: 6 });
+  deckOf(s, A, 3);
+  const wall = ub(s, 'bastion-wall', B);
+  s = play(s, inHand(s, 'turnabout').uid, { target: { uid: wall.uid } });
+  eq(s.cards[wall.uid].zone, 'discard', 'Turnabout: a 0/6 becomes 6/0, and dies');
+  eq(s.players[A].hand.length, 1, 'and you draw a card');
+  let t = u4scene({ energy: 6 });
+  deckOf(t, A, 3); deckOf(t, B, 3);
+  const wav = ub(t, 'wavewarden', A);
+  t = play(t, inHand(t, 'turnabout').uid, { target: { uid: wav.uid } });
+  ok(power(t, t.cards[wav.uid]) === 5 && vitality(t, t.cards[wav.uid]) === 1, 'a 1/5 becomes 5/1 this turn');
+  t = endT(t);
+  ok(power(t, t.cards[wav.uid]) === 1 && vitality(t, t.cards[wav.uid]) === 5, 'and 1/5 again after it');
+  let b = u4scene({ energy: 6 });
+  addCard(b, 'bluff', B, 'traps');
+  const att = ub(b, 'grave-rat', A);
+  b = attack(b, att.uid);
+  eq(b.players[B].maxEnergy, 7, 'Bluff: attacked, its owner Invests');
+  eq(b.players[B].traps.length, 0, 'and it is spent');
+  let m = u4scene({ energy: 6 });
+  const big = ub(m, 'mossback', A), lurker = inHand(m, 'reed-lurker', B);
+  m = attack(m, big.uid);
+  m = act(m, { t: 'play', p: B, uid: lurker.uid });
+  eq(m.cards[lurker.uid].zone, 'board', 'Ambush: played when attacked, before blocking');
+  ok(canBlock(m, m.cards[lurker.uid], m.cards[big.uid]), 'and it can block');
+  m = fight(m, [[lurker.uid, big.uid]]);
+  eq(m.players[B].life, 30, 'so the attack is blocked');
+  const plain = u4scene({ energy: 6 });
+  const big2 = ub(plain, 'mossback', A), rat = inHand(plain, 'grave-rat', B);
+  ok(err(attack(plain, big2.uid), { t: 'play', p: B, uid: rat.uid }), 'a creature without Ambush can’t come in during a fight');
+  let p = u4scene({ energy: 6 });
+  const pup = ub(p, 'the-puppeteer', A), x = ub(p, 'mossback', B), y = ub(p, 'grave-rat', B);
+  ok(useOptions(p, A, pup).some((a) => a.fighter === x.uid && a.target?.uid === y.uid), 'the Puppeteer can pit one enemy creature against another');
+  p = act(p, { t: 'use', p: A, uid: pup.uid, fighter: x.uid, target: { uid: y.uid } });
+  eq(p.cards[y.uid].zone, 'discard', 'the Mossback fights the Rat, and kills it');
+  ok(p.cards[x.uid].dmg >= 1, 'and the Rat strikes back');
+  let g = u4scene({ energy: 7 });
+  deckOf(g, A, 5);
+  const mine = ub(g, 'mossback', A, { pP: 2, pV: 2 }), tok = ub(g, 'spirit', A), theirs = ub(g, 'grave-rat', B);
+  g = play(g, inHand(g, 'grand-illusion').uid);
+  eq(g.players[A].board.length + g.players[B].board.length, 0, 'Grand Illusion: every creature goes home');
+  eq(g.cards[tok.uid].zone, 'gone', 'a token is simply gone');
+  ok(g.players[B].hand.includes(theirs.uid) && g.players[A].hand.includes(mine.uid), 'the rest to their owners’ hands');
+  eq(g.players[A].hand.length, 3, 'and a card for each of yours (two)');
+});
+
+test('Ultra v4, Storm Rising: the Apprentice, Static Spark, the Arcane Well, the Last Storm, Seren', () => {
+  let s = u4scene({ energy: 6 });
+  const app = ub(s, 'spellwright-apprentice', A);
+  s = play(s, inHand(s, 'static-spark').uid, { target: { p: B } });
+  eq(s.players[B].life, 29, 'Static Spark: 1 damage');
+  eq(s.players[A].energy, 6, 'for nothing');
+  ok(power(s, s.cards[app.uid]) === 2 && vitality(s, s.cards[app.uid]) === 3, 'the Apprentice grows +1/+1 for good with each Spell');
+  const w = u4scene({ energy: 6 });
+  addCard(w, 'the-arcane-well', A, 'relics');
+  eq(costOf(w, A, inHand(w, 'stoke-the-furnace')), BY_ID['stoke-the-furnace'].cost - 1, 'the Arcane Well: Spells cost 1 less');
+  eq(costOf(w, A, inHand(w, 'scorch')), 1, 'but not less than 1');
+  eq(costOf(w, A, inHand(w, 'static-spark')), 0, '(a free one stays free)');
+  let l = u4scene({ energy: 7 });
+  for (const cid of ['scorch', 'ripple', 'kindle', 'wildfire', 'mossback']) addCard(l, cid, A, 'discard');
+  l = play(l, inHand(l, 'the-last-storm').uid, { target: { p: B } });
+  eq(l.players[B].life, 26, 'the Last Storm: 1 damage for each Spell in your discard pile (four)');
+  let r = u4scene({ energy: 6 });
+  legendOn(r, 'legend-seren');
+  lvl(r, A, 2);
+  deckOf(r, A, 5);
+  r = play(r, inHand(r, 'static-spark').uid, { target: { p: B } });
+  r = play(r, inHand(r, 'static-spark').uid, { target: { p: B } });
+  eq(r.players[A].hand.length, 1, 'Seren at Level 2: the second Spell in a turn draws a card');
+  lvl(r, A, 3);
+  const life = r.players[B].life;
+  r = play(r, inHand(r, 'static-spark').uid, { target: { p: B } });
+  eq(r.players[B].life, life - 2, 'Level 3: every Spell also deals 1 damage to each opponent');
+});
+
+test('Ultra v4, Weathermakers: your Field, the Weatherwitch, Gale Winds, the Keeper, the Eye, Rolling Fog, Hallowed Ground', () => {
+  let s = u4scene({ energy: 6 });
+  deckOf(s, A, 5);
+  const old = addCard(s, 'gale-winds', A, 'discard');
+  s = play(s, inHand(s, 'weatherwitch').uid, { pick: old.uid });
+  ok(s.players[A].hand.includes(old.uid), 'the Weatherwitch brings a Field back to your hand');
+  eq(costOf(s, A, s.cards[old.uid]), BY_ID['gale-winds'].cost - 1, 'and your Fields cost 1 less');
+  const shep = ub(s, 'storm-shepherd', A);
+  eq(power(s, shep), 2, 'Storm Shepherd without your Field: 2/3');
+  s = play(s, old.uid);
+  eq(s.players[A].hand.length, 1, 'Gale Winds draws a card as it arrives');
+  ok(power(s, s.cards[shep.uid]) === 5 && vitality(s, s.cards[shep.uid]) === 5, 'your Field: +2/+1, and Gale Winds gives Soar +1/+1');
+  const k = u4scene({ energy: 9 });
+  ub(k, 'keeper-of-the-skies', B);
+  eq(costOf(k, A, inHand(k, 'rolling-fog')), BY_ID['rolling-fog'].cost + 3, 'the Keeper of the Skies: opponents’ Fields cost 3 more');
+  let e = u4scene({ energy: 8 });
+  deckOf(e, A, 3); deckOf(e, B, 3);
+  const mine = ub(e, 'grave-rat', A);
+  e = play(e, inHand(e, 'the-eye-of-the-storm').uid);
+  ok(power(e, e.cards[mine.uid]) === 2 && hasKw(e, e.cards[mine.uid], 'soar'), 'the Eye of the Storm: your creatures get +1/+1 and Soar');
+  e = endT(e);
+  ok(err(e, { t: 'play', p: B, uid: inHand(e, 'rolling-fog', B).uid }), 'and opponents can’t play Fields');
+  let f = u4scene({ energy: 6 });
+  const three = [ub(f, 'grave-rat', A), ub(f, 'grave-rat', A), ub(f, 'grave-rat', A)].map((c) => c.uid);
+  f = play(f, inHand(f, 'rolling-fog').uid);
+  ok(err(f, { t: 'attack', p: A, target: B, att: three }), 'Rolling Fog: no more than two attackers');
+  ok(!err(f, { t: 'attack', p: A, target: B, att: three.slice(0, 2) }), 'two are fine');
+  let h = u4scene({ energy: 6 });
+  h = play(h, inHand(h, 'hallowed-ground').uid);
+  h = play(h, inHand(h, 'ash-squire').uid);
+  ok(!canAttack(h, A, h.cards[h.players[A].board[0]]), 'Hallowed Ground: a creature with Rush still waits a turn');
+});
+
+test('Ultra v4, The Charge: the War Drummer, the War Chest, the Blitz Captain, Hour of Glory, Kasimir', () => {
+  let s = u4scene({ energy: 6 });
+  ub(s, 'war-drummer', A);
+  const sq = ub(s, 'ash-squire', A);
+  addCard(s, 'war-chest', A, 'relics');
+  eq(power(s, sq), 2, 'the Squire at home: 2');
+  s = fight(attack(s, [sq.uid]));
+  eq(s.players[B].life, 27, 'attacking, with the War Drummer: it hits for 3');
+  eq(s.players[A].maxEnergy, 7, 'and the War Chest pays out: Invest');
+  let b = u4scene({ energy: 10 });
+  const fresh = ub(b, 'grave-rat', A);
+  b.cards[fresh.uid].played = b.turn;
+  ok(!canAttack(b, A, b.cards[fresh.uid]), 'a newcomer can’t attack');
+  b = play(b, inHand(b, 'blitz-captain').uid);
+  ok(canAttack(b, A, b.cards[fresh.uid]), 'the Blitz Captain gives the others Rush this turn');
+  eq(power(b, b.cards[fresh.uid]), 2, 'and +1/+0');
+  b = play(b, inHand(b, 'hour-of-glory').uid);
+  eq(power(b, b.cards[fresh.uid]), 5, 'Hour of Glory: +3/+0 more');
+  let k = u4scene({ energy: 6 });
+  legendOn(k, 'legend-kasimir');
+  const r = ub(k, 'grave-rat', A);
+  lvl(k, A, 2);
+  eq(power(k, r), 2, 'Kasimir at Level 2: your creatures that cost 2 or less get +1/+0');
+  lvl(k, A, 3);
+  k = fight(attack(k, [r.uid]));
+  eq(k.players[B].life, 27, 'Level 3: each one that hits deals 1 more (2 + 1)');
+});
+
+test('Ultra v4: Marisol, Mirelle and Oriel', () => {
+  let s = u4scene({ energy: 8 });
+  legendOn(s, 'legend-marisol');
+  deckOf(s, A, 5);
+  s = play(s, inHand(s, 'ancient-roots').uid);
+  eq(s.players[A].cxp, 1, 'Marisol: an Invest is XP');
+  lvl(s, A, 2);
+  const n = s.players[A].hand.length;
+  s = play(s, inHand(s, 'ancient-roots').uid);
+  eq(s.players[A].hand.length, n + 1, 'Level 2: each Invest draws a card');
+  lvl(s, A, 3);
+  eq(costOf(s, A, inHand(s, 'the-merchant-tortoise')), BY_ID['the-merchant-tortoise'].cost - 2, 'Level 3: cards that cost 7 or more cost 2 less');
+  let m = u4scene({ energy: 6 });
+  const M = legendOn(m, 'legend-mirelle');
+  deckOf(m, A, 5);
+  m = play(m, inHand(m, 'turnabout').uid, { target: { uid: M.uid } });
+  eq(m.players[A].cxp, 1, 'Mirelle: a Trick is XP');
+  lvl(m, A, 2);
+  eq(costOf(m, A, inHand(m, 'grave-snare')), BY_ID['grave-snare'].cost - 1, 'Level 2: Traps cost 1 less');
+  eq(costOf(m, A, inHand(m, 'turnabout')), BY_ID.turnabout.cost - 1, 'and Tricks');
+  lvl(m, A, 3);
+  const h0 = m.players[A].hand.length;
+  m = play(m, inHand(m, 'turnabout').uid, { target: { uid: M.uid } });
+  eq(m.players[A].hand.length, h0 + 2, 'Level 3: a Trick draws a card (Turnabout draws its own too)');
+  let o = u4scene({ energy: 6 });
+  legendOn(o, 'legend-oriel');
+  deckOf(o, A, 5); deckOf(o, B, 5);
+  o = play(o, inHand(o, 'hallowed-ground').uid);
+  eq(o.players[A].cxp, 1, 'Oriel: playing a Field is XP');
+  lvl(o, A, 3);
+  o = endT(o); o = endT(o);
+  eq(o.players[B].life, 28, 'Level 3: with your Field in play at the start of your turn, 2 damage to each opponent');
+});
+
 // ── fuzz: random legal play ─────────────────────────────────────────
 // (`ultra`: SATTC Ultra games, with the Ultra starter decks)
 function fuzz(games, ultra = false) {

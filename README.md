@@ -45,6 +45,7 @@ no build step.
 | `tools/check-tutorial.mjs` | Plays the lesson script against the engine and prints the table at every step |
 | `tools/simulate.mjs` | Bot vs bot across the starter decks (`node tools/simulate.mjs 40`) |
 | `tools/lab.mjs` | The tournament lab: bots with their own Ultra deck and play style (ai.js `STYLES`) evolve in winner-stays duels; it reports the champions (and how they do against the starters), the cards winners keep and drop, and games that look broken (`node tools/lab.mjs 20 24 8 <seed>`; `KNOBS='{"growthCap":true}'` tries a rule switch) |
+| `tools/elo.mjs` | The Elo ladder: bots from Random to Planner play Ultra duels on the same deals both ways, and a Bradley–Terry fit rates them, the practice bot at 1500 (`node tools/elo.mjs 30 <seed>`; `BOTS="Practice,Planner"` for some) |
 | `tools/phone.html` | 390×844 frame for screenshots, e.g. `tools/phone.html?demo=3&moves=14` |
 | `art/` | Baked pictures (`<card-id>.webp`) of the drawn art, shown in every small view; `art/raw/` keeps the PNGs locally |
 | `tools/bake-art.mjs` | Renders each card's drawn art once in headless Chrome and saves it as WebP (+ `js/art-manifest.js`). Re-run after changing any scene |
@@ -658,6 +659,98 @@ what loops forever.
     starter.
 - Version 3 games are set up with `ultra: 3`. Version 2 games keep the old fight
   order and no cap.
+
+## SATTC Ultra, version 4: six more ways to build (2026-11-08)
+
+The user asked for the strategies still missing a deck (economy and extra
+cards, necromancers who sacrifice for power, tricksters, Spells, controlling
+the Field, hitting early), with one rule across all of them: the really
+powerful things only come with Energy beyond the usual 6. So each new deck has
+its own way to Invest, its top card costs 7 or more, and it brings a Legend
+that levels up from its plan. `ultra-plan.md` ("Version 4") has the table.
+
+- **31 cards** (n 142–172) and **six Legends** (`since: 4`):
+  - The Long Game: The Granary, Pearl Diver, Compound Interest, The Merchant Tortoise; Marisol.
+  - Rot and Bloom: Grave Harvest, Bone Lance, Bone Tithe, Mire Witch, Danse Macabre; Morrow.
+  - Smoke and Mirrors: Turnabout, Bluff, Reed Lurker, Gloom Stalker, The Puppeteer, Grand Illusion; Mirelle.
+  - Storm Rising: Spellwright Apprentice, Static Spark, The Arcane Well, The Last Storm; Seren.
+  - Weathermakers: Weatherwitch, Storm Shepherd, Gale Winds, Rolling Fog, Hallowed Ground, Keeper of the Skies, The Eye of the Storm; Oriel.
+  - The Charge: Ash Squire, War Drummer, War Chest, Blitz Captain, Hour of Glory; Kasimir.
+- **New words:**
+  - **Ambush**: a creature you can play in a fight like a Trick. Played before
+    you block, it can block. The block screen offers it.
+  - **Offering**: as you play the card, you may sacrifice a creature of yours
+    for the stronger effect. On the table it is the first step, with a
+    "No Offering" button; `a.offer` in an action.
+  - **"Your Field"**: one you played (`fieldMine`). The banner says whose it is.
+- **Engine** (`js/engine.js`):
+  - `v4Bonus` (Power and Vitality from the Field and the new cards), `v4Price`
+    (what the new cards change about costs), `sacrificed` (every sacrifice,
+    for the Mire Witch and Morrow), `offering`, `fieldArrives`, `spellPlayed`.
+  - The Granary stores Energy at the end of a turn (`stored`) and gives it
+    back at the start of the next.
+  - The Puppeteer's ability takes `fighter` and `target`. Rolling Fog checks
+    attacks; Hallowed Ground checks `canAttack`.
+  - **Version 4** (`ULTRA_V` 4) only changes which Legends a deck can get:
+    `legendFor(deck, v)` chooses among the Legends a game's version has, so
+    older saves replay with the Legend they had. The new cards are just cards.
+- **Bots** (`js/ai.js`):
+  - They value Investing by the turns left to use it (`investWorth`). A flat
+    2.6 made every bot skip Grove Druid, Tide of Fortune and the like for the
+    biggest creature it could afford, which sank The Long Game.
+  - They value Energy a Granary would save, play Ambush creatures before
+    blocking, make Offerings, and attack with two at most in the Rolling Fog.
+- **Tuning** (12 duels for each of the 55 pairings, five rounds):
+  - Buffs to the four engine decks: sturdier early creatures, cheaper engines,
+    top cards at 7, Legends a size bigger, Grand Illusion and Canopy Archers
+    for The Long Game, Overrun on the Tortoise.
+  - The Wall lost a Bastion Wall, and Halvard needs 5 and 11 Guard-turns.
+  - Three-player rounds: Endless Swarm lost Dawnsinger. Bluff also draws a
+    card, and Gloom Stalker is 2/4. Kasimir starts 2/3. The Charge has two
+    Cinderlings, two Watchful knights and a Shieldbearer. Smoke and Mirrors has
+    Bonepicker and Hungry Ghoul in place of two answers.
+  - **Duels: 39–59% per starter.** The Wall and The Charge 59, The Giant 57,
+    Sky and Arrows 56, Endless Swarm 54, Weathermakers 50, Rot and Bloom 49,
+    Storm Rising 44, Blood and Bone 42, The Long Game 41, Smoke and Mirrors 39.
+  - **Three players: uneven, 14–49%** (a fair share is 33%). The Giant 49 and
+    Endless Swarm 48 lead; Smoke and Mirrors 16 and The Charge 14 trail. With
+    two opponents, the bots attack whoever has the fewest blockers: the
+    reactive deck, and the fast deck whose attackers just exhausted. The bot's
+    aggro also spreads its hits instead of finishing one player. Still open: a
+    three-player rule (a bounty for knocking a player out, say) or more tuning.
+  - The tournament lab (12 generations, 1,812 games): no loops or runaway
+    Energy. Winners keep Bone Tithe, Bone Lance, Ash Squire, Gloom Stalker and
+    Bluff, and the survivors were Radiant/Umbral and Ember/Umbral. About 2% of
+    games still run to 60–112 Life (death and Drain life gain).
+- **The Elo ladder** (`tools/elo.mjs`): the user asked how much skill there really is. Bots of seven
+  strengths played 1,260 Ultra duels with the eleven starters, every deal both
+  ways (seed 21); a second run added the deepest bot (seed 22). Ratings, with
+  the practice bot at 1500:
+
+  | Bot | Elo | How it plays |
+  |---|---|---|
+  | Random | 559 | a random legal move |
+  | Shaky 40 | 1188 | the practice bot, but 2 moves in 5 at random |
+  | Shaky 20 | 1297 | 1 move in 5 at random |
+  | Careful | 1458 | the practice bot without its small noise |
+  | Practice | 1500 | the bot in the app |
+  | Expert | 1516 | also looks at what its best 4 moves lead to this turn |
+  | Planner | 1516–1567 | plays its best 3 moves on to its next turn, with the cards it can't see shuffled (`planAction`) |
+  | Deep Planner | 1610 | 4 moves, each played on 3 times |
+
+  - Mistakes cost the most: a random move 1 time in 5 is about 200 points (it
+    wins 27% against the practice bot); 2 in 5, about 310 (8%).
+  - Looking further ahead keeps paying, with no ceiling yet: the Planner beats
+    the practice bot 57–60%, the Deep Planner 65% (and the Planner 57%). A
+    second look within the turn adds little.
+  - The decks that reward care most: a careful bot beats a shaky one 90% with
+    The Long Game, 89% Rot and Bloom, 86% The Giant, and least with Storm
+    Rising (71%) and The Charge (72%).
+- **Tests:** 687 engine checks, with the v4 fuzz now over all eleven
+  starters; `.phone-tests/ui-ultra4.mjs` (20 checks: an Offering, the
+  Puppeteer, an Ambush on the block screen, the Fog, the Granary, whose Field,
+  the help); `ui-ultra2.mjs` checks the new "What's new" (key
+  `collective.ultraIntro4`, shown once more to every phone).
 
 ## Champions, a prototype (2026-11-07)
 

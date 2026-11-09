@@ -223,3 +223,25 @@ Later, after you've played it:
 - More cards: Elder Root, World-Tree Seed, Forgefire Rite, Dawn Rite, Sky Banner, Hallowed Ground and Mimic.
 - Draft night online with the Ultra pool.
 - Identical tokens shown as one stacked card.
+
+## Version 4 (2026-11-08), "stage 2"
+
+The user asked for the strategies that had no deck of their own, with one
+rule across all of them: the really powerful things only come with Energy
+beyond the usual 6. So every new deck has its own way to Invest, and its top
+card costs 7 or more. Each also has a Legend that levels up from its plan.
+
+| Deck | Factions | Its way to Invest | Its top card | Legend (levels on) |
+|---|---|---|---|---|
+| The Long Game (economy, extra cards) | Verdant, Tide | Pearl Diver (pay 2: Invest), Grove Druid, Tide of Fortune; the Granary saves 3 unspent Energy | The Merchant Tortoise (7): Power and Vitality = your maximum Energy | Marisol (Invests): draw on each Invest; then cards costing 7+ cost 2 less |
+| Rot and Bloom (sacrifice for power) | Umbral, Verdant | Bone Tithe (1): sacrifice, Invest, draw | Danse Macabre (7): four of your dead back with Rush, sacrificed at the end of the turn | Morrow (sacrifices): a Spirit from each; then Offerings pay twice |
+| Smoke and Mirrors (tricksters) | Tide, Umbral | Bluff, a Trap that Invests when you're attacked | Grand Illusion (7): every creature back to its owner's hand, a card for each of yours | Mirelle (Tricks and Traps): they cost 1 less; then each Trick draws |
+| Storm Rising (spells) | Ember, Tide | Stoke the Furnace, Tide of Fortune | The Last Storm (7): damage equal to the Spells in your discard pile | Seren (Spells): the second Spell a turn draws; then each Spell hits each opponent for 1 |
+| Weathermakers (the Field) | Tide, Radiant | Tithe of Light, Tide of Fortune; Weatherwitches make Fields cheaper | The Eye of the Storm (8): opponents can't play Fields; yours get +1/+1 and Soar | Oriel (Fields): draw when you play one; then 2 damage to each opponent a turn |
+| The Charge (hitting early) | Ember, Radiant | War Chest: Invest the first time each turn you hit an opponent | Hour of Glory (7): +3/+0 and Rush for all | Kasimir (hits): cheap creatures +1/+0; then each hit deals 1 more |
+
+New words: **Ambush** (a creature played in a fight, like a Trick; played
+before you block, it can block), **Offering** (sacrifice one of yours as you
+play the card, for its stronger effect), and **your Field** (one you played).
+
+The README, "SATTC Ultra, version 4", has the rules, the numbers and the tests.

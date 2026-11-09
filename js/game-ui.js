@@ -558,6 +558,9 @@ function mount() {
     root.addEventListener('pointerdown', viewerSwipe);
     // Three players: swipe sideways across the opponent at the top for the other one.
     root.addEventListener('pointerdown', focusSwipe);
+    // On the attack and block screens: hold a card to read it.
+    root.addEventListener('pointerdown', holdToRead);
+    root.addEventListener('contextmenu', (e) => { if (e.target.closest?.('.dec-c, .tcard, .hv-card')) e.preventDefault(); });
     // Drag from your creature to aim: at an opponent to attack, at an attacker to block it.
     FX.dragArrow(root, {
       selector: '.g-side.me .tcard',
@@ -1484,13 +1487,20 @@ function aimDrop(uid, toEl) {
 }
 
 // ── rendering ───────────────────────────────────────────────────────
+// A Relic of yours you can use right now glows: Bone Altar, a Ritual's next stage.
+function relicCan(s, r) {
+  if (r.ctrl !== G.me || !myMain()) return false;
+  if (r.cid === 'bone-altar') return r.usedOn !== s.turn && s.players[G.me].board.length > 0;
+  return !!BY_ID[r.cid].stages && !riteBlocked(s, r);
+}
+
 function relicHTML(s, r, hl) {
   const d = BY_ID[r.cid];
   const isT = hl.targets.some((t) => t.uid === r.uid);
   const note = r.cid === 'the-drowned-clock' ? `<b class="relic-n">${r.chimes || 0}/3</b>` : (r.cid === 'bone-altar' || r.cid === 'war-chest') && r.usedOn === s.turn ? '<b class="relic-n">✓</b>'
     : r.cid === 'the-granary' && r.stored ? `<b class="relic-n">+${r.stored}</b>`
     : d.stages ? `<b class="relic-n rite">${r.stage}/${d.stages.length}</b>` : '';
-  return `<button class="relic${isT ? ' target' : ''}" data-uid="${r.uid}" data-cid="${r.cid}" style="${factionVars(d)}" aria-label="${esc(d.name)}">
+  return `<button class="relic${isT ? ' target' : relicCan(s, r) ? ' can' : ''}" data-uid="${r.uid}" data-cid="${r.cid}" style="${factionVars(d)}" aria-label="${esc(d.name)}">
     <span class="relic-art">${artTag(r.cid) || ''}</span>${note}</button>`;
 }
 
@@ -1758,7 +1768,7 @@ function attackDec(s) {
     title: '⚔ Attack',
     meta: opp.length > 1 ? '' : `${tn} ${ICON.heart}${T.life}`,
     say,
-    why: `Attackers hit ${tn} unless blocked: a blocked one fights its blocker instead. Attacking spends them: they can’t block until your next turn.`,
+    why: `Attackers hit ${tn} unless blocked: a blocked one fights its blocker instead. Attacking spends them: they can’t block until your next turn. Hold a card to read it.`,
     main: `${whom}
       <div class="dec-label">${theirs.length ? `${tn} can block with` : `${tn} has nothing that can block`}</div>
       ${theirs.length ? decCards('theirs', theirCards, theirs.length) : ''}
@@ -1800,7 +1810,7 @@ function blockDec(s) {
     title: `⚔ ${an} attacks you`,
     meta: `${ICON.bolt}${A.energy} · ${A.hand.length} card${A.hand.length === 1 ? '' : 's'}`,
     say,
-    why: `A blocked attacker fights your blocker instead of hitting you.${can.length > 1 && atts.length ? ' Two of yours can team up on one attacker.' : ''}${skullNote(s, t)}`,
+    why: `A blocked attacker fights your blocker instead of hitting you.${can.length > 1 && atts.length ? ' Two of yours can team up on one attacker.' : ''}${skullNote(s, t)} Hold a card to read it.`,
     main: `${decFight(s, t, { blocking: true })}
       ${free.length ? `<div class="dec-label">${can.length ? 'Your creatures' : 'Your creatures can’t block (tap one to see why)'}</div>${decCards('mine', myCards, free.length)}` : ''}
       ${ambush.length ? `<div class="dec-label">Ambush: play one now and it can block</div>${decCards('tricks', ambushCards, ambush.length)}` : ''}`,
@@ -2031,7 +2041,7 @@ function actionsHTML() {
     }
     const phoenix = phoenixReady(s, G.me);
     if (phoenix.length && myMain()) left.push(btn('small', 'phoenix', 'Return Phoenix (2)', `data-uid="${phoenix[0]}"`));
-    if (myMain() && ultraV2(s) && !check(s, { t: 'dig', p: G.me })) left.push(btn('small g-dig', 'dig', `Dig ${enHex(ULTRA_V2.digCost)}`, 'aria-label="Dig: pay 3 Energy to draw a card"'));
+    if (myMain() && ultraV2(s) && !check(s, { t: 'dig', p: G.me })) left.push(btn('small g-dig', 'dig', `<span>Dig ${enHex(ULTRA_V2.digCost)}</span><small>draw a card</small>`, `aria-label="Dig: pay ${ULTRA_V2.digCost} Energy to draw a card"`));
     if (s.players[G.me].out && s.phase !== 'over') right.push(btn('primary', 'leave', 'Leave'));
   }
   return row();
@@ -2343,10 +2353,11 @@ function syncStyle(a, style) {
 // Draw the position in G.view. No animation here.
 function draw(root) {
   const s = S(), me = s.players[G.me];
+  if (G.viewer && !G.sheet?.startsWith('<div class="hv"')) G.viewer = null; // (whatever took the big view's place ended it)
   syncBlocks();
   if (s.phase === 'mulligan' && !me.mull) {
     root.className = 'g-mull';
-    morphChildren(root, (s.ultra && !ultraIntroSeen ? ultraIntroHTML() : ultraV2(s) && !ultraNewSeen ? ultraNewHTML() : mulliganHTML()) + (G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div>${GRAB}</div>` : '') + (G.stale ? STALE_GAME : ''));
+    morphChildren(root, (s.ultra && !ultraIntroSeen ? ultraIntroHTML() : ultraV2(s) && !ultraNewSeen ? ultraNewHTML() : mulliganHTML()) + (G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div>${G.viewer ? '' : GRAB}</div>` : '') + (G.stale ? STALE_GAME : ''));
     return;
   }
   // three players with a side folded are laid out (and sized) as a duel
@@ -2880,12 +2891,52 @@ function overHTML() {
 }
 
 // ── sheets ──────────────────────────────────────────────────────────
-function kwHelp(card, extra = []) {
+function kwHelp(card, extra = [], skip = []) {
   const text = `${card.text || ''} ${extra.map((k) => KEYWORDS[k]?.name || '').join(' ')}`;
-  const list = Object.values(KEYWORDS).filter((k) => k !== KEYWORDS.ability && new RegExp('\\b' + k.name + '\\b', 'i').test(text));
+  const list = Object.values(KEYWORDS).filter((k) => k !== KEYWORDS.ability && !skip.includes(k) && new RegExp('\\b' + k.name + '\\b', 'i').test(text));
   if (card.ability) list.push(KEYWORDS.ability);
   const ultra = G?.state?.ultra || (!G && Mode.ultra());
   return list.map((k) => `<div><b>${k.name}</b> — ${esc((ultra && ULTRA_KEYWORDS[Object.keys(KEYWORDS).find((id) => KEYWORDS[id] === k)]) || k.text)}</div>`).join('');
+}
+
+// ── a card in plain words ───────────────────────────────────────────
+// Over a big card (under one on a sheet): what kind of card it is and what
+// it costs, its two numbers, each keyword on it, and the words in its text
+// that carry a rule without being keywords (+1/+0, for good, this turn…).
+const TERMS = [
+  ['nn', /[+-]\d+\/[+-]\d+/, (m) => { const [p, v] = m[0].split('/'); return `<b>${m[0]}</b> — Power first, then Vitality: ${p} Power and ${v} Vitality.`; }],
+  ['good', /\bfor good\b|\bpermanently\b/i, () => `<b>For good</b> — it lasts after the turn ends, as long as the card stays on the table.${G?.state?.ultra && G.state.uv >= 3 && ULTRA_V2.growthCap ? ' A creature can grow for good by no more than its controller’s maximum Energy.' : ''}`],
+  ['turn', /\bthis turn\b|\buntil (?:the )?end of (?:(?:the|your|this) )?turn\b/i, () => '<b>This turn</b> — it wears off when the turn ends.'],
+  ['heal', /\bheals?\b/i, () => '<b>Heal</b> — takes damage off a creature.'],
+  ['spirit', /\bSpirits?\b/, () => '<b>Spirit</b> — a 1/1 token: a creature that isn’t a real card, so it’s gone for good once it leaves the table.'],
+  ['token', /\btokens?\b/i, () => '<b>Token</b> — a creature a card makes. It isn’t a real card: it’s gone for good once it leaves the table.'],
+  ['pile', /\bdiscard piles?\b/i, () => '<b>Discard pile</b> — where Spells go once played, and creatures when they die. Some cards bring them back.'],
+  ['hand', /\bto (?:its|their) owners?.s? hands?\b/i, () => '<b>Back to its owner’s hand</b> — it leaves the table and can be played again, fresh: no damage, no growth.'],
+  ['fight', /\bfights?\b/i, () => '<b>Fight</b> — an attacker and its blocker hit each other at once, each with its Power.'],
+  ['any', /\bany target\b/i, () => '<b>Any target</b> — a creature or a player.'],
+  ['max', /\bmaximum Energy\b/i, () => '<b>Maximum Energy</b> — what your Energy fills back up to at the start of each turn.'],
+  ['ready', /\bready\b/i, () => '<b>Ready</b> — able to attack and block. Attacking leaves a creature spent until its owner’s next turn.'],
+];
+
+// `now`: its Power and Vitality on the table, `dmg` the damage on it, `granted` keywords it has from elsewhere.
+function cardGuide(d, { cost = d.cost, now = null, dmg = 0, granted = [] } = {}) {
+  const kw = (k) => d.keywords.includes(k);
+  const ultra = G?.state?.ultra || (!G && Mode.ultra());
+  const E = cost != null ? ` · ${cost} Energy` : '';
+  // (a Relic, a Trap… : its kind is a keyword, said once, at the top)
+  const own = d.token ? null : d.type === 'relic' ? 'relic' : d.type === 'field' ? 'field' : kw('trap') ? 'trap' : d.stages ? 'ritual' : kw('trick') ? 'trick' : d.legend ? 'legend' : null;
+  const lines = [d.token ? '<b>Token creature</b> — made by another card, not a real card: it’s gone for good once it leaves the table.'
+    : own ? `<b>${KEYWORDS[own].name}</b>${E} — ${esc((ultra && ULTRA_KEYWORDS[own]) || KEYWORDS[own].text)}`
+    : d.type === 'creature' ? `<b>Creature</b>${E} — stays on the table: blocks at once, attacks from your next turn.`
+    : `<b>Spell</b>${E} — happens once, then goes to your discard pile.`];
+  // (a Legend's levels and how far along it is are on the card and in the note under this)
+  if (d.type === 'creature') {
+    const p = now ? now.power : d.power, v = now ? now.vitality : d.vitality;
+    lines.push(`<b>${p}/${v}</b> — ${p} Power (the damage it deals) and ${v} Vitality (the damage it can take)${dmg ? `; ${dmg} damage is on it now` : ''}.${now && (p !== d.power || v !== d.vitality) ? ` Printed ${d.power}/${d.vitality}.` : ''}`);
+  }
+  const seen = new Set();
+  const terms = TERMS.filter(([id, re]) => re.test(d.text || '') && !(id === 'token' && seen.has('spirit')) && seen.add(id)).map(([, re, say]) => say(re.exec(d.text)));
+  return `<div class="kw-help card-guide">${lines.map((x) => `<div>${x}</div>`).join('')}${kwHelp(d, granted, own ? [KEYWORDS[own]] : [])}${terms.map((x) => `<div>${x}</div>`).join('')}</div>`;
 }
 
 // The Play button for one of your cards (or Echo from the discard pile), and why not if it can't be played.
@@ -2903,7 +2954,7 @@ function playPanel(uid, from = 'hand') {
   const fuses = why ? [] : fuseTargets(uid);
   const plain = !why && plainPlay(uid, from);
   let actions = '';
-  if (plain || !fuses.length) actions += `<button class="btn primary" data-act="${from === 'discard' ? 'echo' : from === 'legend' ? 'play-legend' : 'play'}" data-uid="${uid}" ${plain ? '' : 'disabled'}>${from === 'discard' ? 'Play with Echo' : from === 'legend' ? 'Play your Legend' : 'Play'} · ${cost} Energy</button>`;
+  if (plain || !fuses.length) actions += `<button class="btn primary" data-act="${from === 'discard' ? 'echo' : from === 'legend' ? 'play-legend' : 'play'}" data-uid="${uid}" ${plain ? '' : 'disabled'}>${from === 'discard' ? 'Play with Echo' : from === 'legend' ? 'Play your Legend' : BY_ID[c.cid].keywords.includes('trap') ? 'Set it face-down' : 'Play'} · ${cost} Energy</button>`;
   // SATTC Ultra: or fuse it into one of your creatures (its Power, Vitality and keywords, for good)
   if (fuses.length) {
     const costs = [...new Set(fuses.map((h) => fuseCost(s, G.me, c, s.cards[h])))].sort((x, y) => x - y);
@@ -2918,36 +2969,47 @@ function playPanel(uid, from = 'hand') {
 // Sheets close with a handle at the bottom: swipe it up or tap it (or tap outside the sheet).
 const GRAB = '<div class="g-grab" data-act="close" role="button" aria-label="Close"><i></i><span>Swipe up to close</span></div>';
 
-// ── your hand, big ──────────────────────────────────────────────────
-// Tap a card in your hand and the whole hand comes up close: that card in
-// the middle, its neighbours fanned at the sides. Swipe (or tap a
-// neighbour) to move along; the cards slide over like a hand being fanned.
-function openViewer(uid) {
-  const hand = handRow(S());
-  G.viewer = { i: Math.max(0, hand.indexOf(uid)) };
-  G.peek = hand[G.viewer.i];
+// ── cards, big ──────────────────────────────────────────────────────
+// Tap a card in your hand (or in your opening hand, or a creature on the
+// table) and its whole row comes up close: that card in the middle, its
+// neighbours fanned at the sides. Swipe (or tap a neighbour) to move along;
+// the cards slide over like a hand being fanned. Over them, the card in words.
+function openViewer(uid, kind = 'hand') {
+  G.viewer = { kind, ctrl: S().cards[uid].ctrl, i: 0 };
+  const row = viewerRow();
+  G.viewer.i = Math.max(0, row.indexOf(uid));
+  if (kind === 'hand') G.peek = row[G.viewer.i];
   G.sheet = viewerHTML();
   redraw();
 }
 
+// What the big view moves along: your hand (with your Legend if it waits),
+// your opening hand, or the creatures on one side of the table.
+function viewerRow() {
+  const s = S(), V = G.viewer;
+  if (!V) return [];
+  return V.kind === 'hand' ? handRow(s) : V.kind === 'mull' ? s.players[G.me].hand : s.players[V.ctrl].board;
+}
+
 function viewerHTML() {
-  const s = S(), hand = handRow(s);
-  if (!hand.length || !G.viewer) { G.viewer = null; return ''; }
-  const i = G.viewer.i = Math.min(Math.max(0, G.viewer.i), hand.length - 1);
-  const uid = hand[i], d = BY_ID[s.cards[uid].cid];
-  const cards = hand.map((u, k) => {
+  const s = S(), row = viewerRow(), V = G.viewer;
+  if (!row.length || !V) { G.viewer = null; return ''; }
+  const i = V.i = Math.min(Math.max(0, V.i), row.length - 1);
+  const uid = row[i];
+  const from = (u) => (V.kind === 'hand' ? fromFor(u) : 'hand');
+  const cards = row.map((u, k) => {
     const dk = k - i, ak = Math.min(Math.abs(dk), 3);
-    return `<div class="hv-card${dk ? '' : ' on'}${ak >= 3 ? ' far' : ''}${fromFor(u) === 'legend' ? ' legend-wait' : ''}" data-hv-i="${k}" style="--kk:${dk};--akk:${ak};--z:${10 - ak}">${cardHTML(BY_ID[s.cards[u].cid], { cost: costOf(s, G.me, s.cards[u], fromFor(u)) })}</div>`;
+    return `<div class="hv-card${dk ? '' : ' on'}${ak >= 3 ? ' far' : ''}${from(u) === 'legend' ? ' legend-wait' : ''}" data-hv-i="${k}" style="--kk:${dk};--akk:${ak};--z:${10 - ak}">${cardHTML(BY_ID[s.cards[u].cid], cardOpts(s, u, from(u)))}</div>`;
   }).join('');
-  const dots = hand.length > 1 ? `<div class="hv-dots">${hand.map((u, k) => `<i${k === i ? ' class="on"' : ''}></i>`).join('')}</div>` : '';
-  const { actions, note } = playPanel(uid, fromFor(uid));
+  const dots = row.length > 1 ? `<div class="hv-dots">${row.map((u, k) => `<i${k === i ? ' class="on"' : ''}></i>`).join('')}</div>` : '';
+  const { actions, note, guide } = cardInfo(uid, { from: from(uid) });
   // The cards and Play sit low, where the thumb is, and never move with the
-  // amount of text: the details fill the space above them. No Close button:
-  // swipe the cards up (or down) to put the hand away; the handle says so.
+  // amount of text: the card in words fills the space above them. No Close
+  // button: swipe the cards up (or down) to put them away; the handle says so.
   // (what you have to spend, next to what it costs)
-  const have = s.phase === 'mulligan' ? '' : `<div class="hv-have">You have ${enHex(s.players[G.me].energy)} Energy</div>`;
+  const have = V.kind !== 'hand' || s.phase === 'mulligan' ? '' : `<div class="hv-have">You have ${enHex(s.players[G.me].energy)} Energy</div>`;
   return `<div class="hv" data-key="hv">
-    <div class="hv-info"><div class="kw-help">${kwHelp(d)}</div>${note}</div>
+    <div class="hv-info">${guide}${note}</div>
     <div class="hv-track">${cards}</div>${dots}
     ${have}<div class="hv-btns">${actions}</div>
     <div class="hv-grab" data-act="close" role="button" aria-label="Close"><i></i><span>Swipe up to close</span></div></div>`;
@@ -2968,12 +3030,32 @@ function closeViewer(dir = 'up') {
 }
 
 function goViewer(i) {
-  const hand = handRow(S());
-  if (!G.viewer || i < 0 || i >= hand.length || i === G.viewer.i) return;
+  const row = viewerRow();
+  if (!G.viewer || i < 0 || i >= row.length || i === G.viewer.i) return;
   G.viewer.i = i;
-  G.peek = hand[i];
+  if (G.viewer.kind === 'hand') G.peek = row[i];
   G.sheet = viewerHTML();
   redraw();
+}
+
+// On the attack and block screens a tap picks a card: hold one to read it.
+function holdToRead(e) {
+  const el = e.target.closest?.('.dec-c[data-u]');
+  if (!el || !G || G.flow || G.busy || G.sheet) return;
+  const x0 = e.clientX, y0 = e.clientY;
+  let held = false;
+  const off = () => { clearTimeout(timer); removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', off); };
+  const move = (ev) => { if (!held && Math.hypot(ev.clientX - x0, ev.clientY - y0) > 10) off(); };
+  const up = () => { if (held && G) G.heldAt = performance.now(); off(); }; // (lifting the finger isn't a tap)
+  const timer = setTimeout(() => {
+    if (!G || G.sheet || G.flow || !el.isConnected) { off(); return; }
+    held = true;
+    G.sheet = cardSheet(Number(el.dataset.u));
+    redraw();
+  }, 450);
+  addEventListener('pointermove', move);
+  addEventListener('pointerup', up);
+  addEventListener('pointercancel', off);
 }
 
 // Swipes on the big hand (FX.swipeTrack, the same as the draft's big cards):
@@ -2993,12 +3075,22 @@ function viewerSwipe(e) {
   });
 }
 
-function cardSheet(uid, { from = 'hand' } = {}) {
+// How a card looks big: its cost in your hand, or its Power and Vitality (less its damage) on the table.
+function cardOpts(s, uid, from = 'hand') {
+  const c = s.cards[uid], d = BY_ID[c.cid];
+  if (c.zone === 'board') return { power: power(s, c), vitality: vitality(s, c) - (c.dmg || 0) };
+  if (c.zone === 'legend') from = 'legend';
+  return { cost: c.owner === G.me && (c.zone === 'hand' || c.zone === 'legend') ? costOf(s, G.me, c, from) : c.zone === 'legend' ? costOf(s, c.owner, c, 'legend') : d.cost };
+}
+
+// A card's details: how it looks (opts), what's going on with it (note), its
+// buttons (actions) and the card in words (guide). A sheet and the big view show them.
+function cardInfo(uid, { from = 'hand' } = {}) {
   const s = S(), c = s.cards[uid], d = BY_ID[c.cid];
   const onBoard = c.zone === 'board';
   // the baked picture: drawing the live art the first time can stall a phone for a moment
   if (c.zone === 'legend') from = 'legend';
-  const opts = onBoard ? { power: power(s, c), vitality: vitality(s, c) - (c.dmg || 0) } : { cost: c.owner === G.me && (c.zone === 'hand' || c.zone === 'legend') ? costOf(s, G.me, c, from) : c.zone === 'legend' ? costOf(s, c.owner, c, 'legend') : d.cost };
+  const opts = cardOpts(s, uid, from);
   let actions = '', note = '';
   const granted = onBoard ? FX.KEYWORD_BADGES.filter((k) => hasKw(s, c, k) && !d.keywords.includes(k)) : [];
   if (c.owner === G.me && s.phase !== 'mulligan' && (c.zone === 'hand' || c.zone === 'legend' || (from === 'discard' && d.echo))) ({ actions, note } = playPanel(uid, from));
@@ -3057,7 +3149,13 @@ function cardSheet(uid, { from = 'hand' } = {}) {
     }
     if (bits.length) note = `<div class="sheet-note">${bits.map(esc).join('<br>')}</div>`;
   }
-  return `${cardHTML(d, opts)}${note}<div class="kw-help">${kwHelp(d, granted)}</div>
+  const guide = cardGuide(d, { cost: opts.cost ?? d.cost, now: onBoard ? { power: power(s, c), vitality: vitality(s, c) } : null, dmg: onBoard ? c.dmg || 0 : 0, granted });
+  return { d, opts, note, actions, guide };
+}
+
+function cardSheet(uid, { from = 'hand' } = {}) {
+  const { d, opts, note, actions, guide } = cardInfo(uid, { from });
+  return `${cardHTML(d, opts)}${note}${guide}
     ${actions ? `<div class="btn-col">${actions}</div>` : ''}`;
 }
 
@@ -3158,9 +3256,12 @@ function playerSheet(pi) {
     ...(P.champ ? [[BY_ID[P.champ].legend ? 'Legend' : 'Champion', champRow(s, P)]] : []),
   ];
   const relics = P.relics.map((u) => BY_ID[s.cards[u].cid]).map((d) => `<div><b>${esc(d.name)}</b> — ${esc(d.text.replace(/^Relic\n/, ''))}</div>`).join('');
+  // (yours only: theirs are face-down)
+  const traps = mine ? P.traps.map((u) => BY_ID[s.cards[u].cid]).map((d) => `<div><b>${esc(d.name)}</b> — ${esc(d.text.replace(/^Trap\n/, ''))}</div>`).join('') : '';
   return `<h3>${who}</h3>
     <div class="pl-rows">${rows.map(([k, v]) => `<div>${k}</div><div>${typeof v === 'number' ? v : esc(String(v))}</div>`).join('')}</div>
     ${relics ? `<div class="kw-help"><div class="sheet-note" style="text-align:left;margin:0 0 4px">Relics</div>${relics}</div>` : ''}
+    ${traps ? `<div class="kw-help"><div class="sheet-note" style="text-align:left;margin:0 0 4px">Your face-down Traps: each waits, turn after turn, until it springs</div>${traps}</div>` : ''}
     <div class="btn-col">${P.discard.length ? `<button class="btn" data-act="discards" data-of="${pi}">Look at the discard pile</button>` : ''}</div>`;
 }
 
@@ -3195,9 +3296,10 @@ function helpSheet() {
       <div><b>Team up</b>: several of your creatures can block the same attacker. They all hit it, and it splits its damage among them, destroying the costliest ones it can.</div>
       <div><b>The fight</b>: before it starts, a screen shows the <b>Tricks</b> and abilities you could use (only when you have one): play one, or tap <b>Fight</b>. It comes up big, a pair at a time, with what happened and why: tap to go on, Skip to close. The note under the table afterwards plays it again.</div>
       <div><b>The others’ moves wait for you</b>: a card someone plays stays up big, and an attack between the other two stays on the table, until you <b>tap anywhere</b>. <b>Skip to your move</b> passes over the rest. In ☰ you can let them play by themselves instead.</div>
-      <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the ⚡ chip on the card, which shows the Energy it takes (it glows when you can use it). Each works once a turn: on your turn, or in a fight you are in.</div>
+      <div><b>⚡ Abilities</b>: some creatures say “Pay 2 Energy: …”. Tap the creature (or the ⚡ chip on it, which shows the Energy it takes and glows when you can use it): its ⚡ button is under the card. Each works once a turn: on your turn, or in a fight you are in.</div>
+      <div><b>Relics</b> sit under your name. Tap one to read it; one that glows can be used now (Bone Altar, a Ritual’s next stage): tap it for its button.</div>
       ${S().ultra ? '<div><b>SATTC Ultra</b>: 30 Life. <b>Wounds stay</b> on creatures and heal by half at the start of their owner’s turn. A new creature is <b>Sheltered</b> (🛡) from opponents’ Spells and abilities until its owner’s next turn. When a creature that grew dies, half its growth passes to your weakest creature (<b>Legacy</b>). Energy grows by itself to 6; <b>Invest</b> cards raise it for good, up to 12. One <b>Field</b> (the banner in the middle) changes the rules for everyone. A <b>Ritual</b> stays in your Relic row: tap it to pay its next stage, one a turn. A <b>Hex</b> (⛓) lasts until its owner pays to break it: tap the creature. Venom’s damage is poison (☠): it doesn’t heal. An <b>Unstable</b> creature shows how close it is to erupting (💥8/10; it pulses red the turn before). Tap a creature to see what’s helping it: the cards on its side, and the Field.</div>' : ''}
-      ${ultraV2(S()) ? `<div><b>Ultra’s second version</b>: your <b>Legend</b> waits beside your deck (at the left of your hand) and can be played whenever you can pay; it levels up as you play its way, and if it dies it comes back to wait there, 2 Energy dearer. Nothing can be fused into a Legend. <b>Symbiotes</b> (the creatures with Fuse): from the turn after one arrives, pay 1 Energy and it kills a creature it can kill in one hit (Vitality left no more than its Power, no Shield), then joins another creature of yours, which gets its Power, Vitality and keywords for good. A Symbiote arrives without Shelter. <b>Dig</b> (the button bottom left): once a turn, pay ${ULTRA_V2.digCost} Energy to draw a card. <b>Ganging up</b>: when two or more creatures block one attacker, each hits ${ULTRA_V2.together} harder. A <b>Shield</b> (◈) stops the next hit a creature would take; Shields stack. <b>Traps</b> wait face down and spring when you’re attacked.${ULTRA_V2.growthCap ? ' <b>Growth has a ceiling</b>: a creature can’t grow for good by more than its controller’s maximum Energy (6, more with Invest), so a monster takes an economy.' : ''}</div>` : ''}
+      ${ultraV2(S()) ? `<div><b>Ultra’s second version</b>: your <b>Legend</b> waits beside your deck (at the left of your hand) and can be played whenever you can pay; it levels up as you play its way, and if it dies it comes back to wait there, 2 Energy dearer. Nothing can be fused into a Legend. <b>Symbiotes</b> (the creatures with Fuse): from the turn after one arrives, pay 1 Energy and it kills a creature it can kill in one hit (Vitality left no more than its Power, no Shield), then joins another creature of yours, which gets its Power, Vitality and keywords for good. A Symbiote arrives without Shelter. <b>Dig</b> (the button bottom left): once a turn, pay ${ULTRA_V2.digCost} Energy to draw a card. <b>Ganging up</b>: when two or more creatures block one attacker, each hits ${ULTRA_V2.together} harder. A <b>Shield</b> (◈) stops the next hit a creature would take; Shields stack. <b>Traps</b> wait face down, turn after turn, until their moment comes, then spring by themselves.${ULTRA_V2.growthCap ? ' <b>Growth has a ceiling</b>: a creature can’t grow for good by more than its controller’s maximum Energy (6, more with Invest), so a monster takes an economy.' : ''}</div>` : ''}
       ${S().uv >= 4 ? `<div><b>Ultra’s fourth version</b>: six more decks, each with its Legend, and their biggest cards cost 7 or more, so they need Energy beyond the usual 6 (Invest). <b>Ambush</b>: a creature you can play during a fight, like a Trick; played when you’re attacked, before you choose blockers, it can block. <b>Offering</b>: as you play the card, you may sacrifice a creature of yours for its stronger effect. <b>Your Field</b> is a Field you played; the banner in the middle says whose it is. The <b>Granary</b> saves up to 3 Energy you didn’t spend for your next turn (its number shows on it).</div>` : ''}
       ${S().uv >= 5 ? `<div><b>Ultra’s fifth version</b>: a creature sent back to the hand comes back fresh, without its growth. Two more decks with Legends (Spellbloom, Fogbound). Guerrilla cards slow an opponent’s plans: <b>Choking Smoke</b> (less Energy on their next turn), <b>Tollkeeper</b> (you draw when they Invest), <b>Grave Robber</b> (their dead go to the bottom of their deck), <b>Pickpocket</b> (its hit takes a random card from their hand), <b>Whispered Doubt</b> (a big card in their hand goes to the bottom of their deck) and <b>Blight Beetle</b> (it eats an enemy creature’s growth). The <b>Rolling Fog</b> lifts at the start of its owner’s third turn; the banner counts down.</div>` : ''}
       ${S().players.some((P) => P.champ) ? '<div><b>★ Champions</b> (new): every deck starts with a Champion on the table. It can block from the start, but can’t attack until Level 2. It levels up as you do what its faction does (tap it to see how far along it is), and each level changes how your other cards work. If it leaves the table it goes back to your hand, costing 2 more each time.</div>' : ''}
@@ -3266,7 +3368,8 @@ function slip(s, a, steps) {
   if (r.error) return null; // sending it says why
   const t = r.state, c0 = s.cards[a.uid], d = BY_ID[c0.cid];
   const what = a.t === 'use' ? `${d.name}’s ability` : d.name;
-  if (s.phase === 'main' && (a.t === 'use' ? !!d.ability : d.type === 'spell' && !d.stages)) {
+  // (setting a Trap changes nothing yet: it waits face-down, which is the point)
+  if (s.phase === 'main' && (a.t === 'use' ? !!d.ability : d.type === 'spell' && !d.stages && !d.keywords.includes('trap'))) {
     const paid = a.t === 'use' ? d.ability?.cost || 0 : costOf(s, a.p, c0, a.from || 'hand') + (a.payTax ? 2 : 0);
     if (changesNothing(s, t, a, paid)) {
       const says = a.t === 'use' ? d.ability.short : d.text.replace(/^Trick\n/, '').replace(/\n/g, ' ');
@@ -3313,14 +3416,18 @@ function changesNothing(s, t, a, paid) {
 function endSlip(s) {
   const P = s.players[G.me];
   if (!myMain() || P.energy <= 0) return null;
-  const could = handRow(s).map((u) => s.cards[u]).filter((c) => ['creature', 'relic'].includes(BY_ID[c.cid].type) && !playable(c.uid, fromFor(c.uid)) && plainPlay(c.uid, fromFor(c.uid)));
+  // (a Trap counts: set now, it waits face-down until it springs)
+  const isTrap = (c) => BY_ID[c.cid].keywords.includes('trap');
+  const could = handRow(s).map((u) => s.cards[u]).filter((c) => (['creature', 'relic'].includes(BY_ID[c.cid].type) || isTrap(c)) && !playable(c.uid, fromFor(c.uid)) && plainPlay(c.uid, fromFor(c.uid)));
   if (!could.length) return null;
-  const named = could.slice(0, 3).map((c) => `${BY_ID[c.cid].name} (${costOf(s, G.me, c, fromFor(c.uid))})`);
-  const list = listNames(could.length > 3 ? [...named, `${could.length - 3} more`] : named);
+  const few = (cs) => { const named = cs.slice(0, 3).map((c) => `${BY_ID[c.cid].name} (${costOf(s, G.me, c, fromFor(c.uid))})`); return listNames(cs.length > 3 ? [...named, `${cs.length - 3} more`] : named); };
+  const plays = could.filter((c) => !isTrap(c)), sets = could.filter(isTrap);
+  const what = [plays.length ? `play ${few(plays)}` : '', sets.length ? `set ${few(sets)} face-down` : ''].filter(Boolean).join(', or ');
+  const dig = ultraV2(s) && !check(s, { t: 'dig', p: G.me }) ? ` Or dig: ${ULTRA_V2.digCost} Energy to draw a card.` : '';
   const later = P.hand.some((u) => isTrick(BY_ID[s.cards[u].cid])) || P.board.some((u) => BY_ID[s.cards[u].cid].ability);
   return {
     title: `You still have ${P.energy} Energy`,
-    text: `You could play ${list}. ${later ? 'Energy you keep is only good for Tricks and abilities until your next turn starts.' : 'You have no Tricks or abilities to spend it on, so it’s lost when your next turn starts.'}`,
+    text: `You could ${what}.${dig} ${later ? 'Energy you keep is only good for Tricks and abilities until your next turn starts.' : 'You have no Tricks or abilities to spend it on, so it’s lost when your next turn starts.'}`,
     yes: 'End turn anyway', no: 'Keep playing',
   };
 }
@@ -3429,6 +3536,7 @@ function onClick(e) {
   if (!G) return;
   // the tap that let another player's move go on doesn't also count on the table
   if (G.tapAt && performance.now() - G.tapAt < 400) return;
+  if (G.heldAt && performance.now() - G.heldAt < 500) { G.heldAt = 0; return; } // (the finger lifting after holding a card to read it)
   const s = S();
   const t = e.target;
   const actEl = t.closest('[data-act]');
@@ -3464,9 +3572,9 @@ function onClick(e) {
     return;
   }
 
-  // the opening hand: tap a card to read it
+  // the opening hand: tap a card to read it, then swipe along
   const mull = t.closest('[data-mull]');
-  if (mull) { G.sheet = cardSheet(Number(mull.dataset.mull)); redraw(); return; }
+  if (mull) { openViewer(Number(mull.dataset.mull), 'mull'); return; }
 
   const card = t.closest('.tcard');
   const relic = t.closest('.relic');
@@ -3482,8 +3590,9 @@ function onClick(e) {
   // (attacking and blocking are worked on their own screen, over the table: decideHTML)
   if (card) {
     const c = s.cards[target.uid];
-    // a ready creature of yours: the attack screen opens with it picked
-    if (c.ctrl === G.me && myMain() && !attackedThisTurn() && canAttack(s, G.me, c)) { toggleAttacker(c.uid); return; }
+    // a creature: its side of the table, big, to read and swipe along (a ready
+    // one of yours has a button to send it into the attack; or drag it at them)
+    if (c.zone === 'board') { openViewer(c.uid, 'table'); return; }
     G.sheet = cardSheet(c.uid);
     redraw();
     return;
@@ -3503,13 +3612,12 @@ function onAct(act, el) {
     case 'ability': {
       const card = el.closest('.tcard');
       if (G.flow || G.sheet) { if (card) onClick({ target: card }); break; }
-      G.sheet = cardSheet(Number(el.dataset.ab));
-      redraw();
+      openViewer(Number(el.dataset.ab), 'table');
       break;
     }
     case 'use-ability': startAbility(uid); break;
     case 'rite': startRite(uid); break;
-    case 'unhex': G.sheet = null; dispatch({ t: 'unhex', p: G.me, uid }); break;
+    case 'unhex': G.sheet = null; G.viewer = null; dispatch({ t: 'unhex', p: G.me, uid }); break;
     case 'field-info': G.sheet = cardSheet(uid); redraw(); break;
     case 'suggest': if (G.suggest) { G.suggest = null; redraw(); } else startSuggest(); break;
     case 'suggest-close': G.suggest = null; redraw(); break;
@@ -3562,7 +3670,7 @@ function onAct(act, el) {
     case 'dig': G.sheet = null; dispatch({ t: 'dig', p: G.me }); break;
     case 'echo': startPlay(uid, 'discard'); break;
     case 'echo-open': G.sheet = cardSheet(uid, { from: 'discard' }); redraw(); break;
-    case 'attack-from-sheet': G.sheet = null; toggleAttacker(uid); break;
+    case 'attack-from-sheet': G.sheet = null; G.viewer = null; toggleAttacker(uid); break;
     case 'attack': sendAttack(Number(el.dataset.p)); break;
     case 'block': tryMove({ t: 'block', p: G.me, blocks: G.blk?.pairs || [] }); break;
     case 'slip-no': G.slip = null; G.sheet = null; redraw(); break;

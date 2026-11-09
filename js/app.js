@@ -456,7 +456,7 @@ function rules() {
       <li><b>Creatures</b> fight for you.</li>
       <li><b>Spells</b> happen once, on your turn.</li>
       <li><b>Tricks</b> are Spells you can also play in the middle of a fight, even on someone else's turn.</li>
-      <li><b>Traps</b> are set face-down on your turn and spring by themselves when their moment comes.</li>
+      <li><b>Traps</b> are set face-down on your turn and spring by themselves when their moment comes: they stay set, turn after turn, until then.</li>
       <li><b>Relics</b> stay on the table and keep working. They never fight. At most ${RULES.relicMax} each.</li>
       <li><b>Legendary</b> cards are the big ones, with a shimmering frame.</li>
     </ul>

@@ -46,7 +46,7 @@ export const KEYWORDS = {
   echo:       { name: 'Echo',        text: 'You may play this card from your discard pile by paying its Echo cost. Afterwards it is removed from the game instead of going back to your discard pile.' },
   bond:       { name: 'Bond',        text: 'Active while you control another creature.' },
   trick:      { name: 'Trick',       text: 'A Spell you can also play during a fight: after blockers are chosen in your attack, or when someone attacks you.' },
-  trap:       { name: 'Trap',        text: 'A Spell you set face-down on your turn. It springs by itself when its moment comes, then goes to your discard pile.' },
+  trap:       { name: 'Trap',        text: 'A Spell you set face-down on your turn. It stays set, turn after turn, until its moment comes; then it springs by itself and goes to your discard pile.' },
   relic:      { name: 'Relic',       text: 'Stays on the table and keeps working. It never attacks or blocks. You can have 3 at most.' },
   legendary:  { name: 'Legendary',   text: 'One of a kind. (Just for glory: no extra rules.)' },
   sacrifice:  { name: 'Sacrifice',   text: 'Destroy a creature you control. It still counts as dying.' },

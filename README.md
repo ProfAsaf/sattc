@@ -1002,7 +1002,8 @@ whatever the text above them says.
   finger; let go and it glides on (further the faster the flick) and settles
   on a card, which stays the focal card. A finger on a gliding hand catches it.
   Only the focal card wears its Power and Vitality; the others show their cost.
-- **The whole hand, big:** tap a card to see your whole hand full size. Swipe
+- **The whole hand, big:** tap a card to see your whole hand full size (your
+  opening hand, and either side of the table, open the same way). Swipe
   sideways to go through it (the cards shift and tilt like a hand of cards,
   with the same glide: a normal swipe moves one card, a hard flick several);
   tap a side card to bring it to the middle. Details sit at the top; the
@@ -1029,6 +1030,39 @@ whatever the text above them says.
   up or down to close), `FX.moveTrack()` (glide to a card) and
   `FX.placeTrack()`; the game's big hand and the draft both use them, and
   `FX.grabSwipe()` is every sheet's swipe-up handle.
+
+## Reading cards, and moves that aren't attacks (2026-11-09)
+
+After a game against the Rot and Bloom bot (shared game RWDN), Asaf said
+setting a Trap warned it "wouldn't apply", a card on the table couldn't be
+read (tapping it started an attack), the cards' text wanted explaining, the
+opening hand should swipe, and Dig and the moves that aren't attacks
+(abilities, Relics) weren't clear.
+
+- **Traps:** setting one no longer asks "would do nothing now" (`slip`: a Trap
+  only waits once set). Its button says **Set it face-down**; the Trap keyword
+  says it stays set, turn after turn, until it springs; your own Traps are
+  listed by name in your details (tap your bar); and ending a turn with Energy
+  and a Trap you could set asks first, as a creature you could play does.
+- **Cards, big, everywhere:** the big view (`openViewer(uid, kind)`,
+  `viewerRow`) opens for your opening hand (`'mull'`) and for one side of the
+  table (`'table'`) as well as your hand, and swipes along any of them. Tapping
+  your ready creature opens it big with **Send it into the attack** (and its ⚡
+  ability) instead of the attack screen; Attack (bottom right) and dragging
+  still start an attack. `cardInfo()` is what a sheet and the big view share.
+- **The card in plain words** (`cardGuide`), over a big card: its kind and
+  cost, its Power and Vitality (`2/4 — 2 Power (the damage it deals) …`), each
+  keyword, and the words in its text that carry a rule without being keywords
+  (`TERMS`: +1/+0, for good and the growth ceiling, this turn, heal, Spirit,
+  token, discard pile, back to its owner's hand, fight, any target, maximum
+  Energy, ready).
+- **Hold to read:** on the attack and block screens, where a tap picks a card,
+  holding one (450 ms) opens it (`holdToRead`); lifting the finger picks nothing.
+- **Moves that aren't attacks:** Dig's button says *draw a card* under its
+  name; a Relic you can use now glows (`relicCan`: Bone Altar, a Ritual's next
+  stage), like a ⚡ you can use; the ⚡ chip opens its creature big, with the
+  ability's button; the help says so.
+- Test: `.phone-tests/ui-cards.mjs` at 402×874.
 
 ## Keeping it smooth on phones
 

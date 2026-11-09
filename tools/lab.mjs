@@ -13,7 +13,9 @@
 // don't finish, chains of extra turns, hands or Life that run away.
 //
 //   node tools/lab.mjs [generations=20] [population=24] [games=8] [seed=1]
-// Writes .phone-tests/lab/run-<seed>.json and run-<seed>.md.
+//   PAIR=ember,umbral   every bot plays those two factions (to see what a pair evolves into)
+//   BENCH=20            games each champion plays against each starter at the end
+// Writes .phone-tests/lab/run-<seed>.json (with the last survivors) and run-<seed>.md.
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -26,7 +28,8 @@ import { cardList, validate } from '../js/decks.js';
 const [GENS, POP, GAMES, SEED] = [20, 24, 8, 1].map((d, i) => Number(process.argv[2 + i] || d));
 // rule switches to try (cards.js ULTRA_V2), e.g. KNOBS='{"growthCap":true}'; the run's files get a tag
 if (process.env.KNOBS) Object.assign(ULTRA_V2, JSON.parse(process.env.KNOBS));
-const TAG = process.env.KNOBS ? `-${Object.entries(JSON.parse(process.env.KNOBS)).map(([k, v]) => `${k}${v}`).join('-')}` : '';
+const PAIR = process.env.PAIR ? process.env.PAIR.split(',') : null, BENCH = Number(process.env.BENCH ?? 20);
+const TAG = (process.env.KNOBS ? `-${Object.entries(JSON.parse(process.env.KNOBS)).map(([k, v]) => `${k}${v}`).join('-')}` : '') + (PAIR ? `-${PAIR.join('-')}` : '');
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', '.phone-tests', 'lab');
 mkdirSync(OUT, { recursive: true });
 
@@ -98,7 +101,7 @@ function agent(fs, counts, style, origin, parent = null) {
   if (!v.ok) return null;
   return { id: nextId++, fs, counts, style, origin, parent, born: gen, fit: null, w: 0, g: 0, allW: 0, allG: 0 };
 }
-const pairsOfFactions = FACTION_ORDER.flatMap((a, i) => FACTION_ORDER.slice(i + 1).map((b) => [a, b]));
+const pairsOfFactions = PAIR ? [PAIR] : FACTION_ORDER.flatMap((a, i) => FACTION_ORDER.slice(i + 1).map((b) => [a, b]));
 function newcomer() {
   for (let tries = 0; tries < 20; tries++) {
     const fs = pick(pairsOfFactions), name = pick(Object.keys(STYLES));
@@ -142,7 +145,7 @@ function duel(A, B, seed) {
 
 // ── the run ─────────────────────────────────────────────────────────
 let gen = 0;
-let pop = ULTRA_STARTERS.map((d) => agent([...new Set(d.factions)], { ...d.counts }, { ...STYLES.balanced }, `starter ${d.name}`));
+let pop = ULTRA_STARTERS.filter((d) => !PAIR || d.factions.every((f) => PAIR.includes(f))).map((d) => agent([...new Set(d.factions)], { ...d.counts }, { ...STYLES.balanced }, `starter ${d.name}`));
 while (pop.length < POP) pop.push(newcomer());
 const history = [];
 const t0 = Date.now();
@@ -204,7 +207,7 @@ const starters = ULTRA_STARTERS.map((d) => ({ id: d.name, counts: d.counts, styl
 const bench = champs.map((c) => {
   const vs = starters.map((st) => {
     let w = 0, n = 0;
-    for (let k = 0; k < 20; k++) {
+    for (let k = 0; k < BENCH; k++) {
       const seed = (SEED * 77 + c.id * 1009 + k * 13 + st.id.length) | 0;
       const win = k % 2 ? duel(st, c, seed) : duel(c, st, seed);
       n++;
@@ -217,11 +220,11 @@ const bench = champs.map((c) => {
 
 const deckText = (counts) => Object.entries(counts).sort((a, b) => b[1] - a[1] || BY_ID[a[0]].cost - BY_ID[b[0]].cost).map(([id, n]) => `${n > 1 ? `${n}× ` : ''}${BY_ID[id].name}`).join(', ');
 const md = [
-  `# Tournament lab, run ${SEED}${TAG ? ` (${process.env.KNOBS})` : ''}`,
+  `# Tournament lab, run ${SEED}${process.env.KNOBS ? ` (${process.env.KNOBS})` : ''}${PAIR ? ` (${PAIR.join('/')} only)` : ''}`,
   `${GENS} generations of ${POP} bots, ${GAMES} duels each per generation: ${totals.games} games, ${(totals.rounds / totals.games).toFixed(1)} rounds a game, ${totals.unfinished} unfinished, ${((Date.now() - t0) / 1000).toFixed(0)}s.`,
   '',
   '## The champions',
-  ...champs.map((c, i) => `${i + 1}. #${c.id} (${c.fs.join('/')}, plays like "${nearest(c.style)}", from ${c.origin}; ${Math.round(c.fit * 100)}% in its last generations; Legend ${bench[i].legend})\n   - against the starters: ${bench[i].vs.map((v) => `${v.vs} ${v.pct}%`).join(', ')}\n   - deck: ${deckText(c.counts)}`),
+  ...champs.map((c, i) => `${i + 1}. #${c.id} (${c.fs.join('/')}, plays like "${nearest(c.style)}", from ${c.origin}; ${Math.round(c.fit * 100)}% in its last generations; Legend ${bench[i].legend})\n   - against the starters: ${BENCH ? bench[i].vs.map((v) => `${v.vs} ${v.pct}%`).join(', ') : '(not played)'}\n   - deck: ${deckText(c.counts)}`),
   '',
   '## Factions of the last generations’ survivors',
   Object.entries(factionCount).sort((a, b) => b[1] - a[1]).map(([f, n]) => `${f} ${n}`).join(' · '),
@@ -239,5 +242,5 @@ const md = [
   flagged.length ? flagged.map((f) => `- gen ${f.gen}, #${f.a} vs #${f.b}, seed ${f.seed}: ${f.why.join(', ')}`).join('\n') : 'none',
 ].join('\n');
 writeFileSync(join(OUT, `run-${SEED}${TAG}.md`), md);
-writeFileSync(join(OUT, `run-${SEED}${TAG}.json`), JSON.stringify({ args: { GENS, POP, GAMES, SEED }, totals, history: history.map(({ elite, ...h }) => h), champs: champs.map((c) => ({ id: c.id, fs: c.fs, style: c.style, counts: c.counts, origin: c.origin })), bench, loved, ignored, styleAvg, flagged }, null, 1));
+writeFileSync(join(OUT, `run-${SEED}${TAG}.json`), JSON.stringify({ args: { GENS, POP, GAMES, SEED }, totals, history: history.map(({ elite, ...h }) => h), champs: champs.map((c) => ({ id: c.id, fs: c.fs, style: c.style, counts: c.counts, origin: c.origin })), survivors: history[history.length - 1].elite, bench, loved, ignored, styleAvg, flagged }, null, 1));
 console.log('\n' + md);

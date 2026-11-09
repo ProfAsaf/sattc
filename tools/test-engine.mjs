@@ -2202,7 +2202,7 @@ const inHand = (s, cid, p = A) => addCard(s, cid, p, 'hand');
 const legendOn = (s, cid, p = A) => { const L = ub(s, cid, p); Object.assign(s.players[p], { champ: cid, legend: L.uid, cxp: 0 }); return L; };
 
 test('Ultra v4: the six new starters bring their Legends; an older game chooses among the first five', () => {
-  const fresh = ULTRA_STARTERS.filter((d) => (BY_ID[d.legend].since || 2) >= 4);
+  const fresh = ULTRA_STARTERS.filter((d) => BY_ID[d.legend].since === 4);
   eq(fresh.length, 6, 'six new starters');
   for (const d of fresh) {
     eq(legendFor(cardList(d.counts)), d.legend, `${d.name}’s deck gets its own Legend`);
@@ -2472,6 +2472,118 @@ test('Ultra v4: Marisol, Mirelle and Oriel', () => {
   lvl(o, A, 3);
   o = endT(o); o = endT(o);
   eq(o.players[B].life, 28, 'Level 3: with your Field in play at the start of your turn, 2 damage to each opponent');
+});
+
+// ── SATTC Ultra, version 5: toned-down cards, guerrilla cards, two more Legends ──
+function u5scene(opts = {}) {
+  const s = uscene(opts);
+  s.uv = 5;
+  return s;
+}
+
+test('Ultra v5: Spellwright Apprentice grows with the first Spell each turn (version 4: every Spell)', () => {
+  let s = u5scene({ energy: 6 });
+  const app = ub(s, 'spellwright-apprentice', A);
+  for (let k = 0; k < 3; k++) s = play(s, inHand(s, 'static-spark').uid, { target: { p: B } });
+  ok(power(s, s.cards[app.uid]) === 2 && vitality(s, s.cards[app.uid]) === 3, 'three Spells in a turn: +1/+1 once');
+  let t = u4scene({ energy: 6 });
+  const app4 = ub(t, 'spellwright-apprentice', A);
+  for (let k = 0; k < 3; k++) t = play(t, inHand(t, 'static-spark').uid, { target: { p: B } });
+  eq(power(t, t.cards[app4.uid]), 4, 'a version 4 game keeps +1/+1 for every Spell');
+});
+
+test('Ultra v5: the Rolling Fog lifts at the start of its owner’s third turn (version 4: it stays)', () => {
+  let s = u5scene({ energy: 6 });
+  deckOf(s, A, 8); deckOf(s, B, 8);
+  s = play(s, inHand(s, 'rolling-fog').uid);
+  const fog = s.field;
+  for (let k = 0; k < 4; k++) s = endT(s); // (B, A: one; B, A: two)
+  eq(s.field, fog, 'two of its owner’s turns later it is still there');
+  s = endT(s); s = endT(s);
+  eq(s.field, null, 'at the start of the third, it lifts');
+  eq(s.cards[fog].zone, 'discard', 'to its owner’s discard pile');
+  let t = u4scene({ energy: 6 });
+  deckOf(t, A, 8); deckOf(t, B, 8);
+  t = play(t, inHand(t, 'rolling-fog').uid);
+  for (let k = 0; k < 6; k++) t = endT(t);
+  ok(t.field != null, 'a version 4 game keeps it');
+});
+
+test('Ultra v5, guerrilla cards: Choking Smoke, Tollkeeper, Grave Robber, Pickpocket, Whispered Doubt, Blight Beetle', () => {
+  let s = u5scene({ energy: 6 });
+  deckOf(s, A, 5); deckOf(s, B, 5);
+  s = play(s, inHand(s, 'choking-smoke').uid);
+  s = endT(s);
+  eq(s.players[B].energy, s.players[B].maxEnergy - 2, 'Choking Smoke: the opponent has 2 less Energy on their next turn');
+  s = endT(s); s = endT(s);
+  eq(s.players[B].energy, s.players[B].maxEnergy, 'and only that turn');
+  let t = u5scene({ energy: 6 });
+  deckOf(t, A, 5); deckOf(t, B, 5);
+  ub(t, 'tollkeeper', B);
+  t = play(t, inHand(t, 'ancient-roots').uid);
+  eq(t.players[B].hand.length, 1, 'Tollkeeper: an opponent Invests, and its player draws a card');
+  let g = u5scene({ energy: 6 });
+  const dead = ['grave-rat', 'mossback', 'something-beneath', 'gravewarden', 'scorch'].map((cid) => addCard(g, cid, B, 'discard'));
+  g = play(g, inHand(g, 'grave-robber').uid);
+  ok(['something-beneath', 'gravewarden', 'mossback'].every((cid) => g.players[B].deck.some((u) => g.cards[u].cid === cid)), 'Grave Robber: the three costliest creatures in their discard pile go to the bottom of their deck');
+  ok(g.players[B].discard.some((u) => g.cards[u].cid === 'grave-rat') && g.players[B].discard.some((u) => g.cards[u].cid === 'scorch'), 'the rest stay');
+  eq(g.cards[dead[2].uid].zone, 'deck', '(as deck cards)');
+  let p = u5scene({ energy: 6 });
+  const thief = ub(p, 'pickpocket', A);
+  for (const cid of ['scorch', 'mossback']) inHand(p, cid, B);
+  p = fight(attack(p, thief.uid));
+  eq(p.players[B].hand.length, 1, 'Pickpocket: its hit sends a random card from their hand to their discard pile');
+  let w = u5scene({ energy: 6 });
+  deckOf(w, A, 3); deckOf(w, B, 3);
+  const big = inHand(w, 'worldtree-stag', B), small = inHand(w, 'scorch', B), wd = inHand(w, 'whispered-doubt');
+  const n = needs(w, A, w.cards[wd.uid]);
+  ok(n.pick.includes(big.uid) && !n.pick.includes(small.uid), 'Whispered Doubt: it can pick a card costing 4 or more from their hand');
+  w = play(w, wd.uid, { pick: big.uid });
+  eq(w.players[B].deck[w.players[B].deck.length - 1], big.uid, 'that card goes to the bottom of their deck');
+  eq(w.players[B].hand.length, 2, 'they draw a card');
+  eq(w.players[A].hand.length, 1, 'and you draw one');
+  let b = u5scene({ energy: 6 });
+  const beetle = ub(b, 'blight-beetle', A), grown = ub(b, 'mossback', B, { pP: 3, pV: 3 }), plain = ub(b, 'grave-rat', B);
+  ok(useOptions(b, A, beetle).every((a) => a.target.uid === grown.uid), 'Blight Beetle: only a creature with growth can be its target');
+  b = act(b, { t: 'use', p: A, uid: beetle.uid, target: { uid: grown.uid } });
+  ok(b.cards[grown.uid].pP === 2 && b.cards[grown.uid].pV === 2, 'it loses +1/+1 of its growth');
+  ok(plain, '');
+});
+
+test('Ultra v5: Ione and Hush', () => {
+  let s = u5scene({ energy: 6 });
+  legendOn(s, 'legend-ione');
+  lvl(s, A, 2);
+  const wg = inHand(s, 'wild-growth');
+  eq(costOf(s, A, wg), BY_ID['wild-growth'].cost - 1, 'Ione at Level 2: the first Spell each turn costs 1 less');
+  lvl(s, A, 3);
+  const m = ub(s, 'mossback', A);
+  s = play(s, wg.uid, { target: { uid: m.uid } });
+  eq(s.cards[m.uid].pP, 3, 'Level 3: a Spell that grows a creature for good grows it +1/+1 more (2 + 1)');
+  let h = u5scene({ energy: 6 });
+  const H = legendOn(h, 'legend-hush', B);
+  deckOf(h, A, 5); deckOf(h, B, 5);
+  const att = ub(h, 'mossback', A), wall = ub(h, 'wavewarden', B);
+  h = fight(attack(h, att.uid), [[wall.uid, att.uid]]);
+  eq(h.players[B].cxp, 1, 'Hush: an attack that dealt her player no damage is XP');
+  lvl(h, B, 3);
+  const n = h.players[B].hand.length;
+  h = endT(h);
+  eq(h.players[A].life, 29, 'Level 2: at the start of her player’s turn, each opponent loses 1 Life');
+  eq(h.players[B].life, 31, 'and her player gains 1');
+  h = endT(h);
+  h = fight(attack(h, att.uid), [[wall.uid, att.uid]]);
+  ok(h.players[B].hand.length >= n + 2, 'Level 3: a stalled attack draws a card (on top of the turn’s own draw)');
+  ok(H, '');
+});
+
+test('Ultra v5, the rules audit: a creature sent back to the hand comes back fresh (version 4 kept its growth)', () => {
+  for (const [s, keeps] of [[u5scene({ energy: 6 }), false], [u4scene({ energy: 6 }), true]]) {
+    const m = ub(s, 'mossback', B, { pP: 2, pV: 2 });
+    const t = play(s, inHand(s, 'not-yet').uid, { target: { uid: m.uid } });
+    eq(t.cards[m.uid].zone, 'hand', 'Not Yet sends it back');
+    eq(t.cards[m.uid].keepP || 0, keeps ? 2 : 0, `version ${s.uv}: its growth is ${keeps ? 'kept' : 'gone'}`);
+  }
 });
 
 // ── fuzz: random legal play ─────────────────────────────────────────

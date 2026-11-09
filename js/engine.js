@@ -42,6 +42,8 @@ const ev = (s, e) => s.events.push(e);
 const fieldIs = (s, cid) => s.field != null && s.cards[s.field]?.cid === cid;
 // (version 4) "your Field": one you played
 const fieldMine = (s, pi) => s.field != null && s.cards[s.field]?.ctrl === pi;
+// Ultra's fifth version (2026-11-09): the toned-down cards and the guerrilla cards' rules.
+const ultraV5 = (s) => !!s.ultra && s.uv >= 5;
 // SATTC Ultra's second version: Legends, Fuse from the hand, Dig, ganging up (cards.js ULTRA_V).
 export const ultraV2 = (s) => !!s.ultra && s.uv >= 2;
 // ...and its third (the tournament lab's fixes): simultaneous strikes, and the growth cap.
@@ -348,6 +350,7 @@ function price(s, pi, c, from = 'hand') {
 function v4Price(s, pi, d, cost) {
   const P = s.players[pi];
   if (cost >= 7 && champOn(s, pi, 'legend-marisol', 3)) cost -= 2;
+  if (d.type === 'spell' && P.spells === 0 && champOn(s, pi, 'legend-ione', 2)) cost -= 1; // (version 5)
   if ((isTrick(d) || d.subtype === 'Trap') && champOn(s, pi, 'legend-mirelle', 2)) cost -= 1;
   if (d.type === 'field') {
     cost -= countOn(s, P.board, 'weatherwitch');
@@ -361,7 +364,7 @@ export const costOf = (s, pi, c, from = 'hand') => price(s, pi, c, from).cost;
 // ── zones ───────────────────────────────────────────────────────────
 const TABLE_STATE = ['dmg', 'pP', 'pV', 'tP', 'tV', 'played', 'rush', 'awake', 'grown', 'sacEnd', 'gTurn', 'aTurn', 'hurt',
   'ex', 'frozen', 'tKw', 'ctrl', 'stolen', 'venomed', 'chimes', 'usedOn',
-  'fuseKw', 'shelter', 'hex', 'poison', 'erupting', 'stage', 'stageOn', 'fused', 'fuseGrows', 'shield', 'stored']; // (the last line: Ultra)
+  'fuseKw', 'shelter', 'hex', 'poison', 'erupting', 'stage', 'stageOn', 'fused', 'fuseGrows', 'shield', 'stored', 'clock']; // (the last line: Ultra)
 function resetPlay(c) {
   for (const k of TABLE_STATE) delete c[k];
   if (c.baseCid) { c.cid = c.baseCid; delete c.baseCid; }
@@ -371,7 +374,7 @@ function enterPlay(s, c, pi) {
   resetPlay(c);
   Object.assign(c, { zone: 'board', ctrl: pi, dmg: 0, pP: 0, pV: 0, tP: 0, tV: 0, played: s.turn, ex: false, gTurn: -1, aTurn: -1 });
   if (s.ultra) {
-    c.shelter = !(ultraV2(s) && isSymbiote(c)); // (until its controller's next turn; a Symbiote goes without)
+    c.shelter = ULTRA_V2.shelter && !(ultraV2(s) && isSymbiote(c)); // (until its controller's next turn; a Symbiote goes without)
     if (def(c).keywords.includes('shield')) c.shield = 1; // (it starts with one)
     // a creature sent back to the hand kept its growth
     if (c.keepP || c.keepV) { c.pP = c.keepP || 0; c.pV = c.keepV || 0; c.grown = true; }
@@ -537,6 +540,7 @@ function buff(s, c, dP, dV, permanent, fromBramble = false, uncapped = false) {
   if (s.ultra && !c.erupting && hasKw(s, c, 'unstable') && power(s, c) >= ULTRA_RULES.unstableAt) { erupt(s, c); return; }
   if (!permanent) return;
   if (s.ultra && !fromBramble && fieldIs(s, 'overgrowth')) { log(s, c.ctrl, `Overgrowth: ${nameOf(c)} gets +1/+1 more.`); buff(s, c, 1, 1, true, true); }
+  if (s.ultra && !fromBramble && s.castBy === c.ctrl && champOn(s, c.ctrl, 'legend-ione', 3)) { log(s, c.ctrl, `${BY_ID['legend-ione'].name}: ${nameOf(c)} gets +1/+1 more.`); buff(s, c, 1, 1, true, true); } // (version 5)
   c.grown = true;
   gainXP(s, c.ctrl, 'grow', 1);
   const board = s.players[c.ctrl].board;
@@ -611,6 +615,10 @@ function invest(s, pi) {
   ev(s, { k: 'invest', p: pi });
   gainXP(s, pi, 'invest', 1);
   if (champOn(s, pi, 'legend-marisol', 2)) { log(s, pi, `${BY_ID['legend-marisol'].name}: ${P.name} draws a card.`); draw(s, pi, 1); }
+  for (const o of opponents(s, pi)) { // (version 5: a Tollkeeper takes its toll)
+    const k = countOn(s, o.board, 'tollkeeper');
+    if (k) { log(s, o.i, `Tollkeeper: ${o.name} draws ${k > 1 ? `${k} cards` : 'a card'}.`); draw(s, o.i, k); }
+  }
 }
 
 // Ultra: opponents can't aim Spells or abilities at a Sheltered creature (one
@@ -703,7 +711,7 @@ function damage(s, c, n, src = null, drain = null, venom = null) {
   c.dmg += n;
   c.hurt = true;
   gainXP(s, c.ctrl, 'wound', 1);
-  if (src && (venom ?? hasKw(s, src, 'venom'))) { if (s.ultra) c.poison = (c.poison || 0) + n; else c.venomed = true; }
+  if (src && (venom ?? hasKw(s, src, 'venom'))) { if (s.ultra && ULTRA_V2.poison) c.poison = (c.poison || 0) + n; else c.venomed = true; }
   ev(s, { k: 'dmg', uid: c.uid, n, src: src ? src.uid : null });
   if (src && (drain ?? hasKw(s, src, 'drain'))) { gainLife(s, src.ctrl ?? src.owner, n); bloodbound(s, src, n); }
 }
@@ -715,6 +723,7 @@ function bloodbound(s, src, n) {
 
 function damagePlayer(s, pi, n, src = null, drain = null) {
   if (n <= 0 || s.players[pi].out) return;
+  if (s.combat && s.combat.d === pi) s.combat.hurtD = true;
   log(s, pi, `${s.players[pi].name} takes ${n} damage.`);
   ev(s, { k: 'hitPlayer', p: pi, n, src: src ? src.uid : null });
   loseLife(s, pi, n);
@@ -742,7 +751,7 @@ function killBatch(s, dead) {
     log(s, ctrl, `${nameOf(c)} dies.`);
     ev(s, { k: 'die', uid: c.uid, cid: as, owner: c.owner, ctrl });
     // Ultra, Legacy: half of what it grew (rounded up) passes on
-    const legacy = s.ultra && (c.pP > 0 || c.pV > 0) ? [Math.ceil(Math.max(0, c.pP) / 2), Math.ceil(Math.max(0, c.pV) / 2)] : null;
+    const legacy = s.ultra && ULTRA_V2.legacy && (c.pP > 0 || c.pV > 0) ? [Math.ceil(Math.max(0, c.pP) / 2), Math.ceil(Math.max(0, c.pV) / 2)] : null;
     resetPlay(c);
     toDiscard(s, c, 'board');
     gone.push({ c, as, ctrl, legacy });
@@ -861,7 +870,8 @@ function offering(s, pi, a, strong, weak) {
 
 function bounce(s, c) {
   if (!c) return;
-  if (s.ultra && c.zone === 'board') { c.keepP = Math.max(0, c.pP || 0); c.keepV = Math.max(0, c.pV || 0); if (c.fuseKw) c.keepKw = [...c.fuseKw]; }
+  // (Ultra before version 5: a creature sent back to the hand kept its growth; the rules audit cut that, 2026-11-09)
+  if (s.ultra && ULTRA_V2.keepGrowth && !ultraV5(s) && c.zone === 'board') { c.keepP = Math.max(0, c.pP || 0); c.keepV = Math.max(0, c.pV || 0); if (c.fuseKw) c.keepKw = [...c.fuseKw]; }
   if (c.zone === 'board') removeFrom(s.players[c.ctrl].board, c.uid);
   else if (c.zone === 'relic') removeFrom(s.players[c.ctrl].relics, c.uid);
   else return;
@@ -949,6 +959,11 @@ function clearCombatMarks(s) {
 
 function endCombat(s) {
   if (!s.combat) return;
+  const C = s.combat;
+  if (s.ultra && !C.hurtD && !s.players[C.d].out) { // (version 5: Hush counts attacks that didn't hurt her player)
+    gainXP(s, C.d, 'stall', 1);
+    if (champOn(s, C.d, 'legend-hush', 3)) { log(s, C.d, `${BY_ID['legend-hush'].name}: ${s.players[C.d].name} draws a card.`); draw(s, C.d, 1); }
+  }
   clearCombatMarks(s);
   s.combat = null;
   if (s.phase === 'combat') s.phase = 'main';
@@ -1174,7 +1189,7 @@ function strike(s, a, bs, standing, d) {
 // the costliest blockers it can, one after another; what is left lands on
 // the next blocker, or with Overrun (once every blocker has its fill) on the player.
 export function splitDamage(s, a, bs, pw) {
-  const venom = hasKw(s, a, 'venom') && !s.ultra; // (in Ultra, Venom poisons instead of killing)
+  const venom = hasKw(s, a, 'venom') && !(s.ultra && ULTRA_V2.poison); // (in Ultra, Venom poisons instead of killing)
   const lethal = (b) => { if (b.shield > 0) return Infinity; const left = Math.max(0, vitality(s, b) - b.dmg); return venom ? Math.min(1, left) : left; }; // (a Shield stops the hit)
   const order = [...bs].sort((x, y) => def(y).cost - def(x).cost || power(s, y) - power(s, x) || x.uid - y.uid);
   const got = new Map();
@@ -1197,6 +1212,14 @@ function hitInFight(s, a, d, n, drain = null) {
   if (n > 0 && s.ultra && champOn(s, a.ctrl, 'legend-kasimir', 3)) n += 1;
   ev(s, { k: 'strike', uid: a.uid, to: { p: d } });
   damagePlayer(s, d, n, a, drain);
+  if (n > 0 && a.cid === 'pickpocket' && s.players[d].hand.length && !s.players[d].out) { // (version 5)
+    const Q = s.players[d], u = Q.hand[Math.floor(rnd(s) * Q.hand.length)], x = s.cards[u];
+    if (!def(x).champion) {
+      removeFrom(Q.hand, u);
+      log(s, a.ctrl, `The Pickpocket snatches ${nameOf(x)} from ${Q.name}'s hand.`);
+      toDiscard(s, x, 'hand');
+    }
+  }
   if (n > 0 && s.ultra && !s.players[a.ctrl].out) { // (version 4: Kasimir counts hits; a War Chest pays for the first each turn)
     gainXP(s, a.ctrl, 'hit', 1);
     for (const u of s.players[a.ctrl].relics) {
@@ -1271,6 +1294,7 @@ export function abilityNeeds(s, pi, c) {
     case 'hungry-ghoul': case 'dawnwatch-knight': return { target: T(others) };
     case 'ember-duelist': return { target: T(aimable(s, pi, s.players.flatMap((Q) => Q.board))) };
     case 'the-puppeteer': { const e = aimable(s, pi, opponents(s, pi).flatMap((Q) => Q.board)); return { fighter: e, target: T(e) }; } // (Ultra, version 4)
+    case 'blight-beetle': return { target: T(aimable(s, pi, opponents(s, pi).flatMap((Q) => Q.board)).filter((u) => s.cards[u].pP > 0 || s.cards[u].pV > 0)) }; // (version 5)
     default:
       if (!isSymbiote(c)) return {};
       if (ultraV2(s)) return symbioteNeeds(s, pi, c, others);
@@ -1407,6 +1431,9 @@ export function needs(s, pi, c, from = 'hand') {
       return { target: opponents(s, pi).map((Q) => ({ p: Q.i })) };
     case 'weatherwitch':
       return { pick: discardOf((d) => d.type === 'field'), optional: true };
+    // (version 5)
+    case 'whispered-doubt':
+      return { pick: opponents(s, pi).flatMap((Q) => Q.hand.filter((u) => !def(s.cards[u]).token && !def(s.cards[u]).champion && def(s.cards[u]).cost >= 4)), optional: true };
     default:
       return {};
   }
@@ -1871,6 +1898,22 @@ function resolveSpell(s, pi, c, a) {
     case 'hour-of-glory':
       for (const u of [...P.board]) { buff(s, s.cards[u], 3, 0, false); giveKw(s.cards[u], 'rush'); }
       break;
+    // ── SATTC Ultra, version 5 ──
+    case 'choking-smoke':
+      for (const o of opponents(s, pi)) o.smoke = (o.smoke || 0) + 2;
+      log(s, pi, 'Choking Smoke: each opponent will have 2 less Energy on their next turn.');
+      break;
+    case 'whispered-doubt': {
+      const x = a.pick != null ? s.cards[a.pick] : null, Q = x && s.players[x.owner];
+      if (x && Q && Q.i !== pi && removeFrom(Q.hand, x.uid)) {
+        x.zone = 'deck';
+        Q.deck.push(x.uid);
+        log(s, pi, `${nameOf(x)} goes to the bottom of ${Q.name}'s deck.`);
+        draw(s, Q.i, 1);
+      }
+      draw(s, pi, 1);
+      break;
+    }
   }
 }
 
@@ -1963,6 +2006,13 @@ function creatureEnters(s, pi, c, a, from) {
       break;
     case 'blitz-captain':
       for (const u of P.board) if (u !== c.uid) { buff(s, s.cards[u], 1, 0, false); giveKw(s.cards[u], 'rush'); }
+      break;
+    case 'grave-robber': // (version 5)
+      for (const o of opponents(s, pi)) {
+        const top = o.discard.map((u) => s.cards[u]).filter((x) => def(x).type === 'creature').sort((x, y) => def(y).cost - def(x).cost || x.uid - y.uid).slice(0, 3);
+        for (const x of top) { removeFrom(o.discard, x.uid); x.zone = 'deck'; o.deck.push(x.uid); }
+        if (top.length) log(s, pi, `The Grave Robber carries off ${listNames(top.map(nameOf))}: to the bottom of ${o.name}'s deck.`);
+      }
       break;
     case 'weatherwitch':
       if (a.pick != null && removeFrom(P.discard, a.pick)) { log(s, pi, `${nameOf(s.cards[a.pick])} returns to ${P.name}'s hand.`); toHand(s, s.cards[a.pick], 'discard'); }
@@ -2112,7 +2162,9 @@ function play(s, pi, a) {
     }
     break;
   }
+  s.castBy = pi; // (Ione: growth that comes from a Spell of yours)
   resolveSpell(s, pi, c, a);
+  delete s.castBy;
   if (set) { c.zone = 'trap'; P.traps.push(c.uid); }
   else if (d.stages) { c.zone = 'relic'; c.ctrl = pi; c.stage = 1; c.stageOn = s.turn; P.relics.push(c.uid); } // (a Ritual stays, in stages)
   else toDiscard(s, c, 'stack');
@@ -2124,13 +2176,14 @@ function fieldArrives(s, pi, c) {
   if (!s.ultra) return;
   const P = s.players[pi];
   if (c.cid === 'gale-winds') draw(s, pi, 1);
+  if (c.cid === 'rolling-fog' && ultraV5(s)) c.clock = 0;
   gainXP(s, pi, 'field', 1);
   if (champOn(s, pi, 'legend-oriel', 2)) { log(s, pi, `${BY_ID['legend-oriel'].name}: ${P.name} draws a card.`); draw(s, pi, 1); }
 }
 // Ultra (version 4): what playing a Spell sets off.
 function spellPlayed(s, pi, d) {
   const P = s.players[pi];
-  for (const u of [...P.board]) if (s.cards[u].cid === 'spellwright-apprentice') { log(s, pi, 'Spellwright Apprentice: +1/+1 for good.'); buff(s, s.cards[u], 1, 1, true); }
+  if (!ultraV5(s) || P.spells === 1) for (const u of [...P.board]) if (s.cards[u].cid === 'spellwright-apprentice') { log(s, pi, 'Spellwright Apprentice: +1/+1 for good.'); buff(s, s.cards[u], 1, 1, true); } // (version 5: the first Spell each turn)
   if (P.spells === 2 && champOn(s, pi, 'legend-seren', 2)) { log(s, pi, `${BY_ID['legend-seren'].name}: a second Spell, and ${P.name} draws a card.`); draw(s, pi, 1); }
   if (champOn(s, pi, 'legend-seren', 3)) { log(s, pi, `${BY_ID['legend-seren'].name}: 1 damage to each opponent.`); for (const o of opponents(s, pi)) damagePlayer(s, o.i, 1); }
   if (isTrick(d)) {
@@ -2174,6 +2227,14 @@ function use(s, pi, a) {
     case 'dawnwatch-knight': buff(s, t, 0, 2, false); break;
     // (Ultra, version 4)
     case 'pearl-diver': invest(s, pi); break;
+    case 'blight-beetle': // (version 5)
+      if (t?.zone === 'board') {
+        const dP = Math.min(1, Math.max(0, t.pP || 0)), dV = Math.min(1, Math.max(0, t.pV || 0));
+        t.pP -= dP; t.pV -= dV;
+        log(s, pi, `${nameOf(t)} loses +${dP}/+${dV} of its growth.`);
+        ev(s, { k: 'buff', uid: t.uid, dP: -dP, dV: -dV, perm: true });
+      }
+      break;
     case 'the-puppeteer': {
       const f = s.cards[a.fighter];
       if (f?.zone !== 'board' || t?.zone !== 'board') break;
@@ -2287,6 +2348,28 @@ function ultraTurnStart(s, i) {
     ev(s, { k: 'granary', uid: r.uid, n: -r.stored });
     r.stored = 0;
   }
+  if (ultraV5(s) && fieldMine(s, i) && fieldIs(s, 'rolling-fog')) { // (version 5: the fog lifts at the start of its owner's third turn)
+    const f = s.cards[s.field];
+    f.clock = (f.clock || 0) + 1;
+    if (f.clock >= 3) {
+      log(s, i, 'The Rolling Fog lifts.');
+      resetPlay(f);
+      s.field = null;
+      toDiscard(s, f, 'field');
+      ev(s, { k: 'field', uid: null, p: i });
+    }
+  }
+  if (P.smoke) { // (version 5: Choking Smoke)
+    const k = Math.min(P.smoke, P.energy);
+    P.energy -= k;
+    log(s, i, `Choking Smoke: ${P.name} has ${k} less Energy this turn.`);
+    P.smoke = 0;
+  }
+  if (champOn(s, i, 'legend-hush', 2)) {
+    log(s, i, `${BY_ID['legend-hush'].name}: each opponent loses 1 Life, and ${P.name} gains 1.`);
+    for (const o of opponents(s, i)) loseLife(s, o.i, 1, i);
+    gainLife(s, i, 1);
+  }
   if (fieldMine(s, i)) { // (version 4: Oriel)
     gainXP(s, i, 'field', 1);
     if (champOn(s, i, 'legend-oriel', 3)) { log(s, i, `${BY_ID['legend-oriel'].name}: the storm hits each opponent for 2.`); for (const o of opponents(s, i)) damagePlayer(s, o.i, 2); }
@@ -2374,7 +2457,7 @@ function endTurn(s) {
   }
   for (const Q of s.players) for (const u of Q.board) {
     const c = s.cards[u];
-    if (!s.ultra) c.dmg = 0; // (in Ultra, wounds stay until they heal)
+    if (!s.ultra || !ULTRA_V2.wounds) { c.dmg = 0; c.poison = 0; } // (in Ultra, wounds stay until they heal)
     c.tP = 0; c.tV = 0;
     delete c.tKw;
     delete c.venomed;

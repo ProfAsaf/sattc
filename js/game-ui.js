@@ -37,7 +37,7 @@ let ultraIntroSeen = (() => { try { return localStorage.getItem(ULTRA_INTRO) ===
 // ...and the first game of Ultra's second version, for a phone that saw the first intro: what's new (ultraNewHTML)
 // (with the growth cap on there is more to tell, under a key of its own: a phone that saw the first list sees this once more)
 // (and with version 4's six decks, once more)
-const ULTRA_INTRO2 = ULTRA_V >= 4 ? 'collective.ultraIntro4' : ULTRA_V2.growthCap ? 'collective.ultraIntro3' : 'collective.ultraIntro2';
+const ULTRA_INTRO2 = ULTRA_V >= 5 ? 'collective.ultraIntro5' : ULTRA_V >= 4 ? 'collective.ultraIntro4' : ULTRA_V2.growthCap ? 'collective.ultraIntro3' : 'collective.ultraIntro2';
 let ultraNewSeen = (() => { try { return localStorage.getItem(ULTRA_INTRO2) === '1'; } catch { return false; } })();
 const SPEEDS = { normal: 1, fast: 1.7 };
 FX.setSpeed(fastOn() ? SPEEDS.fast : SPEEDS.normal);
@@ -787,7 +787,7 @@ function describeMove(s, a) {
       if (a.offer != null) t += `, offering ${card(a.offer)},`;
       if (a.fighter != null) t += ` with ${card(a.fighter)} fighting`;
       t += on(a.target);
-      if (a.pick != null) t += `, bringing back ${card(a.pick)}`;
+      if (a.pick != null) t += s.cards[a.uid].cid === 'whispered-doubt' ? `, sending ${card(a.pick)} to the bottom of its owner’s deck` : `, bringing back ${card(a.pick)}`;
       if (a.picks?.length) t += `, getting back ${listNames(a.picks.map(card))}`;
       if (a.targets?.length) t += ` on ${listNames(a.targets.map(card))}`;
       if (a.keep != null) t += `, keeping ${card(a.keep)}`;
@@ -1161,6 +1161,7 @@ const ABILITY_PROMPTS = {
   'bark-graft': 'Bark Graft fuses into which of your creatures?',
   'wing-graft': 'Wing Graft fuses into which of your creatures?',
   'venom-shard': 'Venom Shard fuses into which of your creatures?',
+  'blight-beetle': 'Blight Beetle: which enemy creature loses +1/+1 of its growth?',
 };
 
 // SATTC Ultra: a Ritual's next stage, and why it can't happen now.
@@ -2209,7 +2210,8 @@ function fieldHTML(s) {
   if (s.field == null) return '';
   const f = s.cards[s.field], d = BY_ID[f.cid];
   const whose = f.ctrl === G.me ? 'Your Field' : `${esc(poss(shortName(s.players[f.ctrl].name)))} Field`; // (cards that say “your Field” count it as its player’s)
-  return `<button class="g-field" data-key="field" data-act="field-info" data-uid="${f.uid}" style="${factionVars(d)}"><span>${whose}</span><b>${esc(d.name)}</b></button>`;
+  const lifts = f.cid === 'rolling-fog' && s.uv >= 5 ? ` · lifts in ${3 - (f.clock || 0)}` : ''; // (version 5: the fog lifts at its owner's third turn)
+  return `<button class="g-field" data-key="field" data-act="field-info" data-uid="${f.uid}" style="${factionVars(d)}"><span>${whose}${lifts}</span><b>${esc(d.name)}</b></button>`;
 }
 
 function tableHTML() {
@@ -2826,7 +2828,10 @@ function ultraNewHTML() {
     <div class="kicker muted small" style="letter-spacing:.2em">SATTC ULTRA HAS GROWN</div>
     <h2>What’s new</h2>
     <ul>
-      ${ULTRA_V >= 4 ? `<li><b>Six new decks</b>, each with its own Legend: <b>The Long Game</b> (Invest, save Energy, draw), <b>Rot and Bloom</b> (sacrifice for power), <b>Smoke and Mirrors</b> (Tricks, Traps, Ambushes), <b>Storm Rising</b> (Spell after Spell), <b>Weathermakers</b> (choose the Field) and <b>The Charge</b> (hit first). Their biggest cards cost 7 or more: Energy beyond the usual 6, so each deck has its own way to Invest.</li>
+      ${ULTRA_V >= 5 ? `<li><b>Two decks the bots discovered</b>, each with its own Legend: <b>Spellbloom</b> (cheap Spells that grow your creatures for good) and <b>Fogbound</b> (hide in the fog, then Drain to win).</li>
+      <li><b>Guerrilla cards</b> slow an opponent’s plans instead of fighting their creatures: Choking Smoke, Tollkeeper, Grave Robber, Pickpocket, Whispered Doubt and Blight Beetle.</li>
+      <li><b>Simpler:</b> a creature sent back to the hand now comes back fresh, without its growth. <b>Toned down:</b> Spellwright Apprentice grows with your first Spell each turn, and the Rolling Fog lifts after three of your turns.</li>
+      <li><b>From before:</b> ★ Legends, Ambush, Offering, your Field, Symbiotes, Dig, ganging up, Traps, Shields and the growth ceiling. The <b>?</b> in a game explains each.</li>` : ULTRA_V >= 4 ? `<li><b>Six new decks</b>, each with its own Legend: <b>The Long Game</b> (Invest, save Energy, draw), <b>Rot and Bloom</b> (sacrifice for power), <b>Smoke and Mirrors</b> (Tricks, Traps, Ambushes), <b>Storm Rising</b> (Spell after Spell), <b>Weathermakers</b> (choose the Field) and <b>The Charge</b> (hit first). Their biggest cards cost 7 or more: Energy beyond the usual 6, so each deck has its own way to Invest.</li>
       <li><b>New words.</b> <b>Ambush</b>: play it in a fight like a Trick; played before you block, it can block. <b>Offering</b>: as you play the card, you may sacrifice a creature of yours for the stronger effect. <b>Your Field</b>: one you played (the banner says whose).</li>
       <li><b>From before:</b> ★ Legends beside every deck, Symbiotes, Dig, ganging up, Traps, Shields that stack, and the growth ceiling. The <b>?</b> in a game explains each.</li>` : `
       <li><b>★ A Legend for every deck.</b> Yours waits at the left of your hand (it isn’t a card in your hand): play it whenever you can pay. It levels up as you play its way, even before it’s out. If it dies, it comes back to wait, 2 Energy dearer.</li>
@@ -3067,8 +3072,10 @@ function choiceSheet(st) {
   switch (st.kind) {
     case 'pick': {
       const by = G.flow.a.uid && s.cards[G.flow.a.uid].cid;
-      const title = by === 'the-barrow-queen' ? 'Bring back a creature from any discard pile' : by === 'weatherwitch' ? 'Bring a Field back to your hand' : 'Choose a creature from your discard pile';
-      return `<h3>${title}</h3>${cards(st.options)}<div class="btn-col">${st.optional ? '<button class="btn" data-act="skip">Bring nothing back</button>' : ''}${cancel}</div>`;
+      const title = by === 'the-barrow-queen' ? 'Bring back a creature from any discard pile' : by === 'weatherwitch' ? 'Bring a Field back to your hand'
+        : by === 'whispered-doubt' ? 'Their cards that cost 4 or more: which goes to the bottom of its owner’s deck?' : 'Choose a creature from your discard pile';
+      const skip = by === 'whispered-doubt' ? 'Leave their hands alone' : 'Bring nothing back';
+      return `<h3>${title}</h3>${cards(st.options)}<div class="btn-col">${st.optional ? `<button class="btn" data-act="skip">${skip}</button>` : ''}${cancel}</div>`;
     }
     case 'picks':
       return `<h3>${esc(st.title || 'Return up to three Spells')}</h3>${cards(st.options, G.flow.multi)}
@@ -3192,6 +3199,7 @@ function helpSheet() {
       ${S().ultra ? '<div><b>SATTC Ultra</b>: 30 Life. <b>Wounds stay</b> on creatures and heal by half at the start of their owner’s turn. A new creature is <b>Sheltered</b> (🛡) from opponents’ Spells and abilities until its owner’s next turn. When a creature that grew dies, half its growth passes to your weakest creature (<b>Legacy</b>). Energy grows by itself to 6; <b>Invest</b> cards raise it for good, up to 12. One <b>Field</b> (the banner in the middle) changes the rules for everyone. A <b>Ritual</b> stays in your Relic row: tap it to pay its next stage, one a turn. A <b>Hex</b> (⛓) lasts until its owner pays to break it: tap the creature. Venom’s damage is poison (☠): it doesn’t heal. An <b>Unstable</b> creature shows how close it is to erupting (💥8/10; it pulses red the turn before). Tap a creature to see what’s helping it: the cards on its side, and the Field.</div>' : ''}
       ${ultraV2(S()) ? `<div><b>Ultra’s second version</b>: your <b>Legend</b> waits beside your deck (at the left of your hand) and can be played whenever you can pay; it levels up as you play its way, and if it dies it comes back to wait there, 2 Energy dearer. Nothing can be fused into a Legend. <b>Symbiotes</b> (the creatures with Fuse): from the turn after one arrives, pay 1 Energy and it kills a creature it can kill in one hit (Vitality left no more than its Power, no Shield), then joins another creature of yours, which gets its Power, Vitality and keywords for good. A Symbiote arrives without Shelter. <b>Dig</b> (the button bottom left): once a turn, pay ${ULTRA_V2.digCost} Energy to draw a card. <b>Ganging up</b>: when two or more creatures block one attacker, each hits ${ULTRA_V2.together} harder. A <b>Shield</b> (◈) stops the next hit a creature would take; Shields stack. <b>Traps</b> wait face down and spring when you’re attacked.${ULTRA_V2.growthCap ? ' <b>Growth has a ceiling</b>: a creature can’t grow for good by more than its controller’s maximum Energy (6, more with Invest), so a monster takes an economy.' : ''}</div>` : ''}
       ${S().uv >= 4 ? `<div><b>Ultra’s fourth version</b>: six more decks, each with its Legend, and their biggest cards cost 7 or more, so they need Energy beyond the usual 6 (Invest). <b>Ambush</b>: a creature you can play during a fight, like a Trick; played when you’re attacked, before you choose blockers, it can block. <b>Offering</b>: as you play the card, you may sacrifice a creature of yours for its stronger effect. <b>Your Field</b> is a Field you played; the banner in the middle says whose it is. The <b>Granary</b> saves up to 3 Energy you didn’t spend for your next turn (its number shows on it).</div>` : ''}
+      ${S().uv >= 5 ? `<div><b>Ultra’s fifth version</b>: a creature sent back to the hand comes back fresh, without its growth. Two more decks with Legends (Spellbloom, Fogbound). Guerrilla cards slow an opponent’s plans: <b>Choking Smoke</b> (less Energy on their next turn), <b>Tollkeeper</b> (you draw when they Invest), <b>Grave Robber</b> (their dead go to the bottom of their deck), <b>Pickpocket</b> (its hit takes a random card from their hand), <b>Whispered Doubt</b> (a big card in their hand goes to the bottom of their deck) and <b>Blight Beetle</b> (it eats an enemy creature’s growth). The <b>Rolling Fog</b> lifts at the start of its owner’s third turn; the banner counts down.</div>` : ''}
       ${S().players.some((P) => P.champ) ? '<div><b>★ Champions</b> (new): every deck starts with a Champion on the table. It can block from the start, but can’t attack until Level 2. It levels up as you do what its faction does (tap it to see how far along it is), and each level changes how your other cards work. If it leaves the table it goes back to your hand, costing 2 more each time.</div>' : ''}
       ${S().crownOn ? '<div><b>👑 The Crown</b> (three players): the first player to hit someone in a fight takes it. Whoever holds it draws an extra card at the end of each of their turns. Hit the holder in a fight and it’s yours.</div>' : ''}
       <div><b>The button at the bottom right</b> moves the game on: End turn, Attack, Block, Fight. While you could still play a card or attack, End turn asks for a second tap.</div>

@@ -245,3 +245,31 @@ before you block, it can block), **Offering** (sacrifice one of yours as you
 play the card, for its stronger effect), and **your Field** (one you played).
 
 The README, "SATTC Ultra, version 4", has the rules, the numbers and the tests.
+
+## Version 5 (2026-11-09): what the bots taught us
+
+- **A rules audit.** Each Ultra rule was switched off in bot games to see
+  whether it adds skill or balance. None did measurably on its own, so the
+  test became: does it come up often, and does it serve one of the user's
+  rules or principles?
+  - Cut: a creature sent back to the hand keeping its growth. It came up 0.6
+    times a game and changed neither skill nor balance.
+  - Kept, with reasons: wounds that heal half and the growth ceiling (the
+    user's own rules); ganging up, Dig and Legends (the user's requests); and
+    Venom's poison, Legacy and Hexes, which keep the user's principle that no
+    answer erases a build for free. Without Venom's poison, Venom kills any
+    giant outright and balance swings up to 14 points.
+  - Shelter and lasting wounds make mistakes cost more (without them, a
+    1-in-5 blunderer loses about 160 Elo instead of 220): a sign of depth.
+- **Two decks the lab discovered**, from its winners in each faction pair:
+  Spellbloom (Verdant/Tide, Ione) and Fogbound (Tide/Umbral, Hush). They came
+  out of evolution too strong (67% and 71%) and were trimmed.
+- **Toned down:** Spellwright Apprentice and the Rolling Fog, which every
+  evolved Tide deck kept.
+- **Guerrilla cards**, for the gap the lab showed (nothing touched an
+  opponent's economy, discard pile or hand): Choking Smoke, Tollkeeper, Grave
+  Robber, Pickpocket, Whispered Doubt and Blight Beetle. Each wears off or can
+  be answered.
+
+Still open: three-player games, where the bots pile onto whoever has the
+fewest blockers (Smoke and Mirrors and The Charge win 11–17%).

@@ -30,10 +30,13 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { newGame, apply, actor, legalActions } from '../js/engine.js';
 import { chooseAction, planAction } from '../js/ai.js';
-import { RULES, ULTRA_STARTERS, ULTRA_V, legendFor } from '../js/cards.js';
+import { RULES, ULTRA_STARTERS, ULTRA_V, ULTRA_V2, legendFor } from '../js/cards.js';
 import { cardList } from '../js/decks.js';
 
 const DEALS = Number(process.argv[2] || 20), SEED = Number(process.argv[3] || 1);
+// rule switches to try (cards.js ULTRA_V2), e.g. KNOBS='{"legacy":false}'; the report's file gets a tag
+if (process.env.KNOBS) Object.assign(ULTRA_V2, JSON.parse(process.env.KNOBS));
+const TAG = process.env.KNOBS ? `-${Object.entries(JSON.parse(process.env.KNOBS)).map(([k, v]) => `${k}${v}`).join('-')}` : '';
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', '.phone-tests', 'lab');
 mkdirSync(OUT, { recursive: true });
 
@@ -128,7 +131,7 @@ const expect = (d) => 1 / (1 + 10 ** (-d / 400));
 
 const pct = (a, b) => (b ? `${Math.round((100 * a) / b)}%` : '—');
 const lines = [];
-lines.push(`# The Elo ladder, seed ${SEED}`, '');
+lines.push(`# The Elo ladder, seed ${SEED}${process.env.KNOBS ? ` (${process.env.KNOBS})` : ''}`, '');
 lines.push(`Ultra version ${ULTRA_V}, duels, the ${decks.length} Ultra starters dealt at random; ${DEALS} deals per pair, each played both ways: ${played} games, ${unfinished} unfinished, ${(rounds / Math.max(1, played - unfinished)).toFixed(1)} rounds a game, ${((Date.now() - t0) / 60000).toFixed(1)} minutes.`, '');
 lines.push('| Bot | Elo | won | against the practice bot |', '|---|---|---|---|');
 BOTS.forEach((b, i) => {
@@ -142,5 +145,5 @@ if (Object.keys(byDeck).length) {
   for (const [name, [w, g]] of Object.entries(byDeck).sort((x, y) => y[1][0] / y[1][1] - x[1][0] / x[1][1])) lines.push(`- ${name}: ${pct(w, g)} of ${g}`);
 }
 const text = lines.join('\n') + '\n';
-writeFileSync(join(OUT, `elo-${SEED}.md`), text);
+writeFileSync(join(OUT, `elo-${SEED}${TAG}.md`), text);
 console.log('\n' + text);

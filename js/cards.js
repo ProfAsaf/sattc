@@ -585,7 +585,7 @@ export const ULTRA_RULES = { startLife: 30, startLife3: 25, energyGrowsTo: 6, ma
 // Ultra's second version (2026-11-08): Legends, Symbiotes, Dig and
 // ganging up (engine.js). New games are set up with `ultra: ULTRA_V`; a setup
 // with `ultra: true` is version 1, so games saved before then replay unchanged.
-export const ULTRA_V = 4; // (3, later on 2026-11-08: fights strike all at once, and the growth cap below; games set up as 2 keep 2's rules. 4: six more Legends to choose from)
+export const ULTRA_V = 5; // (3, later on 2026-11-08: fights strike all at once, and the growth cap below; games set up as 2 keep 2's rules. 4: six more Legends to choose from. 5, 2026-11-09: the rules audit, two more Legends, the guerrilla cards)
 // digCost: Energy for a card, once a turn. together: +Power for each of 2 or more
 // creatures blocking one attacker. fuseTax: a card fused from the hand costs
 // this much more for each card already fused into that creature. fuseFight:
@@ -594,7 +594,8 @@ export const ULTRA_V = 4; // (3, later on 2026-11-08: fights strike all at once,
 // Symbiotes instead (only Symbiotes fuse, and they kill to do it). growthCap:
 // a creature's lasting growth can't go above its controller's maximum Energy,
 // so only Investing makes a monster (the tournament lab, 2026-11-08).
-export const ULTRA_V2 = { digCost: 3, together: 2, fuseTax: 0, fuseFight: true, fuseLegend: false, legends: true, fuseHand: false, dig: true, growthCap: true }; // (fuseLegend: cards can be fused into a Legend; legends and dig: switches for bot tests)
+export const ULTRA_V2 = { digCost: 3, together: 2, fuseTax: 0, fuseFight: true, fuseLegend: false, legends: true, fuseHand: false, dig: true, growthCap: true,
+  shelter: true, legacy: true, keepGrowth: true, poison: true, wounds: true }; // (fuseLegend: cards can be fused into a Legend; legends, dig and the last line: switches for bot tests, the rules audit)
 // Base cards that destroy or steal for good stay out of Ultra decks.
 export const ULTRA_OUT = ['death-is-a-door', 'the-culling', 'dawns-judgment', 'nerissa'];
 const FUSE = { cost: 1, short: 'kill a weak creature, then fuse into one of yours' }; // (Symbiote; in Ultra's first version, just fuse)
@@ -888,7 +889,7 @@ export const ULTRA = [
       art: 'A great curtain of seawater sweeping across a battlefield, warriors and beasts dissolving into bubbles and glittering spray behind it.' }),
   // Storm Rising: Spells that build on Spells (Ember and Tide).
   U({ id: 'spellwright-apprentice', n: 157, name: 'Spellwright Apprentice', cost: 1, factions: ['tide'], type: 'creature', subtype: 'Human Wizard', power: 1, vitality: 2,
-      text: 'Whenever you play a Spell, it gets +1/+1 for good.',
+      text: 'The first time you play a Spell each turn, it gets +1/+1 for good.',
       flavor: 'Every spell leaves a mark.',
       art: 'A young apprentice wizard in a sea-cave study, glowing runes curling up out of an open spellbook and settling onto her sleeves like tattoos.' }),
   U({ id: 'static-spark', n: 158, name: 'Static Spark', cost: 0, factions: ['ember'], type: 'spell',
@@ -921,7 +922,7 @@ export const ULTRA = [
       art: 'Strong winds sweeping over a sea cliff, gulls and kites riding long streaks of wind across a bright teal sky.' }),
   U({ id: 'rolling-fog', n: 164, name: 'Rolling Fog', cost: 3, factions: ['tide'], type: 'field', subtype: 'Field',
       keywords: ['field'],
-      text: 'Field\nNo more than two creatures can attack in one fight.',
+      text: 'Field\nNo more than two creatures can attack in one fight. It lifts at the start of your third turn after it arrives.',
       flavor: 'In the fog, an army is just a crowd.',
       art: 'A thick bank of fog rolling over a coastal hillside, two warriors clear in front and the shapes of many more lost in the mist behind them.' }),
   U({ id: 'hallowed-ground', n: 165, name: 'Hallowed Ground', cost: 2, factions: ['radiant'], type: 'field', subtype: 'Field',
@@ -963,6 +964,35 @@ export const ULTRA = [
       text: 'Your creatures get +3/+0 and Rush this turn.',
       flavor: 'For one hour, everyone is a hero.',
       art: 'A whole army charging down a hillside at sunrise, gold light and ember sparks streaming from their raised weapons, banners blazing.' }),
+  // ── Guerrilla cards (Ultra version 5, 2026-11-09): they slow an opponent's
+  // economy, discard pile or hand rather than fight their creatures. Each one
+  // wears off or can be answered: nothing here neuters a plan for good.
+  U({ id: 'choking-smoke', n: 173, name: 'Choking Smoke', cost: 2, factions: ['ember'], type: 'spell',
+      text: 'Each opponent has 2 less Energy on their next turn.',
+      flavor: 'No forge burns without air.',
+      art: 'Thick black smoke pouring from a forge chimney and settling over a village of workshops, the forge fires below choking down to embers.' }),
+  U({ id: 'tollkeeper', n: 174, name: 'Tollkeeper', cost: 3, factions: ['radiant'], type: 'creature', subtype: 'Human', power: 2, vitality: 3,
+      text: 'Whenever an opponent Invests, you draw a card.',
+      flavor: 'Every road to riches has a gate.',
+      art: 'A stern tollkeeper in a gold-trimmed coat at a raised bridge gate, a lantern and a ledger in hand, coins stacked on the gatepost at dawn.' }),
+  U({ id: 'grave-robber', n: 175, name: 'Grave Robber', cost: 2, factions: ['umbral'], type: 'creature', subtype: 'Human', power: 2, vitality: 2,
+      text: 'When played, each opponent puts the three costliest creature cards in their discard pile on the bottom of their deck.',
+      flavor: 'The dead can’t rise if they’re not there.',
+      art: 'A hooded grave robber climbing out of an open crypt with a sack over his shoulder and a shovel in hand, the moon behind the cemetery wall.' }),
+  U({ id: 'pickpocket', n: 176, name: 'Pickpocket', cost: 2, factions: ['tide'], type: 'creature', subtype: 'Bird', power: 1, vitality: 2,
+      keywords: ['soar'],
+      text: 'Soar\nWhenever it hits an opponent in a fight, a random card from their hand goes to their discard pile.',
+      flavor: 'Shiny, shiny, mine.',
+      art: 'A sly magpie in a tiny cloak flying off over a harbour market with a glinting coin purse in its beak, a merchant shaking a fist below.' }),
+  U({ id: 'whispered-doubt', n: 177, name: 'Whispered Doubt', cost: 2, factions: ['umbral'], type: 'spell',
+      text: 'Choose a card that costs 4 or more in an opponent’s hand: it goes to the bottom of their deck, and they draw a card. You draw a card.',
+      flavor: 'Are you sure that plan will work?',
+      art: 'A shadowy figure leaning to whisper into a sleeping king’s ear, violet wisps curling into his dreams, his battle plans scattered on the table.' }),
+  U({ id: 'blight-beetle', n: 178, name: 'Blight Beetle', cost: 2, factions: ['verdant'], type: 'creature', subtype: 'Insect', power: 1, vitality: 3,
+      ability: { cost: 2, short: 'an enemy creature loses +1/+1 of its growth' },
+      text: 'Pay 2 Energy: an enemy creature loses +1/+1 of the growth it got for good.',
+      flavor: 'It starts at the roots.',
+      art: 'A large iridescent beetle gnawing through the glowing roots of a great tree, the leaves above it withering and drifting down.' }),
 ];
 
 export const TOKENS = {
@@ -1109,6 +1139,17 @@ export const LEGENDS = Object.fromEntries([
     l2: 'Your creatures that cost 2 or less get +1/+0.', l3: 'Each of your creatures that hits an opponent in a fight deals 1 more.',
     flavor: 'He has never once arrived second.',
     art: 'A young knight in scorched gold armour leaping down from a broken wall into battle, sword blazing, a banner streaming behind him at dawn.' }),
+  // (version 5: the two plans the tournament lab found that no starter had)
+  legend({ id: 'legend-ione', since: 5, name: 'Ione, the Bloomcaller', cost: 3, factions: ['verdant', 'tide'], subtype: 'Human Druid',
+    levels: [[1, 3, ['reach']], [2, 4, ['reach']], [3, 5, ['reach']]], xp: { what: 'spell', at: [6, 12], unit: 'Spells you play', short: 'Spells' },
+    l2: 'The first Spell you play each turn costs 1 less.', l3: 'Your Spells that grow a creature for good grow it +1/+1 more.',
+    flavor: 'Every spell she reads aloud puts down roots.',
+    art: 'A young druid-mage on a riverbank holding an open book of pressed flowers, glowing spells spiralling from its pages into a blooming tree beside her.' }),
+  legend({ id: 'legend-hush', since: 5, name: 'Hush, the Fog Witch', cost: 3, factions: ['tide', 'umbral'], subtype: 'Human Witch',
+    levels: [[1, 4, []], [2, 5, []], [3, 6, ['drain']]], xp: { what: 'stall', at: [3, 7], unit: 'attacks on you that dealt you no damage', short: 'stalls' },
+    l2: 'At the start of your turn, each opponent loses 1 Life and you gain 1.', l3: 'Whenever an attack on you deals you no damage, draw a card.',
+    flavor: 'Come closer. You won’t find me.',
+    art: 'A pale witch with a lantern on a misty shore, a great wall of fog rising from the sea behind her, the faint shapes of lost warriors inside it.' }),
 ].map((c) => [c.id, c]));
 
 // A deck's Legend in an Ultra game: a starter's own, or else the one whose
@@ -1199,13 +1240,13 @@ export const ULTRA_STARTERS = [
   { id: 'ultra-rot-and-bloom', name: 'Rot and Bloom', factions: ['umbral', 'verdant'], legend: 'legend-morrow',
     pitch: 'Sacrifice your own creatures for power: every Offering draws cards, hits harder or Invests, and the dead come back to dance.',
     counts: deck(['mycelium-bud', 'hungry-ghoul', 'mire-witch', 'grave-harvest', 'bone-lance', 'bone-tithe', 'seedling', 'gravewarden'],
-      ['sproutling', 'kindly-undertaker', 'bone-altar', 'unearth', 'gloomweb-spider', 'lantern-ferryman', 'borrowed-time',
+      ['blight-beetle', 'kindly-undertaker', 'bone-altar', 'unearth', 'gloomweb-spider', 'lantern-ferryman', 'borrowed-time',
         'something-beneath', 'the-barrow-queen', 'danse-macabre', 'grave-snare', 'pitfall', 'blood-pact', 'grove-druid']) },
   { id: 'ultra-smoke-and-mirrors', name: 'Smoke and Mirrors', factions: ['tide', 'umbral'], legend: 'legend-mirelle',
     pitch: 'Tricks, Traps and Ambushes: nothing on your side is what it looks like, and their biggest creature ends up fighting their other one.',
-    counts: deck(['turnabout', 'bluff', 'gloom-stalker', 'reed-lurker', 'not-yet', 'the-puppeteer', 'curious-wisp', 'carrion-wyrm'],
-      ['hungry-ghoul', 'fog-bank', 'grave-snare', 'bonepicker', 'kiss-of-night', 'marsh-adder',
-        'forbidden-archivist', 'memory-diver', 'tidal-mimic', 'windborne-sage', 'tide-of-fortune', 'blood-pact', 'deepwater-leviathan', 'grand-illusion']) },
+    counts: deck(['turnabout', 'bluff', 'gloom-stalker', 'reed-lurker', 'not-yet', 'the-puppeteer', 'pickpocket', 'carrion-wyrm'],
+      ['hungry-ghoul', 'fog-bank', 'grave-snare', 'bonepicker', 'whispered-doubt', 'marsh-adder',
+        'forbidden-archivist', 'grave-robber', 'tidal-mimic', 'windborne-sage', 'tide-of-fortune', 'blood-pact', 'deepwater-leviathan', 'grand-illusion']) },
   { id: 'ultra-storm-rising', name: 'Storm Rising', factions: ['ember', 'tide'], legend: 'legend-seren',
     pitch: 'Spell after spell in one turn: each one grows your apprentices, the next one costs less, and the last storm counts them all.',
     counts: deck(['static-spark', 'ripple', 'spellwright-apprentice', 'scorch', 'crescendo', 'lightning-theorist', 'mirror-mage', 'wavewarden', 'stoke-the-furnace'],
@@ -1215,10 +1256,24 @@ export const ULTRA_STARTERS = [
     pitch: 'Choose the weather: Fields that suit your fliers and slow everyone else, and the Eye of the Storm, where only you decide.',
     counts: deck(['weatherwitch', 'storm-shepherd', 'gale-winds', 'lantern-moth', 'prism-duelist', 'keeper-of-the-skies', 'cloud-ray'],
       ['rolling-fog', 'hallowed-ground', 'sanctuary-spring', 'the-eye-of-the-storm', 'sky-warden', 'windborne-sage', 'seraphine', 'tithe-of-light',
-        'tide-of-fortune', 'aegis-acolyte', 'ward-of-dawn', 'mirror-shield', 'fog-bank', 'curious-wisp', 'shieldwright', 'wavewarden']) },
+        'tide-of-fortune', 'aegis-acolyte', 'ward-of-dawn', 'mirror-shield', 'fog-bank', 'curious-wisp', 'tollkeeper', 'wavewarden']) },
   { id: 'ultra-the-charge', name: 'The Charge', factions: ['ember', 'radiant'], legend: 'legend-kasimir',
     pitch: 'Hit first and hit often: Rush, drums and banners, and a War Chest that turns every hit into Energy for the final charge.',
     counts: deck(['ash-squire', 'street-recruit', 'spark-runner', 'war-drummer', 'blitz-captain', 'sunglass-lancer', 'war-chest', 'cinderling', 'dawnwatch-knight'],
-      ['shieldbearer', 'kindle', 'rally', 'scorch', 'banner-of-the-charge', 'standard-keeper',
+      ['shieldbearer', 'choking-smoke', 'rally', 'scorch', 'banner-of-the-charge', 'standard-keeper',
         'ember-duelist', 'dawn-captain', 'phoenix-of-the-last-spark', 'hour-of-glory', 'backdraft', 'mirror-shield']) },
+  // (version 5, 2026-11-09: the two plans the tournament lab found that no starter had, from its winning decks)
+  { id: 'ultra-spellbloom', name: 'Spellbloom', factions: ['verdant', 'tide'], legend: 'legend-ione',
+    pitch: 'Cheap Spells that make your creatures bigger for good, apprentices who grow with your first Spell each turn, and a fog to slow them down while you do.',
+    // (the lab's winner had more bombs and doubles; it won 67% of duels, so it was trimmed to about half)
+    counts: deck(['spellwright-apprentice', 'wild-growth'],
+      ['wing-graft', 'savage-clash', 'rolling-fog', 'the-forest-remembers', 'sproutling', 'sudden-growth', 'grove-druid', 'the-granary', 'mossback', 'brook-hydra',
+        'reed-lurker', 'wild-bloom', 'patient-giant', 'tidal-mimic', 'rootmother', 'worldtree-stag', 'seedling', 'canopy-archer', 'curious-wisp', 'ancient-roots',
+        'deep-roots', 'little-gardener', 'compound-interest', 'second-thought', 'memory-diver', 'bark-graft']) },
+  { id: 'ultra-fogbound', name: 'Fogbound', factions: ['tide', 'umbral'], legend: 'legend-hush',
+    pitch: 'Hide in the fog: only two attackers get through at a time, Fog Banks make their hits miss, and Drain wins the long game.',
+    // (the lab's winner doubled every strong card; it won 71% of duels, so it was trimmed to about half)
+    counts: deck(['spellwright-apprentice', 'curious-wisp', 'fog-bank', 'memory-diver', 'rolling-fog', 'reed-lurker', 'riptide', 'marsh-adder'],
+      ['vesper-bat', 'hungry-ghoul', 'bloodbinder', 'tidal-mimic', 'gravewarden', 'the-puppeteer', 'deepwater-leviathan', 'bluff', 'the-drowned-clock',
+        'cloud-ray', 'kiss-of-night', 'sea-change', 'grave-rat', 'not-yet']) },
 ];

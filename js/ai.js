@@ -14,6 +14,7 @@ const CROWN = 4.5; // a card at the end of every turn, for as long as you keep i
 const KW_VALUE = { soar: 1.3, venom: 1.2, drain: 0.8, swift: 0.8, overrun: 0.6, watchful: 0.5, reach: 0.4, guard: 0.6, hunt: 0.7, lastBreath: 0.8,
   grows: 1.8, multiply: 2.4, unstable: 1.4, bodyguard: 0.8, fuse: 0.4, ambush: 0.5 }; // (the last line: SATTC Ultra)
 const ENGINES = new Set(['spellwright-apprentice', 'mire-witch', 'war-drummer', 'weatherwitch', 'keeper-of-the-skies', 'storm-shepherd', 'pearl-diver', 'the-puppeteer', // (version 4)
+  'tollkeeper', 'blight-beetle', 'pickpocket', // (version 5)
   'standard-keeper', 'lightning-theorist', 'mirror-mage', 'forbidden-archivist', 'kindly-undertaker', 'little-gardener',
   'ash-collector', 'grandmother-bramble', 'choirmother', 'the-pale-abbess', 'hungry-ghoul', 'brook-hydra', 'patient-giant', 'dawnsinger', 'lantern-ferryman',
   'rootmother', 'shield-captain', 'field-medic', 'gravewarden', 'bloodbinder', 'thornback-archer', 'shieldwright']);
@@ -98,6 +99,7 @@ export function evaluate(s, me, st = null) {
   if (s.crown === me) v += CROWN;
   if (s.ultra) {
     v += (P.invest || 0) * investWorth(s, P) * W.invest;
+    v -= (P.smoke || 0) * 0.6; // (version 5: Energy Choking Smoke will take from me)
     if (s.active === me && s.phase === 'main') { // (what a Granary would save if the turn ended now)
       const barns = P.relics.filter((u) => s.cards[u].cid === 'the-granary').length;
       if (barns) v += Math.min(3 * barns, Math.max(0, P.energy)) * SAVED;
@@ -108,6 +110,7 @@ export function evaluate(s, me, st = null) {
   const w = 1 / opps.length;
   for (const o of opps) {
     v -= (lifeValue(o.life) * W.aggro + boardValue(s, o.i) * 1.05 + relicValue(s, o.i) + o.hand.length * 1.2 + o.traps.length * 2 + (o.extra || 0) * 9 + (s.crown === o.i ? CROWN : 0) + (o.invest || 0) * (s.ultra ? investWorth(s, o) : INVEST)) * w;
+    if (s.ultra && s.uv >= 5) v += ((o.smoke || 0) - o.hand.filter((u) => BY_ID[s.cards[u].cid].cost >= 4).length) * 0.6 * w; // (version 5: Energy Choking Smoke takes from them; their big cards still waiting in hand)
     if (s.active === me) {
       // Creatures that attacked can't block on the turns in between: count the risk.
       const inc = threat(s, o.i, me, false);

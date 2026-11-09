@@ -421,7 +421,7 @@ function rules() {
       <li><b>Legacy.</b> When a creature that has grown dies, half its growth (rounded up) passes to your weakest creature.</li>
       <li><b>Energy</b> grows by itself to ${ULTRA_RULES.energyGrowsTo}. Cards with <b>Invest</b> raise your maximum by 1 for good, up to ${ULTRA_RULES.maxEnergy}.</li>
       <li><b>The Field.</b> One Field card is in play for the whole table and changes the rules for everyone; a new one replaces it.</li>
-      <li><b>No answer erases a build for free.</b> A <b>Hex</b> lasts until its owner pays to break it. Venom poisons (its damage doesn't heal) instead of killing outright. A creature sent back to the hand keeps its growth. ${ULTRA_OUT.map((id) => esc(BY_ID[id].name)).join(', ')} stay out of Ultra decks.</li>
+      <li><b>No answer erases a build for free.</b> A <b>Hex</b> lasts until its owner pays to break it. Venom poisons (its damage doesn't heal) instead of killing outright. A creature sent back to the hand comes back fresh (in games started before 9 November 2026 it kept its growth). ${ULTRA_OUT.map((id) => esc(BY_ID[id].name)).join(', ')} stay out of Ultra decks.</li>
       <li><b>New words:</b> ${['invest', 'grows', 'multiply', 'unstable', 'fuse', 'ritual', 'hex', 'field', 'bodyguard', 'shield'].map((k) => `<b>${KEYWORDS[k].name}</b>: ${esc(KEYWORDS[k].text)}`).join(' ')}</li>
     </ul>
     <p>Added on 8 November 2026 (games started before then keep the first rules):</p>
@@ -434,6 +434,13 @@ function rules() {
       ${ULTRA_V2.growthCap ? `<li><b>Growth has a ceiling.</b> a creature can't grow for good by more than its controller's maximum Energy (6, more with Invest), so a monster takes an economy.</li>` : ''}
       <li><b>Six new decks</b>, each with its own Legend: <b>The Long Game</b> (Invest, save Energy, draw extra cards), <b>Rot and Bloom</b> (sacrifice your own for power), <b>Smoke and Mirrors</b> (Tricks, Traps and Ambushes), <b>Storm Rising</b> (Spell after Spell), <b>Weathermakers</b> (choose the Field) and <b>The Charge</b> (hit first). Their biggest cards cost 7 or more: you need Energy beyond the usual 6, so each deck has its own way to Invest.</li>
       <li><b>New words.</b> <b>Ambush</b>: a creature you can play in a fight, like a Trick; played before you choose blockers, it can block. <b>Offering</b>: as you play the card, you may sacrifice a creature of yours for its stronger effect. <b>Your Field</b>: a Field you played (the banner says whose it is).</li>
+    </ul>
+    <p>Added on 9 November 2026, after a rules audit (bot games with each rule switched off, to keep only the rules that earn their place):</p>
+    <ul>
+      <li><b>A creature sent back to the hand comes back fresh</b>, without its growth. It came up less than once a game and changed neither skill nor balance.</li>
+      <li><b>Two decks the bots discovered</b> by evolving the best deck in each faction pair: <b>Spellbloom</b> (Verdant/Tide: cheap Spells that grow creatures for good) and <b>Fogbound</b> (Tide/Umbral: the Rolling Fog, Fog Banks and Drain).</li>
+      <li><b>Guerrilla cards</b> that slow an opponent's economy, discard pile or hand: Choking Smoke, Tollkeeper, Grave Robber, Pickpocket, Whispered Doubt and Blight Beetle.</li>
+      <li><b>Toned down</b>, after every evolved Tide deck kept them: Spellwright Apprentice grows with your first Spell each turn, and the Rolling Fog lifts at the start of its owner's third turn.</li>
     </ul>
     <ul>${Object.values(LEGENDS).map((c) => `<li><b>${esc(c.name)}</b> (${c.cost} Energy, ${esc(c.factions.map((f) => FACTIONS[f].name).join('/'))}) levels up with ${esc(c.xp.unit)}: at ${c.xp.at[0]}, ${esc(c.l2)} At ${c.xp.at[1]}, ${esc(c.l3)}</li>`).join('')}</ul>
 

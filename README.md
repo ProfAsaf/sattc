@@ -660,6 +660,65 @@ what loops forever.
 - Version 3 games are set up with `ultra: 3`. Version 2 games keep the old fight
   order and no cap.
 
+## SATTC Ultra, version 5: a rules audit, discovered decks, guerrilla cards (2026-11-09)
+
+The user asked three things: whether the bots discovered strategies we hadn't
+named; whether rush or guerrilla play checks the strong decks; and how much
+there is to learn ("I love deep strategy but it won't work if they need to
+memorize a million things"). After the answers they said: do all three
+follow-ups.
+
+- **What the bots found.** `tools/lab.mjs` now takes `PAIR=ember,umbral`
+  (evolve inside one faction pair) and `BENCH=n`, and saves its last
+  survivors. `.phone-tests/pairs.mjs` reads such runs, and
+  `.phone-tests/fingerprint.mjs` records how a deck plays (win round, early
+  damage, board, Invests, draws, removal, Traps).
+  - Plans no starter had: spell-fed growth (Verdant/Tide, 70% against the
+    starters), death burn (Ember/Umbral), growth plus Shackles
+    (Verdant/Umbral), the fog lock (Tide/Umbral), a flying rush (Tide/Radiant),
+    walls plus Wildfire (Ember/Radiant), a midrange stomp (Ember/Verdant).
+  - Every Tide pair's winner kept two Spellwright Apprentices, and three of
+    four kept the Rolling Fog.
+- **Rush and guerrilla play.** The Charge wins around round 7 (others 9–13)
+  and checks the slow decks; walls check it. Disruption worked as lockdown,
+  not tricks, and nothing in the pool touched an opponent's economy, discard
+  pile or hand.
+- **The rules audit.** New switches in `ULTRA_V2` (`shelter`, `legacy`,
+  `keepGrowth`, `poison`, `wounds`, beside `legends`, `dig`, `together`,
+  `growthCap`); `tools/elo.mjs` and `bal.mjs` take `KNOBS`. Each rule was
+  switched off for a skill ladder (a 1-in-5 blunderer, the practice bot, the
+  Planner) and a balance run; `.phone-tests/rulefreq.mjs` counts how often each
+  rule comes up.
+  - No rule on its own changed skill measurably, and none made balance
+    clearly better when gone.
+  - Most are the user's own rules (wounds that heal half, the growth ceiling),
+    their requests (ganging up, Dig, Legends), or keep their principle that no
+    answer erases a build for free (Hexes, Venom's poison, Legacy). Without
+    Venom's poison, Venom kills any giant outright and balance swings up to
+    14 points.
+  - **Cut:** a creature sent back to the hand keeping its growth (it came up
+    0.6 times a game and changed nothing). In version 5 games it comes back
+    fresh.
+- **Version 5** (`ULTRA_V` 5, `ultraV5`):
+  - Spellwright Apprentice grows with your first Spell each turn.
+  - The Rolling Fog lifts at the start of its owner's third turn (`clock`;
+    the banner counts down).
+  - Two starters from the lab's winners, each with its Legend (`since: 5`):
+    **Spellbloom** (Verdant/Tide, Ione) and **Fogbound** (Tide/Umbral, Hush).
+  - Six guerrilla cards (n 173–178): Choking Smoke, Tollkeeper, Grave Robber,
+    Pickpocket, Whispered Doubt, Blight Beetle. Smoke and Mirrors took
+    Pickpockets, Whispered Doubt and a Grave Robber; The Charge Choking Smoke;
+    Rot and Bloom a Blight Beetle; Weathermakers a Tollkeeper.
+  - Older games keep version 4's rules, cards and Legends.
+- **Balance** (936 duels, 286 three-player games, thirteen starters):
+  - Spellbloom and Fogbound came out of the lab at 67% and 71% and were
+    trimmed: fewer doubles and bombs, and their Legends level more slowly.
+  - Duels 40–60% per starter: The Wall and Spellbloom 60, Blood and Bone 40.
+  - Three players 12–45% (a fair share is 33%): Smoke and Mirrors (12%) and
+    The Charge (23%) still trail. That's the open three-player question.
+- **Tests:** 720 engine checks with the fuzz over all thirteen starters;
+  `.phone-tests/ui-ultra5.mjs` (13 checks).
+
 ## SATTC Ultra, version 4: six more ways to build (2026-11-08)
 
 The user asked for the strategies still missing a deck (economy and extra

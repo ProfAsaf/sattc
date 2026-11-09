@@ -9,7 +9,7 @@
 
 import { BY_ID, KEYWORDS, RULES, STARTERS, ULTRA_KEYWORDS, ULTRA_STARTERS, ULTRA_V, ULTRA_V2, isTrick } from './cards.js';
 import { abilityNeeds, actor, apply, blockLimit, canAttack, canBlock, champLevel, check, costOf, xpAt, fuseCost, stageNeeds, forcedBlocks, hasKw, helpers, living, needs, newGame, opponents, phoenixReady, playOptions, power, replay, ultraV2, unstableClock, useOptions, vitality } from './engine.js';
-import { chooseAction } from './ai.js';
+import { chooseAction, LEVELS, levelOf, levelMove } from './ai.js';
 import { artTag, cardBackHTML, cardHTML, esc, factionCoin, factionVars } from './render.js';
 import * as FX from './fx.js';
 import * as Decks from './decks.js';
@@ -82,7 +82,8 @@ function deckChoices(ultra = Mode.ultra()) {
 let L = null; // { code, info, unsub } while in a room
 let playView = null;
 // The Play page's switches and its "Decks" list, kept while the page redraws.
-const PF = { draftNight: false, botDraft: false, decksOpen: false, champions: (() => { try { return localStorage.getItem('collective.champions') !== '0'; } catch { return true; } })() };
+const PF = { draftNight: false, botDraft: false, decksOpen: false, champions: (() => { try { return localStorage.getItem('collective.champions') !== '0'; } catch { return true; } })(),
+  level: (() => { try { return levelOf(localStorage.getItem('collective.botLevel')).id; } catch { return 'practice'; } })() };
 const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 
 function deckSelect(id, choices, chosen) {
@@ -204,6 +205,7 @@ function botsPanelHTML(choices, chosen) {
     <h3>Bots</h3>
     ${saved && !saved.over ? `<div class="pp-resume"><button class="btn primary" data-act="resume">Resume your game</button>${x('forget')}</div>` : ''}
     ${draft ? `<div class="pp-resume"><button class="btn primary" data-act="draft-resume">${draft.done ? 'Your drafted deck' : `Resume your draft · ${draft.picks}/${draft.of}`}</button>${x('draft-forget')}</div>` : ''}
+    <div class="pp-group pp-level"><label class="pp-row"><span>Level</span><select id="bot-level" class="select">${LEVELS.map((L) => `<option value="${L.id}"${L.id === PF.level ? ' selected' : ''}>${esc(L.name)}${L.elo ? ` · Elo ${L.elo}` : ''}</option>`).join('')}</select></label></div>
     <div class="pp-two">
       <button class="btn" data-act="bots" data-n="1">1 bot</button>
       <button class="btn" data-act="bots" data-n="2">2 bots</button>
@@ -364,6 +366,7 @@ export function playPage(view) {
     if (t.id === 'draft-new') { PF.draftNight = t.checked; document.getElementById('net-deck-row').hidden = t.checked; return; }
     if (t.id === 'bot-draft') { PF.botDraft = t.checked; showDecks(); return; }
     if (t.id === 'champions-practice') { PF.champions = t.checked; try { localStorage.setItem('collective.champions', t.checked ? '1' : '0'); } catch { /* fine */ } return; }
+    if (t.id === 'bot-level') { PF.level = levelOf(t.value).id; try { localStorage.setItem('collective.botLevel', PF.level); } catch { /* fine */ } return; }
     if (t.id === 'room-champions') { if (L) Net.setChampions(L.code, t.checked).catch((err) => flash(err.message)); return; }
     if (t.id === 'room-ultra') { if (L) Net.setUltra(L.code, t.checked).catch((err) => flash(err.message)); return; }
     if (t.id !== 'room-deck' || !L) return;
@@ -416,7 +419,7 @@ function startPractice(mine, bots, { ultra } = {}) {
   const players = [{ name: 'You', deck: Decks.cardList(mine.counts) },
     ...bots.map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
   const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, champions: PF.champions && !ultra, ultra: ultra ? ULTRA_V : false };
-  begin({ mode: 'practice', setup, actions: [], me: 0, bots: bots.map((_, i) => i + 1) });
+  begin({ mode: 'practice', setup, actions: [], me: 0, bots: bots.map((_, i) => i + 1), level: PF.level });
 }
 
 // ── the guided first game ───────────────────────────────────────────
@@ -635,7 +638,7 @@ function leave(goTo = '#/play') {
 
 function save() {
   if (G.mode !== 'practice') return;
-  store.set({ mode: G.mode, setup: G.setup, actions: G.actions, me: G.me, bots: [...G.bots], over: G.state.phase === 'over', takebacks: G.takebacks || 0 });
+  store.set({ mode: G.mode, setup: G.setup, actions: G.actions, me: G.me, bots: [...G.bots], over: G.state.phase === 'over', takebacks: G.takebacks || 0, level: G.level });
 }
 
 // ── a finished game goes into Insights ──────────────────────────────
@@ -649,6 +652,7 @@ function noteGameOver() {
   Object.assign(rec, {
     id: G.mode === 'online' ? `o:${G.code}:${G.created || 0}:${G.round}` : `p:${G.setup.seed}`,
     at: Date.now(), mode: G.mode === 'online' ? 'online' : 'practice', takebacks: G.takebacks || 0,
+    ...(G.mode === 'practice' ? { level: levelOf(G.level).id } : {}), // (the bots' difficulty level)
     play: { setup: G.setup, actions: G.actions }, // (only the newest games keep it: stats.js saveGame)
   });
   G.rec = rec;
@@ -1007,13 +1011,19 @@ function schedule() {
       ? s.players.find((P) => !P.mull && G.bots.has(P.i))?.i
       : (G.bots.has(actor(s)) ? actor(s) : undefined);
     if (who == null) return;
-    const noise = G.mode === 'tutorial' ? 3 : 0.4;
+    const move = () => (G.mode === 'tutorial' ? chooseAction(G.state, who, { noise: 3 }) : levelMove(G.state, who, G.level));
     // when moves wait for your tap the bot needn't leave a gap first (you just tapped); Skip hurries it
     const pace = G.skipping ? 0.05 : tapThrough() ? 0.4 : 1;
+    // (a strong level thinks for a moment: the pause before its move counts that time)
+    const wait = Math.round((s.phase === 'mulligan' ? 200 : s.phase === 'combat' ? 700 : 950) * pace);
+    const think = levelOf(G.level).plan ? 0 : wait;
     G.timer = setTimeout(() => {
       if (!G || G.sched !== id || G.state !== s) return;
-      dispatch(chooseAction(G.state, who, { noise }));
-    }, Math.round((s.phase === 'mulligan' ? 200 : s.phase === 'combat' ? 700 : 950) * pace));
+      const t0 = Date.now(), a = move();
+      const rest = wait - think - (Date.now() - t0);
+      if (rest <= 0) { dispatch(a); return; }
+      G.timer = setTimeout(() => { if (G && G.sched === id && G.state === s) dispatch(a); }, rest);
+    }, think);
   });
 }
 
@@ -3254,6 +3264,7 @@ function playerSheet(pi) {
     ...(P.traps.length ? [['Face-down Traps', P.traps.length]] : []),
     ...(s.crownOn ? [['The Crown', s.crown === pi ? (mine ? 'yours: an extra card at the end of each of your turns' : 'theirs: hit them in a fight to take it') : 'no']] : []),
     ...(P.champ ? [[BY_ID[P.champ].legend ? 'Legend' : 'Champion', champRow(s, P)]] : []),
+    ...(G.bots.has(pi) && G.mode === 'practice' ? [['Bot level', `${levelOf(G.level).name}${levelOf(G.level).elo ? ` (Elo ${levelOf(G.level).elo})` : ''}`]] : []),
   ];
   const relics = P.relics.map((u) => BY_ID[s.cards[u].cid]).map((d) => `<div><b>${esc(d.name)}</b> — ${esc(d.text.replace(/^Relic\n/, ''))}</div>`).join('');
   // (yours only: theirs are face-down)
@@ -3765,7 +3776,7 @@ function onAct(act, el) {
     case 'lobby': Net.backToLobby(G.code).catch((e) => flash(e.message)); break;
     case 'rematch': {
       const setup = { ...G.setup, seed: (Math.random() * 2 ** 31) | 0, startEnergy: RULES.startEnergy, ultra: G.setup.ultra ? ULTRA_V : false };
-      begin({ mode: G.mode, setup, actions: [], me: G.me, bots: [...G.bots] });
+      begin({ mode: G.mode, setup, actions: [], me: G.me, bots: [...G.bots], level: G.level });
       break;
     }
   }

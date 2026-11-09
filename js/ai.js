@@ -7,6 +7,7 @@
 
 import { apply, legalActions, opponents, power, vitality, actor, hasKw, canBlock, blockLimit, forcedBlocks, canAttack, playOptions, useOptions, splitDamage, ultraV2 } from './engine.js';
 import { BY_ID, ULTRA_V2, isTrick } from './cards.js';
+import { CLASSIC, BRAINS } from './brains.js';
 
 const lifeValue = (l) => (l <= 0 ? -200 : Math.sqrt(l) * 7 + l * 0.5);
 const CROWN = 4.5; // a card at the end of every turn, for as long as you keep it
@@ -87,40 +88,110 @@ function threat(s, atk, def, allBlock) {
   return through;
 }
 
+// `st`: a play style (STYLES) and/or a brain (js/brains.js: the weight on each
+// term below). Without one, the classic brain: nothing changes for the bots of
+// before. With the classic brain's numbers the sums come out exactly as before.
 export function evaluate(s, me, st = null) {
   if (s.phase === 'over') return s.winner === me ? 1e6 : -1e6;
   const P = s.players[me];
   if (P.out) return -1e6;
-  const W = st || NEUTRAL;
+  const W = st || NEUTRAL, B = (st && st.brain) || CLASSIC;
   const opps = opponents(s, me);
   // an extra turn coming up is worth about a turn's worth of cards and attacks
-  let v = lifeValue(P.life) * W.life + boardValue(s, me) * W.board + relicValue(s, me) + P.hand.length * 1.6 * W.cards + P.traps.length * 2.2 * W.traps + (P.extra || 0) * 9;
-  v += Math.min(P.deck.length, 6) * 0.3;
-  if (s.crown === me) v += CROWN;
+  let v = lifeValue(P.life) * W.life * B.life + boardValue(s, me) * W.board * B.board + relicValue(s, me) * B.relics + P.hand.length * B.hand * W.cards + P.traps.length * B.traps * W.traps + (P.extra || 0) * 9 * B.fixed;
+  v += Math.min(P.deck.length, 6) * B.deck;
+  if (s.crown === me) v += CROWN * B.fixed;
   if (s.ultra) {
-    v += (P.invest || 0) * investWorth(s, P) * W.invest;
-    v -= (P.smoke || 0) * 0.6; // (version 5: Energy Choking Smoke will take from me)
+    v += (P.invest || 0) * investWorth(s, P) * W.invest * B.invest;
+    v -= (P.smoke || 0) * 0.6 * B.fixed; // (version 5: Energy Choking Smoke will take from me)
     if (s.active === me && s.phase === 'main') { // (what a Granary would save if the turn ended now)
       const barns = P.relics.filter((u) => s.cards[u].cid === 'the-granary').length;
-      if (barns) v += Math.min(3 * barns, Math.max(0, P.energy)) * SAVED;
+      if (barns) v += Math.min(3 * barns, Math.max(0, P.energy)) * SAVED * B.fixed;
     }
-    if (s.field != null) v += s.cards[s.field].ctrl === me ? OWN_FIELD : -OWN_FIELD / 2;
+    if (s.field != null) v += (s.cards[s.field].ctrl === me ? OWN_FIELD : -OWN_FIELD / 2) * B.fixed;
   }
-  if (st) v += styleExtras(s, P, st);
+  if (st && st.styled !== false) v += styleExtras(s, P, st);
   const w = 1 / opps.length;
+  const racing = B.race || B.theirRace || B.swing || B.theirSwing;
   for (const o of opps) {
-    v -= (lifeValue(o.life) * W.aggro + boardValue(s, o.i) * 1.05 + relicValue(s, o.i) + o.hand.length * 1.2 + o.traps.length * 2 + (o.extra || 0) * 9 + (s.crown === o.i ? CROWN : 0) + (o.invest || 0) * (s.ultra ? investWorth(s, o) : INVEST)) * w;
-    if (s.ultra && s.uv >= 5) v += ((o.smoke || 0) - o.hand.filter((u) => BY_ID[s.cards[u].cid].cost >= 4).length) * 0.6 * w; // (version 5: Energy Choking Smoke takes from them; their big cards still waiting in hand)
+    v -= (lifeValue(o.life) * W.aggro * B.theirLife + boardValue(s, o.i) * B.theirBoard + relicValue(s, o.i) * B.theirRelics + o.hand.length * B.theirHand + o.traps.length * B.theirTraps + (o.extra || 0) * 9 * B.fixed + (s.crown === o.i ? CROWN * B.fixed : 0) + (o.invest || 0) * (s.ultra ? investWorth(s, o) : INVEST) * B.theirInvest) * w;
+    if (s.ultra && s.uv >= 5) v += ((o.smoke || 0) - o.hand.filter((u) => BY_ID[s.cards[u].cid].cost >= 4).length) * 0.6 * w * B.fixed; // (version 5: Energy Choking Smoke takes from them; their big cards still waiting in hand)
     if (s.active === me) {
       // Creatures that attacked can't block on the turns in between: count the risk.
       const inc = threat(s, o.i, me, false);
-      if (inc > 0) v -= (lifeValue(P.life) - lifeValue(P.life - inc)) * (opps.length > 1 ? 0.45 : 0.7) * W.defense;
+      if (inc > 0) v -= (lifeValue(P.life) - lifeValue(P.life - inc)) * (opps.length > 1 ? B.inc3 : B.inc) * W.defense;
       const out = threat(s, me, o.i, true);
-      if (out > 0) v += (lifeValue(o.life) - lifeValue(o.life - out)) * 0.25 * w * W.aggro;
+      if (out > 0) v += (lifeValue(o.life) - lifeValue(o.life - out)) * B.out * w * W.aggro;
+    }
+    // The race, on either side's turn (blocks are chosen on theirs): how much
+    // of each side's Life the other takes per attack, past every blocker and
+    // in all. A chump block that loses a flier loses its share of the race.
+    if (racing) {
+      const [r, tr, sw, tsw] = raceTerms(s, me, o.i);
+      v += (r * B.race - tr * B.theirRace + sw * B.swing - tsw * B.theirSwing) * w;
     }
   }
   return v;
 }
+
+// The race between `me` and `o`: what gets past every blocker next attack, and
+// all Power, each as a share of the other side's Life (at most 1.5).
+function raceTerms(s, me, o) {
+  const share = (n, life) => Math.min(1.5, Math.max(0, n) / Math.max(1, life));
+  const all = (i) => s.players[i].board.reduce((n, u) => { const c = s.cards[u]; return c.frozen || c.stolen || c.sacEnd || c.hex ? n : n + Math.max(0, power(s, c) - (c.tP || 0)); }, 0);
+  const lifeMe = s.players[me].life, lifeO = s.players[o].life;
+  return [share(threat(s, me, o, true), lifeO), share(threat(s, o, me, true), lifeMe), share(all(me), lifeO), share(all(o), lifeMe)];
+}
+
+// The terms evaluate() weighs, one per brain key, for learning a brain
+// (tools/train.mjs): evaluate(s, me, { brain: B }) is the sum of B[key] times
+// the term (no play style). The sign is folded in, so a brain's weights are
+// positive when more of the thing is good for `me`.
+export const BRAIN_KEYS = Object.keys(CLASSIC);
+export function features(s, me) {
+  const f = Object.fromEntries(BRAIN_KEYS.map((k) => [k, 0]));
+  const P = s.players[me];
+  const opps = opponents(s, me);
+  f.life = lifeValue(P.life);
+  f.board = boardValue(s, me);
+  f.relics = relicValue(s, me);
+  f.hand = P.hand.length;
+  f.traps = P.traps.length;
+  f.fixed = (P.extra || 0) * 9 + (s.crown === me ? CROWN : 0);
+  f.deck = Math.min(P.deck.length, 6);
+  if (s.ultra) {
+    f.invest = (P.invest || 0) * investWorth(s, P);
+    f.fixed -= (P.smoke || 0) * 0.6;
+    if (s.active === me && s.phase === 'main') {
+      const barns = P.relics.filter((u) => s.cards[u].cid === 'the-granary').length;
+      if (barns) f.fixed += Math.min(3 * barns, Math.max(0, P.energy)) * SAVED;
+    }
+    if (s.field != null) f.fixed += s.cards[s.field].ctrl === me ? OWN_FIELD : -OWN_FIELD / 2;
+  }
+  const w = 1 / opps.length;
+  for (const o of opps) {
+    f.theirLife -= lifeValue(o.life) * w;
+    f.theirBoard -= boardValue(s, o.i) * w;
+    f.theirRelics -= relicValue(s, o.i) * w;
+    f.theirHand -= o.hand.length * w;
+    f.theirTraps -= o.traps.length * w;
+    f.fixed -= ((o.extra || 0) * 9 + (s.crown === o.i ? CROWN : 0)) * w;
+    f.theirInvest -= (o.invest || 0) * (s.ultra ? investWorth(s, o) : INVEST) * w;
+    if (s.ultra && s.uv >= 5) f.fixed += ((o.smoke || 0) - o.hand.filter((u) => BY_ID[s.cards[u].cid].cost >= 4).length) * 0.6 * w;
+    if (s.active === me) {
+      const inc = threat(s, o.i, me, false);
+      if (inc > 0) f[opps.length > 1 ? 'inc3' : 'inc'] -= lifeValue(P.life) - lifeValue(P.life - inc);
+      const out = threat(s, me, o.i, true);
+      if (out > 0) f.out += (lifeValue(o.life) - lifeValue(o.life - out)) * w;
+    }
+    const [r, tr, sw, tsw] = raceTerms(s, me, o.i);
+    f.race += r * w; f.theirRace -= tr * w; f.swing += sw * w; f.theirSwing -= tsw * w;
+  }
+  return f;
+}
+
+// A brain by name (js/brains.js), or the weights themselves.
+export const brainFor = (b) => (typeof b === 'string' ? BRAINS[b] || CLASSIC : b || CLASSIC);
 // A style's extras: a wide table, one big creature, engines, the dead to raise, Tricks held.
 function styleExtras(s, P, st) {
   let v = 0;
@@ -304,8 +375,13 @@ export const trickPlays = (s, me) => [
 // ── deciding ────────────────────────────────────────────────────────
 // `beam`: a stronger bot (the Elo ladder's Expert, tools/elo.mjs) looks at its
 // best `beam` moves again with the best move each one leads to this turn.
-export function chooseAction(s, me, { noise = 0.4, rand = Math.random, style = null, beam = 0 } = {}) {
+// `top`: weigh only its best `top` moves (noise then makes it choose among
+// sensible ones, as a beginner would, instead of anything at all); its blocks
+// and Tricks then misjudge a little, not wildly.
+export function chooseAction(s, me, { noise = 0.4, rand = Math.random, style = null, beam = 0, brain = null, top = 0 } = {}) {
   const P = s.players[me];
+  // (a brain rides along with the style: evaluate() reads both from it)
+  if (brain) style = { ...(style || NEUTRAL), brain: brainFor(brain), styled: !!style };
   const jitter = () => (noise ? (rand() - 0.5) * noise : 0);
   if (s.phase === 'mulligan') {
     const costs = P.hand.map((u) => BY_ID[s.cards[u].cid].cost);
@@ -314,14 +390,16 @@ export function chooseAction(s, me, { noise = 0.4, rand = Math.random, style = n
     return { t: 'mulligan', p: me, redraw: cheap < 2 || heavy >= 3 };
   }
   const base = lean(s);
-  if (base.phase === 'combat') return base.combat.step === 'block' ? chooseBlock(base, me, jitter, style) : chooseTrick(base, me, jitter, style);
+  if (base.phase === 'combat') {
+    const jit = top && noise > 6 ? () => (rand() - 0.5) * 6 : jitter;
+    return base.combat.step === 'block' ? chooseBlock(base, me, jit, style) : chooseTrick(base, me, jit, style);
+  }
   // Others' Traps are face down: the bot plans as if they weren't there, so they can catch it.
   if (s.ultra) base.players = base.players.map((Q) => (Q.i === me || !Q.traps.length ? Q : { ...Q, traps: [] }));
 
   const now = evaluate(base, me, style);
   if (beam > 0) return lookAhead(base, me, now, beam, jitter, style);
-  let best = null, bestV = -Infinity;
-  const consider = (a, v) => { v += jitter(); if (v > bestV) { bestV = v; best = a; } };
+  const all = [];
   for (const a of legalActions(base, me)) {
     if (a.t === 'end' || a.t === 'attack') continue;
     // (A Trick that only boosts for a turn scores nothing here, so it waits for a fight.)
@@ -329,12 +407,14 @@ export function chooseAction(s, me, { noise = 0.4, rand = Math.random, style = n
     if (!t) continue;
     let v = evaluate(t, me, style);
     if (a.t === 'play' && s.cards[a.uid].cid === 'spark') v = bestFollowUp(t, me, v, style);
-    consider(a, v);
+    all.push([a, v]);
   }
   for (const a of attackCandidates(base, me)) {
     const t = tryApply(base, a);
-    if (t) consider(a, scoreAfterFight(t, me, style));
+    if (t) all.push([a, scoreAfterFight(t, me, style)]);
   }
+  let best = null, bestV = -Infinity;
+  for (const [a, v0] of top ? all.sort((x, y) => y[1] - x[1]).slice(0, top) : all) { const v = v0 + jitter(); if (v > bestV) { bestV = v; best = a; } }
   return best && bestV > now + 0.05 ? best : { t: 'end', p: me };
 }
 
@@ -424,35 +504,47 @@ function lookAhead(s, me, now, beam, jitter, style) {
 // bot moving for both, `tries` times with what it can't see shuffled (the
 // others' hands and decks, its own deck; face-down Traps left out). It keeps
 // the move whose futures score best. Slow: for tests, not for phones.
-export function planAction(s, me, { rand = Math.random, beam = 3, tries = 1 } = {}) {
-  if (s.phase !== 'main' || s.active !== me) return chooseAction(s, me, { rand, noise: 0 });
+// `budget`: milliseconds to think (a phone): its best move and ending the
+// turn always get a future; the other moves, and more futures, while time is
+// left. Tests and ratings leave it out.
+export function planAction(s, me, { rand = Math.random, beam = 3, tries = 1, brain = null, budget = Infinity, margin = 0.5 } = {}) {
+  if (s.phase !== 'main' || s.active !== me) return chooseAction(s, me, { rand, noise: 0, brain });
   const base = lean(s);
   if (s.ultra) base.players = base.players.map((Q) => (Q.i === me || !Q.traps.length ? Q : { ...Q, traps: [] }));
   const end = { t: 'end', p: me };
-  const cands = [...scoredMoves(base, me, null).sort((x, y) => y.v - x.v).slice(0, beam), { a: end, t: tryApply(base, end) }];
-  let best = end, bestV = -Infinity;
-  for (const { a, t } of cands) {
-    if (!t) continue;
-    let v = 0;
-    for (let k = 0; k < tries; k++) v += playOn(t, me, rand);
-    if (v / tries > bestV) { bestV = v / tries; best = a; }
+  const st = brain ? { ...NEUTRAL, brain: brainFor(brain), styled: false } : null;
+  const top = scoredMoves(base, me, st).sort((x, y) => y.v - x.v).slice(0, beam);
+  const cands = [...top.slice(0, 1), { a: end, t: tryApply(base, end) }, ...top.slice(1)];
+  // Every candidate meets the same futures (the k-th shuffle is the same for
+  // all: "common random numbers"), so they're compared on the luck they share;
+  // and it leaves its best-looking move only for a clear gain (`margin`).
+  const t0 = Date.now(), sum = cands.map(() => 0), n = cands.map(() => 0);
+  run: for (let k = 0; k < tries; k++) {
+    const seed = Math.floor(rand() * 4294967296);
+    for (let i = 0; i < cands.length; i++) {
+      if ((k || i >= 2) && Date.now() - t0 > budget) break run;
+      if (cands[i].t) { let x = seed; sum[i] += playOn(cands[i].t, me, () => (x = (Math.imul(x, 1103515245) + 12345) >>> 0) / 4294967296, brain); n[i]++; }
+    }
   }
-  return best;
+  const avg = (i) => (n[i] ? sum[i] / n[i] : -Infinity);
+  let bi = 0;
+  cands.forEach((_, i) => { if (i && avg(i) > avg(bi) + (bi === 0 ? margin : 0)) bi = i; });
+  return n[bi] ? cands[bi].a : end;
 }
 // Shuffle what `me` can't see, then play on to the start of its next turn.
-function playOn(s, me, rand) {
+function playOn(s, me, rand, brain = null) {
   let t = unseen(s, me, rand);
   let away = t.active !== me;
   for (let k = 0; k < 400 && t.phase !== 'over'; k++) {
     if (t.phase === 'main' && t.active === me && away) break;
     if (t.active !== me) away = true;
     const p = actor(t);
-    const a = chooseAction(t, p, { rand, noise: 0 });
+    const a = chooseAction(t, p, { rand, noise: 0, brain });
     const r = apply(t, a);
     if (r.error) break;
     t = lean(r.state);
   }
-  return evaluate(t, me);
+  return evaluate(t, me, brain ? { ...NEUTRAL, brain: brainFor(brain), styled: false } : null);
 }
 function unseen(s, me, rand) {
   const cards = { ...s.cards };
@@ -476,6 +568,31 @@ function bestFollowUp(s, me, fallback, style = null) {
     if (t) best = Math.max(best, evaluate(t, me, style));
   }
   return best;
+}
+
+// ── difficulty levels (2026-11-09) ──────────────────────────────────
+// From the gentlest to the strongest, each rated by Elo (tools/train.mjs
+// ladder; Practice, the bot everyone played before, is 1500). Weaker levels
+// make mistakes (`noise`: a random amount, in the score's units, added to
+// each move's score), but only among their few best moves (`top`), so they
+// misjudge rather than blunder at random. Stronger ones look ahead.
+// The strongest play its own turns out a turn ahead (the Planner: `plan`
+// moves, `tries` futures each, within `budget` ms on a phone).
+// (Rated 2026-11-09, 30–40 deals per pair both ways: each level beats the one
+// below it about 75–80% of the time. More planning than Expert's, 4 moves
+// with 3 futures each, rated the same, so there's no fifth level.)
+export const LEVELS = [
+  { id: 'beginner', name: 'Beginner', elo: 1050, brain: 'classic', noise: 1000, top: 4 }, // (any of its 4 best moves, at random)
+  { id: 'casual', name: 'Casual', elo: 1300, brain: 'classic', noise: 30, top: 4 },
+  { id: 'practice', name: 'Practice', elo: 1500, brain: 'classic', noise: 0.4 },
+  { id: 'expert', name: 'Expert', elo: 1650, brain: 'classic', plan: 3, tries: 1, budget: 500 },
+];
+export const levelOf = (id) => LEVELS.find((L) => L.id === id) || LEVELS.find((L) => L.id === 'practice');
+// A level's move (`full`: no thinking-time limit, for ratings).
+export function levelMove(s, me, id, rand = Math.random, full = false) {
+  const L = levelOf(id);
+  if (L.plan && s.phase === 'main' && s.active === me) return planAction(s, me, { rand, beam: L.plan, tries: L.tries || 1, brain: L.brain, budget: full ? Infinity : L.budget ?? Infinity, margin: L.margin ?? 0.5 });
+  return chooseAction(s, me, { rand, noise: L.noise ?? 0, beam: L.beam || 0, brain: L.brain, top: L.top || 0 });
 }
 
 // Who should the app ask next? (The bot moves for every seat it plays.)

@@ -1031,6 +1031,55 @@ whatever the text above them says.
   `FX.placeTrack()`; the game's big hand and the draft both use them, and
   `FX.grabSwipe()` is every sheet's swipe-up handle.
 
+## Bot levels, and training the bots (2026-11-09)
+
+Asaf wanted a way to train the bots, difficulty levels to choose from, and
+eventually Elo ratings for bots and people (plan: `bot-training-plan.md`).
+
+- **Brains.** The numbers a bot scores positions with moved into a "brain"
+  (`js/brains.js`, one weight per term of `ai.js features()`). `CLASSIC` is
+  the hand-set brain: with it the bot plays exactly as before (checked move
+  for move). `chooseAction(…, { brain })` and `planAction(…, { brain })` take
+  any brain.
+- **The race.** New terms say how much of each side's Life the other takes
+  per attack, past every blocker and in all, on either side's turn. The old
+  threat terms counted only on the bot's own turn, so when it chose blocks on
+  yours it ignored the race (game MGFK: it threw fliers in front of bigger
+  attackers instead of racing). The classic brain gives them weight 0.
+- **Training** (`tools/train.mjs`, parallel workers):
+  - `data`: self-play positions with who won.
+  - `fit`: a logistic regression on them (the "Texel" method chess engines use); `ONLY=…` learns just some terms on top of the classic ones.
+  - `match`: one brain against another on fresh duplicate deals.
+  - `spsa`: tuning by matches (the way Stockfish tunes its numbers).
+  - `ladder`: rates the levels by Elo.
+- **What training found** (3,000 self-play duels, 425,000 positions):
+  - The learned weights predict the winner better than the classic brain (held-out log loss 0.568 vs 0.579), but play worse: 44% against it over 800 games. Terms that predict winning (a big board, a strong attack) aren't always good to chase move by move, and cards in hand even came out nearly worthless.
+  - Adding only the race terms on top of the classic brain was even, at 46–51%.
+  - Tuning by matches (SPSA, about 10,000 games) scored 51.3% over 2,000 games (+9 Elo, within noise).
+  - So the hand-set brain is near the best this kind of scoring allows, and every level uses it. Chess engines tune with about 20× more games; the tools are there for another round.
+- **Look-ahead is the strength.** The Planner (`planAction`) plays each of its
+  best moves on to its next turn, with what it can't see shuffled. Two ideas
+  from card-game AI research (Forge's Monte Carlo layer, MCTS in Magic):
+  - Every candidate move meets the same shuffled futures ("common random numbers"), so the moves are compared on shared luck.
+  - It leaves its best-looking move only for a clear gain (`margin`).
+  - Together these lifted it from about +40 to about +150 Elo over Practice. More planning (4 moves, 3 futures each) rated the same as 3 moves with 1 future.
+- **Levels** (`ai.js LEVELS`, picked on the Play page and remembered on the
+  phone; a game keeps its level when saved, resumed and played again, and
+  the finished game's record keeps it). Rated with `tools/train.mjs
+  ladder`, 30–40 deals per pair both ways. Each beats the one below about
+  75–80% of the time:
+
+  | Level | Elo | How it plays |
+  |---|---|---|
+  | Beginner | 1050 | any of its 4 best moves, at random (`top` 4) |
+  | Casual | 1300 | its 4 best moves, with noise 30 |
+  | Practice | 1500 | the bot everyone played before (noise 0.4) |
+  | Expert | 1650 | the Planner: its 3 best moves, a future each |
+
+  - Weak levels choose among their few best moves: random blunders feel bad (Maia; Stockfish's skill levels), and plain noise blundered at random.
+  - On a phone Expert thinks within 500 ms: its best move and ending the turn always get a future, the rest while time is left. The app waits only the rest of its usual pause between moves. On a 4× slowed CPU, a turn's decision took 0.5 s (median) to 1.4 s (worst).
+- Tests: `.phone-tests/ui-levels.mjs` (the picker, a game's level kept when saved and resumed).
+
 ## Reading cards, and moves that aren't attacks (2026-11-09)
 
 After a game against the Rot and Bloom bot (shared game RWDN), Asaf said

@@ -184,7 +184,10 @@ export function analyzeGame(setup, actions, { me = 0 } = {}) {
         outs.push({ ...t, v: P.i });
         // how the last one fell, said from the winner's side
         if (after.phase === 'over') {
+          // (attackers' damage counts as the fight even when a Trick or an ability went first in the same move)
+          const byFight = !!before.combat && (after.events || []).some((e) => e.k === 'hitPlayer' && e.p === P.i && e.src != null && before.combat.att.includes(e.src));
           how = a.t === 'concede' ? 'concede'
+            : byFight ? 'fight'
             : a.t === 'play' || a.t === 'use' ? 'spell'
               : a.t === 'end' ? (after.log.some((l) => /no cards left/.test(l.text)) ? 'deck' : 'effect')
                 : 'fight';

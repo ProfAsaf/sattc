@@ -66,6 +66,7 @@ if (typeof window !== 'undefined') {
   window.collectiveDebug = {
     redraw: () => redraw(), get G() { return G; },
     botMove: () => (!!G && !G.busy && G.state.phase !== 'over' && actor(G.state) === G.me && dispatch(chooseAction(G.state, G.me, { noise: 0.4 }))),
+    move: (a) => (!!G && !G.busy && G.state.phase !== 'over' && dispatch(a)),
   };
 }
 
@@ -2614,7 +2615,7 @@ async function animateOld(root, events, after = G.state) {
       while (i < events.length && events[i].k === 'die') group.push(events[i++]);
       const deaths = group.map((g) => {
         const node = el(root, g.uid);
-        return node ? FX.death(node, { style: BY_ID[g.cid]?.token ? 'light' : 'crumble', color: colorOf(g.cid) }) : null;
+        return node ? FX.death(node, { style: BY_ID[g.cid]?.token ? 'light' : 'crumble', color: colorOf(g.cid), of: group.length }) : null;
       });
       await Promise.race([Promise.all(deaths), FX.wait(1000)]);
       continue;

@@ -1057,9 +1057,36 @@ Asaf: "sometimes it freezes with a white flash and takes me out of game".
 - **The summary:** a game lost to empty draws now reads as the deck, not a spell.
 - Test: `.phone-tests/ui-resume.mjs`.
 
+## Busy moments, lighter (2026-11-10)
+
+Asaf, on the white flash: "It is in the middle of play. Often if a lot of things are happening in the game at once."
+On an iPhone everything that moves is a layer of its own, as big as it is. A screen of layer is about 12.6 MB at 3x. A page that runs out of room is closed: a white flash, then the home screen.
+
+Measured on a 402×874 screen at 3x with the CPU slowed 4×, at the busiest moment (`.phone-tests/ui-busy.mjs`):
+
+| moment | moving at once | their area | effect elements |
+|---|---|---|---|
+| Wildfire over two full tables (14 die) | 413 → 118 | 3.9 → 3.1 screens | 3,486 → 463 |
+| the same with Smoldering Golems | 330 → 128 | 5.2 → 3.1 screens | 3,118 → 697 |
+| attacking with five, a big fight | | 6.1 → 3.1 screens | |
+
+- **Attack arrows** were each a full-screen layer, redrawn every frame. Five attackers meant five screens, about 63 MB. Each arrow now covers only its own box, about a fifth of the screen (`fitArrow`).
+- **Deaths** broke a card into up to about 20 copies of the whole card, each cut by a clip-path (which doesn't make its layer smaller). How many pieces now depends on how many die together (`death(…, { of })`):
+  - one: about 14;
+  - two: about 9 each;
+  - three or four: four each;
+  - five or more: each flashes and falls away in one piece, at slightly different times (`sink`).
+  - Shards in flight never cover more than 1.5 screens, so tapping quickly through a big fight can't pile them up.
+- **Limits on the other effects:**
+  - at most 90 particles at once (was 200), 6 rings, 4 glows;
+  - rings at most 200 px across and glows 320 px (a hit on a Life bar made a ring the width of the screen);
+  - a sweep that hits four or more gives each a lighter hit, and its full-table tint is gone.
+- **Sheets** have no backdrop blur (it keeps a blurred copy of the whole screen); they are a little darker instead. The table's attack lines keep still under a fight played big.
+- Tests: `ui-busy.mjs` checks four busy moments against limits (at most 220 moving, 4.5 screens of them, 900 effect elements). It also checks that each moment plays out. `look-deaths.mjs` takes screenshots of deaths partway through.
+
 ## Your rating (2026-11-10)
 
-Asaf asked where to see his estimated Elo. This is phase 3 of
+Asaf asked where to see their estimated Elo. This is phase 3 of
 `bot-training-plan.md`, in `js/rating.js`:
 
 - **Glicko-2**, the rating Lichess uses, against the bot levels as fixed

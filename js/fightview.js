@@ -307,7 +307,7 @@ export function playStory(story, { stage = null, tap = false } = {}) {
       // the destroyed crumble, then stay put, dimmed under a ☠, so the step still shows who met whom
       await Promise.race([Promise.all(b.dead.map((u) => {
         const c = el(u);
-        return c ? FX.death(c, { style: story.cards[u].token ? 'light' : 'crumble' }).then(() => { c.classList.remove('fx-hidden'); c.classList.add('doomed', 'bf-dead'); }) : null;
+        return c ? FX.death(c, { style: story.cards[u].token ? 'light' : 'crumble', of: b.dead.length }).then(() => { c.classList.remove('fx-hidden'); c.classList.add('doomed', 'bf-dead'); }) : null;
       })), FX.wait(1400)]);
       for (const u of b.dead) { const c = el(u); if (c) { c.classList.remove('fx-hidden'); c.classList.add('doomed', 'bf-dead'); } }
     }

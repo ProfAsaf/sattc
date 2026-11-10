@@ -1014,12 +1014,23 @@ function anchors(fromRect, end, toRect) {
   return { ax: a.x + ux * out, ay: a.y + uy * out, bx, by };
 }
 
+// The arrow's own box (in screen coordinates, with room for its glow): it
+// covers just that, not the screen (each arrow is a layer redrawn every frame).
+function fitArrow(svg, xs, ys) {
+  const pad = 20;
+  const x0 = Math.floor(Math.min(...xs) - pad), y0 = Math.floor(Math.min(...ys) - pad);
+  const w = Math.ceil(Math.max(...xs) + pad) - x0, h = Math.ceil(Math.max(...ys) + pad) - y0;
+  svg.setAttribute('viewBox', `${x0} ${y0} ${w} ${h}`);
+  const st = svg.style;
+  st.left = `${x0}px`; st.top = `${y0}px`; st.width = `${w}px`; st.height = `${h}px`;
+}
+
 function drawArrow(svg, ax, ay, bx, by, t = 1) {
   const [glow, body, core, head, sock] = svg.children;
   const dx0 = bx - ax, dy0 = by - ay, len0 = Math.hypot(dx0, dy0);
   sock.setAttribute('cx', ax.toFixed(1));
   sock.setAttribute('cy', ay.toFixed(1));
-  if (len0 < 6) { for (const p of [glow, body, core, head]) p.setAttribute('d', ''); return; }
+  if (len0 < 6) { for (const p of [glow, body, core, head]) p.setAttribute('d', ''); fitArrow(svg, [ax], [ay]); return; }
   const nx = -dy0 / len0, ny = dx0 / len0;
   const bend = (dx0 >= 0 ? -1 : 1) * Math.min(len0 * 0.2, 70);
   const cx = (ax + bx) / 2 + nx * bend, cy = (ay + by) / 2 + ny * bend;
@@ -1037,6 +1048,8 @@ function drawArrow(svg, ax, ay, bx, by, t = 1) {
   const hx = ex - ux * H, hy = ey - uy * H, px = -uy * Wd / 2, py = ux * Wd / 2;
   const nxh = ex - ux * H * 0.62, nyh = ey - uy * H * 0.62;
   head.setAttribute('d', `M${ex.toFixed(1)} ${ey.toFixed(1)}L${(hx + px).toFixed(1)} ${(hy + py).toFixed(1)}L${nxh.toFixed(1)} ${nyh.toFixed(1)}L${(hx - px).toFixed(1)} ${(hy - py).toFixed(1)}Z`);
+  // (a curve stays inside its control points)
+  fitArrow(svg, [ax, qx, sx, ex, hx + px, hx - px], [ay, qy, sy, ey, hy + py, hy - py]);
 }
 
 function fireArrow(svg) {
@@ -1519,8 +1532,13 @@ const GHOST = new WeakMap();
 //  5. Particles, flashes, rings, shake
 // ══════════════════════════════════════════════════════════════════
 
+// Everything that moves is a layer of its own on a phone, and a phone that
+// runs out of room for them closes the page (an iPhone: a white flash, then
+// the home screen). So each kind of effect has a ceiling on how many play at
+// once, and busy moments (many creatures dying, a sweep over a full table)
+// play lighter versions.
 let LIVE = 0;
-const CAP = 200;   // never more particles than this at once (cheap phones)
+const CAP = 90;    // never more particles than this at once
 
 function particles(x, y, o = {}) {
   if (isReduced()) return Promise.resolve();
@@ -1556,23 +1574,27 @@ function particles(x, y, o = {}) {
   return Promise.all(out).then(noop);
 }
 
+let RINGS = 0, GLOWS = 0;
+const RING_CAP = 6, GLOW_CAP = 4;  // rings and soft lights at once (a glow is a big layer)
 function ring(x, y, o = {}) {
-  if (isReduced()) return Promise.resolve();
-  const size = o.size ?? 80;
+  if (isReduced() || RINGS >= RING_CAP) return Promise.resolve();
+  const size = Math.min(o.size ?? 80, 200);
   const el = add('fx-ring', `left:${(x - size / 2).toFixed(1)}px;top:${(y - size / 2).toFixed(1)}px;width:${size}px;height:${size}px;--c:${o.color || '#ffd27a'};border-width:${o.width ?? 3}px`);
+  RINGS++;
   return play(el, [{ transform: 'scale(.2)', opacity: 0.95 }, { transform: `scale(${o.to ?? 1.35})`, opacity: 0 }],
-    { duration: o.duration ?? 450, delay: o.delay || 0, easing: 'cubic-bezier(.15,.7,.3,1)' }).then(() => el.remove());
+    { duration: o.duration ?? 450, delay: o.delay || 0, easing: 'cubic-bezier(.15,.7,.3,1)' }).then(() => { el.remove(); RINGS--; });
 }
 
 function glow(x, y, o = {}) {
-  if (isReduced()) return Promise.resolve();
-  const size = o.size ?? 120;
+  if (isReduced() || GLOWS >= GLOW_CAP) return Promise.resolve();
+  const size = Math.min(o.size ?? 120, 320);
   const el = add(`fx-glow${o.white ? ' white' : ''}`, `left:${(x - size / 2).toFixed(1)}px;top:${(y - size / 2).toFixed(1)}px;width:${size}px;height:${size}px;--c:${o.color || '#ffd27a'}`);
+  GLOWS++;
   return play(el, [
     { transform: 'scale(.3)', opacity: 0 },
     { transform: `scale(${o.mid ?? 1})`, opacity: o.peak ?? 0.9, offset: 0.3 },
     { transform: `scale(${o.to ?? 1.5})`, opacity: 0 },
-  ], { duration: o.duration ?? 600, delay: o.delay || 0, easing: 'cubic-bezier(.2,.6,.3,1)' }).then(() => el.remove());
+  ], { duration: o.duration ?? 600, delay: o.delay || 0, easing: 'cubic-bezier(.2,.6,.3,1)' }).then(() => { el.remove(); GLOWS--; });
 }
 
 function flashOn(el, color = '#fff', peak = 0.9, dur = 320) {
@@ -1627,19 +1649,21 @@ export function shake(strength = 2, el = stage()) {
 //  6. Events
 // ══════════════════════════════════════════════════════════════════
 
-/** Shake, white flash, a burst of sparks and a ring on the element. strength ≈ damage (1-10). */
+/** Shake, white flash, a burst of sparks and a ring on the element. strength ≈ damage (1-10).
+ *  opts.lite: just the jolt and a few sparks (one of many hit at once). */
 export function impact(el, o = {}) {
   if (!el) return Promise.resolve();
   const s = clamp(o.strength ?? 2, 0.3, 10);
   const color = o.color || '#ffcf7a';
   const r = el.getBoundingClientRect();
   const c = o.at || centre(r);
+  const k = o.lite ? 0.35 : 1;
   return Promise.all([
     jolt(el, s),
-    o.flash === false ? null : flashOn(el, '#fff', clamp(0.38 + s * 0.04, 0.4, 0.62), 200),
-    particles(c.x, c.y, { n: 6 + s * 3, color: [color, '#fff4d6', color], kind: 'streak', vmin: 110, vmax: 230 + s * 18, gravity: 320, life: 480, size: [4, 7] }),
-    particles(c.x, c.y, { n: 3 + s * 1.5, color, vmin: 40, vmax: 120, gravity: 200, life: 700, size: [4, 8] }),
-    ring(c.x, c.y, { color, size: Math.max(r.width, r.height) * 0.95, duration: 420 }),
+    o.flash === false || o.lite ? null : flashOn(el, '#fff', clamp(0.38 + s * 0.04, 0.4, 0.62), 200),
+    particles(c.x, c.y, { n: (6 + s * 3) * k, color: [color, '#fff4d6', color], kind: 'streak', vmin: 110, vmax: 230 + s * 18, gravity: 320, life: 480, size: [4, 7] }),
+    o.lite ? null : particles(c.x, c.y, { n: 3 + s * 1.5, color, vmin: 40, vmax: 120, gravity: 200, life: 700, size: [4, 8] }),
+    o.lite ? null : ring(c.x, c.y, { color, size: Math.max(r.width, r.height) * 0.95, duration: 420 }),
     o.shake === false ? null : shake(s),
   ]).then(noop);
 }
@@ -1783,7 +1807,6 @@ export function wave(root, o = {}) {
     return Promise.resolve();
   }
   const box = add(`fx-wave ${dir}`, `left:${rr.left}px;top:${rr.top}px;width:${rr.width}px;height:${rr.height}px;--c:${color}`);
-  const tint = add('fx-wave-tint', '', box);
   const len = horiz ? rr.width : rr.height;
   const band = len * 0.7, span = len + band;
   const bandEl = add('fx-wave-band', horiz ? `left:0;width:${band}px;top:-10%;bottom:-10%` : `top:0;height:${band}px;left:-10%;right:-10%`, box);
@@ -1791,7 +1814,6 @@ export function wave(root, o = {}) {
   const from = dir === 'right' || dir === 'down' ? -band : len;
   const to = dir === 'right' || dir === 'down' ? len : -band;
   jobs.push(play(bandEl, [{ transform: tf(from) }, { transform: tf(to) }], { duration: dur, easing: 'linear' }));
-  jobs.push(play(tint, [{ opacity: 0 }, { opacity: 0.16, offset: 0.45 }, { opacity: 0 }], { duration: dur, easing: 'ease-in-out' }));
   // the bright core sits 78% along the band, in the direction of travel
   const coreAt = (frac) => -band * 0.22 + frac * span;
   for (let i = 1; i <= 6; i++) {
@@ -1799,7 +1821,7 @@ export function wave(root, o = {}) {
     if (pos < 0 || pos > len) continue;
     const along = dir === 'right' ? rr.left + pos : dir === 'left' ? rr.right - pos : dir === 'down' ? rr.top + pos : rr.bottom - pos;
     jobs.push(sleep(D(dur * frac)).then(() => {
-      for (let j = 0; j < 3; j++) {
+      for (let j = 0; j < 2; j++) {
         const cross = horiz ? rr.top + rand(0.1, 0.9) * rr.height : rr.left + rand(0.1, 0.9) * rr.width;
         particles(horiz ? along : cross, horiz ? cross : along, { n: 4, color: [color, '#ffe9b8'], dir: -90, spread: 70, vmin: 30, vmax: 110, gravity: -90, life: 800, size: [3, 6] });
       }
@@ -1812,7 +1834,7 @@ export function wave(root, o = {}) {
     jobs.push(sleep(D(dur * frac)).then(() => {
       if (!t.isConnected) return;
       try { o.onHit?.(t); } catch (err) { console.error(err); }
-      return impact(t, { color, strength: o.strength ?? 1.4, shake: false });
+      return impact(t, { color, strength: o.strength ?? 1.4, shake: false, lite: targets.length >= 4 });
     }));
   }
   jobs.push(sleep(D(dur * 0.35)).then(() => shake(o.strength ?? 1.6)));
@@ -1848,13 +1870,20 @@ export function materialize(el, o = {}) {
 
 // ── death ───────────────────────────────────────────────────────────
 let DYING = 0;
+// Shards in flight, by their area: each is a whole copy of its card (cut by
+// a clip-path, which doesn't make its layer any smaller). At most a screen
+// and a half of them: about a hundred off small table cards, a dozen and a
+// half off big ones (a fight close up, tapped through quickly).
+let SHARDS = 0;
+const shardRoom = () => 1.5 * innerWidth * innerHeight;
 
 /**
  * A creature dies: it cracks with light and crumbles into falling shards,
  * embers and ash ({ style: 'crumble' }, the default), or brightens and
  * dissolves into motes ({ style: 'light' }, the default for tokens).
  * Pass a ghost (see ghost()), a live element (it is ghosted and hidden), or
- * (before, key) to use what capture() saw. opts: style, color.
+ * (before, key) to use what capture() saw. opts: style, color, of (how many
+ * die together: the more, the fewer shards; five or more fall in one piece).
  */
 export async function death(target, a, b) {
   let g, o;
@@ -1867,10 +1896,13 @@ export async function death(target, a, b) {
   }
   if (!g) return;
   const style = o.style || (g.classList.contains('token') ? 'light' : 'crumble');
+  // how many die together: the caller knows (else, those dying right now)
+  const of = Math.max(o.of || 1, DYING + 1);
   try {
     if (isReduced()) await play(g, [{ opacity: 1 }, { opacity: 0 }], { duration: 120 });
-    else if (style === 'light') await dissolve(g, o);
-    else await crumble(g, o);
+    else if (style === 'light') await dissolve(g, { ...o, of });
+    else if (of >= 5 || SHARDS + g.offsetWidth * g.offsetHeight * 6 > shardRoom()) await sink(g, o);
+    else await crumble(g, { ...o, of });
   } catch (err) {
     console.warn('fx: death', err);
   } finally {
@@ -1944,10 +1976,16 @@ async function crumble(g, o) {
   const w = g.offsetWidth, h = g.offsetHeight;
   const r = g.getBoundingClientRect(), c = centre(r);
   const heat = o.color || heatOf(g);
-  const many = DYING >= 2;
+  // big cards (the fight, close up) break into fewer, bigger pieces
+  const of = o.of || 1, many = of >= 2, big = w * h > 9000;
+  const [cols, rows, split] = of >= 3 ? [2, 2, false] : many ? (big ? [2, 2, true] : [2, 3, true]) : big ? [2, 3, true] : [3, 3, true];
   DYING++;
+  let made = 0;
   try {
-    const grid = shatter(w, h, many ? 2 : 3, many ? 3 : 4, !many);
+    const grid = shatter(w, h, cols, rows, split);
+    // (taken from the room now, before the cracks: deaths that start together all see it)
+    made = grid.cells.length * w * h;
+    SHARDS += made;
     // 1. struck: cracks of light run through it
     const svg = document.createElementNS(NS, 'svg');
     svg.setAttribute('class', 'fx-cracks');
@@ -1973,7 +2011,7 @@ async function crumble(g, o) {
     jolt(g, 2.5);
     flashOn(g, '#fff', 0.6, 220);
     const hp = { x: r.left + (hit[0] / w) * r.width, y: r.top + (hit[1] / h) * r.height };
-    particles(hp.x, hp.y, { n: 8, color: ['#fff', heat], kind: 'streak', vmin: 90, vmax: 200, gravity: 260, life: 420, size: [4, 6] });
+    particles(hp.x, hp.y, { n: of >= 3 ? 4 : 8, color: ['#fff', heat], kind: 'streak', vmin: 90, vmax: 200, gravity: 260, life: 420, size: [4, 6] });
     await Promise.all(paths.map((p, k) => play(p, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }],
       { duration: 230, delay: order[k >> 1].delay, easing: 'cubic-bezier(.3,.6,.3,1)' })));
     await sleep(D(130));
@@ -1999,7 +2037,6 @@ async function crumble(g, o) {
       s.style.clipPath = `polygon(${poly.map((p) => `${p[0].toFixed(1)}px ${p[1].toFixed(1)}px`).join(',')})`;
       s.style.transformOrigin = `${cx.toFixed(1)}px ${cy.toFixed(1)}px`;
       s.style.transform = `translate(${tx.toFixed(2)}px,${ty.toFixed(2)}px) rotate(${gi.ang.toFixed(2)}deg) scale(${gi.sc.toFixed(4)})`;
-      s.style.willChange = 'transform, opacity';
       L.appendChild(s);
       return { s, cx, cy };
     });
@@ -2016,11 +2053,39 @@ async function crumble(g, o) {
         { translate: `${(ux * out * 1.15).toFixed(1)}px ${(uy * out + fall).toFixed(1)}px`, rotate: `${spin.toFixed(1)}deg`, opacity: 0 },
       ], { duration: rand(760, 980), easing: 'linear' });
     });
-    jobs.push(particles(c.x, c.y, { n: many ? 10 : 18, color: [heat, '#ffd9a0', '#fff1d0'], dir: -90, spread: 110, vmin: 25, vmax: 95, gravity: -70, life: 1150, size: [3, 6], jitter: [w * 0.4, h * 0.35], stagger: 220 }));
-    jobs.push(particles(c.x, c.y, { n: many ? 5 : 9, kind: 'ash', dir: 90, spread: 140, vmin: 10, vmax: 50, gravity: 90, life: 1100, size: [3, 6], jitter: [w * 0.4, h * 0.3], stagger: 200 }));
-    jobs.push(glow(c.x, c.y, { color: heat, size: Math.max(w, h) * 1.8, duration: 700, peak: 0.6 }));
-    await Promise.all(jobs);
+    jobs.push(particles(c.x, c.y, { n: many ? 8 : 14, color: [heat, '#ffd9a0', '#fff1d0'], dir: -90, spread: 110, vmin: 25, vmax: 95, gravity: -70, life: 1150, size: [3, 6], jitter: [w * 0.4, h * 0.35], stagger: 220 }));
+    jobs.push(particles(c.x, c.y, { n: many ? 4 : 7, kind: 'ash', dir: 90, spread: 140, vmin: 10, vmax: 50, gravity: 90, life: 1100, size: [3, 6], jitter: [w * 0.4, h * 0.3], stagger: 200 }));
+    if (of <= 2) jobs.push(glow(c.x, c.y, { color: heat, size: Math.max(w, h) * (big ? 1.3 : 1.8), duration: 700, peak: 0.6 }));
+    // the shards go as soon as they've fallen (the embers float on)
+    await Promise.all(jobs.slice(0, shards.length));
     for (const { s } of shards) s.remove();
+    SHARDS -= made; made = 0;
+    await Promise.all(jobs.slice(shards.length));
+  } finally {
+    SHARDS -= made;
+    DYING--;
+  }
+}
+
+// Many dying at once: each flashes, cracks and falls away in one piece, with
+// a few embers (shards are copies of the card, and a screenful of them is
+// more than a phone can hold).
+async function sink(g, o) {
+  const w = g.offsetWidth, h = g.offsetHeight;
+  const r = g.getBoundingClientRect(), c = centre(r);
+  const heat = o.color || heatOf(g);
+  const spin = rand(5, 12) * (Math.random() < 0.5 ? -1 : 1);
+  const wait = rand(0, 160);  // (a crowd doesn't fall as one)
+  DYING++;
+  try {
+    jolt(g, 2);
+    flashOn(g, '#fff', 0.6, 260);
+    particles(c.x, c.y, { n: 4, color: [heat, '#ffd9a0'], dir: -90, spread: 110, vmin: 25, vmax: 90, gravity: -70, life: 950, size: [3, 6], jitter: [w * 0.35, h * 0.3], delay: 200 + wait, stagger: 180 });
+    await play(g, [
+      { translate: '0px 0px', rotate: '0deg', opacity: 1, offset: 0 },
+      { translate: '0px -3px', rotate: `${(spin * 0.15).toFixed(1)}deg`, opacity: 1, offset: 0.3 },
+      { translate: `${rand(-6, 6).toFixed(1)}px ${(h * 0.45).toFixed(1)}px`, rotate: `${spin.toFixed(1)}deg`, opacity: 0, offset: 1 },
+    ], { duration: rand(640, 800), delay: wait, easing: 'cubic-bezier(.45,0,.85,.6)' });
   } finally {
     DYING--;
   }
@@ -2038,7 +2103,7 @@ async function dissolve(g, o) {
     play(f, [{ opacity: 0 }, { opacity: 0.92, offset: 0.4 }, { opacity: 1 }], { duration: 700 }),
     play(g, [{ opacity: 1, scale: 1 }, { opacity: 1, scale: 1.07, offset: 0.45 }, { opacity: 0, scale: 1.14 }], { duration: 860, easing: 'ease-in' }),
     glow(c.x, c.y, { white: true, size: Math.max(w, h) * 2.4, duration: 900, delay: 240, peak: 0.85 }),
-    particles(c.x, c.y, { n: 22, color: ['#fffbe8', o.color || '#ffe39a'], dir: -90, spread: 100, gravity: -90, vmin: 20, vmax: 100, life: 1200, jitter: [w * 0.42, h * 0.4], delay: 240, stagger: 320, size: [3, 6] }),
+    particles(c.x, c.y, { n: (o.of || 1) >= 3 ? 6 : 22, color: ['#fffbe8', o.color || '#ffe39a'], dir: -90, spread: 100, gravity: -90, vmin: 20, vmax: 100, life: 1200, jitter: [w * 0.42, h * 0.4], delay: 240, stagger: 320, size: [3, 6] }),
   ]);
 }
 

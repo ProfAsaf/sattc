@@ -965,7 +965,6 @@
 .fx-wave.up .fx-wave-band, .fx-wave.down .fx-wave-band { top: 0; bottom: auto; left: -10%; right: -10%; width: auto; height: 70%; }
 .fx-wave.up .fx-wave-band { background: linear-gradient(0deg, transparent 0%, color-mix(in srgb, var(--c) 25%, transparent) 25%, color-mix(in srgb, var(--c) 75%, transparent) 62%, rgba(255, 246, 222, .9) 78%, color-mix(in srgb, var(--c) 60%, transparent) 86%, transparent 100%); }
 .fx-wave.down .fx-wave-band { background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--c) 25%, transparent) 25%, color-mix(in srgb, var(--c) 75%, transparent) 62%, rgba(255, 246, 222, .9) 78%, color-mix(in srgb, var(--c) 60%, transparent) 86%, transparent 100%); }
-.fx-wave-tint { position: absolute; inset: 0; background: var(--c); opacity: 0; }
 
 /* death: crack lines drawn over the card before it breaks */
 .fx-cracks { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 9; overflow: visible; pointer-events: none; }

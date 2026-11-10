@@ -93,6 +93,8 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 .g-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4; overflow: visible; }
 .gl { fill: none; stroke-linecap: round; }
 .gl.attack { stroke: #ff7b4d; stroke-width: 3; filter: drop-shadow(0 0 4px rgba(255, 110, 60, .8)); stroke-dasharray: 9 6; animation: gl-march .7s linear infinite; }
+/* (under a fight played big, the table's lines keep still: nothing to redraw there) */
+body:has(> .bf) .gl.attack { animation: none; }
 .gl.block { stroke: #cfeaff; stroke-width: 3.5; filter: drop-shadow(0 0 5px rgba(150, 210, 255, .9)); }
 .gl.hunt { stroke: #ffc070; stroke-width: 2.5; stroke-dasharray: 3 5; }
 @keyframes gl-march { to { stroke-dashoffset: -15; } }
@@ -175,8 +177,8 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 /* ── sheets (card details, choices, menus) ───────────────────────── */
 .g-sheet {
   position: fixed; inset: 0; z-index: 60; overflow-y: auto;
-  background: rgba(8, 6, 4, .82);
-  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+  /* (no backdrop blur: on an iPhone it keeps a blurred copy of the whole screen) */
+  background: rgba(8, 6, 4, .88);
   padding: calc(env(safe-area-inset-top, 0px) + 16px) 14px calc(env(safe-area-inset-bottom, 0px) + 20px);
   animation: fade .15s ease-out;
 }

@@ -267,24 +267,31 @@ function momentsOf(rec) {
 }
 
 // ── the bot's review of your decisions ──────────────────────────────
-// Each judged decision has a loss: how much better the bot's choice would
-// have left you, in its own scoring units (a 3/3 creature is about 9, a few
-// Life about 2 to 6). Accuracy turns losses into 0..100 the way chess sites
-// do: no loss is 100, and it falls off quickly.
-const ACC_K = 8;
+// Each judged decision has a loss: the winning chances it gave up next to
+// the bot's choice, in percentage points. The bot's score becomes a chance on
+// the same curve as "Your chances" (advantage above). So a move that leaves
+// you 99% to win is no blunder, however much a bolder one would have scored,
+// and a move in a close game that turns 60% into 40% is. This is how chess
+// sites grade (Lichess: 5, 10 and 15 points; reviews before 2026-11-10
+// graded the raw score, and say so with no `v`). Accuracy averages a score
+// per move that falls off quickly with the points lost.
+export const REVIEW_V = 2;
 export const GRADES = [
-  { min: 12, key: 'blunder', name: 'Blunder' },
-  { min: 6, key: 'mistake', name: 'Mistake' },
-  { min: 2.5, key: 'inaccuracy', name: 'Inaccuracy' },
+  { min: 15, key: 'blunder', name: 'Blunder' },
+  { min: 10, key: 'mistake', name: 'Mistake' },
+  { min: 5, key: 'inaccuracy', name: 'Inaccuracy' },
 ];
 export const gradeOf = (loss) => GRADES.find((g) => loss >= g.min) || null;
 const accOf = (loss) => 100 * Math.exp(-loss / ACC_K);
-const GREAT_TRICK = 3; // a Trick that won this much more than holding it
-// A move that loses (or wins) the game scores ±1e6: a loss is capped, and a
-// choice between moves that all lose (or all win) is no choice at all.
-const CAP = 40;
-const lossOf = (best, mine) => r2(Math.min(CAP, Math.max(0, best - mine)));
-const decided = (...vs) => vs.every((v) => v <= -1e5) || vs.every((v) => v >= 1e5);
+const ACC_K = 10; // (points of chances: a 5-point slip scores 61, a 15-point blunder 22. Lichess's own curve, 81 and 51, left a random player at 78%.)
+const GREAT_TRICK = 5; // a Trick that won this many points of winning chances over holding it
+// A move that loses (or wins) the game scores ±1e6: a chance of 0 (or 1). A
+// choice where every move leaves the game as good as settled (under 3% or
+// over 97% either way) is no choice at all: it isn't judged, so a won game
+// played out slowly, or a lost one played out at random, doesn't count.
+const chance = (v) => (v >= 1e5 ? 1 : v <= -1e5 ? 0 : (1 + Math.tanh(v / SCALE)) / 2);
+const lossOf = (best, mine) => r2(Math.max(0, 100 * (chance(best) - chance(mine))));
+const decided = (...vs) => vs.every((v) => chance(v) <= 0.03) || vs.every((v) => chance(v) >= 0.97);
 
 // What the bot would do, as data for insights.js to word.
 function sayAction(s, a) {
@@ -391,7 +398,7 @@ function judge(s, a, me, actions, i) {
       if (t2) alt = scoreAfterFight(t2, me);
     }
     if (!Number.isFinite(alt) || decided(v, alt)) return null;
-    return { k: 'trick', ...when, cid: s.cards[a.uid].cid, gain: r2(Math.max(-CAP, Math.min(CAP, v - alt))), loss: lossOf(alt, v) };
+    return { k: 'trick', ...when, cid: s.cards[a.uid].cid, gain: r2(100 * (chance(v) - chance(alt))), loss: lossOf(alt, v) };
   }
   return null;
 }
@@ -431,7 +438,7 @@ export function reviewSummary(all) {
   const great = judged.filter((x) => x.k === 'trick' && x.gain >= GREAT_TRICK).sort((x, y) => y.gain - x.gain).slice(0, 2);
   const counts = Object.fromEntries(GRADES.map((g) => [g.key, judged.filter((x) => gradeOf(x.loss)?.key === g.key).length]));
   const m = all.find((x) => x.k === 'mull');
-  return { acc, n: judged.length, by, marks, great, counts, mull: m ? { same: m.same, redraw: m.redraw } : null };
+  return { v: REVIEW_V, acc, n: judged.length, by, marks, great, counts, mull: m ? { same: m.same, redraw: m.redraw } : null };
 }
 
 // One thing to take from the game: the costliest decision if there was one
@@ -440,7 +447,7 @@ export function reviewSummary(all) {
 export function tipFor(rec, review) {
   const P = rec.players[rec.me];
   const worst = review?.marks?.slice().sort((x, y) => y.loss - x.loss)[0];
-  if (worst && worst.loss >= 6) return { k: 'mark', m: worst };
+  if (worst && worst.loss >= (review.v >= 2 ? GRADES.find((g) => g.key === 'mistake').min : 6)) return { k: 'mark', m: worst }; // (a mistake or worse; older reviews counted the raw score)
   const unused = P.had ? 1 - P.spent / P.had : 0;
   if (P.had >= 12 && unused > 0.3) return { k: 'energy', pct: Math.round((1 - unused) * 100) };
   if (P.full >= 2) return { k: 'full', n: P.full };

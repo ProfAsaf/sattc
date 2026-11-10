@@ -220,12 +220,14 @@ How you're doing, the way chess.com's Insights and Game Review and 17lands
   the practice bot, at each of your attacks, blocks, fight Tricks and ends of
   turn, what it would have done and how much better that leaves you by its own
   scoring (`evaluate` in `js/ai.js`, fights played out as the bot plays them).
-  Accuracy is 100 when it agreed every time and falls off like chess sites'
-  (`100·e^(−loss/8)`); the worst decisions are graded Inaccuracy, Mistake or
-  Blunder, Tricks that won a fight are Great. Energy kept for a Trick in hand
-  isn't counted against you, and a decision with no choice (or whose every
-  option loses) isn't counted. On bot games: a careful bot scores about 100%,
-  a random player about 70% (`tools/test-stats.mjs` prints both).
+  - **Grading by winning chances** (since 2026-11-10; the review has `v: 2`):
+    - The score becomes a chance on the same curve as "your chances", and a decision's loss is the percentage points of winning chance it gave up.
+    - Thresholds, as Lichess grades chess: Inaccuracy 5, Mistake 10, Blunder 15.
+    - Decisions where every option leaves the game as good as settled (under 3% or over 97%) aren't judged. Before, the review graded the raw score: in game ERZN, a 70–3 win, holding back attackers while 99% to win was four "blunders" and 63% accuracy. Now it gets 74%, with its three real slips from the close part of the game.
+    - Accuracy averages `100·e^(−loss/10)` per decision. On bot games a careful bot scores 100%, a noisy one 99% and a random player 64% (`tools/test-stats.mjs` prints them).
+    - Older saved reviews keep their old grades.
+  - Tricks that won a fight by 5 points or more are Great.
+  - Energy kept for a Trick in hand isn't counted against you, and neither is a decision with no choice.
 - **The end screen** adds how long it took, tonight's score (or your record
   against the bots), a small chart of your chances, one tip from the game, and
   **Game review**: the chart (or everyone's Life), key moments, the bot's

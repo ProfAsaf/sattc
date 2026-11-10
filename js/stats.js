@@ -275,7 +275,7 @@ function momentsOf(rec) {
 // sites grade (Lichess: 5, 10 and 15 points; reviews before 2026-11-10
 // graded the raw score, and say so with no `v`). Accuracy averages a score
 // per move that falls off quickly with the points lost.
-export const REVIEW_V = 2;
+export const REVIEW_V = 3; // (3, 2026-11-10: the cards you play each turn are judged too)
 export const GRADES = [
   { min: 15, key: 'blunder', name: 'Blunder' },
   { min: 10, key: 'mistake', name: 'Mistake' },
@@ -302,6 +302,7 @@ function sayAction(s, a) {
     case 'attack': return { t: 'attack', cids: a.att.map(cid), v: a.target };
     case 'block': return a.blocks.length ? { t: 'block', pairs: a.blocks.map(([b, x]) => [cid(b), cid(x)]) } : { t: 'noblock' };
     case 'phoenix': return { t: 'phoenix' };
+    case 'dig': return { t: 'dig' };
     case 'unhex': return { t: 'unhex', cid: cid(a.uid) };
     case 'pass': return { t: 'pass' };
     default: return { t: 'end' };
@@ -343,7 +344,8 @@ function judge(s, a, me, actions, i) {
     const left = P.energy;
     if (legalActions(base, me).length <= 1) return null; // nothing else to do
     const bot = chooseAction(base, me, { noise: 0 });
-    if (bot.t === 'end') return { k: 'turn', ...when, loss: 0, left };
+    // (cards it would still play are judged with the turn's plays, judgePlays: here, an attack you didn't make)
+    if (bot.t === 'end' || bot.t !== 'attack') return { k: 'turn', ...when, loss: 0, left };
     // Energy kept for a Trick in hand is a plan the bot's scoring doesn't see,
     // so then only an attack it would have made (which costs no Energy) counts.
     const held = P.hand.some((u) => isTrick(BY_ID[s.cards[u].cid]) && costOf(s, me, s.cards[u]) <= left);
@@ -403,6 +405,59 @@ function judge(s, a, me, actions, i) {
   return null;
 }
 
+// The cards you played on a turn (and abilities used, Digs, Hexes broken),
+// against the bot's own: both put on the turn's starting position, with no
+// fights, and the two positions compared. Attacks, blocks and fight Tricks are
+// judged on their own, so nothing counts twice. `i`: the turn's first move.
+const PLAYS = new Set(['play', 'use', 'dig', 'unhex', 'phoenix', 'rite']);
+function judgePlays(s, me, actions, i) {
+  const when = { t: s.turn, p: s.active, kk: s.players[s.active].turns };
+  // your main-phase moves this turn, in order (walking the real game to know which were in a fight)
+  const mine = [];
+  let t = s, end = null, inFights = 0;
+  const fallen = new Set(); // creatures your fights this turn took off the table (either side)
+  for (let j = i; j < actions.length; j++) {
+    const b = actions[j];
+    if (b.p === me && b.t === 'end') { end = t; break; }
+    if (b.p === me && t.phase === 'main' && t.active === me && PLAYS.has(b.t)) mine.push(b);
+    const n = step(t, b) || t;
+    if (b.p === me && t.phase === 'combat') inFights += Math.max(0, t.players[me].energy - n.players[me].energy); // (Energy you spent in fights)
+    if (b.t === 'attack' || t.phase === 'combat') for (const Q of t.players) for (const u of Q.board) if (!n.players.some((R) => R.board.includes(u))) fallen.add(u);
+    t = n;
+    if (t.phase === 'over' || t.active !== me) break;
+  }
+  if (!end) return null; // (the game ended in the turn)
+  // Energy kept for a Trick in hand: a plan the bot's scoring doesn't see
+  const E = end.players[me];
+  if (E.hand.some((u) => isTrick(BY_ID[end.cards[u].cid]) && costOf(end, me, end.cards[u]) <= E.energy)) return null;
+  const base = lean(s);
+  let u = base;
+  for (const b of mine) u = step(u, b) || u; // (a play that needed a fight's outcome is left out)
+  // the bot's own plays from the same start: no attacking (as if it had attacked already),
+  // and without the Energy you spent in fights (that went to Tricks, judged on their own)
+  let v = inFights ? { ...base, players: base.players.map((Q) => (Q.i === me ? { ...Q, energy: Math.max(0, Q.energy - inFights) } : Q)) } : base;
+  const bot = [];
+  for (let k = 0; k < 15; k++) {
+    const noAttack = { ...v, players: v.players.map((Q) => (Q.i === me ? { ...Q, attackedOn: v.turn } : Q)) };
+    const a = chooseAction(noAttack, me, { noise: 0 });
+    if (!PLAYS.has(a.t)) break;
+    const n = step(v, a);
+    if (!n || n.phase !== 'main' || n.active !== me) break;
+    bot.push(a);
+    v = n;
+  }
+  if (!mine.length && !bot.length) return null;
+  // the same cards as the bot's (in another order, or after a fight): agreed
+  const key = (xs, st) => xs.map((x) => `${x.t}:${x.uid != null ? st.cards[x.uid]?.cid : ''}`).sort().join('|');
+  if (key(mine, s) === key(bot, s)) return { k: 'plays', ...when, loss: 0, mine: mine.map((b) => sayAction(s, b)), alt: null };
+  // (what your fights killed is gone in both: a Spell on a creature that died in the fight anyway earns nothing)
+  const after = (st) => (fallen.size ? { ...st, players: st.players.map((Q) => ({ ...Q, board: Q.board.filter((x) => !fallen.has(x)) })) } : st);
+  const vMine = evaluate(after(u), me), vBot = evaluate(after(v), me);
+  if (decided(vBot, vMine)) return null;
+  const loss = lossOf(vBot, vMine);
+  return { k: 'plays', ...when, loss, mine: mine.map((b) => sayAction(s, b)), alt: loss > 0.5 ? { t: 'plays', moves: bot.map((b) => sayAction(s, b)) } : null };
+}
+
 /**
  * The bot's review of `me`'s decisions (async: it hands the phone back
  * every few milliseconds, so the screen stays smooth while it works).
@@ -413,10 +468,15 @@ function judge(s, a, me, actions, i) {
 export async function reviewPlay(setup, actions, me, { pause = () => new Promise((r) => setTimeout(r, 0)), slice = 14, raw = false } = {}) {
   let s = newGame(setup);
   const all = [];
-  let t0 = Date.now();
+  let t0 = Date.now(), playsOn = -1;
   for (let i = 0; i < actions.length; i++) {
     const a = actions[i];
     if (a.p === me && s.phase !== 'over' && !s.players[me].out) {
+      // a turn of yours begins: the cards you'll play on it
+      if (s.phase === 'main' && s.active === me && s.turn !== playsOn) {
+        playsOn = s.turn;
+        try { const j = judgePlays(s, me, actions, i); if (j) all.push(j); } catch (e) { /* leave it out */ }
+      }
       try { const j = judge(s, a, me, actions, i); if (j) all.push(j); } catch (e) { /* something the bot can't think about: leave it out */ }
     }
     s = step(s, a) || s;
@@ -428,7 +488,7 @@ export async function reviewPlay(setup, actions, me, { pause = () => new Promise
 export function reviewSummary(all) {
   const judged = all.filter((x) => x.k !== 'mull');
   const by = {};
-  for (const k of ['turn', 'attack', 'block', 'trick']) {
+  for (const k of ['plays', 'turn', 'attack', 'block', 'trick']) {
     const xs = judged.filter((x) => x.k === k);
     by[k] = { n: xs.length, ok: xs.filter((x) => x.loss < GRADES[GRADES.length - 1].min).length };
   }
@@ -527,7 +587,7 @@ export function summarize(allGames, drafts = [], filter = 'all', rules = 'any') 
   const play = {
     acc: reviewed.length ? Math.round(reviewed.reduce((t, g) => t + g.review.acc, 0) / reviewed.length) : null,
     trend: reviewed.slice(-12).map((g) => g.review.acc),
-    turn: sumBy('turn'), attack: sumBy('attack'), block: sumBy('block'), trick: sumBy('trick'),
+    plays: sumBy('plays'), turn: sumBy('turn'), attack: sumBy('attack'), block: sumBy('block'), trick: sumBy('trick'),
     great: reviewed.reduce((t, g) => t + (g.review.great?.length || 0), 0),
     counts: Object.fromEntries(GRADES.map((x) => [x.key, reviewed.reduce((t, g) => t + (g.review.counts?.[x.key] || 0), 0)])),
     energy: mineE.had ? Math.min(100, pct(mineE.spent, mineE.had)) : null,

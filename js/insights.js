@@ -48,6 +48,8 @@ function altText(rec, a) {
     case 'play': return `played ${card(a.cid)}`;
     case 'use': return `used ${card(a.cid)}`;
     case 'phoenix': return 'brought the Phoenix back';
+    case 'dig': return 'dug for a card';
+    case 'plays': return movesText(a.moves);
     case 'unhex': return `broken the Hex on ${card(a.cid)}`;
     case 'attack': return `attacked${rec.n > 2 ? ` ${who(rec, a.v, true)}` : ''} with ${list(a.cids.map(card))}`;
     case 'hold': return 'held back';
@@ -58,9 +60,23 @@ function altText(rec, a) {
   }
 }
 
+// A turn's plays in words: "played A and B, used C's ability and dug for a card".
+function movesText(moves) {
+  if (!moves.length) return 'played nothing';
+  const of = (t) => moves.filter((x) => x.t === t).map((x) => card(x.cid));
+  return list([
+    of('play').length ? `played ${list(of('play'))}` : '',
+    of('use').length ? list(moves.filter((x) => x.t === 'use').map((x) => (BY_ID[x.cid]?.stages ? `paid a stage of ${card(x.cid)}` : `used ${card(x.cid)}’s ability`))) : '',
+    moves.some((x) => x.t === 'dig') ? 'dug for a card' : '',
+    of('unhex').length ? `broke the Hex on ${list(of('unhex'))}` : '',
+    moves.some((x) => x.t === 'phoenix') ? 'brought the Phoenix back' : '',
+  ].filter(Boolean));
+}
+
 /** One judged decision as a sentence. */
 export function markText(rec, m) {
   switch (m.k) {
+    case 'plays': return `You ${movesText(m.mine)}. The bot would have ${movesText(m.alt?.moves || [])}.`;
     case 'turn': return `You ended your turn with ${plural(m.left, 'Energy', 'Energy')} left. The bot would have ${altText(rec, m.alt)}.`;
     case 'attack': return `Attacking with ${list(m.cids.map(card))} cost you.${m.alt ? ` The bot would have ${altText(rec, m.alt)}.` : ''}`;
     case 'block': return m.alt ? `Your blocks cost you. The bot would have ${altText(rec, m.alt)}.` : 'Your blocks cost you.';
@@ -390,7 +406,8 @@ function playHTML(S) {
     ${P.acc != null ? `<div class="ins-acc"><div class="ins-big"><b>${P.acc}%</b><span>accuracy</span></div>${spark(P.trend, Math.min(...P.trend, 60), 100)}</div>
     <p class="ins-note">At each attack, block, fight Trick and end of turn: how close you came to the bot’s best move, by its own scoring.</p>` : ''}
     <div class="ins-rows">
-      ${row('Ends of turn', P.turn, 'Energy put to use')}
+      ${row('Cards played', P.plays)}
+      ${row('Ends of turn', P.turn, 'attacks you could have made')}
       ${row('Attacks', P.attack)}
       ${row('Blocks', P.block)}
       ${row('Fight Tricks', P.trick)}

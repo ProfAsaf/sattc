@@ -226,6 +226,13 @@ How you're doing, the way chess.com's Insights and Game Review and 17lands
     - Decisions where every option leaves the game as good as settled (under 3% or over 97%) aren't judged. Before, the review graded the raw score: in game ERZN, a 70–3 win, holding back attackers while 99% to win was four "blunders" and 63% accuracy. Now it gets 74%, with its three real slips from the close part of the game.
     - Accuracy averages `100·e^(−loss/10)` per decision. On bot games a careful bot scores 100%, a noisy one 99% and a random player 64% (`tools/test-stats.mjs` prints them).
     - Older saved reviews keep their old grades.
+  - **The cards you play** (since 2026-11-10, review `v: 3`):
+    - At the start of each of your turns, the review takes the cards you played (and abilities used, Digs, Ritual stages) and puts them back on the turn's starting position, without the fights. The bot does the same with its own choice of plays, no attacking, and its budget is cut by the Energy you spent in fights.
+    - It compares the two positions after removing from both whatever your fights killed, so a Spell on a creature that died in the fight anyway earns nothing.
+    - The same cards in another order count as agreeing. Turns where you kept Energy for a Trick in hand aren't judged.
+    - Ending your turn is now judged only for an attack you didn't make; the cards are judged here.
+    - A careful bot still scores 100% with no notes; a random player scores 70%.
+    - Game JXJH's review now catches round 6: "You played The Merchant Tortoise and Windborne Sage. The bot would have played Grand Illusion and Patient Giant."
   - Tricks that won a fight by 5 points or more are Great.
   - Energy kept for a Trick in hand isn't counted against you, and neither is a decision with no choice.
 - **The end screen** adds how long it took, tonight's score (or your record

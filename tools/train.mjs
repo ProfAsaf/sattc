@@ -55,7 +55,7 @@ function botMove(bot, s, p, rand) {
 
 // One duel. bots[k] plays seat k with deck dk[k]. `record`: save positions (features from both sides).
 function duel(bots, dk, seed, record = false) {
-  let s = newGame({ seed, players: dk.map((k, i) => ({ name: `P${i}`, deck: DECKS[k].list, legend: DECKS[k].legend })), startEnergy: RULES.startEnergy, ultra: ULTRA_V });
+  let s = newGame({ seed, players: dk.map((k, i) => ({ name: `P${i}`, deck: DECKS[k].list, legend: DECKS[k].legend })), startEnergy: RULES.startEnergy, deckClock: true, ultra: ULTRA_V });
   const rand = rng(seed * 2654435761);
   const rows = [];
   for (let k = 0; k < 5000 && s.phase !== 'over'; k++) {

@@ -115,7 +115,7 @@ function newcomer() {
 const flagged = [];
 const totals = { games: 0, rounds: 0, unfinished: 0 };
 function duel(A, B, seed) {
-  const setup = { seed, players: [A, B].map((x) => ({ name: `#${x.id}`, deck: cardList(x.counts) })), startEnergy: RULES.startEnergy, ultra: ULTRA_V };
+  const setup = { seed, players: [A, B].map((x) => ({ name: `#${x.id}`, deck: cardList(x.counts) })), startEnergy: RULES.startEnergy, deckClock: true, ultra: ULTRA_V };
   let s = newGame(setup);
   let x = seed >>> 0;
   const rand = () => (x = (Math.imul(x, 1103515245) + 12345) >>> 0) / 4294967296;

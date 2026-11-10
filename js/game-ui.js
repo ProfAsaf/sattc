@@ -421,7 +421,7 @@ function startPractice(mine, bots, { ultra } = {}) {
   ultra = ultra ?? (Mode.ultra() || [mine, ...bots].some((d) => Decks.isUltraDeck(d.counts)));
   const players = [{ name: 'You', deck: Decks.cardList(mine.counts) },
     ...bots.map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
-  const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, champions: PF.champions && !ultra, ultra: ultra ? ULTRA_V : false };
+  const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, deckClock: true, champions: PF.champions && !ultra, ultra: ultra ? ULTRA_V : false };
   begin({ mode: 'practice', setup, actions: [], me: 0, bots: bots.map((_, i) => i + 1), level: PF.level });
 }
 
@@ -519,7 +519,7 @@ export function demo(params) {
   const decks = [starters[1], starters[4], starters[0]];
   const players = [{ name: 'You', deck: Decks.cardList(decks[0].counts) },
     ...decks.slice(1, 1 + nBots).map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
-  const setup = { seed, players, startEnergy: RULES.startEnergy, champions: params.get('champions') === '1', ultra: params.get('ultra') === '1' ? ULTRA_V : false };
+  const setup = { seed, players, startEnergy: RULES.startEnergy, deckClock: true, champions: params.get('champions') === '1', ultra: params.get('ultra') === '1' ? ULTRA_V : false };
   let s = newGame(setup);
   const actions = [];
   for (let k = 0; s.phase !== 'over' && (k < moves || actor(s) !== 0 || s.phase !== 'main'); k++) {
@@ -597,7 +597,7 @@ function begin(rec) {
 function beginOnline(info, seat) {
   const round = info.round;
   // (every phone in a game runs the same version, so they agree on the rules: see G.stale)
-  const setup = { seed: info.seeds[round], players: info.players.map((p) => ({ name: p.name, deck: Decks.cardList(Decks.decode(p.deck) || {}) })), startEnergy: RULES.startEnergy, champions: !!info.champions, ultra: (info.draft?.id ? info.draft.ultra : info.ultra) ? ULTRA_V : false };
+  const setup = { seed: info.seeds[round], players: info.players.map((p) => ({ name: p.name, deck: Decks.cardList(Decks.decode(p.deck) || {}) })), startEnergy: RULES.startEnergy, deckClock: true, champions: !!info.champions, ultra: (info.draft?.id ? info.draft.ultra : info.ultra) ? ULTRA_V : false };
   clearTimeout(G?.timer);
   G?.unsubActions?.();
   endGate?.(false);
@@ -1552,7 +1552,7 @@ function pbarHTML(s, P, hl, folded = false) {
     ? `<div class="pb-energy" title="Energy">${enHex(s.phase === 'mulligan' ? most : P.energy)}<span>/${most}</span></div>`
     : `<div class="pb-en" title="Energy">${enHex(P.energy)}</div>`;
   const meta = (mine ? '' : `<span title="cards in hand">${ICON.hand}${P.hand.length}</span>`)
-    + (P.deck.length <= 5 && !P.out ? (P.deck.length ? `<span class="pb-low" title="cards left in the deck">${ICON.deck}${P.deck.length} left</span>` : `<span class="pb-low empty" title="The deck is empty: each card ${mine ? 'you' : 'they'}’d draw costs 2 Life">${ICON.deck}empty</span>`) : '')
+    + (P.deck.length <= 5 && !P.out ? (P.deck.length ? `<span class="pb-low" title="cards left in the deck">${ICON.deck}${P.deck.length} left</span>` : `<span class="pb-low empty" title="${s.deckClock ? `The deck is empty: ${mine ? 'you lose' : 'they lose'} 2 Life at the start of each of ${mine ? 'your' : 'their'} turns` : `The deck is empty: each card ${mine ? 'you' : 'they'}’d draw costs 2 Life`}">${ICON.deck}empty</span>`) : '')
     + (P.traps.length ? `<span class="trap-chip" title="${P.traps.length} face-down Trap${P.traps.length > 1 ? 's' : ''}">${ICON.trap}${P.traps.length}</span>` : '')
     + (!mine && legendWaiting(s, P.i) != null ? `<span class="pb-leg" title="Their Legend waits beside their deck (Level ${champLevel(s, P.i)})">★${champLevel(s, P.i)}</span>` : '');
   return `<div class="pbar${isT ? ' target' : ''}${fighting || ''}${crown ? ' crowned' : ''}" data-p="${P.i}">
@@ -3444,9 +3444,9 @@ function changesNothing(s, t, a, paid) {
   return norm(s, 0) === norm(t, paid);
 }
 
-// A move that would knock you out: drawing from an empty deck (2 Life a card),
-// paying Life. Say how first (game DTSN: Grand Illusion drew 7 cards from an
-// empty deck, 14 Life, all that was left).
+// A move that would knock you out: paying Life, or (games set up before the
+// deck clock) drawing from an empty deck, 2 Life a card. Say how first (game
+// DTSN: Grand Illusion drew 7 cards from an empty deck, 14 Life, all that was left).
 function outSlip(s, a) {
   const r = apply(s, a);
   if (r.error) return null;
@@ -3814,7 +3814,7 @@ function onAct(act, el) {
     case 'reload': location.reload(); break;
     case 'lobby': Net.backToLobby(G.code).catch((e) => flash(e.message)); break;
     case 'rematch': {
-      const setup = { ...G.setup, seed: (Math.random() * 2 ** 31) | 0, startEnergy: RULES.startEnergy, ultra: G.setup.ultra ? ULTRA_V : false };
+      const setup = { ...G.setup, seed: (Math.random() * 2 ** 31) | 0, startEnergy: RULES.startEnergy, deckClock: true, ultra: G.setup.ultra ? ULTRA_V : false };
       begin({ mode: G.mode, setup, actions: [], me: G.me, bots: [...G.bots], level: G.level });
       break;
     }

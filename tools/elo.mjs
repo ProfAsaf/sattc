@@ -65,7 +65,7 @@ function move(bot, s, p, rand) {
 
 // One duel: bots[k] plays deck dk in seat k. Returns the winning seat (null: no end).
 function duel(bots, dk, seed) {
-  let s = newGame({ seed, players: dk.map((k, i) => ({ name: `${bots[i].name} (${decks[k].name})`, deck: decks[k].list, legend: decks[k].legend })), startEnergy: RULES.startEnergy, ultra: ULTRA_V });
+  let s = newGame({ seed, players: dk.map((k, i) => ({ name: `${bots[i].name} (${decks[k].name})`, deck: decks[k].list, legend: decks[k].legend })), startEnergy: RULES.startEnergy, deckClock: true, ultra: ULTRA_V });
   let x = (seed * 2654435761) >>> 0;
   const rand = () => (x = (Math.imul(x, 1103515245) + 12345) >>> 0) / 4294967296;
   for (let k = 0; k < 5000 && s.phase !== 'over'; k++) {

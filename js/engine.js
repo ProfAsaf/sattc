@@ -78,15 +78,19 @@ function mk(s, cid, owner, zone) {
 // `startEnergy` is everyone's Energy on their first turn: new games pass
 // RULES.startEnergy. A setup without it starts at 1, the old rule, so games
 // saved before the change replay as they were played (the lesson too).
+// `deckClock` (new games pass true; 2026-11-10): an empty deck costs its
+// player RULES.emptyDeckDamage Life once, at the start of their turn, and any
+// other draw from it does nothing. Without it, the old rule: that much Life
+// for every card they'd draw from it (games saved before replay so).
 // `champions`: every player starts with their deck's Champion on the table
 // (a player's `champion` picks one; otherwise championFor). Off unless asked.
 // `ultra`: SATTC Ultra, the bigger rule changes (s.ultra). Off unless asked.
 // `true` is its first version; a number is that version (s.uv; cards.js ULTRA_V).
 // From version 2 every player has a Legend beside their deck (a player's
 // `legend` picks one; otherwise legendFor), and no Champion.
-export function newGame({ seed = 1, players, stacked = false, first = null, crown = null, startEnergy = 1, champions = false, ultra = false }) {
+export function newGame({ seed = 1, players, stacked = false, first = null, crown = null, startEnergy = 1, champions = false, ultra = false, deckClock = false }) {
   const s = {
-    v: 2, rng: seed | 0, mode: players.length > 2 ? 'ffa' : 'duel',
+    v: 2, rng: seed | 0, mode: players.length > 2 ? 'ffa' : 'duel', ...(deckClock ? { deckClock: true } : {}),
     turn: 0, active: 0, first: 0, phase: 'mulligan', winner: null, combat: null,
     crownOn: crown ?? players.length > 2, crown: null, ultra: !!ultra, ...(ultra ? { field: null, uv: ultra === true ? 1 : Number(ultra) || 1 } : {}),
     players: [], cards: {}, nextUid: 1, died: 0, diedOwn: [], log: [], events: [],
@@ -420,8 +424,11 @@ export function draw(s, pi, n = 1, turnDraw = false) {
   const P = s.players[pi];
   for (let k = 0; k < n && !P.out; k++) {
     if (!P.deck.length) {
+      // (the deck clock: Life once, at the start of the turn; any other draw finds nothing)
+      if (s.deckClock && !turnDraw) { log(s, pi, `${P.name}'s deck is empty: nothing to draw.`); break; }
       log(s, pi, `${P.name} has no cards left to draw and loses ${RULES.emptyDeckDamage} Life.`);
       loseLife(s, pi, RULES.emptyDeckDamage);
+      if (s.deckClock) break;
       continue;
     }
     const c = s.cards[P.deck.shift()];

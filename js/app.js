@@ -489,7 +489,7 @@ function rules() {
     <details class="fine"><summary>Fine print</summary>
       <ul>
         <li>At most ${RULES.boardMax} creatures each, and at most ${RULES.handMax} cards in hand (extra draws go to the discard pile).</li>
-        <li>If you must draw from an empty deck, you lose ${RULES.emptyDeckDamage} Life instead.</li>
+        <li>If your deck is empty when your turn starts, you lose ${RULES.emptyDeckDamage} Life instead of drawing. Any other draw from an empty deck does nothing.</li>
         <li>"Permanently" lasts until the creature leaves play. "This turn" ends when the turn ends.</li>
         <li>Swift: a Swift creature deals its damage first; if that kills the other creature, it takes nothing back.</li>
         <li>Guard: one Guard creature can block two attackers and deals its full Power to each. Other creatures can join either block.</li>

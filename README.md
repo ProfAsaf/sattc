@@ -1084,6 +1084,29 @@ Measured on a 402×874 screen at 3x with the CPU slowed 4×, at the busiest mome
 - **Sheets** have no backdrop blur (it keeps a blurred copy of the whole screen); they are a little darker instead. The table's attack lines keep still under a fight played big.
 - Tests: `ui-busy.mjs` checks four busy moments against limits (at most 220 moving, 4.5 screens of them, 900 effect elements). It also checks that each moment plays out. `look-deaths.mjs` takes screenshots of deaths partway through.
 
+## The deck clock (2026-11-10)
+
+Asaf: "I had no idea that trying to draw cards when you have none hurts you. Is that necessary? It is confusing. There is already an obvious punishment from not being able to draw any new cards."
+
+Bot duels, both ways (`.phone-tests/deck-out.mjs`; `DAMAGE=0` turns the Life loss off; `CLOCK=1` plays the new rule):
+
+| | starters (1,560 games) | Asaf's DTSN deck vs each starter (260 games) |
+|---|---|---|
+| a deck runs out | 6% of games, first around round 16 | about 7% |
+| the Life loss decides the game | 1.7% | 2.7% |
+| with it off: games that never end | 3 (0.2%) | 0 |
+| average length, on → off | 10.1 → 10.1 rounds | 10.0 → 10.1 rounds |
+| DTSN deck's win rate, on → off | | 66.9% → 67.7% |
+
+Not drawing is punishment enough. Still, something has to end the stalemates that come once both decks are gone.
+The confusing part was card effects: in game DTSN, Grand Illusion's 7 draws cost 14 Life at once.
+
+- **The rule now:** if your deck is empty when your turn starts, you lose 2 Life instead of drawing. Any other draw from an empty deck does nothing: draw spells, Tidecaller's Library's extra card, the Crown's card.
+- **Old games:** new games are set up with `deckClock: true` (`newGame`; practice, online, rematches, `?seed=`, and the bot tools). A setup without it keeps the old rule, so games saved before replay as they were played.
+- **Your bar** says so when your deck is empty (held: "you lose 2 Life at the start of each of your turns"). The rules page says so too.
+- **The knockout warning** (`outSlip`) now comes from paying Life, such as Blood Pact at 3 Life. Draws only cost Life in old games.
+- Tests: `test-engine` "The deck clock" (7 checks, and half the random games play it) and `ui-resume.mjs`.
+
 ## Your rating (2026-11-10)
 
 Asaf asked where to see their estimated Elo. This is phase 3 of
@@ -1217,7 +1240,7 @@ opening hand should swipe, and Dig and the moves that aren't attacks
 - **Countercurrent** is a Trap set on your own turn, so nothing is played on an opponent's turn.
 - The first player skips their first draw; everyone else starts with a **Spark** (0: gain 1 Energy this turn).
 - Everyone has **3 Energy** on their first turn (it was 1 until 2026-11-07), then 1 more each turn.
-- Empty deck: lose 2 Life per missing draw. Board max 7 creatures; hand max 10.
+- Empty deck: if your deck is empty when your turn starts, you lose 2 Life instead of drawing; any other draw from an empty deck does nothing (since 2026-11-10; until then, 2 Life for every card you couldn't draw). Board max 7 creatures; hand max 10.
 - "The opposing player" became "each opponent" / "an opponent" so cards work in 3-player games.
 - Little Gardener triggers once per turn (two of them would otherwise loop forever).
 - Phoenix returns during your next turn (no start-of-turn prompt); Forbidden Archivist costs 1 Life instead of an optional Energy payment, so neither needs a decision on someone else's turn.

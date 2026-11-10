@@ -1010,6 +1010,31 @@ test('Empty deck and full hand', () => {
   eq(zoneOf(t, top.uid), 'discard', 'eleventh card burned');
 });
 
+test('The deck clock (new games): an empty deck costs 2 Life once as the turn starts; other draws find nothing', () => {
+  let s = scene();
+  s.deckClock = true;
+  const tide = addCard(s, 'tide-of-fortune', A, 'hand');
+  const life = s.players[A].life;
+  s = play(s, tide.uid);
+  eq(s.players[A].life, life, 'drawing 2 from an empty deck costs nothing');
+  ok(s.log.some((l) => /deck is empty: nothing to draw/.test(l.text)), 'and the log says so');
+  // the turn starts with the deck empty: 2 Life, once, Tidecaller's Library's extra card or not
+  addCard(s, 'tidecallers-library', B, 'relics');
+  const lb = s.players[B].life;
+  s = end(s);
+  eq(s.players[B].life, lb - 2, 'B loses 2 as the turn starts, once');
+  // a game set up before (no deckClock) keeps the old rule: 2 Life a card
+  let o = scene();
+  const t2 = addCard(o, 'tide-of-fortune', A, 'hand');
+  const l0 = o.players[A].life;
+  o = play(o, t2.uid);
+  eq(o.players[A].life, l0 - 4, 'an old game: 2 Life for each card');
+  const players = [{ name: 'A', deck: [] }, { name: 'B', deck: [] }];
+  eq(newGame({ seed: 1, players, deckClock: true }).deckClock, true, 'a new game keeps it');
+  eq(replay({ seed: 1, players, deckClock: true }, []).deckClock, true, 'and so does its replay');
+  eq(newGame({ seed: 1, players }).deckClock, undefined, 'an old setup has none');
+});
+
 test('Three players: each opponent, elimination, turn order, who you attack', () => {
   let s = scene({ players: 3 });
   s.players[2].life = 1;
@@ -2595,7 +2620,7 @@ function fuzz(games, ultra = false) {
   for (let g = 0; g < games; g++) {
     const n = g % 4 === 3 ? 3 : 2;
     const players = Array.from({ length: n }, (_, i) => ({ name: `P${i}`, deck: decks[(g + i * 2) % decks.length] }));
-    let s = newGame({ seed: seed++, players, startEnergy: g % 2 ? RULES.startEnergy : 1, champions: g % 3 !== 0, ultra });
+    let s = newGame({ seed: seed++, players, startEnergy: g % 2 ? RULES.startEnergy : 1, champions: g % 3 !== 0, ultra, deckClock: g % 4 < 2 });
     let rand = g * 2654435761 >>> 0;
     const libs = s.players.map(() => 0); // (the most Libraries each player has had: a hand can stay over 10 after one goes)
     const R = () => (rand = (Math.imul(rand, 1103515245) + 12345) >>> 0) / 4294967296;

@@ -104,6 +104,12 @@ background runs, not more.
   - More shuffled futures per move, with a little noise in the played-out moves.
   - A Texel fit at 20× the data, labeled by the Planner rather than the greedy bot.
 
+## Phase 3, built (2026-11-10)
+
+- Your rating: Glicko-2 in `js/rating.js`, with the levels as fixed anchors.
+- Shown on the Play page, in Insights and on the end screen. Details are in the README ("Your rating").
+- It is computed from the games saved on the phone. Take-backs aren't rated, and three-player games count at half weight per bot.
+
 ## Research notes for phases 3 and 4
 
 - Use Glicko-2 (rating deviation + volatility) rather than plain Elo for a

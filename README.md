@@ -1033,6 +1033,27 @@ whatever the text above them says.
   `FX.placeTrack()`; the game's big hand and the draft both use them, and
   `FX.grabSwipe()` is every sheet's swipe-up handle.
 
+## Your rating (2026-11-10)
+
+Asaf asked where to see his estimated Elo. This is phase 3 of
+`bot-training-plan.md`, in `js/rating.js`:
+
+- **Glicko-2**, the rating Lichess uses, against the bot levels as fixed
+  anchors (their measured Elo in `ai.js LEVELS`; deviation 50).
+  - You start at 1500 with a deviation of 350.
+  - Below a deviation of 110 the rating settles; until then it shows a "?".
+  - The update follows Glickman's paper and is checked against its worked example in `tools/test-stats.mjs`.
+- **What counts:** finished practice games against the bots, worked out
+  again from the games saved on the phone, so there's nothing new to store.
+  - A game where you took back a move isn't rated (as on chess sites), and neither are online games or the lesson.
+  - Games from before the levels were against Practice (1500).
+  - A three-player game is a result against each bot, by who outlasted whom, at half weight each.
+- **Where it shows:**
+  - The Play page, over the Level picker: "Your rating: 1543? · between Practice (1500) and Expert (1650)".
+  - An Insights card with its line over your games.
+  - The end screen: "Rating 1547 (+15)", or "Not rated: a move was taken back".
+- Tests: `.phone-tests/ui-rating.mjs`.
+
 ## Bot levels, and training the bots (2026-11-09)
 
 Asaf wanted a way to train the bots, difficulty levels to choose from, and

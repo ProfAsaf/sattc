@@ -13,6 +13,7 @@ import { cardList } from '../js/decks.js';
 import { botPick, botRand, replay as replayDraft, newSeed } from '../js/draft.js';
 const ULTRA_IDS = new Set(ULTRA.map((c) => c.id)); // (any Ultra card, the newer ones too)
 import { analyzeGame, reviewPlay, reviewDraft, summarize, roomResult, nightAwards } from '../js/stats.js';
+import { glicko2, gameResults, myRating } from '../js/rating.js';
 
 const GAMES = Number(process.argv[2] || 40);
 const DRAFTS = Number(process.argv[3] || 30);
@@ -86,6 +87,19 @@ for (let g = 0; g < GAMES; g++) {
   byStyle[style].push(review);
   const room = roomResult(rec);
   check(JSON.stringify(room).length < 600, `game ${g}: the room result is small`);
+}
+
+// Your rating (rating.js): Glicko-2 as in Glickman's worked example, and which games count
+{
+  const p = glicko2({ r: 1500, rd: 200, vol: 0.06 }, [{ r: 1400, rd: 30, s: 1 }, { r: 1550, rd: 100, s: 0 }, { r: 1700, rd: 300, s: 0 }]);
+  check(Math.abs(p.r - 1464.06) < 0.05 && Math.abs(p.rd - 151.52) < 0.05 && Math.abs(p.vol - 0.05999) < 0.0001, `Glicko-2 matches Glickman's example (${p.r.toFixed(2)}, ${p.rd.toFixed(2)}, ${p.vol.toFixed(5)})`);
+  const g = (o) => ({ mode: 'practice', over: true, winner: 0, me: 0, takebacks: 0, players: [{}, {}], outs: [], at: 1, id: 'x', ...o });
+  check(gameResults(g({}))?.[0].r === 1500 && gameResults(g({}))[0].s === 1, 'a won game from before the levels: one win against Practice (1500)');
+  check(gameResults(g({ level: 'expert', winner: 1 }))[0].r === 1650 && gameResults(g({ level: 'expert', winner: 1 }))[0].s === 0, 'a lost game at Expert: a loss against 1650');
+  check(gameResults(g({ takebacks: 1 })) === null && gameResults(g({ mode: 'online' })) === null && gameResults(g({ over: false })) === null, 'take-backs, online games and unfinished ones aren’t rated');
+  const three = gameResults(g({ players: [{}, {}, {}], winner: 2, outs: [{ v: 1 }, { v: 0 }] }));
+  check(three.length === 2 && three[0].s === 1 && three[1].s === 0 && three.every((x) => x.w === 0.5), 'three players: outlasting a bot beats it, the winner beats you, each at half weight');
+  check(myRating([]).n === 0 && myRating([g({ at: 2 }), g({ at: 1, winner: 1 })]).history[0].change < 0, 'no rating before a rated game; games are taken oldest first');
 }
 
 const avg = (xs) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : '-');

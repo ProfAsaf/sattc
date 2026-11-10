@@ -18,6 +18,7 @@ import * as Draft from './draft-ui.js';
 import { keepAwake } from './awake.js';
 import { TUTORIAL, botAction, matches } from './tutorial.js';
 import * as St from './stats.js';
+import * as Rating from './rating.js';
 import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
 import * as Push from './push.js';
@@ -205,6 +206,7 @@ function botsPanelHTML(choices, chosen) {
     <h3>Bots</h3>
     ${saved && !saved.over ? `<div class="pp-resume"><button class="btn primary" data-act="resume">Resume your game</button>${x('forget')}</div>` : ''}
     ${draft ? `<div class="pp-resume"><button class="btn primary" data-act="draft-resume">${draft.done ? 'Your drafted deck' : `Resume your draft · ${draft.picks}/${draft.of}`}</button>${x('draft-forget')}</div>` : ''}
+    ${(() => { const R = Rating.myRating(St.loadGames()); return `<div class="pp-rating muted small">${R.n ? `Your rating: <b>${Rating.ratingText(R)}</b> · ${esc(Rating.nearLevel(R.r))}` : 'Finish a game against the bots to get your rating.'}</div>`; })()}
     <div class="pp-group pp-level"><label class="pp-row"><span>Level</span><select id="bot-level" class="select">${LEVELS.map((L) => `<option value="${L.id}"${L.id === PF.level ? ' selected' : ''}>${esc(L.name)}${L.elo ? ` · Elo ${L.elo}` : ''}</option>`).join('')}</select></label></div>
     <div class="pp-two">
       <button class="btn" data-act="bots" data-n="1">1 bot</button>
@@ -661,7 +663,10 @@ function noteGameOver() {
   if (G.mode === 'online' && G.created) Net.sendResult(G.code, G.created, G.round, St.roomResult(rec)).catch((e) => console.warn(e));
   if (G.mode !== 'online') {
     const vs = St.summarize(St.loadGames(), [], 'bots');
-    G.scoreLine = vs.n > 1 ? `You’re ${vs.w}–${vs.l} against the bots` : '';
+    // (and what this game did to your rating: rating.js)
+    const R = Rating.myRating(St.loadGames()), h = R.history.find((x) => x.id === rec.id);
+    const rated = h ? `Rating ${Rating.ratingText(R)} (${h.change >= 0 ? '+' : '−'}${Math.abs(Math.round(h.change))})` : G.mode === 'practice' && rec.takebacks ? 'Not rated: a move was taken back' : '';
+    G.scoreLine = [vs.n > 1 ? `You’re ${vs.w}–${vs.l} against the bots` : '', rated].filter(Boolean).join(' · ');
   }
   const g = G;
   St.reviewPlay(G.setup, G.actions, G.me).then((review) => {

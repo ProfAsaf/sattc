@@ -478,6 +478,9 @@ body.ultra .home-ultra input:checked + .dr-knob { background: linear-gradient(90
   overflow: hidden;
 }
 .pp-row { display: flex; align-items: center; gap: 10px; min-height: 48px; padding-left: 14px; }
+/* the Bots box: your rating, over the Level picker */
+.pp-rating { margin: -2px 2px 8px; }
+.pp-rating b { color: var(--gold); font-weight: 600; }
 .pp-row + .pp-row, .pp-group > .dr-switch + .pp-row { border-top: 1px solid var(--line); }
 .pp-row > span { flex: none; min-width: 48px; font-size: 15px; color: var(--muted); }
 .pp-row input {

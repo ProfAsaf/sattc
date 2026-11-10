@@ -13,6 +13,7 @@ import { esc, factionCoin } from './render.js';
 import * as FX from './fx.js';
 import { ROUNDS } from './draft.js';
 import * as St from './stats.js';
+import * as Rating from './rating.js';
 import * as Net from './net.js';
 
 const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
@@ -365,6 +366,21 @@ function recordHTML(S) {
     </div></section>`;
 }
 
+// Your rating against the bots (rating.js): the number, where it sits among
+// the levels, how it has moved, and whether it has settled yet.
+function ratingHTML(R) {
+  if (!R.n) return '';
+  const rs = R.history.slice(-30).map((h) => h.r);
+  const lo = Math.min(...rs), hi = Math.max(...rs);
+  return `<section class="ins-card ins-record ins-rating">
+    <div class="ins-big"><b>${Rating.ratingText(R)}</b><span>your rating</span></div>
+    <div class="ins-rec-r">
+      <div>From ${plural(R.n, 'rated game')} against the bots: ${Rating.nearLevel(R.r)}.</div>
+      ${rs.length > 1 ? `<div class="ins-rating-line">${spark(rs, lo - 10, hi + 10)}</div>` : ''}
+      <div class="muted small">${R.provisional ? 'The “?” goes once it settles, after a few more games. ' : ''}Each bot level has a fixed rating; games where you take back a move aren’t rated.</div>
+    </div></section>`;
+}
+
 function playHTML(S) {
   const P = S.play;
   if (P.acc == null && P.energy == null) return '';
@@ -465,7 +481,7 @@ export function insightsPage(view) {
     view.innerHTML = `
       <header class="pagehead"><a class="back" href="#/" aria-label="Home">${BACK}</a><h2>Insights</h2></header>
       ${chips}
-      ${S.n ? `<div class="ins">${recordHTML(S)}${playHTML(S)}${whenHTML(S)}${cardsHTML(S)}${rivalsHTML(S)}${draftsHTML(S)}${recordsHTML(S)}${recentHTML(S)}</div>`
+      ${S.n ? `<div class="ins">${recordHTML(S)}${F.filter !== 'friends' ? ratingHTML(Rating.myRating(games)) : ''}${playHTML(S)}${whenHTML(S)}${cardsHTML(S)}${rivalsHTML(S)}${draftsHTML(S)}${recordsHTML(S)}${recentHTML(S)}</div>`
         : `<div class="ins-empty"><p>Your games show up here: your record, how the bot rates your play, your best cards and your rivals.</p>
            ${draftsHTML(S) ? `<div class="ins">${draftsHTML(S)}</div>` : ''}<a class="btn primary" href="#/play">Play a game</a></div>`}`;
   };

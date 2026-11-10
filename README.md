@@ -1097,6 +1097,7 @@ Bot duels, both ways (`.phone-tests/deck-out.mjs`; `DAMAGE=0` turns the Life los
 | with it off: games that never end | 3 (0.2%) | 0 |
 | average length, on → off | 10.1 → 10.1 rounds | 10.0 → 10.1 rounds |
 | DTSN deck's win rate, on → off | | 66.9% → 67.7% |
+| **the clock (the new rule):** games that never end | 0 of 1,560; average 10.1 rounds, longest 32; it decides 1.1% | |
 
 Not drawing is punishment enough. Still, something has to end the stalemates that come once both decks are gone.
 The confusing part was card effects: in game DTSN, Grand Illusion's 7 draws cost 14 Life at once.

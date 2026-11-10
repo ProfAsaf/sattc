@@ -232,6 +232,11 @@ How you're doing, the way chess.com's Insights and Game Review and 17lands
     - The same cards in another order count as agreeing. Turns where you kept Energy for a Trick in hand aren't judged.
     - Ending your turn is now judged only for an attack you didn't make; the cards are judged here.
     - A careful bot still scores 100% with no notes; a random player scores 70%.
+    - **Checked against the future when it's economy:** a position's score can't see Energy and cards paying off a turn or two later.
+      - So when your plays were economy (Invest, raising maximum Energy, drawing, a Dig), a loss worth a note is checked: both positions are played on by the bot through your next two turns, 4 times with what you can't see shuffled.
+      - The note needs both to agree, and the smaller loss counts.
+      - The futures run a step at a time, so the phone doesn't stall.
+      - Game VCGW: a ramp turn the plain score called a blunder (bot play-outs: 71% as played against 56%) is no longer one.
     - Game JXJH's review now catches round 6: "You played The Merchant Tortoise and Windborne Sage. The bot would have played Grand Illusion and Patient Giant."
   - Tricks that won a fight by 5 points or more are Great.
   - Energy kept for a Trick in hand isn't counted against you, and neither is a decision with no choice.
@@ -1039,6 +1044,18 @@ whatever the text above them says.
   up or down to close), `FX.moveTrack()` (glide to a card) and
   `FX.placeTrack()`; the game's big hand and the draft both use them, and
   `FX.grabSwipe()` is every sheet's swipe-up handle.
+
+## When the app restarts, and moves that knock you out (2026-11-10)
+
+Asaf: "sometimes it freezes with a white flash and takes me out of game".
+- No code reloads the page: the service worker only handles turn alerts.
+- A whole game on a 4× slowed CPU kept the JS heap at 6–7 MB, about 570 elements, and no stall over 0.6 s.
+- So it is most likely iOS closing the page, in the background or when short of memory, and opening it afresh.
+- **Back in by itself:** a practice game saved in the last 20 minutes, and not left on purpose, opens again on start-up from Home or Play (`autoResume`). Online games already rejoined (`autoRejoin`).
+- **A move that would knock you out asks first:** playing a card, using an ability or Digging (`outSlip`). It says how: "Grand Illusion would make you draw 7 cards from your empty deck: 2 Life each, 14 in all, and you have 14." Game DTSN was lost exactly so.
+- **An empty deck says so** on your bar ("empty"; held: each draw costs 2 Life).
+- **The summary:** a game lost to empty draws now reads as the deck, not a spell.
+- Test: `.phone-tests/ui-resume.mjs`.
 
 ## Your rating (2026-11-10)
 

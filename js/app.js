@@ -4,7 +4,7 @@
 import { BY_ID, CARDS, CHAMPIONS, FACTIONS, FACTION_ORDER, KEYWORDS, LEGENDS, RULES, SET, STARTERS, TOKENS, ULTRA, ULTRA_OUT, ULTRA_POOL, ULTRA_RULES, ULTRA_STARTERS, ULTRA_V2, isTrick } from './cards.js';
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
 import * as Decks from './decks.js';
-import { acceptInvite, autoRejoin, demo, playPage, startTutorial } from './game-ui.js';
+import { acceptInvite, autoRejoin, autoResume, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
@@ -544,7 +544,7 @@ else {
   // an invite tapped in an alert (sw.js) comes before the last room
   const tapped = params.get('invite');
   if (tapped) history.replaceState(null, '', location.pathname + location.hash);
-  Push.takeInvite().then((code) => (code || tapped ? acceptInvite(code || tapped) : autoRejoin()));
+  Push.takeInvite().then((code) => (code || tapped ? acceptInvite(code || tapped) : autoResume() || autoRejoin()));
 }
 Push.onInvite(acceptInvite); // (one tapped while the game is open)
 // an invite link (?room=CODE) opens the Play tab with the code filled in

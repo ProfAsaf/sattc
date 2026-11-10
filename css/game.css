@@ -58,6 +58,8 @@ body.in-game .topbar, body.in-game .tabbar, body.in-game main { display: none; }
 }
 .pb-life svg { width: 16px; height: 16px; color: #c4553f; }
 .pb-life.low { color: #ff9b85; }
+/* your deck is empty: each draw costs 2 Life */
+.pb-meta .pb-low.empty { color: #ff9b85; font-weight: 600; }
 /* your Energy: as big as your Life, out of the most you have this turn */
 .pb-energy {
   display: inline-flex; align-items: center; flex: none;

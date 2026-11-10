@@ -546,7 +546,7 @@ function playOn(s, me, rand, brain = null) {
   }
   return evaluate(t, me, brain ? { ...NEUTRAL, brain: brainFor(brain), styled: false } : null);
 }
-function unseen(s, me, rand) {
+export function unseen(s, me, rand) {
   const cards = { ...s.cards };
   const shuffled = (xs) => { const a = [...xs]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const players = s.players.map((Q) => {

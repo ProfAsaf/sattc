@@ -12,8 +12,8 @@
 // "the bot", never as the truth.
 
 import { BY_ID, RULES, isTrick } from './cards.js';
-import { apply, costOf, forcedBlocks, legalActions, newGame } from './engine.js';
-import { attackCandidates, chooseAction, evaluate, quickBlocks, scoreAfterFight } from './ai.js';
+import { actor, apply, costOf, forcedBlocks, legalActions, newGame } from './engine.js';
+import { attackCandidates, chooseAction, evaluate, quickBlocks, scoreAfterFight, unseen } from './ai.js';
 import { pickScore, replay as replayDraft } from './draft.js';
 import * as Decks from './decks.js';
 
@@ -186,8 +186,11 @@ export function analyzeGame(setup, actions, { me = 0 } = {}) {
         if (after.phase === 'over') {
           // (attackers' damage counts as the fight even when a Trick or an ability went first in the same move)
           const byFight = !!before.combat && (after.events || []).some((e) => e.k === 'hitPlayer' && e.p === P.i && e.src != null && before.combat.att.includes(e.src));
+          // (Life lost drawing from an empty deck: the deck ran out, whatever made you draw)
+          const decked = (after.log || []).some((l) => l.p === P.i && /no cards left to draw/.test(l.text));
           how = a.t === 'concede' ? 'concede'
             : byFight ? 'fight'
+            : decked ? 'deck'
             : a.t === 'play' || a.t === 'use' ? 'spell'
               : a.t === 'end' ? (after.log.some((l) => /no cards left/.test(l.text)) ? 'deck' : 'effect')
                 : 'fight';
@@ -410,7 +413,7 @@ function judge(s, a, me, actions, i) {
 // fights, and the two positions compared. Attacks, blocks and fight Tricks are
 // judged on their own, so nothing counts twice. `i`: the turn's first move.
 const PLAYS = new Set(['play', 'use', 'dig', 'unhex', 'phoenix', 'rite']);
-function judgePlays(s, me, actions, i) {
+async function judgePlays(s, me, actions, i, pause) {
   const when = { t: s.turn, p: s.active, kk: s.players[s.active].turns };
   // your main-phase moves this turn, in order (walking the real game to know which were in a fight)
   const mine = [];
@@ -454,8 +457,53 @@ function judgePlays(s, me, actions, i) {
   const after = (st) => (fallen.size ? { ...st, players: st.players.map((Q) => ({ ...Q, board: Q.board.filter((x) => !fallen.has(x)) })) } : st);
   const vMine = evaluate(after(u), me), vBot = evaluate(after(v), me);
   if (decided(vBot, vMine)) return null;
-  const loss = lossOf(vBot, vMine);
+  let loss = lossOf(vBot, vMine);
+  // A position's score can't see Energy and cards paying off a turn or two
+  // later: when your plays were economy (Invest, drawing, a Dig: game VCGW's
+  // ramp turns), a loss worth a note is checked against the future, and the
+  // note needs both to agree (the smaller loss counts).
+  if (loss >= GRADES[GRADES.length - 1].min && economy(s, mine)) loss = Math.min(loss, await futureLoss(u, v, me, s.turn * 7919 + i, pause));
   return { k: 'plays', ...when, loss, mine: mine.map((b) => sayAction(s, b)), alt: loss > 0.5 ? { t: 'plays', moves: bot.map((b) => sayAction(s, b)) } : null };
+}
+
+// Plays that pay off later: Invest, drawing cards, a Dig.
+const ECON = /\bdraws?\b|\bInvest\b|maximum Energy/i; // (Ancient Roots: 'your maximum Energy increases')
+const economy = (s, moves) => moves.some((b) => {
+  if (b.t === 'dig') return true;
+  const d = b.uid != null ? BY_ID[s.cards[b.uid]?.cid] : null;
+  return !!d && (d.keywords.includes('invest') || ECON.test(d.text || '') || ECON.test(d.ability?.short || ''));
+});
+
+// Both positions played on by the bot (every seat, no noise) through your next
+// `horizon` turns, `futures` times with what you can't see shuffled (the same
+// shuffles for both); the loss is how much less often yours ends well, in
+// points of chances. (REVIEW_KNOBS: for tests and tuning.)
+export const REVIEW_KNOBS = { futures: 4, horizon: 2 };
+async function futureLoss(u, v, me, seed, pause) {
+  const n = REVIEW_KNOBS.futures;
+  let du = 0, dv = 0;
+  for (let k = 0; k < n; k++) {
+    du += chance(playOnto(u, me, seed + k * 101));
+    await pause(); // (a future at a time, so the phone never stalls)
+    dv += chance(playOnto(v, me, seed + k * 101));
+    await pause();
+  }
+  return r2(Math.max(0, (100 * (dv - du)) / n));
+}
+function playOnto(t0, me, seed) {
+  let x = seed >>> 0 || 1;
+  const rand = () => (x = (Math.imul(x, 1103515245) + 12345) >>> 0) / 4294967296;
+  let t = unseen(lean(t0), me, rand);
+  let mine = true, done = 0; // (your turns finished since)
+  for (let k = 0; k < 1600 && t.phase !== 'over'; k++) {
+    if (mine && t.active !== me) { mine = false; if (++done > REVIEW_KNOBS.horizon) break; }
+    else if (!mine && t.active === me) mine = true;
+    const p = t.phase === 'mulligan' ? t.players.findIndex((P) => !P.mull) : actor(t);
+    const n = step(t, chooseAction(t, p, { rand, noise: 0 }));
+    if (!n) break;
+    t = n;
+  }
+  return evaluate(t, me);
 }
 
 /**
@@ -475,7 +523,7 @@ export async function reviewPlay(setup, actions, me, { pause = () => new Promise
       // a turn of yours begins: the cards you'll play on it
       if (s.phase === 'main' && s.active === me && s.turn !== playsOn) {
         playsOn = s.turn;
-        try { const j = judgePlays(s, me, actions, i); if (j) all.push(j); } catch (e) { /* leave it out */ }
+        try { const j = await judgePlays(s, me, actions, i, pause); if (j) all.push(j); } catch (e) { /* leave it out */ }
       }
       try { const j = judge(s, a, me, actions, i); if (j) all.push(j); } catch (e) { /* something the bot can't think about: leave it out */ }
     }

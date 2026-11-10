@@ -629,6 +629,7 @@ function leave(goTo = '#/play') {
   G?.unsubActions?.();
   endGate?.(false);
   if (G && G.mode === 'practice' && G.state.phase === 'over') store.clear();
+  else if (G && G.mode === 'practice') { const sv = store.get(); if (sv) store.set({ ...sv, left: true }); } // (left on purpose: no going back in by itself)
   G = null;
   keepAwake('game', false);
   document.getElementById('game')?.remove();
@@ -640,7 +641,21 @@ function leave(goTo = '#/play') {
 
 function save() {
   if (G.mode !== 'practice') return;
-  store.set({ mode: G.mode, setup: G.setup, actions: G.actions, me: G.me, bots: [...G.bots], over: G.state.phase === 'over', takebacks: G.takebacks || 0, level: G.level });
+  store.set({ mode: G.mode, setup: G.setup, actions: G.actions, me: G.me, bots: [...G.bots], over: G.state.phase === 'over', takebacks: G.takebacks || 0, level: G.level, at: Date.now() });
+}
+
+// On start-up, straight back into a practice game the app was in the middle of
+// (an iPhone may close a page in the background, or when it runs short of
+// memory, and open it afresh: a white flash, then the home screen). Not a game
+// you left on purpose, or one from more than 20 minutes ago (Resume on the
+// Play page still has it). True if it went back in.
+export function autoResume() {
+  const saved = store.get();
+  if (!saved || saved.over || saved.left || !saved.at || Date.now() - saved.at > 20 * 60000 || G) return false;
+  if (!['', '#', '#/', '#/play'].includes(location.hash)) return false; // (a page opened on purpose stays open)
+  if (location.hash !== '#/play') location.hash = '#/play';
+  begin(saved);
+  return true;
 }
 
 // ── a finished game goes into Insights ──────────────────────────────
@@ -1536,7 +1551,7 @@ function pbarHTML(s, P, hl, folded = false) {
     ? `<div class="pb-energy" title="Energy">${enHex(s.phase === 'mulligan' ? most : P.energy)}<span>/${most}</span></div>`
     : `<div class="pb-en" title="Energy">${enHex(P.energy)}</div>`;
   const meta = (mine ? '' : `<span title="cards in hand">${ICON.hand}${P.hand.length}</span>`)
-    + (P.deck.length <= 5 && !P.out ? `<span class="pb-low" title="cards left in the deck">${ICON.deck}${P.deck.length} left</span>` : '')
+    + (P.deck.length <= 5 && !P.out ? (P.deck.length ? `<span class="pb-low" title="cards left in the deck">${ICON.deck}${P.deck.length} left</span>` : `<span class="pb-low empty" title="The deck is empty: each card ${mine ? 'you' : 'they'}’d draw costs 2 Life">${ICON.deck}empty</span>`) : '')
     + (P.traps.length ? `<span class="trap-chip" title="${P.traps.length} face-down Trap${P.traps.length > 1 ? 's' : ''}">${ICON.trap}${P.traps.length}</span>` : '')
     + (!mine && legendWaiting(s, P.i) != null ? `<span class="pb-leg" title="Their Legend waits beside their deck (Level ${champLevel(s, P.i)})">★${champLevel(s, P.i)}</span>` : '');
   return `<div class="pbar${isT ? ' target' : ''}${fighting || ''}${crown ? ' crowned' : ''}" data-p="${P.i}">
@@ -3379,6 +3394,7 @@ function slipSheet(w) {
 function slip(s, a, steps) {
   if (a.t === 'end') return endSlip(s);
   if (a.t === 'block') return blockSlip(s, a);
+  if (a.t === 'play' || a.t === 'use' || a.t === 'dig') { const w = outSlip(s, a); if (w) return w; }
   if ((a.t !== 'play' && a.t !== 'use') || a.payTax === false) return null; // (letting Countercurrent cancel it was a choice)
   const r = apply(s, a);
   if (r.error) return null; // sending it says why
@@ -3425,6 +3441,23 @@ function changesNothing(s, t, a, paid) {
     return JSON.stringify(y);
   };
   return norm(s, 0) === norm(t, paid);
+}
+
+// A move that would knock you out: drawing from an empty deck (2 Life a card),
+// paying Life. Say how first (game DTSN: Grand Illusion drew 7 cards from an
+// empty deck, 14 Life, all that was left).
+function outSlip(s, a) {
+  const r = apply(s, a);
+  if (r.error) return null;
+  const t = r.state;
+  if (!t.players[G.me].out && !(t.phase === 'over' && t.winner !== G.me)) return null;
+  const draws = t.log.slice(s.log.length).filter((l) => l.p === G.me && /no cards left to draw/.test(l.text)).length;
+  const what = a.t === 'dig' ? 'Digging' : a.t === 'use' ? `${BY_ID[s.cards[a.uid].cid].name}’s ability` : BY_ID[s.cards[a.uid].cid].name;
+  return {
+    title: 'That would knock you out',
+    text: draws ? `${what} would make you draw ${draws} card${draws > 1 ? 's' : ''} from your empty deck: 2 Life each, ${draws * 2} in all, and you have ${s.players[G.me].life}.` : `${what} would take the last of your Life.`,
+    yes: 'Do it anyway', no: 'Go back',
+  };
 }
 
 // Ending the turn with Energy and a creature or Relic still to play: that Energy
@@ -3683,7 +3716,7 @@ function onAct(act, el) {
     case 'play': startPlay(uid, 'hand'); break;
     case 'play-legend': startPlay(uid, 'legend'); break;
     case 'fuse': startFuse(uid); break;
-    case 'dig': G.sheet = null; dispatch({ t: 'dig', p: G.me }); break;
+    case 'dig': G.sheet = null; tryMove({ t: 'dig', p: G.me }); break;
     case 'echo': startPlay(uid, 'discard'); break;
     case 'echo-open': G.sheet = cardSheet(uid, { from: 'discard' }); redraw(); break;
     case 'attack-from-sheet': G.sheet = null; G.viewer = null; toggleAttacker(uid); break;

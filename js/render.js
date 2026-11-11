@@ -3,7 +3,10 @@
 
 import { FACTIONS, KEYWORDS, KEYWORD_PATTERN, SET, ULTRA } from './cards.js';
 import { ART } from './art-manifest.js';
+import { LIVE } from './art-live.js';
 import { artImage, artSVG } from './art/index.js';
+import { H as ART_H, W as ART_W } from './art/kit.js';
+import { liven } from './sprites.js';
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -58,6 +61,20 @@ export function rulesHTML(text) {
   }).join('');
 }
 
+// Set the sprites going in the cards drawn with `sprites` under `root`: their
+// box laid over the picture as it's cropped to fill the frame (object-fit:
+// cover), the ones cropped away stilled.
+export function livenArt(root) {
+  for (const box of root.querySelectorAll('.sp-art[data-live]:not([data-on])')) {
+    const pic = LIVE[box.dataset.live];
+    if (!pic) continue;
+    box.dataset.on = '1';
+    const f = box.parentElement, w = f.clientWidth, h = f.clientHeight, k = Math.max(w / ART_W, h / ART_H);
+    box.style.cssText = `left:${((w - ART_W * k) / 2).toFixed(2)}px;top:${((h - ART_H * k) / 2).toFixed(2)}px;width:${(ART_W * k).toFixed(2)}px;height:${(ART_H * k).toFixed(2)}px`;
+    liven(box, { live: pic.live, w: ART_W, h: ART_H }, { clip: f });
+  }
+}
+
 export function artURL(card) {
   return ART[card.id] || null;
 }
@@ -70,7 +87,12 @@ export function artTag(id, live = false) {
   return src ? `<img class="art-img" src="${src}" alt="" loading="lazy" decoding="async">` : (artSVG(id) || '');
 }
 
-function artHTML(card, live = false) {
+// `sprites` (a card that stays on screen moving, like Home's fan): the baked
+// picture without its moving parts, the parts as sprites over it (livenArt
+// sets them going once the card is on the page); the live SVG would repaint
+// every frame, filters and all.
+function artHTML(card, live = false, sprites = false) {
+  if (live && sprites && LIVE[card.id]) return `<div class="c-art"><img class="art-img" src="${LIVE[card.id].src}" alt="" decoding="async"><div class="sp-art" data-live="${esc(card.id)}"></div></div>`;
   const url = artURL(card);
   if (artSVG(card.id) && (live || !url)) return `<div class="c-art">${artTag(card.id, live)}</div>`;
   const main = card.factions[0] || 'neutral';
@@ -111,7 +133,7 @@ export function cardHTML(card, opts = {}) {
           <div class="c-name ${nameTier(card.name)}">${esc(card.name)}</div>
           <div class="c-cost${costCls}"><span>${cost}</span></div>
         </div>
-        ${artHTML(card, /\banim\b/.test(opts.cls || ''))}
+        ${artHTML(card, /\banim\b/.test(opts.cls || ''), opts.sprites)}
         <div class="c-type"><span>${esc(typeLine(card))}</span><span class="c-coins">${coins}</span></div>
         <div class="c-box ${textTier(card)}">
           <div class="c-rules">${rulesHTML(card.text)}</div>

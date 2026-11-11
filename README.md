@@ -1137,9 +1137,20 @@ Asaf, on the first map: "this looks more clipart. Not the cool style we have on 
   - Three things made it tick on the main thread, all fixed: an animation on an element clipped out of sight (a place crops its picture to fill the screen; its off-screen sprites are paused); animations left running on elements taken off the page (cancelled when a place closes, a fight starts, or you leave the campaign); and the map's pulse running hidden under a place.
   - Started under a zooming parent, the moving parts are made afresh once the zoom is over.
   - Reduced motion (the phone's setting): nothing moves, and places open without the zoom.
-- **The zoom**: the map scales toward the medallion while the place opens in a circle clipped from it (`clip-path`, about 0.86 s), then the rounds pop up the path one by one, the Legend drops in, and the story slides up. The picture is lifted, if need be, to keep the lowest round clear of the story (by its position, not a transform: under a transformed parent the sprites would tick on the main thread).
+- **The zoom**: the map scales toward the medallion while the place opens in a circle clipped from it (`clip-path`, about 0.86 s), then the rounds pop up the path one by one, the Legend drops in, and the story slides up. The picture is lifted, if need be, to keep the lowest round clear of the story.
 - Tests and tools: `.phone-tests/look-campaign-art.mjs` (each picture with its moving parts and spots marked), `look-campaign-ui.mjs` (the map, a place, the zoom; `STARS=`, `SHOWN=`, `NODE=`), `look-campaign-zoom.mjs` (the zoom at a tenth of its speed), `look-campaign-cost.mjs` and `look-campaign-cost2.mjs` (main-thread work while idle).
 - Also found on the way: the browser restored an old scroll position on Back before the router ran; the app now places the scroll itself (`history.scrollRestoration = 'manual'`).
+
+## Home's moving cards, the cheap way (2026-11-11)
+
+Measured while building the campaign: sitting on Home, its three fanned cards (Ashmaw, Seraphine, the Barrow Queen) kept the page busy every frame. They were drawn live as SVG, filters and all, with 131 moving parts inside, so each frame the page recalculated styles, laid out the SVG and repainted it: in Chrome 361 style recalcs and 361 layouts in 4 seconds, 1.2 s of main-thread work. Asaf: "Yes" to making them run the campaign's way.
+
+- **The sprite engine is shared** (`js/sprites.js`, from the campaign): a picture's moving parts as sprites, each moved as a whole by the compositor (`liven`, `move`, `hold`, `restart` with a clip, `drop`, `sweep`).
+- **Baked cards** (`tools/bake-live.mjs` + `tools/bake-live.html`): a card's picture without its moving parts (`art/live/<id>.webp`, 2x) and those parts as sprites (`art/live/<id>.json`, with the drawing's defs for their glows); `js/art-live.js` lists them. Only Home's three cards for now (23–36 KB of picture and 14–25 KB of sprites each); `node tools/bake-live.mjs id1,id2` adds others.
+- **Home** draws them with `cardHTML(card, { cls: 'anim', sprites: true })`; `render.js` `livenArt` lays the sprites over the picture as it's cropped to fill the card's frame and stills the ones cropped away. The router stops moving pictures that left with the old page (`sweep`), and a card close-up over Home rests the fan under it.
+- **The legendary foil**, shown big (`.card.legendary.anim`), slides as a transform instead of moving its background (which repaints every frame). Grids keep the old shimmer: a layer 2.6 cards wide for each legendary would cost a phone memory.
+- **Now**: Home sitting for 4 seconds does 0 style recalcs, 0 layouts, about 6 ms of work. It looks the same (`.phone-tests/look-home-art.mjs`, with the old and new side by side).
+- The card close-up still draws its card live (crisp at any size, open only for a moment).
 
 ## Reading a Legend (2026-11-10)
 

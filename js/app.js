@@ -2,7 +2,8 @@
 // (home, card gallery, deck list, deckbuilder, rules; Insights is in insights.js).
 
 import { BY_ID, CARDS, CHAMPIONS, FACTIONS, FACTION_ORDER, KEYWORDS, LEGENDS, RULES, SET, STARTERS, TOKENS, ULTRA, ULTRA_OUT, ULTRA_POOL, ULTRA_RULES, ULTRA_STARTERS, ULTRA_V2, isTrick } from './cards.js';
-import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
+import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin, livenArt } from './render.js';
+import { hold, sweep } from './sprites.js';
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, autoResume, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
@@ -67,6 +68,8 @@ function closeZoom() {
   zoomEl.remove();
   zoomEl = null;
   document.body.style.overflow = '';
+  document.querySelectorAll('.sp-art').forEach((b) => hold(b, false));
+  document.body.classList.remove('zoom-open');
 }
 
 function openZoom(id, deckCtx = null) {
@@ -76,6 +79,8 @@ function openZoom(id, deckCtx = null) {
   zoomEl = document.createElement('div');
   zoomEl.className = 'zoom';
   document.body.style.overflow = 'hidden';
+  document.querySelectorAll('.sp-art').forEach((b) => hold(b, true)); // (the cards under it rest)
+  document.body.classList.add('zoom-open');
 
   const kwSeen = new Set();
   const kwList = [];
@@ -152,7 +157,7 @@ function homeMenu(open) {
 }
 
 function home() {
-  const fan = ['ashmaw', 'seraphine', 'the-barrow-queen'].map((id) => cardHTML(BY_ID[id], { cls: 'anim' })).join('');
+  const fan = ['ashmaw', 'seraphine', 'the-barrow-queen'].map((id) => cardHTML(BY_ID[id], { cls: 'anim', sprites: true })).join(''); // (baked by tools/bake-live.mjs)
   view.innerHTML = `
     <button class="menu-btn" data-act="menu" aria-label="Menu" aria-expanded="false" aria-controls="home-menu">${ICONS.menu}</button>
     <div class="home">
@@ -188,6 +193,7 @@ function home() {
     const c = e.target.closest('.card[data-id]');
     if (c) openZoom(c.dataset.id);
   };
+  livenArt(view);
   document.getElementById('ultra-switch').onchange = (e) => {
     Mode.setUltra(e.target.checked);
     const a = document.querySelector('#home-menu a[href="#/cards"]');
@@ -532,7 +538,9 @@ function route() {
   if (path !== 'campaign') leaveCampaign(); // (its moving parts stop with it)
   document.body.dataset.page = path && ROUTES[path] ? path : 'home';
   // ('kept': the page changed in place, as the campaign does going into a place and out)
-  if ((ROUTES[path] || home)(arg ? decodeURIComponent(arg) : undefined) === 'kept') return;
+  const kept = (ROUTES[path] || home)(arg ? decodeURIComponent(arg) : undefined) === 'kept';
+  sweep(); // (moving pictures that went with the old page stop)
+  if (kept) return;
   window.scrollTo(0, 0);
   document.body.classList.remove('scrolled');
 }

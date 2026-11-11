@@ -14,6 +14,7 @@ import { artURL, esc } from './render.js';
 import * as Camp from './campaign.js';
 import { PICS } from './campaign-pics.js';
 import { startCampaign } from './game-ui.js';
+import { drop, fetchSprites, hold, liven, move, restart, still } from './sprites.js';
 
 const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7.5a5 5 0 0 1 10 0V10" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="5" y="10" width="14" height="10" rx="2.2" fill="currentColor"/></svg>';
@@ -26,90 +27,17 @@ const starRow = (n) => `<span class="cp-stars" aria-label="${n} of 3 rounds won"
 const pc = (v) => `${(v * 100).toFixed(3)}%`;
 const at = (P, [x, y]) => `left:${pc(x / P.w)};top:${pc(y / P.h)}`;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const done = (anims) => Promise.all(anims.map((a) => a.finished.catch(() => {})));
 
-// ── the moving parts ────────────────────────────────────────────────
-// A picture's moving parts come as sprites: each a little picture placed in
-// the drawing's units that moves as a whole (a transform or an opacity, which
-// the phone's compositor runs: nothing is redrawn). Grass bends from its
-// roots, smoke and embers rise, moths and gulls float, stars and lanterns
-// glimmer, clouds drift, a windmill turns.
-const LIGHTS = new Set(['twinkle', 'rise', 'breathe', 'fall']);
-const MOVES = { // -> [keyframes, seconds, back and forth?, easing]
-  sway: (u, s) => [[{ transform: 'rotate(-4deg)' }, { transform: 'rotate(3deg)' }], s.t ?? 3.6, true],
-  turn: () => [[{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], 18, false, 'linear'],
-  rise: (u, s) => [[{ transform: 'translate(0,0)', opacity: 0 }, { opacity: s.o ?? 1, offset: 0.15 }, { opacity: s.o ?? 1, offset: 0.8 }, { transform: `translate(${7 * u}px,${-52 * u}px)`, opacity: 0 }], s.t ?? 6, false, 'linear'],
-  float: (u, s) => [[{ transform: `translate(${-3 * u}px,${2 * u}px)` }, { transform: `translate(${3 * u}px,${-4 * u}px)` }], s.t ?? 7, true],
-  twinkle: (u, s) => [[{ opacity: 0.12 }, { opacity: s.o ?? 1 }], s.t ?? 4, true],
-  drift: (u) => [[{ transform: `translateX(${-16 * u}px)` }, { transform: `translateX(${16 * u}px)` }], 16, true],
-  breathe: (u, s) => [[{ opacity: 0.65 * (s.o ?? 1), transform: 'scale(.93)' }, { opacity: s.o ?? 1, transform: 'scale(1.07)' }], 3.4, true],
-  fall: (u) => [[{ transform: `translate(0,${-5 * u}px)`, opacity: 0 }, { opacity: 0.95, offset: 0.25 }, { transform: `translate(${-3 * u}px,${7 * u}px)`, opacity: 0 }], 1.6, false, 'linear'],
-};
-const lives = new Map(); // picture -> its sprites, fetched once
-function liveOf(id) {
-  if (!lives.has(id)) lives.set(id, fetch(PICS[id].live).then((r) => (r.ok ? r.json() : null)).catch(() => null));
-  return lives.get(id);
-}
-// Lay a picture's sprites into its box (inside the picture's stage), then set them moving.
-async function liven(box) {
-  const id = box.dataset.pic, P = PICS[id], L = await liveOf(id);
-  if (!L || !box.isConnected) return;
-  box.innerHTML = `<svg class="cp-defs" aria-hidden="true"><defs>${L.defs}</defs></svg>${L.sprites.map((s, i) => `<svg class="cp-sp" data-i="${i}" viewBox="${s.x} ${s.y} ${s.w} ${s.h}" preserveAspectRatio="none" aria-hidden="true" style="left:${pc(s.x / P.w)};top:${pc(s.y / P.h)};width:${pc(s.w / P.w)};height:${pc(s.h / P.h)};transform-origin:${s.ox}% ${s.oy}%${LIGHTS.has(s.a) && s.o != null ? `;opacity:${s.o}` : ''}">${s.svg}</svg>`).join('')}`;
-  box.live = L;
-  move(box);
-  if (box.closest('.cp-place.in')) restart(box, true);
-}
-// (Again when the picture changes size: drifts and rises are in the drawing's units.)
-function move(box) {
-  const L = box.live;
-  if (!L || still() || !box.animate) return;
-  const u = box.offsetWidth / PICS[box.dataset.pic].w;
-  if (box.anims && box.u && Math.abs(u / box.u - 1) < 0.02) return;
-  const old = box.anims || [];
-  box.u = u;
-  box.anims = [...box.querySelectorAll('.cp-sp')].map((el, k) => {
-    const s = L.sprites[el.dataset.i], [frames, t, alt, easing = 'ease-in-out'] = MOVES[s.a](u, s);
-    const a = el.animate(frames, { duration: t * 1000, delay: (s.d || 0) * 1000, iterations: Infinity, direction: alt ? 'alternate' : 'normal', easing });
-    if (old[k]) { a.currentTime = old[k].currentTime; old[k].cancel(); }
-    if (box.held) a.pause();
-    return a;
-  });
-}
-// Start the moving parts afresh where they are, once a zoom is over (begun
-// under a zooming parent, a browser may leave them ticking on the main
-// thread); and in a place, still the ones outside the screen (the picture is
-// cropped to fill it): moving out of sight, they would tick there too.
-function restart(box, cull = false) {
-  setTimeout(() => {
-    if (!box?.isConnected || !box.live) return;
-    box.u = 0;
-    move(box);
-    if (!cull || box.held) return;
-    const W = innerWidth, H = innerHeight;
-    box.querySelectorAll('.cp-sp').forEach((el, k) => {
-      const r = el.getBoundingClientRect();
-      if (r.bottom < 0 || r.top > H || r.right < 0 || r.left > W) box.anims[k]?.pause();
-    });
-  }, 160);
-}
-// Stop a picture's moving parts for good when it leaves the page: an
-// animation left running on an element that's gone keeps the browser ticking.
-function drop(box) {
-  for (const a of box?.anims || []) a.cancel();
-  if (box) box.anims = [];
-}
+// ── the moving parts (js/sprites.js) ───────────────────────────────
 // Leaving the campaign (another page, or a fight over it): let it all go.
 export function leaveCampaign() {
   if (!ui) return;
   ui.root.querySelectorAll('.cp-live').forEach(drop);
   ui = null;
 }
-function hold(box, on) {
-  if (!box) return;
-  box.held = on;
-  for (const a of box.anims || []) on ? a.pause() : a.play();
-}
+// a picture's sprites, into its box (a place's that arrive once it has settled: stilled out of sight)
+const livenPic = (box) => liven(box, PICS[box.dataset.pic], { clip: box.closest('.cp-place.in') ? true : null });
 
 // ── the map ─────────────────────────────────────────────────────────
 let ui = null; // the page up: { view, root, W, place, pushed, chain }
@@ -161,7 +89,7 @@ export function campaignPage(view, arg) {
   ui = { view, W, root: view.querySelector('.cp-world'), place: null, pushed: false, chain: Promise.resolve() };
   const img = ui.root.querySelector('.cp-pic');
   ready(img);
-  liven(ui.root.querySelector('.cp-live'));
+  livenPic(ui.root.querySelector('.cp-live'));
   ui.root.addEventListener('click', onClick);
   // in view: the place asked for, else the level to play next (once the router has scrolled to the top)
   const next = Camp.nextStage(p, W);
@@ -169,7 +97,7 @@ export function campaignPage(view, arg) {
   if (i != null) go(() => openPlace(i, true));
   else if (!p.seen[`w${W.id}`]) introSheet(W);
   // the next place's picture, ahead of the tap
-  if (next != null) img.addEventListener('load', () => { const id = W.stages[next].pic; new Image().src = PICS[id].src; liveOf(id); }, { once: true });
+  if (next != null) img.addEventListener('load', () => { const id = W.stages[next].pic; new Image().src = PICS[id].src; fetchSprites(PICS[id].live); }, { once: true });
 }
 // A fight opens over the page (game-ui.js): the campaign's pictures and moving
 // parts (tens of MB on a phone) go while it's on; leaving the fight comes back
@@ -259,8 +187,7 @@ function placeHTML(W, i, from, n) {
 
 // Size the place's picture to fill the screen; and how far to lift it once the
 // story is up, to keep its rounds clear of the story below them. (It fills
-// the screen as it opens; then it moves up by its position, not a transform:
-// under a transformed parent every moving part would tick on the main thread.)
+// the screen as it opens; then it moves up, by its position.)
 function layoutPlace() {
   const pl = ui?.place;
   if (!pl) return;
@@ -337,7 +264,7 @@ async function openPlace(i, instant = false) {
   layoutPlace();
   const img = el.querySelector('.cp-pic');
   ready(img);
-  liven(el.querySelector('.cp-live'));
+  livenPic(el.querySelector('.cp-live'));
   swipeBack(el.querySelector('.cp-scene'));
   const wrap = root.querySelector('.cp-mapwrap'), mapLive = root.querySelector('.cp-mapstage .cp-live');
   let node = root.querySelector(`.cp-node[data-stage="${i}"] .cp-ring`);

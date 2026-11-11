@@ -81,7 +81,13 @@
   mix-blend-mode: screen;
 }
 @keyframes foil { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0% 0; } }
-@media (prefers-reduced-motion: reduce) { .card.legendary .card-face::after { animation: none; } }
+/* Shown big (.anim: Home's fan, a close-up) the band slides as a transform,
+   which the compositor runs; moving a background repaints every frame. (Not
+   in grids: a layer 2.6 cards wide for each legendary would cost memory.) */
+.card.legendary.anim .card-face::after { inset: 0 auto 0 0; width: 260%; background-size: 100% 100%; animation-name: foil-slide; }
+@keyframes foil-slide { 0%, 100% { transform: translateX(-61.54%); } 50% { transform: none; } }
+.zoom-open .fan .card-face::after { animation-play-state: paused; } /* (under a close-up, Home's fan rests) */
+@media (prefers-reduced-motion: reduce) { .card.legendary .card-face::after, .card.legendary.anim .card-face::after { animation: none; } }
 
 /* ── title ───────────────────────────────────────────────────────── */
 .c-head {
@@ -180,6 +186,12 @@
   color: rgba(255, 246, 228, .5);
   filter: drop-shadow(0 .8cqw 2cqw rgba(0, 0, 0, .35));
 }
+
+/* ── moving parts as sprites (js/sprites.js): each moves as a whole, a
+   transform or an opacity the compositor runs; nothing is redrawn ─────── */
+.sp-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.sp { position: absolute; display: block; overflow: visible; pointer-events: none; }
+.sp-art { position: absolute; pointer-events: none; } /* (over a card's picture, sized as it's cropped: render.js livenArt) */
 
 /* ── drawn art and its (optional) motion ─────────────────────────── */
 .art-svg {

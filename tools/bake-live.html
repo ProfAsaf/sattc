@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<!-- One card's art for tools/bake-live.mjs: its picture without its moving parts (to photograph), and those parts cut out as sprites. -->
+<html><head><meta charset="utf-8"><title>bake live</title>
+<style>
+html, body { margin: 0; background: #000; overflow: hidden; }
+#a, #a svg { display: block; width: 100vw; height: 100vh; }
+#a .rise, #a .float, #a .twinkle, #a .drift, #a .breathe, #a .fall, #a .sway, #a .turn { visibility: hidden; }
+</style>
+</head><body><div id="a"></div><div id="b"></div>
+<script type="module">
+import { artSVG } from '../js/art/index.js';
+import { SCENES } from '../js/art/scenes.js';
+import { W, H } from '../js/art/kit.js';
+window.ids = Object.keys(SCENES);
+window.size = [W, H];
+// The picture without its moving parts; resolves once it's painted.
+window.show = (id) => new Promise((done) => {
+  document.getElementById('a').innerHTML = artSVG(id) || '';
+  requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 200)));
+});
+
+// The moving parts, each cut out as its own little picture (a sprite) with
+// where it sits in the drawing's units, the point it turns from, and how it
+// moves (js/sprites.js moves them). Each keeps the groups it sits in (their
+// filters, opacity, transforms); the drawing's defs go along for them.
+const MOVES = ['sway', 'turn', 'rise', 'float', 'twinkle', 'drift', 'breathe', 'fall'];
+const SEL = MOVES.map((c) => `.${c}`).join(',');
+const LIGHT = ['twinkle', 'rise', 'breathe', 'fall']; // these set the opacity themselves
+const r1 = (v) => Math.round(v * 10) / 10;
+window.live = (id) => {
+  const host = document.getElementById('b');
+  host.style.cssText = `position:absolute;left:0;top:0;width:${W}px;height:${H}px;visibility:hidden`;
+  host.innerHTML = artSVG(id) || '';
+  const svg = host.querySelector('svg');
+  svg.style.cssText = `display:block;width:${W}px;height:${H}px`;
+  const o = svg.getBoundingClientRect();
+  const sprites = [];
+  for (const el of svg.querySelectorAll(SEL)) {
+    if (el.parentElement.closest(SEL)) continue; // part of a bigger moving thing
+    const a = MOVES.find((c) => el.classList.contains(c));
+    const b = el.getBoundingClientRect();
+    if (!b.width && !b.height) continue;
+    const fx = b.left - o.left, fy = b.top - o.top, fw = b.width, fh = b.height;
+    const M = 4; // room for strokes, glows and soft edges
+    const x = Math.floor(fx - M), y = Math.floor(fy - M), w = Math.ceil(fx + fw + M) - x, h = Math.ceil(fy + fh + M) - y;
+    const st = el.getAttribute('style') || '';
+    const v = (k) => { const m = st.match(new RegExp(`(?:^|;)\\s*${k}\\s*:\\s*([^;]+)`)); return m ? m[1].trim() : null; };
+    let ox = fx + fw / 2, oy = a === 'sway' ? fy + fh : fy + fh / 2;
+    const to = v('transform-origin');
+    if (to) {
+      const box = v('transform-box') === 'view-box';
+      const at = (s, f0, size) => (s.endsWith('%') ? f0 + (parseFloat(s) / 100) * size : (box ? 0 : f0) + parseFloat(s));
+      const [tx, ty = '50%'] = to.split(/\s+/);
+      ox = at(tx, fx, fw); oy = at(ty, fy, fh);
+    }
+    const piece = el.cloneNode(true);
+    piece.removeAttribute('class');
+    piece.removeAttribute('style');
+    let op = v('--o') != null ? parseFloat(v('--o')) : null;
+    if (LIGHT.includes(a) && piece.hasAttribute('opacity')) { op ??= parseFloat(piece.getAttribute('opacity')); piece.removeAttribute('opacity'); }
+    let frag = piece.outerHTML;
+    for (let p = el.parentElement; p && p !== svg; p = p.parentElement) {
+      const g = p.cloneNode(false);
+      frag = g.outerHTML.replace(/<\/\w+>$/, (end) => frag + end);
+    }
+    const s = { a, x, y, w, h, ox: r1(((ox - x) / w) * 100), oy: r1(((oy - y) / h) * 100), svg: frag };
+    if (v('--t') != null) s.t = parseFloat(v('--t'));
+    if (v('--d') != null) s.d = parseFloat(v('--d'));
+    if (op != null && op !== 1) s.o = r1(op * 100) / 100;
+    sprites.push(s);
+  }
+  const defs = [...svg.querySelectorAll('defs')].map((d) => d.innerHTML).join('');
+  host.innerHTML = '';
+  return { defs, sprites };
+};
+window.ready = true;
+</script>
+</body></html>

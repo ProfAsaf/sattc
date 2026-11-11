@@ -6,6 +6,7 @@ import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, autoResume, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
+import { campaignPage, closeSheet as closeCampaignSheet } from './campaign-ui.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
 
@@ -167,6 +168,7 @@ function home() {
       <div class="home-actions">
         <button class="btn primary" data-act="tutorial">Learn to play</button>
         <a class="btn" href="#/play">Play</a>
+        <a class="btn" href="#/campaign">Campaign</a>
         <label class="dr-switch mini home-ultra"><input type="checkbox" id="ultra-switch"${Mode.ultra() ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>SATTC Ultra</b><small>Bigger rule changes to try</small></span></label>
       </div>
     </div>
@@ -520,12 +522,13 @@ function play() {
 }
 
 // ── router ──────────────────────────────────────────────────────────
-const ROUTES = { '': home, cards: gallery, decks: deckList, deck: builder, rules, play, insights: () => insightsPage(view) };
+const ROUTES = { '': home, cards: gallery, decks: deckList, deck: builder, rules, play, insights: () => insightsPage(view), campaign: () => campaignPage(view) };
 
 function route() {
   const [path = '', arg] = location.hash.replace(/^#\/?/, '').split('/');
   closeZoom();
   closeSheet();
+  closeCampaignSheet();
   document.body.dataset.page = path && ROUTES[path] ? path : 'home';
   (ROUTES[path] || home)(arg ? decodeURIComponent(arg) : undefined);
   window.scrollTo(0, 0);

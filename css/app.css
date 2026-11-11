@@ -624,3 +624,59 @@ details.fine li { font-size: 14px; }
 }
 
 .pp-misfit { margin: -4px 0 0; color: #ffb38a; }
+
+/* ── the campaign (js/campaign-ui.js): a world's map, its levels, their sheets ── */
+.cp-page { padding: 0 12px 28px; max-width: 480px; margin: 0 auto; }
+.cp-head { display: flex; gap: 12px; align-items: center; margin: 4px 0 12px; }
+.cp-head .cp-face, .cp-who .cp-face { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex: none; }
+.cp-world { font-family: 'EB Garamond', Georgia, serif; font-size: 22px; line-height: 1.15; color: #f4e2b0; }
+.cp-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.cp-total { color: var(--gold); white-space: nowrap; }
+.cp-done { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: rgba(214, 180, 106, .14); border: 1px solid rgba(214, 180, 106, .4); font-size: 14px; }
+.cp-done span { color: var(--muted); }
+.cp-map { position: relative; width: 100%; aspect-ratio: 400 / 1000; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
+.cp-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cp-node, .cp-start { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.cp-node { background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink); -webkit-tap-highlight-color: transparent; }
+.cp-ring { position: relative; width: 62px; height: 62px; border-radius: 50%; border: 3px solid #e8d2a2; overflow: hidden; background: #221d18; box-shadow: 0 4px 12px rgba(0, 0, 0, .55); }
+.cp-node.boss .cp-ring { width: 78px; height: 78px; border-color: #ffd98a; }
+.cp-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cp-node.locked .cp-img { filter: grayscale(1) brightness(.45); }
+.cp-node.locked .cp-ring { border-color: #8d826f; }
+.cp-lock { position: absolute; inset: 0; display: grid; place-items: center; color: #e8d2a2; }
+.cp-lock svg { width: 22px; height: 22px; }
+.cp-label { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: rgba(12, 10, 8, .74); white-space: nowrap; }
+.cp-stars i { font-style: normal; color: rgba(255, 255, 255, .28); }
+.cp-stars i.on { color: #ffd75e; }
+.cp-node .cp-stars { font-size: 13px; line-height: 1.25; padding: 0 6px; border-radius: 999px; background: rgba(12, 10, 8, .6); }
+/* the level to play next breathes (a ring that grows and fades: nothing to repaint) */
+.cp-node.next .cp-ring { border-color: #ffd75e; }
+.cp-node.next::before { content: ''; position: absolute; top: 0; left: 50%; width: 62px; height: 62px; margin-left: -31px; border-radius: 50%; border: 3px solid #ffd75e; animation: cp-pulse 1.8s ease-out infinite; pointer-events: none; }
+.cp-node.boss.next::before { width: 78px; height: 78px; margin-left: -39px; }
+@keyframes cp-pulse { from { transform: scale(1); opacity: .9; } to { transform: scale(1.55); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cp-node.next::before { animation: none; } }
+.cp-start { pointer-events: none; }
+.cp-start .cp-img { width: 46px; height: 46px; border-radius: 50%; border: 2px solid #9fe0c0; box-shadow: 0 3px 10px rgba(0, 0, 0, .5); }
+.cp-start span { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: rgba(12, 10, 8, .74); white-space: nowrap; }
+.cp-how { font-size: 13px; color: var(--muted); text-align: center; margin: 12px 4px 0; line-height: 1.45; }
+/* a level's sheet, and the world's opening */
+.cp-sheet { position: fixed; inset: 0; z-index: 70; display: flex; align-items: flex-end; justify-content: center; padding: 12px 12px calc(env(safe-area-inset-bottom, 0px) + 12px); background: rgba(8, 6, 4, .8); animation: fade .15s ease-out; }
+.cp-sheet-in { width: min(100%, 460px); max-height: 88vh; overflow-y: auto; display: grid; gap: 12px; padding: 16px; border-radius: 18px; background: #1d1813; border: 1px solid rgba(214, 180, 106, .3); box-shadow: 0 -10px 40px rgba(0, 0, 0, .5); }
+.cp-who { display: flex; gap: 12px; align-items: center; }
+.cp-who b { display: block; font-family: 'EB Garamond', Georgia, serif; font-size: 20px; line-height: 1.15; color: #f4e2b0; }
+.cp-who span { font-size: 13px; color: var(--muted); }
+.cp-story p { margin: 0 0 8px; font-size: 15px; line-height: 1.5; }
+.cp-story p:last-child { margin-bottom: 0; }
+.cp-match { font-size: 13px; line-height: 1.4; padding: 8px 10px; border-radius: 10px; color: #cfe6f5; background: rgba(150, 210, 255, .08); }
+.cp-diffs { display: grid; gap: 8px; }
+.cp-diff { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.cp-diff small { font-size: 12px; color: #9fe0a0; }
+.cp-locked { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
+.cp-locked svg { width: 18px; height: 18px; color: #e8d2a2; flex: none; }
+/* the end of a campaign fight (inside the game's end screen) */
+.cp-said { display: flex; gap: 12px; align-items: flex-start; text-align: left; max-width: 34em; margin: 0 auto; }
+.cp-said img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex: none; }
+.cp-said p { margin: 0 0 6px; font-size: 15px; line-height: 1.45; }
+.cp-result { text-align: center; font-size: 15px; }
+.cp-result .cp-stars i { font-size: 17px; }
+.cp-news { text-align: center; font-size: 14px; color: #9fe0a0; }

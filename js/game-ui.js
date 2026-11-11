@@ -10,7 +10,7 @@
 import { BY_ID, KEYWORDS, RULES, STARTERS, ULTRA_KEYWORDS, ULTRA_STARTERS, ULTRA_V, ULTRA_V2, isTrick } from './cards.js';
 import { abilityNeeds, actor, apply, blockLimit, canAttack, canBlock, champLevel, check, costOf, xpAt, fuseCost, stageNeeds, forcedBlocks, hasKw, helpers, living, needs, newGame, opponents, phoenixReady, playOptions, power, replay, ultraV2, unstableClock, useOptions, vitality } from './engine.js';
 import { chooseAction, LEVELS, levelOf, levelMove } from './ai.js';
-import { artTag, cardBackHTML, cardHTML, esc, factionCoin, factionVars } from './render.js';
+import { artTag, artURL, cardBackHTML, cardHTML, esc, factionCoin, factionVars } from './render.js';
 import * as FX from './fx.js';
 import * as Decks from './decks.js';
 import * as Net from './net.js';
@@ -23,6 +23,7 @@ import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
+import * as Camp from './campaign.js';
 
 const SAVE = 'collective.practice.v2';
 const store = {
@@ -415,6 +416,18 @@ function pickBots(n, which, mine) {
   return pool.slice(0, n);
 }
 
+// A campaign fight (campaign.js): your world's deck against the level's, both
+// with their Legends, the bot at the difficulty's level. It comes back to the map.
+export function startCampaign(world, stage, diff) {
+  const W = Camp.worldOf(world), S = W.stages[stage], D = Camp.DIFFS[diff - 1];
+  const deck = (id) => ULTRA_STARTERS.find((d) => d.id === id);
+  const mine = deck(W.deck), theirs = deck(S.deck);
+  const players = [{ name: 'You', deck: Decks.cardList(mine.counts), legend: mine.legend },
+    { name: `Bot · ${theirs.name}`, deck: Decks.cardList(theirs.counts), legend: theirs.legend }];
+  const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, deckClock: true, champions: false, ultra: ULTRA_V };
+  begin({ mode: 'practice', setup, actions: [], me: 0, bots: [1], level: D.level, campaign: { world, stage, diff } });
+}
+
 // `ultra`: the rules a drafted deck was dealt under (otherwise Home's switch; an
 // Ultra deck always plays Ultra). Ultra games go without Champions for now.
 function startPractice(mine, bots, { ultra } = {}) {
@@ -642,7 +655,7 @@ function leave(goTo = '#/play') {
 
 function save() {
   if (G.mode !== 'practice') return;
-  store.set({ mode: G.mode, setup: G.setup, actions: G.actions, me: G.me, bots: [...G.bots], over: G.state.phase === 'over', takebacks: G.takebacks || 0, level: G.level, at: Date.now() });
+  store.set({ mode: G.mode, setup: G.setup, actions: G.actions, me: G.me, bots: [...G.bots], over: G.state.phase === 'over', takebacks: G.takebacks || 0, level: G.level, at: Date.now(), ...(G.campaign ? { campaign: G.campaign } : {}) });
 }
 
 // On start-up, straight back into a practice game the app was in the middle of
@@ -653,8 +666,9 @@ function save() {
 export function autoResume() {
   const saved = store.get();
   if (!saved || saved.over || saved.left || !saved.at || Date.now() - saved.at > 20 * 60000 || G) return false;
-  if (!['', '#', '#/', '#/play'].includes(location.hash)) return false; // (a page opened on purpose stays open)
-  if (location.hash !== '#/play') location.hash = '#/play';
+  const page = saved.campaign ? '#/campaign' : '#/play'; // (a campaign fight comes back over its map)
+  if (!['', '#', '#/', page].includes(location.hash)) return false; // (a page opened on purpose stays open)
+  if (location.hash !== page) location.hash = page;
   begin(saved);
   return true;
 }
@@ -672,8 +686,10 @@ function noteGameOver() {
     at: Date.now(), mode: G.mode === 'online' ? 'online' : 'practice', takebacks: G.takebacks || 0,
     ...(G.mode === 'practice' ? { level: levelOf(G.level).id } : {}), // (the bots' difficulty level)
     play: { setup: G.setup, actions: G.actions }, // (only the newest games keep it: stats.js saveGame)
+    ...(G.campaign ? { campaign: { ...G.campaign } } : {}),
   });
   G.rec = rec;
+  if (G.campaign) G.campaignResult = Camp.record(G.campaign, G.state.winner === G.me);
   St.saveGame(rec);
   if (G.mode === 'online' && L && L.code === G.code) L.lastRec = rec;
   if (G.mode === 'online' && G.created) Net.sendResult(G.code, G.created, G.round, St.roomResult(rec)).catch((e) => console.warn(e));
@@ -2908,6 +2924,7 @@ function overHTML() {
   const s = S();
   const win = s.winner === G.me;
   const score = G.mode === 'online' ? Ins.tonightLine(L?.results, s.players[G.me]?.name) : G.scoreLine || '';
+  if (G.campaign) return campaignOverHTML(win, score);
   return `<div class="g-sheet"><div class="g-sheet-inner g-full" style="min-height:70vh;justify-content:center">
     <div class="winner">${win ? 'You win!' : `${esc(shortName(s.players[s.winner]?.name || 'Nobody'))} wins`}</div>
     ${G.rec ? Ins.overSummaryHTML(G.rec, { score }) : `<div class="over-how">${s.log.slice(-4).filter((l) => !/ wins!$|ends their turn|'s turn\.$/.test(l.text)).slice(-2).map((l) => `<div>${esc(speak(l.text))}</div>`).join('')}</div>`}
@@ -2918,6 +2935,27 @@ function overHTML() {
           ? '<button class="btn primary" data-act="leave">Try a real practice game</button><button class="btn" data-act="tutorial">Replay the lesson</button>'
           : `<button class="btn primary" data-act="rematch">Play again</button>${!win ? '<button class="btn" data-act="undo">Take back a move</button>' : ''}`}
       <button class="btn ghost" data-act="leave">Leave</button>
+    </div></div></div>`;
+}
+
+// A campaign fight's end: what the Legend you met says, the level's stars,
+// what opened, and back to the map (or the same fight again).
+function campaignOverHTML(win, score) {
+  const s = S(), c = G.campaign, W = Camp.worldOf(c.world), St0 = W.stages[c.stage];
+  const L = BY_ID[ULTRA_STARTERS.find((d) => d.id === St0.deck)?.legend];
+  const r = G.campaignResult || { now: 0 };
+  const stars = (n) => [1, 2, 3].map((k) => `<i class="${k <= n ? 'on' : ''}">★</i>`).join('');
+  const news = r.worldDone ? W.done : r.opened != null ? `The road goes on: ${W.stages[r.opened].place} is open.` : '';
+  return `<div class="g-sheet"><div class="g-sheet-inner g-full" style="min-height:70vh;justify-content:center">
+    <div class="winner">${win ? 'You win!' : `${esc(L ? L.name.split(',')[0] : shortName(s.players[s.winner]?.name || 'Nobody'))} wins`}</div>
+    <div class="cp-said">${L ? `<img src="${esc(artURL(L) || '')}" alt="">` : ''}<div>${(win ? St0.win : St0.lose).map((t) => `<p>${esc(t)}</p>`).join('')}</div></div>
+    <div class="cp-result">${win ? `${'★'.repeat(c.diff)} ${Camp.DIFFS[c.diff - 1].name} won` : 'Not this time'} · <span class="cp-stars">${stars(r.now)}</span> at ${esc(St0.place)}</div>
+    ${news ? `<div class="cp-news">${esc(news)}</div>` : ''}
+    ${G.rec ? Ins.overSummaryHTML(G.rec, { score }) : ''}
+    <div class="btn-row">
+      <button class="btn primary" data-act="camp-map">Back to the map</button>
+      <button class="btn" data-act="camp-again">Try again</button>
+      ${!win ? '<button class="btn" data-act="undo">Take back a move</button>' : ''}
     </div></div></div>`;
 }
 
@@ -3827,7 +3865,9 @@ function onAct(act, el) {
       dispatch({ t: 'concede', p: G.me });
       break;
     case 'rules': leave('#/rules'); break;
-    case 'leave': leave(); break;
+    case 'leave': leave(G?.campaign ? '#/campaign' : undefined); break;
+    case 'camp-map': leave('#/campaign'); break;
+    case 'camp-again': { const c = G.campaign; startCampaign(c.world, c.stage, c.diff); break; }
     case 'reload': location.reload(); break;
     case 'lobby': Net.backToLobby(G.code).catch((e) => flash(e.message)); break;
     case 'rematch': {

@@ -342,6 +342,12 @@ async function main() {
     const w = DECKS.map(() => 0), g = DECKS.map(() => 0);
     for (const r of res) for (const [win, lose] of r.out) { w[win]++; g[win]++; g[lose]++; }
     console.log(`${L.name} against ${L.name}, ${res.reduce((a, r) => a + r.out.length, 0)} duels (${secs()}):`);
+    // MATRIX=<file>: every pairing's result too (row deck's wins and games against the column deck), as JSON
+    if (process.env.MATRIX) {
+      const m = DECKS.map(() => DECKS.map(() => [0, 0]));
+      for (const r of res) for (const [win, lose] of r.out) { m[win][lose][0]++; m[win][lose][1]++; m[lose][win][1]++; }
+      writeFileSync(process.env.MATRIX, JSON.stringify({ level: L.id, decks: DECKS.map((d) => d.name), m }));
+    }
     DECKS.map((d, i) => [d.name, w[i], g[i]]).sort((x, y) => y[1] / y[2] - x[1] / x[2]).forEach(([name, a, b]) => console.log(`  ${name.padEnd(22)} ${Math.round((100 * a) / b)}% of ${b}`));
     return;
   }

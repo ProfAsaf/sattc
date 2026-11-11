@@ -1089,6 +1089,31 @@ Measured on a 402×874 screen at 3x with the CPU slowed 4×, at the busiest mome
 - **Sheets** have no backdrop blur (it keeps a blurred copy of the whole screen); they are a little darker instead. The table's attack lines keep still under a fight played big.
 - Tests: `ui-busy.mjs` checks four busy moments against limits (at most 220 moving, 4.5 screens of them, 900 effect elements). It also checks that each moment plays out. `look-deaths.mjs` takes screenshots of deaths partway through.
 
+## The campaign: World 1 (2026-11-11)
+
+Asaf's idea: playing the bots as a game of its own, a map of levels like Mario's. A world plays one deck, starting with the decks it beats most easily and climbing to the one it fears most. Beating that boss brings its deck over for the next world. A story runs through it, told by the Legends.
+
+- **The order comes from data:** every starter played against every other, about 3,200 duels with Practice on both sides (`tools/train.mjs decks practice 1600` with `MATRIX=<file>`). The Long Game's results: Smoke and Mirrors 82%, Sky and Arrows 63%, The Giant 48%, Endless Swarm 35%, The Wall 29%.
+  - The next world is The Wall's, whose boss is Endless Swarm (20%).
+  - The simple rule ("the next boss is the hardest deck not yet unlocked") runs out of hard bosses in later worlds, so the order beyond World 2 will be chosen by hand.
+- **World 1, The Harbor Road** (`js/campaign.js`): you play The Long Game, led by Marisol, from the harbor up to the Wall:
+  - Mirelle at the Market,
+  - Aeris at the Cliffs,
+  - Ymra at the Pass,
+  - Lumen at the Fields at Night ("Death by a thousand cuts"),
+  - and Halvard at the Wall, the boss.
+  - Each scene has lines before the fight, after a win and after a loss. Halvard's win line hints at the next worlds: a fog in the east.
+- **Stars:** each level is played at ★ Casual, ★★ Practice or ★★★ Expert. A level's stars are the hardest difficulty beaten, and one star opens the next level. Progress stays on the phone (`collective.campaign`).
+- **The screens** (`js/campaign-ui.js`, Home → Campaign):
+  - The map is drawn in code: the harbor town and bay, the market square, the cliffs and lighthouse, the mountain pass, the high fields under the moon, the Wall on its ridge. Plain shapes and no filters; the next level's ring pulses by scale and fade only.
+  - Each level is a medallion with its Legend's picture, a lock until it opens, then its stars.
+  - Tap one for the scene, how the matchup looks from your side, and the three difficulties. The first visit opens with the world's story.
+- **The fights** are practice games (`game-ui.js` `startCampaign`): your world's deck and Legend against the level's, the bot at the difficulty's level.
+  - They carry `campaign: { world, stage, diff }` through saves and restarts; one that the phone closed comes back over the map.
+  - At the end the Legend's line shows, then the stars, what opened, the usual summary, and "Back to the map" or "Try again".
+  - They count for your rating like any practice game.
+- Test: `.phone-tests/ui-campaign.mjs` (15 checks: the opening, the locks, the level sheet, the right decks and level, a win's stars and the next level opening, a loss, a reload).
+
 ## Reading a Legend (2026-11-10)
 
 Asaf: "For legendary cards I can't seem to figure out from reading them what their powers are."

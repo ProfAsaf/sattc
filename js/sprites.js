@@ -14,6 +14,8 @@
 export const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const pc = (v) => `${(v * 100).toFixed(3)}%`;
 const LIGHTS = new Set(['twinkle', 'rise', 'breathe', 'fall']); // (these set their own opacity)
+const E = 'ease-in-out';
+const sway = (a, b) => [{ transform: 'none', easing: E }, { transform: a, offset: 0.25, easing: E }, { transform: 'none', offset: 0.5, easing: E }, { transform: b, offset: 0.75, easing: E }, { transform: 'none' }];
 const MOVES = { // -> [keyframes, seconds, back and forth?, easing]; u: px per unit of the drawing
   sway: (u, s) => [[{ transform: 'rotate(-4deg)' }, { transform: 'rotate(3deg)' }], s.t ?? 3.6, true],
   turn: () => [[{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], 18, false, 'linear'],
@@ -23,9 +25,9 @@ const MOVES = { // -> [keyframes, seconds, back and forth?, easing]; u: px per u
   drift: (u) => [[{ transform: `translateX(${-16 * u}px)` }, { transform: `translateX(${16 * u}px)` }], 16, true],
   breathe: (u, s) => [[{ opacity: 0.65 * (s.o ?? 1), transform: 'scale(.93)' }, { opacity: s.o ?? 1, transform: 'scale(1.07)' }], 3.4, true],
   fall: (u) => [[{ transform: `translate(0,${-5 * u}px)`, opacity: 0 }, { opacity: 0.95, offset: 0.25 }, { transform: `translate(${-3 * u}px,${7 * u}px)`, opacity: 0 }], 1.6, false, 'linear'],
-  // a character breathing (js/art/alive.js; the same numbers as card.css .alive)
-  ground: () => [[{ transform: 'none' }, { transform: 'scale(1.006, 1.016)' }], 2.8, true],
-  air: () => [[{ transform: 'none' }, { transform: 'scale(1.012)' }], 3.4, true],
+  // a character breathing and swaying (js/art/alive.js; the same numbers as card.css .alive): each step eased
+  ground: () => [sway('rotate(.8deg) scale(1.01, 1.035)', 'rotate(-.8deg) scale(1.01, 1.035)'), 6.4, false, 'linear'],
+  air: () => [sway('rotate(1.2deg) scale(1.03)', 'rotate(-1.2deg) scale(1.03)'), 5.6, false, 'linear'],
 };
 
 const files = new Map(); // a sprites file -> its contents, fetched once

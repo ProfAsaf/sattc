@@ -1154,7 +1154,7 @@ Measured while building the campaign: sitting on Home, its three fanned cards (A
 
 ## Characters that breathe (2026-11-11)
 
-Asaf's first big idea: "every card when you open it big the creatures or characters or scene or whatever move and do something like they are alive". Until now only the light and air moved (embers, motes, stars, glows). Now the characters breathe: a slow rise and fall of about 1.6% from their feet (a little wider too), every 2.8 seconds each way; one in the air swells a little from its middle instead (no lift: a figure taken for flying may be standing on a high horizon). Each in its own time.
+Asaf's first big idea: "every card when you open it big the creatures or characters or scene or whatever move and do something like they are alive". Until now only the light and air moved (embers, motes, stars, glows). Now the characters breathe and sway: a slow lean of 0.8° to one side and back, then the other, with a breath (3.5% taller, 1% wider, from their feet) at each end, every 6.4 seconds; one in the air tilts 1.2° and swells 3% from its middle instead (no lift: a figure taken for flying may be standing on a high horizon). Each in its own time. (The first version, a 1.6% breath alone, was too gentle to notice on a phone: "I don't notice anything different".)
 
 - **Which figures** (`js/art/alive.js`): the kit draws every figure as a rim-lit silhouette, now with all its layers in one group (`kit.js` `figure`: `<g class="fig">`, its glow `fig-halo`; nothing drawn changes). A figure is a character unless the rules say it's scenery:
   - tiny;

@@ -188,13 +188,14 @@
 }
 
 /* Characters that come alive (js/art/alive.js): in a card shown big, each
-   breathes, from its feet, or swells a little from its middle if it's in the air.
-   The same numbers move the baked ones (js/sprites.js MOVES). */
-.anim .art-svg .alive { transform-box: fill-box; animation: alive-breathe 2.8s ease-in-out var(--d, 0s) infinite alternate; }
+   breathes and sways from its feet, a breath at each end of the sway (or, in
+   the air, tilts and swells from its middle). The same numbers move the baked
+   ones (js/sprites.js MOVES). */
+.anim .art-svg .alive { transform-box: fill-box; animation: alive-ground 6.4s ease-in-out var(--d, 0s) infinite; }
 .anim .art-svg .alive.ground { transform-origin: 50% 100%; }
-.anim .art-svg .alive.air { transform-origin: 50% 50%; animation-name: alive-hover; animation-duration: 3.4s; }
-@keyframes alive-breathe { from { transform: none; } to { transform: scale(1.006, 1.016); } }
-@keyframes alive-hover { from { transform: none; } to { transform: scale(1.012); } }
+.anim .art-svg .alive.air { transform-origin: 50% 50%; animation-name: alive-air; animation-duration: 5.6s; }
+@keyframes alive-ground { 0%, 50%, 100% { transform: none; } 25% { transform: rotate(.8deg) scale(1.01, 1.035); } 75% { transform: rotate(-.8deg) scale(1.01, 1.035); } }
+@keyframes alive-air { 0%, 50%, 100% { transform: none; } 25% { transform: rotate(1.2deg) scale(1.03); } 75% { transform: rotate(-1.2deg) scale(1.03); } }
 @media (prefers-reduced-motion: reduce) { .anim .art-svg .alive { animation: none; } }
 
 /* ── moving parts as sprites (js/sprites.js): each moves as a whole, a

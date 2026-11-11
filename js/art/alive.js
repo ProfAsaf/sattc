@@ -1,6 +1,7 @@
-// Card art whose characters come alive: in a close-up they breathe, a slow
-// rise and fall of a percent or two, from their feet (or, in the air, a
-// swell from their middle: it never lifts their feet off a high horizon). The kit draws each figure as a rim-lit silhouette, all its
+// Card art whose characters come alive: in a close-up they breathe and sway,
+// a slow rise of 3.5% and a lean of under a degree, from their feet (or, in
+// the air, a tilt and swell from their middle: never a lift, so feet stay on
+// a high horizon). The kit draws each figure as a rim-lit silhouette, all its
 // layers in one `fig` group (kit.js figure); here each figure that's a
 // character is gathered, with the figures it overlaps (wings and body, a hand
 // and its shield) and the details drawn right against it (an eye, the glint
@@ -110,7 +111,7 @@ export function gatherAlive(svg, id = '') {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     const kind = c.members.some((m) => m.kind === 'ground') ? 'ground' : 'air';
     g.setAttribute('class', `alive ${kind}`);
-    g.style.setProperty('--d', `${-((out.length * 1.37) % 2.8).toFixed(2)}s`); // (each breathes in its own time)
+    g.style.setProperty('--d', `${-((out.length * 2.3) % 6.4).toFixed(2)}s`); // (each breathes in its own time)
     first.before(g);
     for (let el = first, stop = last.nextElementSibling; el && el !== stop;) { const next = el.nextElementSibling; g.append(el); el = next; }
     out.push({ g, kind, box: boxOf(g) || c.box, ks: c.members.map((m) => m.k) });

@@ -11,6 +11,11 @@
 // colours are what, laid over B with that coverage, give back F exactly:
 // (F - B(1 - a)) / a.
 //
+// A puppet (js/art/puppets.js; living-cards.md) is cut the same way, part by
+// part: each source photographed with what's drawn after it hidden (F),
+// without itself as well (B), and alone (A), split by its polygons, and the
+// picture left without its parts: art/live/<id>-p-<part>.webp.
+//
 //   python tools/serve.py 8770          (in another terminal)
 //   node tools/bake-live.mjs             (Home's fan: Ashmaw, Seraphine, the Barrow Queen)
 //   node tools/bake-live.mjs id1,id2     (these cards; the others baked before stay)

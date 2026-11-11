@@ -1180,6 +1180,8 @@ Asaf's first big idea: "every card when you open it big the creatures or charact
 
 ## Home's fan acts on its own (a prototype, 2026-11-11)
 
+How it's built, how to make a card a puppet, the performance lessons, and what extending it to other cards would take (on hold): **living-cards.md**.
+
 Asaf, on the breathing: "Yes they move now, but not in a way that is fun." Their idea: cards that "look alive anytime the user isn't touching the screen. Including dragon breathing fire in the card, but also maybe at cards nearby... Some cards waving", without slowing anything down. A first test of it, on Home's fan only:
 
 - **When**: a second without a touch and a scene plays, then the next a second after it ends, for as long as you leave it. (It used to wait 3 s, then 12 s between scenes; Asaf: "Otherwise people might click before it even happens.") Between scenes, Seraphine's wings beat slowly and the ghosts sway. A touch stops it all at once. Reduce Motion: none of it. (`js/home-alive.js`)

@@ -47,7 +47,7 @@ export async function liven(box, pic, { clip = null } = {}) {
   const at = (s) => `left:${pc(s.x / pic.w)};top:${pc(s.y / pic.h)};width:${pc(s.w / pic.w)};height:${pc(s.h / pic.h)};transform-origin:${s.ox}% ${s.oy}%`;
   // (a character is a picture cut from the finished art; the rest are drawn)
   box.innerHTML = `<svg class="sp-defs" aria-hidden="true"><defs>${L.defs}</defs></svg>${L.sprites.map((s, i) => (s.img
-    ? `<img class="sp" data-i="${i}" src="${s.img}" alt="" decoding="async" style="${at(s)}">`
+    ? `<img class="sp" data-i="${i}"${s.name ? ` data-part="${s.name}"` : ''} src="${s.img}" alt="" decoding="async" style="${at(s)}">`
     : `<svg class="sp" data-i="${i}" viewBox="${s.x} ${s.y} ${s.w} ${s.h}" preserveAspectRatio="none" aria-hidden="true" style="${at(s)}${LIGHTS.has(s.a) && s.o != null ? `;opacity:${s.o}` : ''}">${s.svg}</svg>`)).join('')}`;
   box.live = L;
   box.pic = pic;
@@ -67,7 +67,9 @@ export function move(box) {
   const old = box.anims || [];
   box.u = u;
   box.anims = [...box.querySelectorAll('.sp')].map((el, k) => {
-    const s = L.sprites[el.dataset.i], [frames, t, alt, easing = 'ease-in-out'] = MOVES[s.a](u, s);
+    const s = L.sprites[el.dataset.i];
+    if (!MOVES[s.a]) return null; // (a puppet's part: still until its scene moves it, js/home-alive.js)
+    const [frames, t, alt, easing = 'ease-in-out'] = MOVES[s.a](u, s);
     const a = el.animate(frames, { duration: t * 1000, delay: (s.d || 0) * 1000, iterations: Infinity, direction: alt ? 'alternate' : 'normal', easing });
     if (old[k]) { a.currentTime = old[k].currentTime; old[k].cancel(); }
     if (box.held) a.pause();
@@ -97,13 +99,13 @@ export function restart(box, clip = null) {
 export function hold(box, on) {
   if (!box) return;
   box.held = on;
-  for (const a of box.anims || []) on ? a.pause() : a.play();
+  for (const a of box.anims || []) if (a) on ? a.pause() : a.play();
 }
 
 // Stop them for good, the picture leaving the page: an animation left running
 // on an element that's gone keeps the browser ticking.
 export function drop(box) {
-  for (const a of box?.anims || []) a.cancel();
+  for (const a of box?.anims || []) a?.cancel();
   if (box) { box.anims = []; boxes.delete(box); }
 }
 // Stop every box no longer on the page (after the page changes).

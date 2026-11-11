@@ -5,6 +5,7 @@ import { BY_ID, CARDS, CHAMPIONS, FACTIONS, FACTION_ORDER, KEYWORDS, LEGENDS, RU
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin, livenArt } from './render.js';
 import { hold, sweep } from './sprites.js';
 import { gatherAlive } from './art/alive.js';
+import { startHomeAlive, stopHomeAlive } from './home-alive.js';
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, autoResume, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
@@ -199,6 +200,7 @@ function home() {
     if (c) openZoom(c.dataset.id);
   };
   livenArt(view);
+  startHomeAlive(view); // (the fan stirs while it's left be)
   document.getElementById('ultra-switch').onchange = (e) => {
     Mode.setUltra(e.target.checked);
     const a = document.querySelector('#home-menu a[href="#/cards"]');
@@ -541,6 +543,7 @@ function route() {
   closeSheet();
   closeCampaignSheet();
   if (path !== 'campaign') leaveCampaign(); // (its moving parts stop with it)
+  stopHomeAlive();
   document.body.dataset.page = path && ROUTES[path] ? path : 'home';
   // ('kept': the page changed in place, as the campaign does going into a place and out)
   const kept = (ROUTES[path] || home)(arg ? decodeURIComponent(arg) : undefined) === 'kept';

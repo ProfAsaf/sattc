@@ -665,8 +665,8 @@ const umbral = faction('umbral', {
         taper([[5, -38], [14, -34], [23, -33], [30, -36], [35, -38.5]], [3, 2.3, 1.7, 0.9, 0.3]) + taper([[1, -37], [-3, -28], [-1, -18]], [2.3, 1.7, 0.6])) + '</g>';
     const court = [[66, 168, 1, 1], [100, 178, 0.8, 1], [38, 186, 0.7, 1], [234, 168, 1, -1], [200, 178, 0.8, -1], [262, 186, 0.7, -1]];
     s.glow(66, 150, 52, '#b07cff', 0.3).glow(234, 150, 52, '#b07cff', 0.3);
-    s.add(`<g fill="${s.lin([[0, '#efe6ff', 0.8], [0.6, '#c9b4f2', 0.5], [1, '#b8a0ea', 0.05]])}">${court.map(([x, y, k, d]) => ghost(x, y, k, d)).join('')}</g>`);
-    s.add(`<g fill="#1a1028" opacity=".75">${court.map(([x, y, k, d]) => `<ellipse cx="${f1(x + 10.6 * k * d)}" cy="${f1(y - 45.4 * k)}" rx="${f1(1.9 * k)}" ry="${f1(1.3 * k)}"/>`).join('')}</g>`);
+    s.add(`<g data-part="court" fill="${s.lin([[0, '#efe6ff', 0.8], [0.6, '#c9b4f2', 0.5], [1, '#b8a0ea', 0.05]])}">${court.map(([x, y, k, d]) => ghost(x, y, k, d)).join('')}</g>`);
+    s.add(`<g data-part="court" fill="#1a1028" opacity=".75">${court.map(([x, y, k, d]) => `<ellipse cx="${f1(x + 10.6 * k * d)}" cy="${f1(y - 45.4 * k)}" rx="${f1(1.9 * k)}" ry="${f1(1.3 * k)}"/>`).join('')}</g>`);
     s.add(particles({ seed: 774, n: 12, x: [30, 270], y: [90, 200], r: [0.4, 1.2], fill: '#d9c2ff', cls: 'rise', t: [5, 9], op: [0.3, 0.85] }));
     return s.svg();
   },

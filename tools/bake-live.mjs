@@ -80,6 +80,17 @@ try {
   };
   for (const id of ids) {
     const L = await evaluate(`window.live(${JSON.stringify(id)})`);
+    // a puppet (js/art/puppets.js): its parts, each from its source's three photographs
+    const P = await evaluate(`window.prepPuppet(${JSON.stringify(id)})`);
+    if (P) {
+      await evaluate(`window.viewPup('base')`); await shot(`${id}.png`);
+      for (let i = 0; i < P.sources.length; i++) {
+        for (const mode of ['upto', 'below', 'alone']) { await evaluate(`window.viewPup('${mode}', ${i})`); await shot(`${id}-s${i}-${mode}.png`); }
+      }
+      pics[id] = { L, groups: [], puppet: P };
+      process.stdout.write(`${id} (${L.sprites.length} moving, puppet: ${P.parts.map((p) => p.name).join(' ')}) `);
+      continue;
+    }
     const groups = await evaluate(`window.prep(${JSON.stringify(id)})`);
     await evaluate(`window.view('base')`); await shot(`${id}.png`);
     await evaluate(`window.view('full')`); await shot(`${id}-full.png`);
@@ -100,8 +111,37 @@ import numpy as np
 from PIL import Image
 out = Path(${JSON.stringify(dir)}); raw = out / 'raw'
 todo = json.loads(${JSON.stringify(JSON.stringify(Object.fromEntries(Object.entries(pics).map(([id, p]) => [id, p.groups.length]))))})
+pups = json.loads(${JSON.stringify(JSON.stringify(Object.fromEntries(Object.entries(pics).filter(([, p]) => p.puppet).map(([id, p]) => [id, p.puppet]))))})
+S = ${SCALE}
 cuts = {}
+def poly_mask(shape, poly):
+    # the polygon (drawing units), antialiased: drawn four times larger, then shrunk
+    from PIL import ImageDraw
+    big = Image.new('L', (shape[1] * 4, shape[0] * 4), 0)
+    ImageDraw.Draw(big).polygon([(x * S * 4, y * S * 4) for x, y in poly], fill=255)
+    return np.asarray(big.resize((shape[1], shape[0]), Image.LANCZOS), dtype=np.float32) / 255.0
+def cut_out(name, F, B, A, m):
+    a = A * m
+    ys, xs = np.nonzero(a > 0.03)
+    if not len(xs):
+        return None
+    x0, x1, y0, y1 = max(0, xs.min() - 2), min(A.shape[1], xs.max() + 3), max(0, ys.min() - 2), min(A.shape[0], ys.max() + 3)
+    sa, sA = a[y0:y1, x0:x1], A[y0:y1, x0:x1]
+    C = np.clip((F[y0:y1, x0:x1] - B[y0:y1, x0:x1] * (1 - sA[..., None])) / np.maximum(sA, 0.03)[..., None], 0, 255)
+    Image.fromarray(np.dstack([C, np.where(sa > 0.03, sa, 0) * 255]).round().astype(np.uint8), 'RGBA').save(out / name, 'WEBP', quality=90, alpha_quality=95, method=6)
+    return { 'x': int(x0), 'y': int(y0), 'w': int(x1 - x0), 'h': int(y1 - y0) }
+for id, P in pups.items():
+    Image.open(raw / (id + '.png')).convert('RGB').save(out / (id + '.webp'), 'WEBP', quality=82, method=6)
+    load = lambda i, mode, kind: np.asarray(Image.open(raw / ('%s-s%d-%s.png' % (id, i, mode))).convert(kind), dtype=np.float32)
+    cuts[id] = []
+    for p in P['parts']:
+        i = p['src']
+        F, B, A = load(i, 'upto', 'RGB'), load(i, 'below', 'RGB'), load(i, 'alone', 'RGBA')[..., 3] / 255.0
+        m = poly_mask(A.shape, p['poly']) if p['poly'] else np.ones_like(A)
+        cuts[id].append(cut_out('%s-p-%s.webp' % (id, p['name']), F, B, A, m))
 for id, n in todo.items():
+    if id in pups:
+        continue
     Image.open(raw / (id + '.png')).convert('RGB').save(out / (id + '.webp'), 'WEBP', quality=82, method=6)
     B = np.asarray(Image.open(raw / (id + '.png')).convert('RGB'), dtype=np.float32)
     F = np.asarray(Image.open(raw / (id + '-full.png')).convert('RGB'), dtype=np.float32)
@@ -123,7 +163,19 @@ if (conv.status) { console.log(conv.stdout, conv.stderr); process.exit(conv.stat
 const cuts = JSON.parse(conv.stdout.split('CUTS')[1]);
 const ver = (f) => createHash('sha1').update(readFileSync(join(dir, f))).digest('hex').slice(0, 8);
 const r1 = (v) => Math.round(v * 10) / 10;
-for (const [id, { L, groups }] of Object.entries(pics)) {
+for (const [id, { L, groups, puppet }] of Object.entries(pics)) {
+  if (puppet) {
+    // a puppet's parts, in the order they're drawn, under the ambient sprites;
+    // they keep still until js/home-alive.js moves them (about their joints)
+    const parts = puppet.parts.map((p, k) => {
+      const c = cuts[id][k];
+      if (!c) return null;
+      const x = c.x / SCALE, y = c.y / SCALE, w = c.w / SCALE, h = c.h / SCALE;
+      return { a: 'part', name: p.name, x: r1(x), y: r1(y), w: r1(w), h: r1(h), ox: r1(((p.pivot[0] - x) / w) * 100), oy: r1(((p.pivot[1] - y) / h) * 100), img: `art/live/${id}-p-${p.name}.webp?v=${ver(`${id}-p-${p.name}.webp`)}`, src: p.src };
+    }).filter(Boolean).sort((a, b) => a.src - b.src).map(({ src, ...s }) => s);
+    writeFileSync(join(dir, `${id}.json`), JSON.stringify({ defs: L.defs, sprites: [...parts, ...L.sprites] }));
+    continue;
+  }
   // each character under the ambient sprites, breathing from its feet (or, in the air, its middle)
   const chars = groups.map((g, k) => {
     const c = cuts[id][k];

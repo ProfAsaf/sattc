@@ -2,7 +2,7 @@
 // baked picture without its moving parts or characters, with those as
 // sprites over it (js/sprites.js): nothing redrawn while they move.
 export const LIVE = {
-  "ashmaw": { src: 'art/live/ashmaw.webp?v=b354da02', live: 'art/live/ashmaw.json?v=e59b5605' },
-  "seraphine": { src: 'art/live/seraphine.webp?v=d5117d2b', live: 'art/live/seraphine.json?v=f06a85d3' },
-  "the-barrow-queen": { src: 'art/live/the-barrow-queen.webp?v=37176ee4', live: 'art/live/the-barrow-queen.json?v=92c78062' },
+  "ashmaw": { src: 'art/live/ashmaw.webp?v=30c4943a', live: 'art/live/ashmaw.json?v=b8d9c4a9' },
+  "seraphine": { src: 'art/live/seraphine.webp?v=d5117d2b', live: 'art/live/seraphine.json?v=e3c89cbf' },
+  "the-barrow-queen": { src: 'art/live/the-barrow-queen.webp?v=6a8bcf18', live: 'art/live/the-barrow-queen.json?v=ac4ce372' },
 };

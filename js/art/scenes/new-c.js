@@ -584,12 +584,14 @@ export const new_c = {
     });
     front += taper(A, [24, 18, 6]);
     const wingsBack = back + flipX(back, 150), wingsFront = front + flipX(front, 150);
+    s.add('<g data-part="wings">'); // (a puppet part on Home: js/art/puppets.js)
     s.blur(`<path d="${wingsBack + wingsFront}" fill="#ffd77a" opacity=".75"/>`, 5);
     const wf = s.radU(150, 78, 150, [[0, '#ffffff', 1], [0.3, '#fff4d0', 0.95], [0.65, '#ffdc8a', 0.85], [1, '#f6b45a', 0.7]]);
     s.path(wingsBack, wf);
     s.add(`<path d="${wingsBack}" fill="none" stroke="#fffaf0" stroke-width=".55" opacity=".7"/>`);
     s.path(wingsFront, s.radU(150, 78, 130, [[0, '#ffffff', 1], [0.5, '#fff6dc', 0.95], [1, '#ffe39a', 0.85]]));
     s.add(`<path d="${wingsFront}" fill="none" stroke="#fffaf0" stroke-width=".55" opacity=".7"/>`);
+    s.add('</g>');
     // a halo behind her head (a disc of light her head is cut out against)
     // and her blade, both burning with the sunrise
     s.glow(150, 50, 30, '#fffaf0', 0.85);

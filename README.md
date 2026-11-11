@@ -1178,6 +1178,28 @@ Asaf's first big idea: "every card when you open it big the creatures or charact
 - Reduce Motion (the phone's setting): nobody breathes.
 - Found on the way: Grave Snare's rune ring never drew (a number added to text made "189.92.4" and stopped the path); fixed and its picture re-baked.
 
+## Home's fan acts on its own (a prototype, 2026-11-11)
+
+Asaf, on the breathing: "Yes they move now, but not in a way that is fun." His idea: cards that "look alive anytime the user isn't touching the screen. Including dragon breathing fire in the card, but also maybe at cards nearby... Some cards waving", without slowing anything down. A first test of it, on Home's fan only:
+
+- **When**: after 3 seconds without a touch the cards stir: Seraphine's wings beat slowly, the Barrow Queen's six ghosts sway. Every 12 seconds of that, a scene:
+  1. Ashmaw opens its jaws as a glow builds in its mouth, then lobs a fireball, embers trailing, over to Seraphine.
+  2. She throws up her wings, braces, and the fire breaks into a burst of light and sparks.
+  3. The ghosts drift over to watch, then back.
+
+  A touch stops it all at once; it comes back once you've let go. Reduce Motion: none of it. (`js/home-alive.js`)
+- **Puppets** (`js/art/puppets.js`): each card's moving parts, cut at their joints, with the joint each one turns about:
+  - Ashmaw's lower jaw: a polygon of the dragon's figure. The rest of the dragon stays in the picture, through a mask that keeps the hinge.
+  - Seraphine's two wings, and herself with her halo and blade above them.
+  - The Queen's six ghosts.
+
+  The wings and ghosts are tagged in their drawings (`data-part`). Nothing drawn changes.
+- **Cut cleanly** (`tools/bake-live.mjs`): each part's source is photographed with what's drawn after it hidden (F), without itself as well (B), and alone (A). Its colours (F − B(1 − A)) / A are complete even where something in front covered them, so a raised wing shows no hole where her body was. The picture under the parts has them taken out.
+- **Cost**: everything moves by transforms and opacity. The page works only in short bursts as effects start and end (a few dozen style recalcs a scene), and not at all in between. Two lessons:
+  - two motions on one part at once (its idle beat and the scene's) put it on the main thread, so the scene takes over from the idle motion at the pose it was in;
+  - the idle motion mustn't restart mid-scene.
+- Test: `.phone-tests/look-home-scene.mjs`. It checks that the scene starts by itself, that a touch stops it, that it cleans up and what it costs, and records it as a GIF.
+
 ## Reading a Legend (2026-11-10)
 
 Asaf: "For legendary cards I can't seem to figure out from reading them what their powers are."

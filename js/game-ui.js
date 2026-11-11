@@ -423,7 +423,7 @@ export function startCampaign(world, stage, diff) {
   const deck = (id) => ULTRA_STARTERS.find((d) => d.id === id);
   const mine = deck(W.deck), theirs = deck(S.deck);
   const players = [{ name: 'You', deck: Decks.cardList(mine.counts), legend: mine.legend },
-    { name: `Bot · ${theirs.name}`, deck: Decks.cardList(theirs.counts), legend: theirs.legend }];
+    { name: `Bot · ${theirs.name}`, deck: Decks.cardList(theirs.counts), legend: theirs.legend, ...(S.powers ? { powers: S.powers } : {}) }];
   const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, deckClock: true, champions: false, ultra: ULTRA_V };
   begin({ mode: 'practice', setup, actions: [], me: 0, bots: [1], level: D.level, campaign: { world, stage, diff } });
 }

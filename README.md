@@ -1157,6 +1157,26 @@ Asaf: "Start building." World 1 ended with Halvard looking east "into a fog that
 
   `ui-campaign.mjs` (World 1, 32 checks) still passes. `look-world2.mjs` screenshots World 2's map and places.
 
+## The campaign: World 3, The Long Night (2026-11-11)
+
+Asaf: "Build it all", meaning every world and a finale (the whole road: **campaign-plan.md**). World 3 turns back west. The Eclipse, the thing Hush was fleeing, has put out the dawn, and the Legends of World 1 are hollowed by it.
+
+- **You play Hush's Fogbound**, back through the Wall and down the Harbor Road in the dark:
+  - Lumen in the Fields at Night;
+  - Ymra at the Pass;
+  - Aeris at the Cliffs;
+  - Mirelle at the Market;
+  - the boss: Seren, the Storm-Scholar, the Eclipse's herald, burning a black light in the lighthouse at the harbor mouth.
+
+  Each one freed points to the next. Seren's notebook says the Eclipse "doesn't eat the sun. It holds it down", and that it wants one thing more: the Legends who beat it.
+- **Boss powers** (`engine.js` `newGame`, campaign only): a player's `powers` give `life` (more Life), `energy` (more Energy every turn, from the first) and `board` (creatures already on the table), and the log says so. Fogbound's results against these decks don't climb on their own: 57%, 42%, 43%, 47%, 50%. So the hollowed Legends grow along the road instead: 2, 3, 4 and 5 more Life, and the boss 6 more Life and 1 more Energy every turn. The place says what each one brings ("Hollowed: 4 more Life."), and a game set up without powers plays as before.
+- **Hollowed faces:** their medallions and headers are drained and ringed in violet.
+- **The pictures are World 1's, under the Eclipse** (`campaign-art.js` `eclipsed`): each one is drawn again with its moving lights and grass cooled toward violet. Then a violet dark is washed over it, and a black sun ringed with cold light sits where its own light was. Ash drifts over it all. The map is read down from the Wall this time, Hush setting out at the top. Only the Lighthouse is new: a tall banded tower on a rock, its lamp burning black, Seren's lightning crawling over it, a stair up the rock to its door.
+- Tests:
+  - `.phone-tests/ui-campaign-world.mjs <world>` checks any world from 2 on against its own data in `campaign.js` (12 checks): the last boss's defeat opens it; its own story and map; its first Legend, story and powers; a fight with this world's deck in which the bot really has its powers; the first escape played out; and the boss's defeat ending the world.
+  - `look-world.mjs <world>` screenshots any world.
+  - `ui-campaign.mjs` (World 1) and `ui-campaign-w2.mjs` still pass.
+
 ## The campaign's pictures (2026-11-11)
 
 Asaf, on the first map: "this looks more clipart. Not the cool style we have on the cards. You could even have subtle things like wind blowing grass. It should be objectively beautiful." And: stopping at a place should "zoom you into that area and expand so the three steps within it then show up and the theme expands around you".

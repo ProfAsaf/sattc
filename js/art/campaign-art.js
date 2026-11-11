@@ -10,7 +10,7 @@
 // size (static, baked); `live` collects the overlay (no filters, only
 // transform and opacity move: see .art-svg classes in card.css).
 
-import { Scene, blob, line, particles, pines, poly, pt, ridge, rng, spline, taper } from './kit.js';
+import { Scene, blob, line, mix, particles, pines, poly, pt, ridge, rng, spline, taper } from './kit.js';
 
 // ── small tools (as in scenes/ultra-d.js) ───────────────────────────
 const f1 = (n) => (Math.round(n * 10) / 10).toString();
@@ -952,8 +952,91 @@ function mere(s, live) {
   return { spots: { rounds: [[150, 384], [140, 300], [156, 236]] } };
 }
 
+// ── The eclipse (Worlds 3 and 4) ───────────────────────────────────
+// An old picture drawn again under the Eclipse: its own moving lights and
+// grass cooled toward violet as it's drawn; then a violet dark washed over all
+// of it, a black sun ringed with cold light where its own light was (its key
+// light, `finish` `at`), ash drifting, and a cold grade. `spots`: where its
+// levels sit now (a map read another way).
+function eclipsed(draw, { spots = null, at: atOver = null } = {}) {
+  return (s, live) => {
+    const cool = (c) => (typeof c === 'string' && c[0] === '#' && c.length === 7 ? mix(c, '#a890ff', 0.55) : c);
+    const own = { rad: live.rad, grass: live.grass, motes: live.motes };
+    live.rad = (stops) => own.rad.call(live, stops.map(([o, c, op]) => [o, cool(c), op]));
+    live.grass = (o) => own.grass.call(live, { ...o, fill: '#0c0a16', lit: o.lit ? '#a898e8' : o.lit });
+    live.motes = (o) => own.motes.call(live, { ...o, fill: cool(o.fill), hot: o.hot ? cool(o.hot) : o.hot });
+    const r = draw(s, live);
+    Object.assign(live, own);
+    const [x, y] = atOver || s.fin?.at || [150, 80];
+    s.add(`<rect x="-5" y="-5" width="${s.w + 10}" height="${s.h + 10}" fill="${s.linU(0, 0, 0, s.h, [[0, '#1a0f38', 0.86], [0.5, '#22164a', 0.66], [1, '#140c2a', 0.6]])}" style="mix-blend-mode:multiply"/>`);
+    s.glow(x, y, 170, '#8a6aff', 0.38);
+    s.glow(x, y, 50, '#e8dcff', 0.58);
+    s.add(`<circle cx="${f1(x)}" cy="${f1(y)}" r="17" fill="#05030a"/><circle cx="${f1(x)}" cy="${f1(y)}" r="17.6" fill="none" stroke="#f4eaff" stroke-width="1.4" opacity=".85"/>`);
+    live.motes({ seed: 9100 + Math.round(x + y), n: 26, x: [0, s.w], y: [0, s.h], r: [0.3, 0.8], fill: '#b8a0ff', cls: 'float', op: [0.3, 0.8], t: [6, 11] });
+    s.finish({ hi: '#c4a8ff', lo: '#06040e', at: [x, y], grade: 0.5, vignette: 0.55, faction: null });
+    return spots ? { spots } : r;
+  };
+}
+
+// The Lighthouse (World 3's boss): at the harbor mouth on its rock, its lamp
+// burning black under the Eclipse, Seren's storm crawling over it; a stair
+// cut in the rock climbs from the quay to its door.
+function lighthouse(s, live) {
+  s.rect(s.lin([[0, '#07050f'], [0.2, '#14102a'], [0.4, '#2a2048'], [0.52, '#3a2c58']]));
+  live.add(particles({ seed: 3601, n: 24, x: [4, 296], y: [4, 200], r: [0.3, 0.7], fill: '#e8dcff', cls: 'twinkle', op: [0.2, 0.8], t: [2.5, 6] }));
+  // the Eclipse, high on the right: a black sun ringed with cold light
+  const E = [226, 84];
+  s.glow(E[0], E[1], 180, '#8a6aff', 0.42);
+  s.glow(E[0], E[1], 54, '#efe6ff', 0.6);
+  s.add(`<circle cx="${E[0]}" cy="${E[1]}" r="20" fill="#040208"/><circle cx="${E[0]}" cy="${E[1]}" r="20.7" fill="none" stroke="#f6eeff" stroke-width="1.6" opacity=".9"/>`);
+  // storm clouds low over the sea, lit violet from inside
+  const puffs = (list) => U(list.map(([x, y, rx, ry]) => U(ell(x, y, rx, ry), ell(x - rx * 0.5, y + ry * 0.3, rx * 0.6, ry * 0.7), ell(x + rx * 0.5, y + ry * 0.2, rx * 0.55, ry * 0.7))));
+  s.figure(`<path d="${puffs([[30, 214, 52, 18], [96, 236, 44, 14], [236, 222, 60, 18], [290, 244, 40, 14]])}"/>`, { fill: '#241c3e', rim: '#c4b0ff', offsets: [[0, -1.2], [-0.6, -0.8]], rimOp: 0.5, shade: 0.4, light: [0.4, -1] });
+  // the sea: black, heaving, the Eclipse's light lying on it
+  s.path(poly([[-10, 290], [310, 290], [310, 610], [-10, 610]]), s.linU(0, 290, 0, 610, [[0, '#3a3060'], [0.18, '#1c1834'], [1, '#06050c']]));
+  s.add(`<ellipse cx="226" cy="320" rx="70" ry="22" fill="${s.radU(226, 316, 80, [[0, '#d8c8ff', 0.3], [1, '#d8c8ff', 0]])}"/>`);
+  { const R = rng(3602); let w = ''; for (let i = 0; i < 30; i++) { const y = 300 + R() ** 1.3 * 290, x = R() * 300, len = 10 + (y - 300) / 290 * 40; w += `M${f1(x)},${f1(y)}q${f1(len / 2)},${f1(-2 - (y - 300) / 290 * 4)} ${f1(len)},0`; } s.add(`<path d="${w}" stroke="#8a78c8" stroke-width=".8" fill="none" opacity=".35"/>`); }
+  live.add(Array.from({ length: 30 }, (_, i) => { const R = rng(3603 + i), t = R(), y = 296 + t * 260, x = R() * 300, len = 3 + R() * (5 + t * 10); return `<path class="twinkle" style="--t:${f1(1.6 + R() * 2.4)}s;--d:${f1(-R() * 3)}s" d="M${f1(x)},${f1(y)}h${f1(len)}" stroke="#e8deff" stroke-width="${f1(0.5 + t * 0.8)}" stroke-linecap="round" opacity=".5"/>`; }).join(''));
+  // the harbor far off on the left, dark, a few windows still lit
+  s.figure(`<path d="${U(house(-4, 298, 18, 10, 0.6, true), house(14, 296, 14, 8, 0.6), house(30, 300, 20, 9, 0.55, true), house(52, 297, 14, 7, 0.6))}"/>`, { fill: '#100c1c', rim: '#b8a8f0', offsets: [[0, -0.6]], rimOp: 0.4 });
+  s.bloom(`<path d="${U(quad(4, 290, 2, 3), quad(36, 293, 2, 3), quad(57, 291, 1.8, 2.6))}" fill="#ffcf7e"/>`, { sd: 1.2, k: 1.2 });
+  // the rock, wet and dark, a stair cut up it to the door
+  const rock = poly(spline([[16, 612], [34, 540], [62, 480], [86, 420], [96, 360], [108, 300], [116, 250], [184, 250], [192, 300], [206, 360], [218, 420], [244, 480], [270, 540], [292, 612]], 3));
+  s.figure(`<path d="${rock}"/>`, { fill: '#1e1a2c', rim: '#b8a8f0', offsets: [[0, -1], [0.6, -0.8]], rimOp: 0.55, shade: 0.45, light: [0.5, -1] });
+  s.add(`<path d="${U(poly([[86, 420], [96, 360], [108, 368], [100, 430]]), poly([[34, 540], [62, 480], [74, 492], [50, 560]]), poly([[192, 300], [206, 360], [196, 352]]))}" fill="#4a4270" opacity=".45"/>`);
+  const STAIR = [[150, 604], [108, 530], [142, 466], [118, 404], [178, 344], [188, 298], [158, 262], [150, 244]];
+  s.path(taper(STAIR, STAIR.map((_, i) => 16 - (i / (STAIR.length - 1)) * 10), { per: 5 }), s.linU(0, 604, 0, 244, [[0, '#4a4460'], [1, '#8a84a8']]), 'opacity=".8"');
+  // foam where the sea breaks on the rock
+  live.add(Array.from({ length: 14 }, (_, i) => { const R = rng(3640 + i), side = R() < 0.5 ? -1 : 1, y = 470 + R() * 120, x = 150 + side * (70 + (y - 470) * 0.9 + R() * 20); return `<ellipse class="twinkle" style="--t:${f1(1.4 + R() * 1.6)}s;--d:${f1(-R() * 2)}s" cx="${f1(x)}" cy="${f1(y)}" rx="${f1(4 + R() * 6)}" ry="1.4" fill="#e8e0ff" opacity=".55"/>`; }).join(''));
+  // the lighthouse: tall and banded, its gallery, its lamp burning black
+  const tower = U(poly([[128, 250], [136, 110], [164, 110], [172, 250]]), quad(126, 104, 48, 6), quad(138, 80, 24, 24), poly([[134, 82], [150, 60], [166, 82]]), quad(149, 52, 2, 9));
+  s.figure(`<path d="${tower}"/>`, { fill: '#a8a4b8', rim: '#efe8ff', offsets: [[0.6, -0.6]], rimOp: 0.55, shade: 0.55, light: [1, -0.6] });
+  s.add(`<path d="${U(poly([[131.6, 186], [168.4, 186], [169.1, 200], [130.9, 200]]), poly([[134.4, 136], [165.6, 136], [166.1, 150], [133.9, 150]]))}" fill="#4a1c2e" opacity=".85"/>`);
+  s.add('<path d="M126,104H174M126,107H174" stroke="#2a2438" stroke-width=".8"/><path d="M144,80V104M150,80V104M156,80V104" stroke="#2a2438" stroke-width=".7"/>');
+  s.bloom(`<path d="${poly([[143, 250], [143, 234], [150, 228], [157, 234], [157, 250]])}" fill="#c8b0ff"/>`, { sd: 1.4, k: 1.2 });
+  s.glow(150, 92, 70, '#a080ff', 0.55);
+  s.add('<circle cx="150" cy="92" r="7" fill="#06030c"/>');
+  live.add(`<circle class="breathe" cx="150" cy="92" r="22" fill="${live.rad([[0, '#e8dcff', 0.75], [0.4, '#a080ff', 0.4], [1, '#7a5aff', 0]])}"/>`);
+  // the storm crawling over it: black lightning, flashing white at its edges
+  const zig = (pts) => taper(pts, pts.map((_, i) => 1.8 - (i / (pts.length - 1)) * 1.3), { per: 2 });
+  live.add(`<g class="twinkle" style="--t:1.3s;--d:-.5s"><path d="${zig([[40, 206], [62, 214], [56, 222], [84, 228], [78, 234], [128, 104]])}" fill="#f4eeff"/></g>`);
+  live.add(`<g class="twinkle" style="--t:1.9s;--d:-1.1s"><path d="${zig([[262, 212], [236, 222], [244, 230], [214, 236], [220, 242], [172, 108]])}" fill="#f4eeff"/></g>`);
+  live.grass({ seed: 3604, x0: -6, x1: 80, base: 606, depth: 26, h: [12, 22], n: 12, fill: '#0c0a16', lit: '#a898e8' });
+  live.grass({ seed: 3605, x0: 220, x1: 306, base: 606, depth: 26, h: [12, 22], n: 12, fill: '#0c0a16', lit: '#a898e8' });
+  drifting(live, [[-60, 360, 300, 10, 0.16], [-40, 200, 380, 9, 0.12]], '#c8b8f0');
+  s.finish({ hi: '#c4a8ff', lo: '#05030c', at: E, reach: 460, grade: 0.4, vignette: 0.5, grain: 0.06 });
+  return { spots: { rounds: [[150, 384], [188, 300], [150, 234]] } };
+}
+
 export const CAMPAIGN_ART = {
   'world-1': { w: 300, h: 760, draw: harborRoad },
+  // World 3, The Long Night: World 1's road under the Eclipse, read down from the Wall
+  'world-3': { w: 300, h: 760, draw: eclipsed(harborRoad, { spots: { start: [150, 128], levels: [[192, 262], [112, 396], [204, 520], [96, 652], [262, 640]] } }) },
+  'place-fields-night': { w: 300, h: 600, draw: eclipsed(fields) },
+  'place-pass-night': { w: 300, h: 600, draw: eclipsed(pass) },
+  'place-cliffs-night': { w: 300, h: 600, draw: eclipsed(cliffs) },
+  'place-market-night': { w: 300, h: 600, draw: eclipsed(market) },
+  'place-lighthouse': { w: 300, h: 600, draw: lighthouse },
   'world-2': { w: 300, h: 760, draw: fogCountry },
   'place-ford': { w: 300, h: 600, draw: ford },
   'place-causeway': { w: 300, h: 600, draw: causeway },

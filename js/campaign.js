@@ -128,7 +128,7 @@ export const WORLDS = [{
     'Halvard lifts the bar from the gate himself. “I held this gate shut against the fog, and it came on anyway, a little more each year. A wall only makes it wait.”',
     '“So we go to it,” says Marisol, opening a fresh ledger. “Whoever is breathing that fog onto my roads owes me a hundred years of trade.”',
   ],
-  done: 'Hush joins you. World 3 lies farther east, where the dawn should be.',
+  done: 'Hush joins you. World 3 begins where the dawn should have, and didn’t.',
   stages: [
     { deck: 'ultra-blood-and-bone', place: 'The Red Ford', pic: 'place-ford', odds: 0.78,
       before: [
@@ -208,6 +208,105 @@ export const WORLDS = [{
         '“I wasn’t choking your roads,” she says. “I was hiding. Something drove me west out of the deep east, and I hid in my own fog.” She looks east, where the dawn should be and isn’t. “It’s still coming.”',
       ],
       lose: ['“You looked everywhere,” whispers Hush, “everywhere but here.”'] },
+  ],
+}, {
+  // World 3 (campaign-plan.md): the Eclipse has put out the dawn in the west.
+  // Back through the Wall and down the Harbor Road in the dark, with Hush's
+  // deck, against World 1's Legends, hollowed: stronger the farther you go
+  // (`powers`, engine.js newGame), as the decks left no longer climb by the
+  // data alone (Fogbound's results: Endless Swarm 57%, The Giant 42%, Sky and
+  // Arrows 43%, Smoke and Mirrors 47%, Storm Rising 50%). Its pictures are
+  // World 1's under the Eclipse (campaign-art.js eclipsed), and a lighthouse.
+  id: 3,
+  name: 'The Long Night',
+  deck: 'ultra-fogbound',
+  map: 'world-3',
+  next: 'ultra-storm-rising',
+  intro: [
+    'Three days after the fog lifted, the sun did not rise. Not over the marsh, not over the Wall, not over the harbor far to the west.',
+    'Hush draws her fog around the three of you like a cloak. “It hollows what it touches: it puts out the light inside a Legend and wears them. My fog hides us from its eyes. Stay close.”',
+    'Back through the Wall and down the old road, every light is out, and every Legend Marisol beat on the way up is waiting in the dark.',
+  ],
+  done: 'Seren joins you, and her notes on the Eclipse with her. World 4 lies back east, the way it came.',
+  stages: [
+    { deck: 'ultra-endless-swarm', place: 'The Fields at Night', pic: 'place-fields-night', odds: 0.57, hollow: true, powers: { life: 2 },
+      before: [
+        'The fields are dark, and the moths have stopped glowing. Lumen stands among them with the Eclipse in her eyes.',
+        '“Every light I ever let go came home, Hush. Then the dark came home with them.”',
+      ],
+      back: [
+        ['The moths rise again, black as soot, more of them than before. “The dark is hungry too,” hums Lumen, in a voice that isn’t hers.'],
+        ['Lumen opens her arms, and every moth in the fields comes to her at once. “Put us out, then. All of us.”'],
+      ],
+      escape: [
+        ['The black moths scatter, and Lumen with them.', '“Not yet,” says the voice inside her. “She burns a little longer.”'],
+        ['For a moment one moth glows gold. Then the dark swallows it, and Lumen is gone.', '“Again,” she whispers. “Please.”'],
+      ],
+      win: ['The Eclipse goes out of Lumen’s eyes, and every moth in the fields lights at once.', '“It came out of the east with the night,” she says, shaking. “It wants the lights. Ymra holds the pass for it. She didn’t want to.”'],
+      lose: ['“Dark is only a light that gave up,” hums the swarm.'] },
+    { deck: 'ultra-the-giant', place: 'The Pass', pic: 'place-pass-night', odds: 0.42, hollow: true, powers: { life: 3 },
+      before: [
+        'In the pass the mountain has turned to black glass. Ymra sits at its heart, and the fire in her chest burns cold.',
+        '“Go back, little fog. The mountain answers to the night now.”',
+      ],
+      back: [
+        ['The black glass has grown in the night, sharp as knives. “The night is patient,” grinds Ymra, “and I have learned to be patient for it.”'],
+        ['The whole range shudders up around Ymra, cold fire running in its cracks. “All of me, and all of it.”'],
+      ],
+      escape: [
+        ['The glass you broke runs back together like water.', '“Still whole,” says the cold voice in the stone.'],
+        ['Ymra sinks into the black mountain, and it closes over her.', '“Deeper,” she rumbles. “Where the night is warmest.”'],
+      ],
+      win: ['The cold fire in Ymra’s chest catches, and burns warm again.', '“It made me hold the pass so nothing could carry word west,” she says. “Aeris carried word anyway. It caught her for it.”'],
+      lose: ['“Stone holds the dark best,” grinds the mountain.'] },
+    { deck: 'ultra-sky-and-arrows', place: 'The Cliffs', pic: 'place-cliffs-night', odds: 0.43, hollow: true, powers: { life: 4 },
+      before: [
+        'No wind blows on the cliffs. Aeris hangs in the still air over the bay, her wings black, her arrows tipped with the Eclipse.',
+        '“The sky is closed, Hush. I closed it.”',
+      ],
+      back: [
+        ['The air over the cliffs fills with black wings. “The night lent me its flocks,” says Aeris flatly.'],
+        ['Aeris holds the whole dead sky over the bay. “Shoot me down, or go home.”'],
+      ],
+      escape: [
+        ['Aeris rises out of reach into the black sky.', '“The sky is still mine,” the voice says. “Hers is gone.”'],
+        ['A gust, the first in days, carries Aeris away.', '“Did you feel that?” she whispers. “Do it again.”'],
+      ],
+      win: ['The wind comes back to the cliffs all at once, and Aeris laughs like a girl.', '“I flew east to see what it was, and it caught me in the air.” She points down at the harbor. “Mirelle made it the masks it wears. Ask her why.”'],
+      lose: ['Black arrows fall without a sound. “The sky remembers no one,” says Aeris.'] },
+    { deck: 'ultra-smoke-and-mirrors', place: 'The Market', pic: 'place-market-night', odds: 0.47, hollow: true, powers: { life: 5 },
+      before: [
+        'The market square is full of masks again, every one smiling the same black smile. Mirelle sits on the fountain, wearing the Eclipse.',
+        '“Every face I ever made, it wears now. Do you like this one, Hush? It’s yours.”',
+      ],
+      back: [
+        ['The masks have moved in the night, and every stall is a mirror now. “It loves my work,” says Mirelle. “It never takes them off.”'],
+        ['Mirelle takes off her mask, and there is only night behind it. “No more tricks. Only this.”'],
+      ],
+      escape: [
+        ['The mask you struck shatters, and another face is under it.', '“There is always another face,” says the voice.'],
+        ['Every mirror in the market goes dark at once, and Mirelle steps into one.', '“Find the real me before it does.”'],
+      ],
+      win: ['Mirelle’s last mask cracks, and her own face is under it, tired and furious.', '“I made it a thousand faces, and it still wanted a voice.” She points at the black lighthouse at the harbor mouth. “Seren gave it one.”'],
+      lose: ['“Nothing here is what it looks like,” says Mirelle in its voice, “least of all you.”'] },
+    { deck: 'ultra-storm-rising', place: 'The Lighthouse', pic: 'place-lighthouse', odds: 0.5, boss: true, hollow: true, powers: { life: 6, energy: 1 },
+      before: [
+        'The lighthouse at the harbor mouth is burning, but its light is black. On its gallery Seren, the Storm-Scholar, reads aloud from the Eclipse’s own notes.',
+        '“I wanted to understand it. Now I do, Hush. Shall I explain?”',
+      ],
+      back: [
+        ['Lightning crawls over the lighthouse, black and silent. “I’ve revised my notes,” says Seren. “You were a footnote.”'],
+        ['Seren stands on the lamp itself, the whole storm written around her. “The last chapter. Read closely.”'],
+      ],
+      escape: [
+        ['A bolt of black lightning, and Seren is back up on the gallery.', '“A rough draft,” she says. “The finished one is worse.”'],
+        ['The lamp flares black, and Seren is gone into its light.', '“Next time,” her voice says from everywhere, “I read you the ending.”'],
+      ],
+      win: [
+        'The black light gutters, and for a moment the lighthouse burns gold again.',
+        '“I took notes on it, and it took notes on me,” says Seren, and hands Marisol a burned notebook. “It came from the east, from under the sunrise. It doesn’t eat the sun. It holds it down. And it wants one thing more: the Legends who beat it.”',
+      ],
+      lose: ['“Your mistake is in the first line,” says Seren. “You thought you could win.”'] },
   ],
 }];
 

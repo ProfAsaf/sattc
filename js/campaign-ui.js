@@ -49,7 +49,7 @@ function mapHTML(W, p) {
   const node = (S, i) => {
     const L = legendOf(S.deck), n = Camp.starsOf(p, W.id, i), open = Camp.isOpen(p, W.id, i);
     const cls = !open ? 'locked' : n >= 3 ? 'done' : i === next ? 'next' : 'open';
-    return `<button class="cp-node ${cls}${S.boss ? ' boss' : ''}" data-stage="${i}" style="${at(P, P.spots.levels[i])}" aria-label="${esc(S.place)}: ${esc(L.name)}${open ? `, ${n} of 3 rounds won` : ', locked'}">
+    return `<button class="cp-node ${cls}${S.boss ? ' boss' : ''}${S.hollow ? ' hollow' : ''}" data-stage="${i}" style="${at(P, P.spots.levels[i])}" aria-label="${esc(S.place)}: ${esc(L.name)}${S.hollow ? ', hollowed' : ''}${open ? `, ${n} of 3 rounds won` : ', locked'}">
       <span class="cp-ring">${face(L, 'cp-img')}${!open ? `<span class="cp-lock">${LOCK}</span>` : n >= 3 ? `<span class="cp-won">${CHECK}</span>` : ''}</span>
       <span class="cp-plaque"><b>${esc(S.place)}</b>${open ? starRow(n) : ''}</span>
     </button>`;
@@ -164,7 +164,15 @@ function panelHTML(W, i, n) {
     ? `<button class="btn primary cp-fight" data-diff="${round}">Fight · Round ${round} of 3 · ${'★'.repeat(round)} ${Camp.DIFFS[round - 1].name}</button>`
     : `<div class="cp-beaten">${esc(shortName(L.name))} is beaten.</div>
       <div class="cp-acts"><button class="btn" data-diff="3">Fight again · ★★★</button>${onward ? `<button class="btn primary" data-act="cp-onward">On to ${esc(W.stages[i + 1].place)}</button>` : ''}</div>`;
-  return `<div class="cp-story">${story}</div><div class="cp-match"><b>${esc(starter(S.deck).name)}</b> · ${esc(Camp.matchupText(S.odds))}</div>${act}`;
+  return `<div class="cp-story">${story}</div><div class="cp-match"><b>${esc(starter(S.deck).name)}</b> · ${esc(Camp.matchupText(S.odds))}</div>${S.powers ? `<div class="cp-powers">${esc(powersText(S))}</div>` : ''}${act}`;
+}
+// What a boss brings that no PvP game has (campaign.js `powers`), in words.
+function powersText(S) {
+  const p = S.powers, bits = [];
+  if (p.life) bits.push(`${p.life} more Life`);
+  if (p.energy) bits.push(`${p.energy} more Energy every turn`);
+  if (p.board?.length) bits.push(`${p.board.map((cid) => BY_ID[cid]?.name || cid).join(' and ')} on the table from the start`);
+  return `${S.hollow ? 'Hollowed' : 'Boss powers'}: ${bits.join(', ')}.`;
 }
 // `from`: how many rounds the path shows won at first (fewer than `n` when a
 // win is still to be played out here)
@@ -176,12 +184,12 @@ function placeHTML(W, i, from, n) {
         <img class="cp-pic" src="${P.src}" alt="" decoding="async">
         <div class="cp-live" data-pic="${S.pic}"></div>
         ${[0, 1, 2].map((k) => roundHTML(P, k, from)).join('')}
-        <div class="cp-foe${from >= 3 ? ' beaten' : ''}" style="${foeAt(P, from)}"><span class="cp-foe-in">${face(L, 'cp-img')}</span><span class="cp-foe-won">${CHECK}</span></div>
+        <div class="cp-foe${from >= 3 ? ' beaten' : ''}${S.hollow ? ' hollow' : ''}" style="${foeAt(P, from)}"><span class="cp-foe-in">${face(L, 'cp-img')}</span><span class="cp-foe-won">${CHECK}</span></div>
       </div>
     </div>
     <header class="cp-ptop">
       <button class="cp-btn" data-act="cp-back" aria-label="Back to the map">${BACK}</button>
-      <div class="cp-title"><b>${esc(S.place)}</b><span>${esc(L.name)}${S.boss ? ' · the boss' : ''}</span></div>
+      <div class="cp-title"><b>${esc(S.place)}</b><span>${esc(L.name)}${S.hollow ? ' · hollowed' : ''}${S.boss ? ' · the boss' : ''}</span></div>
       ${starRow(n)}
     </header>
     <div class="cp-panel">${panelHTML(W, i, n)}</div>

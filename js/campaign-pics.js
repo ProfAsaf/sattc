@@ -3,6 +3,12 @@
 // where its levels or rounds sit.
 export const PICS = {
   "world-1": { src: 'art/campaign/world-1.webp?v=65b07aa2', live: 'art/campaign/world-1.json?v=982153b3', w: 300, h: 760, spots: {"start":[150,742],"levels":[[96,652],[204,520],[112,396],[192,262],[150,128]]} },
+  "world-3": { src: 'art/campaign/world-3.webp?v=26862284', live: 'art/campaign/world-3.json?v=1f38296a', w: 300, h: 760, spots: {"start":[150,128],"levels":[[192,262],[112,396],[204,520],[96,652],[262,640]]} },
+  "place-fields-night": { src: 'art/campaign/place-fields-night.webp?v=b3ae832b', live: 'art/campaign/place-fields-night.json?v=c969a2a7', w: 300, h: 600, spots: {"rounds":[[98,378],[196,304],[150,232]]} },
+  "place-pass-night": { src: 'art/campaign/place-pass-night.webp?v=6689a963', live: 'art/campaign/place-pass-night.json?v=6e095122', w: 300, h: 600, spots: {"rounds":[[118,386],[168,302],[150,232]]} },
+  "place-cliffs-night": { src: 'art/campaign/place-cliffs-night.webp?v=4449a1fb', live: 'art/campaign/place-cliffs-night.json?v=15f152b6', w: 300, h: 600, spots: {"rounds":[[170,378],[232,288],[206,200]]} },
+  "place-market-night": { src: 'art/campaign/place-market-night.webp?v=8708a2e7', live: 'art/campaign/place-market-night.json?v=264b17bf', w: 300, h: 600, spots: {"rounds":[[150,372],[150,300],[150,210]]} },
+  "place-lighthouse": { src: 'art/campaign/place-lighthouse.webp?v=74ba8002', live: 'art/campaign/place-lighthouse.json?v=587d050b', w: 300, h: 600, spots: {"rounds":[[150,384],[188,300],[150,234]]} },
   "world-2": { src: 'art/campaign/world-2.webp?v=1954b19d', live: 'art/campaign/world-2.json?v=5e093559', w: 300, h: 760, spots: {"start":[150,742],"levels":[[96,640],[204,518],[110,398],[194,262],[150,128]]} },
   "place-ford": { src: 'art/campaign/place-ford.webp?v=84835252', live: 'art/campaign/place-ford.json?v=d8c08be5', w: 300, h: 600, spots: {"rounds":[[132,384],[174,300],[150,226]]} },
   "place-causeway": { src: 'art/campaign/place-causeway.webp?v=286cd0b0', live: 'art/campaign/place-causeway.json?v=9a232f18', w: 300, h: 600, spots: {"rounds":[[150,384],[150,300],[150,246]]} },

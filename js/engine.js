@@ -84,6 +84,9 @@ function mk(s, cid, owner, zone) {
 // for every card they'd draw from it (games saved before replay so).
 // `champions`: every player starts with their deck's Champion on the table
 // (a player's `champion` picks one; otherwise championFor). Off unless asked.
+// A player's `powers` (the campaign's bosses, campaign.js; never in PvP):
+// `life` more Life, `energy` more Energy every turn from the first, and
+// `board`, creatures already on the table when the game starts.
 // `ultra`: SATTC Ultra, the bigger rule changes (s.ultra). Off unless asked.
 // `true` is its first version; a number is that version (s.uv; cards.js ULTRA_V).
 // From version 2 every player has a Legend beside their deck (a player's
@@ -101,6 +104,7 @@ export function newGame({ seed = 1, players, stacked = false, first = null, crow
       deck: [], hand: [], discard: [], exile: [], board: [], traps: [], relics: [],
       out: false, mull: null, turns: 0, spells: 0, mirror: false, attackedOn: -1, extra: 0,
     };
+    if (pl.powers) { P.life += pl.powers.life || 0; P.maxEnergy += pl.powers.energy || 0; }
     s.players.push(P);
     s.diedOwn.push(0);
     for (const cid of pl.deck) P.deck.push(mk(s, cid, i, 'deck').uid);
@@ -127,6 +131,11 @@ export function newGame({ seed = 1, players, stacked = false, first = null, crow
     });
     log(s, null, 'Every player’s Champion takes the field.');
   }
+  players.forEach((pl, i) => {
+    const on = pl.powers?.board || [];
+    for (const cid of on) enterPlay(s, mk(s, cid, i, 'board'), i);
+    if (on.length) log(s, i, `${s.players[i].name} starts with ${on.map((cid) => BY_ID[cid]?.name || cid).join(', ')} on the table.`);
+  });
   return s;
 }
 

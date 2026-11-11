@@ -354,7 +354,8 @@ export function playPage(view) {
   const active = Decks.getActiveId();
   const chosen = choices.find((d) => d.id === active) ? active : choices[0].id;
   view.innerHTML = `
-    <header class="pagehead"><a class="back" href="#/" aria-label="Home">${BACK}</a><h2>Play${Mode.ultra() ? ' <i class="ultra-pill">Ultra</i>' : ''}</h2></header>
+    <header class="pagehead"><a class="back" href="#/" aria-label="Home">${BACK}</a><h2>PvP${Mode.ultra() ? ' <i class="ultra-pill">Ultra</i>' : ''}</h2></header>
+    ${L?.info ? '' : `<label class="dr-switch mini home-ultra pp-ultra"><input type="checkbox" id="ultra-switch"${Mode.ultra() ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>SATTC Ultra</b><small>Bigger rule changes to try</small></span></label>`}
     <section class="panel pp">${onlinePanelHTML(choices, chosen)}</section>
     <section class="panel pp">${botsPanelHTML(choices, chosen)}</section>`;
   // "Draft my deck" brings no deck, so it hides the deck choice
@@ -367,6 +368,7 @@ export function playPage(view) {
   };
   view.onchange = (e) => {
     const t = e.target;
+    if (t.id === 'ultra-switch') { Mode.setUltra(t.checked); playPage(view); return; } // (new games and rooms, the decks offered: all follow it)
     if (t.id === 'draft-new') { PF.draftNight = t.checked; document.getElementById('net-deck-row').hidden = t.checked; return; }
     if (t.id === 'bot-draft') { PF.botDraft = t.checked; showDecks(); return; }
     if (t.id === 'champions-practice') { PF.champions = t.checked; try { localStorage.setItem('collective.champions', t.checked ? '1' : '0'); } catch { /* fine */ } return; }

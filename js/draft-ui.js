@@ -149,7 +149,7 @@ function closeScreen() {
 function backToPlay() {
   if (V?.kind === 'practice' && P?.campaign) { clearTimeout(P.timer); toast('Your draft is saved: carry on with it from World 6.'); closeScreen(); P.back?.(); return; }
   if (V?.kind === 'online' && R) R.dismissed = true;
-  if (V?.kind === 'practice') { clearTimeout(P?.timer); toast('Your draft is saved: resume it from Play.'); }
+  if (V?.kind === 'practice') { clearTimeout(P?.timer); toast('Your draft is saved: resume it from PvP.'); }
   closeScreen();
   if (location.hash !== '#/play') location.hash = '#/play';
   else refreshPlay?.();
@@ -168,7 +168,7 @@ function render() {
   if (!V) return;
   const d = cur();
   if (!d || !d.st || stale(d)) {
-    const back = `<div class="dr-top"><button class="dr-back" data-act="draft-close">‹ ${V.kind === 'online' ? 'Lobby' : P?.campaign ? 'Campaign' : 'Play'}</button><span class="dr-kicker">Draft night</span><span></span></div>`;
+    const back = `<div class="dr-top"><button class="dr-back" data-act="draft-close">‹ ${V.kind === 'online' ? 'Lobby' : P?.campaign ? 'Campaign' : 'PvP'}</button><span class="dr-kicker">Draft night</span><span></span></div>`;
     setRegion('head', back);
     setRegion('main', d?.st ? `<div class="dr-wait"><h3>Update needed</h3><p class="dr-stale">${STALE}</p><button class="btn primary" data-act="draft-reload">Reload this page</button></div>`
       : '<div class="dr-wait"><h3>Dealing the cards<span class="dr-dots"><i></i><i></i><i></i></span></h3></div>');
@@ -218,7 +218,7 @@ function flyAway(e, d, delay = 0) {
 function headHTML(d) {
   const st = d.st;
   const top = `<div class="dr-top">
-      <button class="dr-back" data-act="draft-close">‹ ${d.kind === 'online' ? 'Lobby' : d.campaign ? 'Campaign' : 'Play'}</button>
+      <button class="dr-back" data-act="draft-close">‹ ${d.kind === 'online' ? 'Lobby' : d.campaign ? 'Campaign' : 'PvP'}</button>
       <span class="dr-kicker">${d.campaign ? 'A deck for the Eclipse' : 'Draft night'}</span>
       ${myDone(d) ? '<span></span>' : `<button class="g-icon g-bulb dr-bulb${adviceOpen(d) ? ' on' : ''}" data-act="draft-advice" aria-label="Advice for this round">💡</button>`}
     </div>`;

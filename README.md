@@ -1238,6 +1238,10 @@ Asaf, on the first map: "this looks more clipart. Not the cool style we have on 
 - Tests and tools: `.phone-tests/look-campaign-art.mjs` (each picture with its moving parts and spots marked), `look-campaign-ui.mjs` (the map, a place, the zoom; `STARS=`, `SHOWN=`, `NODE=`), `look-campaign-zoom.mjs` (the zoom at a tenth of its speed), `look-campaign-cost.mjs` and `look-campaign-cost2.mjs` (main-thread work while idle).
 - Also found on the way: the browser restored an old scroll position on Back before the router ran; the app now places the scroll itself (`history.scrollRestoration = 'manual'`).
 
+## Home: PvP and the campaign (2026-11-11)
+
+Home now offers the two ways to play, side by side: **PvP** (the old Play page, now called PvP: games with friends, and the bots under them) and **Campaign**. **Learn to play** (the lesson) sits under them. SATTC Ultra's switch moved from Home to the top of the PvP page: the campaign always plays Ultra, so the switch only matters for PvP and practice (a room's host still has its own switch in the lobby). `ui-ultra.mjs` checks the new Home and the switch's new place (21 checks); `look-home2.mjs` takes screenshots.
+
 ## Home's moving cards, the cheap way (2026-11-11)
 
 Measured while building the campaign: sitting on Home, its three fanned cards (Ashmaw, Seraphine, the Barrow Queen) kept the page busy every frame. They were drawn live as SVG, filters and all, with 131 moving parts inside, so each frame the page recalculated styles, laid out the SVG and repainted it: in Chrome 361 style recalcs and 361 layouts in 4 seconds, 1.2 s of main-thread work. Asaf: "Yes" to making them run the campaign's way.

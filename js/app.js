@@ -145,8 +145,10 @@ function openZoom(id, deckCtx = null) {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeZoom(); homeMenu(false); } });
 
 // ── home ────────────────────────────────────────────────────────────
-// One screen: the title, three cards, and two buttons within thumb reach.
-// Cards, Decks and Rules sit behind the quiet ☰ in the corner.
+// One screen: the title, three cards, and the two ways to play within thumb
+// reach, PvP and the campaign, with the lesson under them. Cards, Decks,
+// Rules and Insights sit behind the quiet ☰ in the corner. (SATTC Ultra's
+// switch is on the PvP page: the campaign always plays Ultra.)
 const ICONS = {
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   cards: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="7" y="3" width="12" height="16" rx="1.6"/><path d="M5 6.5v12.2A1.8 1.8 0 0 0 6.8 20.5H15"/></svg>',
@@ -177,10 +179,11 @@ function home() {
         <div class="fan">${fan}</div>
       </div>
       <div class="home-actions">
-        <button class="btn primary" data-act="tutorial">Learn to play</button>
-        <a class="btn" href="#/play">Play</a>
-        <a class="btn" href="#/campaign">Campaign</a>
-        <label class="dr-switch mini home-ultra"><input type="checkbox" id="ultra-switch"${Mode.ultra() ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>SATTC Ultra</b><small>Bigger rule changes to try</small></span></label>
+        <div class="home-two">
+          <a class="btn primary" href="#/play">PvP</a>
+          <a class="btn primary" href="#/campaign">Campaign</a>
+        </div>
+        <button class="btn ghost" data-act="tutorial">Learn to play</button>
       </div>
     </div>
     <div class="menu" id="home-menu" hidden>
@@ -201,11 +204,6 @@ function home() {
   };
   livenArt(view);
   startHomeAlive(view); // (the fan stirs while it's left be)
-  document.getElementById('ultra-switch').onchange = (e) => {
-    Mode.setUltra(e.target.checked);
-    const a = document.querySelector('#home-menu a[href="#/cards"]');
-    if (a) a.lastChild.textContent = Mode.ultra() ? 'All the Ultra cards' : 'All 90 cards';
-  };
 }
 
 // ── gallery ─────────────────────────────────────────────────────────
@@ -460,7 +458,7 @@ function rules() {
     <ul>${Object.values(LEGENDS).map((c) => `<li><b>${esc(c.name)}</b> (${c.cost} Energy, ${esc(c.factions.map((f) => FACTIONS[f].name).join('/'))}) levels up with ${esc(c.xp.unit)}: at ${c.xp.at[0]}, ${esc(c.l2)} At ${c.xp.at[1]}, ${esc(c.l3)}</li>`).join('')}</ul>
 
     <h2>★ Champions (new)</h2>
-    <p>With Champions on (a switch on the Play page, and in a game's room), every deck starts with a <b>Champion</b> on the table: the one of the faction the deck has most cards of. It can block from the start but can't attack until <b>Level 2</b>. It levels up as you do what its faction does, and each level makes it bigger and changes how your other cards work. Its powers work only while it's on the table; if it leaves, it goes back to your hand and costs 2 more each time.</p>
+    <p>With Champions on (a switch on the PvP page, and in a game's room), every deck starts with a <b>Champion</b> on the table: the one of the faction the deck has most cards of. It can block from the start but can't attack until <b>Level 2</b>. It levels up as you do what its faction does, and each level makes it bigger and changes how your other cards work. Its powers work only while it's on the table; if it leaves, it goes back to your hand and costs 2 more each time.</p>
     <ul>${Object.values(CHAMPIONS).map((c) => `<li><b>${esc(c.name)}</b> (${esc(FACTIONS[c.factions[0]].name)}) levels up with ${esc(c.xp.unit)}: at ${c.xp.at[0]}, ${esc(c.l2)} At ${c.xp.at[1]}, ${esc(c.l3)}</li>`).join('')}</ul>
 
     <h2>⚡ Abilities</h2>

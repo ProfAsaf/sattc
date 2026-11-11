@@ -1177,6 +1177,22 @@ Asaf: "Build it all", meaning every world and a finale (the whole road: **campai
   - `look-world.mjs <world>` screenshots any world.
   - `ui-campaign.mjs` (World 1) and `ui-campaign-w2.mjs` still pass.
 
+## The campaign: World 4, The Drowned Dawn (2026-11-11)
+
+East again through the Fog Country, now under the Eclipse, with Seren's Storm Rising. You face World 2's Legends, hollowed:
+
+- Vesh at the Red Ford;
+- Kasimir on the Causeway;
+- Morrow in the Bone Garden;
+- Oriel on the Storm Spire;
+- the boss: Ione, the Bloomcaller, reading the dark down into the roots of a tree as tall as the sky. Under the mere the dawn itself is drowned, gold, tangled in those roots.
+
+Freeing Ione lets the dawn rise a little. Then the Eclipse takes what it wanted all along, the Legends who beat it: Marisol, Halvard, Hush and Seren. That is World 5.
+
+- **Gentle powers here.** Storm Rising is the weakest deck: 37%, 32%, 53% and 45% against the four, and 25% against Ione. So the powers are 1 to 3 more Life, and Ione 4 more Life and 1 more Energy.
+- **The pictures are World 2's under the Eclipse,** with one new place: the Root of the Dawn. A tree's trunk rises out of the black water with its branches across the whole sky. The drowned sun glows gold through the water, wrapped in its roots, motes of it rising. A path of roots above the water leads out to the trunk.
+- `ui-campaign-world.mjs 4`: 12 checks pass.
+
 ## The campaign's pictures (2026-11-11)
 
 Asaf, on the first map: "this looks more clipart. Not the cool style we have on the cards. You could even have subtle things like wind blowing grass. It should be objectively beautiful." And: stopping at a place should "zoom you into that area and expand so the three steps within it then show up and the theme expands around you".

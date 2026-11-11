@@ -227,7 +227,7 @@ export const WORLDS = [{
     'Hush draws her fog around the three of you like a cloak. “It hollows what it touches: it puts out the light inside a Legend and wears them. My fog hides us from its eyes. Stay close.”',
     'Back through the Wall and down the old road, every light is out, and every Legend Marisol beat on the way up is waiting in the dark.',
   ],
-  done: 'Seren joins you, and her notes on the Eclipse with her. World 4 lies back east, the way it came.',
+  done: 'Seren joins you, and her notes on the Eclipse with her. World 4, The Drowned Dawn, lies back east, the way it came.',
   stages: [
     { deck: 'ultra-endless-swarm', place: 'The Fields at Night', pic: 'place-fields-night', odds: 0.57, hollow: true, powers: { life: 2 },
       before: [
@@ -307,6 +307,104 @@ export const WORLDS = [{
         '“I took notes on it, and it took notes on me,” says Seren, and hands Marisol a burned notebook. “It came from the east, from under the sunrise. It doesn’t eat the sun. It holds it down. And it wants one thing more: the Legends who beat it.”',
       ],
       lose: ['“Your mistake is in the first line,” says Seren. “You thought you could win.”'] },
+  ],
+}, {
+  // World 4: east again through the Fog Country, under the Eclipse, with
+  // Seren's deck against World 2's Legends, hollowed, and the one rooting the
+  // dark past the mere. Storm Rising is the weakest deck (Blood and Bone 37%,
+  // The Charge 32%, Rot and Bloom 53%, Weathermakers 45%, Spellbloom 25%), so
+  // the hollowed here grow gently. Its pictures are World 2's under the
+  // Eclipse, and the Root of the Dawn.
+  id: 4,
+  name: 'The Drowned Dawn',
+  deck: 'ultra-storm-rising',
+  map: 'world-4',
+  next: 'ultra-spellbloom',
+  intro: [
+    'East again, back through the Wall and into the Fog Country. But the fog is black now, and the Legends Halvard met there are waiting in it, hollowed.',
+    'Seren opens her burned notebook. “It came out of the deep east, and it has put down roots. Somewhere past the mere, someone is planting the dark for it.”',
+    '“Then we dig it up,” says Marisol.',
+  ],
+  done: 'Ione joins you, but the others are gone into the dark. World 5 lies at the edge of the night.',
+  stages: [
+    { deck: 'ultra-blood-and-bone', place: 'The Red Ford', pic: 'place-ford-night', odds: 0.37, hollow: true, powers: { life: 1 },
+      before: [
+        'The ford runs black now. Vesh stands in it to her knees, and her wounds don’t bleed: they leak night.',
+        '“Seren. You brought me a scholar this time. Let’s see what she’s made of.”',
+      ],
+      back: [
+        ['Vesh is back in the black water, and the cuts on her arms are shaped like eclipses. “It teaches pain better than I ever did.”'],
+        ['Vesh opens every wound at once, and the night pours out of them. “All of it, scholar. Take notes.”'],
+      ],
+      escape: [
+        ['Vesh sinks into the black water and doesn’t come up.', '“The river remembers me,” says the voice. “Come back.”'],
+        ['Vesh laughs, and for a moment the laugh is hers.', '“Again. Cut it out of me.”'],
+      ],
+      win: ['The night runs out of Vesh’s wounds, the river turns red again, and she has never looked so glad to bleed.', '“It came for Kasimir first,” she says. “He was fastest, so it caught him first. He’s still riding the causeway for it.”'],
+      lose: ['“Take notes,” sneers the thing in Vesh. “You lost.”'] },
+    { deck: 'ultra-the-charge', place: 'The Causeway', pic: 'place-causeway-night', odds: 0.32, hollow: true, powers: { life: 2 },
+      before: [
+        'Hooves on the causeway, but no horn: Kasimir rides out of the black fog with his riders, silent, their lances black.',
+        '“I arrive first,” he says, in a voice like a door closing. “I always arrive first. Now it rides with me.”',
+      ],
+      back: [
+        ['More riders now, a column of them out of the dark. “It gave me riders that never tire,” says Kasimir.'],
+        ['Kasimir rides alone, and the causeway cracks under his hooves. “First and last. Stand.”'],
+      ],
+      escape: [
+        ['Kasimir wheels and is gone down the causeway, faster than ever.', '“Second,” says the voice, puzzled. “Second?”'],
+        ['The riders break into fog, and Kasimir with them.', '“Faster,” he whispers. “Make me faster than it.”'],
+      ],
+      win: ['Kasimir’s horse stops of its own accord, and he sits there, breathing.', '“I couldn’t outrun it,” he says. “Nobody can. Morrow tried to bury it instead. Go and see what grew.”'],
+      lose: ['“First,” says Kasimir, and rides on into the dark.'] },
+    { deck: 'ultra-rot-and-bloom', place: 'The Bone Garden', pic: 'place-garden-night', odds: 0.53, hollow: true, powers: { life: 2 },
+      before: [
+        'Every barrow in the garden has bloomed black. Morrow kneels among them, planting something that moves.',
+        '“I buried it, Seren. It came up. Everything I bury comes up, and so did it.”',
+      ],
+      back: [
+        ['The black flowers have spread over the paths. “It grows so well here,” says Morrow fondly.'],
+        ['Morrow lies down in her oldest barrow, and the black garden closes over her. “Dig me up, if you can.”'],
+      ],
+      escape: [
+        ['Morrow sinks into the black earth.', '“Planted again,” says the voice. “Deeper.”'],
+        ['The black flowers close, and Morrow is gone beneath them.', '“Find the root,” she whispers. “Find the root.”'],
+      ],
+      win: ['The black flowers wilt all at once, and white ones push up through them.', '“It has a root,” says Morrow, brushing the soil from her eyes. “Something past the mere keeps it watered. Oriel sees everything from her spire. Ask her where.”'],
+      lose: ['“Everything comes back up,” says Morrow kindly, “except you.”'] },
+    { deck: 'ultra-weathermakers', place: 'The Storm Spire', pic: 'place-spire-night', odds: 0.45, hollow: true, powers: { life: 3 },
+      before: [
+        'The storm over the spire has stopped. The clouds hang still and black, and Oriel stands on the tower with the sky folded in her hands.',
+        '“Seren, little scholar. I gave the weather its orders; now it gives me mine. Isn’t that funny?”',
+      ],
+      back: [
+        ['Oriel has unfolded the sky again, and every cloud in it is an eye. “It sees through all of them,” she says.'],
+        ['Oriel calls the whole black sky down onto the spire. “Weather this.”'],
+      ],
+      escape: [
+        ['Oriel folds herself into a cloud and drifts up out of reach.', '“A lull,” says the voice. “Nothing more.”'],
+        ['Thunder, the first in weeks, and Oriel is gone in it.', '“That was mine,” she gasps. “That thunder was mine.”'],
+      ],
+      win: ['The black clouds split, and real rain falls on the spire.', '“I can see it from here,” says Oriel, pointing past the mere. “A tree as tall as the sky, growing out of the water, and under the water, the dawn. Ione is singing to it.”'],
+      lose: ['“Fair weather never comes,” says Oriel. “Not anymore.”'] },
+    { deck: 'ultra-spellbloom', place: 'The Root of the Dawn', pic: 'place-root', odds: 0.25, boss: true, hollow: true, powers: { life: 4, energy: 1 },
+      before: [
+        'Past the mere a tree as tall as the sky grows out of the black water, and under the water, tangled in its roots, burns the dawn. Ione, the Bloomcaller, sits in its branches, reading aloud.',
+        '“Every spell I read puts down roots, Seren. I have been reading this one for a long time. Listen to how deep it goes.”',
+      ],
+      back: [
+        ['The tree has grown in the night, and its roots have pulled the dawn deeper. “Hear that?” says Ione. “That’s the sunrise, going down.”'],
+        ['Ione closes her book, and every branch of the tree turns toward you. “The last page. I’ll read it slowly.”'],
+      ],
+      escape: [
+        ['Ione climbs into the high branches, still reading.', '“A misprint,” says the voice. “Turn the page.”'],
+        ['The tree shudders, and Ione sinks into its bark.', '“Pull,” she whispers from inside it. “Pull it out by the roots.”'],
+      ],
+      win: [
+        'Ione’s book falls into the water, and the roots let go. Far below, the dawn rises a little, and the whole mere glows gold.',
+        'Then the light goes out of Marisol’s eyes, and Halvard’s, and Hush’s, and Seren’s, all at once. “It wants the Legends who beat it,” Ione whispers, holding your hand, “and now it has them. Come. We have to get them back.”',
+      ],
+      lose: ['“Roots always win,” reads Ione. “Give them time.”'] },
   ],
 }];
 

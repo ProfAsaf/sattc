@@ -1028,8 +1028,67 @@ function lighthouse(s, live) {
   return { spots: { rounds: [[150, 384], [188, 300], [150, 234]] } };
 }
 
+// The Root of the Dawn (World 4's boss): past the mere a tree as tall as the
+// sky grows out of the black water, and under the water, tangled in its
+// roots, the drowned dawn burns gold; its roots above the water make a way
+// out to the trunk, where Ione sits reading.
+function rootOfDawn(s, live) {
+  s.rect(s.lin([[0, '#06040e'], [0.2, '#120c24'], [0.42, '#241a40'], [0.5, '#2e2250']]));
+  live.add(particles({ seed: 3701, n: 26, x: [4, 296], y: [4, 240], r: [0.3, 0.7], fill: '#e8dcff', cls: 'twinkle', op: [0.2, 0.7], t: [2.5, 6] }));
+  // the Eclipse, high on the left
+  const E = [70, 64];
+  s.glow(E[0], E[1], 150, '#8a6aff', 0.4);
+  s.glow(E[0], E[1], 44, '#efe6ff', 0.58);
+  s.add(`<circle cx="${E[0]}" cy="${E[1]}" r="16" fill="#040208"/><circle cx="${E[0]}" cy="${E[1]}" r="16.6" fill="none" stroke="#f6eeff" stroke-width="1.4" opacity=".9"/>`);
+  // the mere: black, and under it the drowned dawn, burning gold through the water
+  s.path(poly([[-10, 296], [310, 296], [310, 610], [-10, 610]]), s.linU(0, 296, 0, 610, [[0, '#2a2246'], [0.2, '#120e22'], [1, '#05040a']]));
+  const sun = [198, 352];
+  s.glow(sun[0], sun[1], 190, '#ffb050', 0.45);
+  s.glow(sun[0], sun[1], 70, '#ffe2a0', 0.6);
+  s.add(`<circle cx="${sun[0]}" cy="${sun[1]}" r="34" fill="${s.radU(sun[0], sun[1], 34, [[0, '#fff4d8'], [0.6, '#ffd078'], [1, '#ff9a3a']])}" opacity=".85"/>`);
+  live.add(`<circle class="breathe" cx="${sun[0]}" cy="${sun[1]}" r="60" fill="${live.rad([[0, '#ffe8b0', 0.55], [0.5, '#ffb050', 0.25], [1, '#ff9030', 0]])}"/>`);
+  live.add(particles({ seed: 3702, n: 22, x: [150, 250], y: [300, 420], r: [0.4, 1], fill: '#ffd890', cls: 'rise', op: [0.4, 0.9], t: [5, 9] }));
+  // the roots: down from the trunk into the water, wrapped round the sun
+  const R = rng(3703), roots = [];
+  for (let k = 0; k < 9; k++) {
+    const a = -1 + (k / 8) * 2, x0 = 150 + a * 18, x1 = 150 + a * 130 + (R() - 0.5) * 20, y1 = 440 + R() * 140;
+    roots.push(taper([[x0, 316], [150 + a * 46 + 20, 340 + R() * 20], [150 + a * 60 + 30 * (1 - Math.abs(a)), 400 + R() * 30], [x1, y1]], [7 - Math.abs(a) * 2, 5, 3, 0.8], { per: 6 }));
+  }
+  roots.push(taper([[160, 340], [180, 318], [216, 320], [234, 344], [226, 380], [198, 392], [166, 378]], [3, 3, 3, 3, 3, 2.4, 1.4], { per: 4 }));
+  s.add(`<path d="${U(roots)}" fill="#120c1c" opacity=".88"/>`);
+  // the water's face over it all: the light of the dawn below, the Eclipse above
+  s.add(`<rect x="-5" y="296" width="310" height="320" fill="${s.linU(0, 296, 0, 610, [[0, '#4a3c7a', 0.25], [0.5, '#2a2048', 0.1], [1, '#05040a', 0.3]])}"/>`);
+  live.add(Array.from({ length: 26 }, (_, i) => { const R2 = rng(3704 + i), t = R2(), y = 300 + t * 270, x = R2() * 300, len = 3 + R2() * (5 + t * 10); return `<path class="twinkle" style="--t:${f1(1.8 + R2() * 2.4)}s;--d:${f1(-R2() * 3)}s" d="M${f1(x)},${f1(y)}h${f1(len)}" stroke="${Math.abs(x - 150) < 60 ? '#ffe2a8' : '#d8ccff'}" stroke-width="${f1(0.5 + t * 0.7)}" stroke-linecap="round" opacity=".5"/>`; }).join(''));
+  // the tree: a trunk out of the water, branches across the whole sky
+  const branch = (pts, w0) => taper(pts, pts.map((_, i) => w0 * (1 - (i / pts.length) * 0.85)), { per: 6 });
+  const tree = U(taper([[150, 330], [144, 260], [152, 190], [148, 120], [150, 60]], [44, 30, 22, 16, 10], { per: 6 }),
+    branch([[148, 150], [110, 120], [70, 104], [26, 96], [-10, 100]], 9), branch([[150, 130], [196, 100], [240, 92], [290, 70], [312, 64]], 9),
+    branch([[150, 200], [200, 176], [244, 168], [286, 150]], 7), branch([[146, 210], [100, 186], [56, 180], [10, 166]], 7),
+    branch([[150, 90], [126, 56], [100, 30], [80, 4]], 6), branch([[150, 80], [176, 46], [206, 20], [230, -6]], 6),
+    branch([[120, 112], [96, 70], [70, 44]], 4), branch([[204, 98], [226, 60], [250, 36]], 4));
+  s.figure(`<path d="${tree}"/>`, { fill: '#100a1a', rim: '#c4a8ff', offsets: [[-0.8, -0.6], [0.6, -0.8]], rimOp: 0.55, shade: 0.4, light: [-0.5, -1] });
+  // leaves of night along the branches, and black blossoms
+  { const R3 = rng(3705), lv = []; for (let i = 0; i < 160; i++) { const x = -10 + R3() * 320, y = 10 + R3() ** 1.3 * 190; if (Math.abs(x - 150) < 24 && y > 120) continue; lv.push(ell(x, y, 2 + R3() * 3, 1.2 + R3() * 1.6, R3() * 180, 8)); } s.figure(`<path d="${U(lv)}"/>`, { fill: '#160e26', rim: '#9a80e8', offsets: [[0, -0.7]], rimOp: 0.45 }); }
+  live.motes({ seed: 3706, n: 22, x: [0, 300], y: [10, 200], r: [0.4, 1], fill: '#b89cff', cls: 'float', op: [0.4, 0.9], t: [5, 9] });
+  // the way out: roots above the water, from us to the trunk
+  const WAY = [[110, 610], [80, 540], [104, 470], [96, 400], [118, 330], [146, 268], [150, 238]];
+  s.figure(`<path d="${taper(WAY, WAY.map((_, i) => 22 - (i / (WAY.length - 1)) * 14), { per: 6 })}"/>`, { fill: '#1e1630', rim: '#c4a8ff', offsets: [[0, -1]], rimOp: 0.5, shade: 0.4 });
+  live.grass({ seed: 3707, x0: -6, x1: 90, base: 606, depth: 26, h: [14, 26], n: 14, fill: '#0c0a16', lit: '#a898e8' });
+  live.grass({ seed: 3708, x0: 210, x1: 306, base: 606, depth: 26, h: [14, 26], n: 14, fill: '#0c0a16', lit: '#a898e8' });
+  drifting(live, [[-60, 360, 300, 12, 0.18], [-40, 200, 360, 10, 0.12]], '#c8b8f0');
+  s.finish({ hi: '#ffd08a', lo: '#05030c', at: sun, reach: 420, grade: 0.38, vignette: 0.5, grain: 0.06 });
+  return { spots: { rounds: [[98, 384], [118, 320], [150, 238]] } };
+}
+
 export const CAMPAIGN_ART = {
   'world-1': { w: 300, h: 760, draw: harborRoad },
+  // World 4, The Drowned Dawn: World 2's road under the Eclipse, the dawn drowned past the mere
+  'world-4': { w: 300, h: 760, draw: eclipsed(fogCountry, { at: [150, 58] }) },
+  'place-ford-night': { w: 300, h: 600, draw: eclipsed(ford) },
+  'place-causeway-night': { w: 300, h: 600, draw: eclipsed(causeway) },
+  'place-garden-night': { w: 300, h: 600, draw: eclipsed(garden) },
+  'place-spire-night': { w: 300, h: 600, draw: eclipsed(spire, { at: [62, 176] }) },
+  'place-root': { w: 300, h: 600, draw: rootOfDawn },
   // World 3, The Long Night: World 1's road under the Eclipse, read down from the Wall
   'world-3': { w: 300, h: 760, draw: eclipsed(harborRoad, { spots: { start: [150, 128], levels: [[192, 262], [112, 396], [204, 520], [96, 652], [262, 640]] } }) },
   'place-fields-night': { w: 300, h: 600, draw: eclipsed(fields) },

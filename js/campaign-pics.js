@@ -3,6 +3,12 @@
 // where its levels or rounds sit.
 export const PICS = {
   "world-1": { src: 'art/campaign/world-1.webp?v=65b07aa2', live: 'art/campaign/world-1.json?v=982153b3', w: 300, h: 760, spots: {"start":[150,742],"levels":[[96,652],[204,520],[112,396],[192,262],[150,128]]} },
+  "world-4": { src: 'art/campaign/world-4.webp?v=36aac852', live: 'art/campaign/world-4.json?v=478b74b3', w: 300, h: 760, spots: {"start":[150,742],"levels":[[96,640],[204,518],[110,398],[194,262],[150,128]]} },
+  "place-ford-night": { src: 'art/campaign/place-ford-night.webp?v=a968d865', live: 'art/campaign/place-ford-night.json?v=aaf7f69d', w: 300, h: 600, spots: {"rounds":[[132,384],[174,300],[150,226]]} },
+  "place-causeway-night": { src: 'art/campaign/place-causeway-night.webp?v=ec6b1e65', live: 'art/campaign/place-causeway-night.json?v=9e1e8e7c', w: 300, h: 600, spots: {"rounds":[[150,384],[150,300],[150,246]]} },
+  "place-garden-night": { src: 'art/campaign/place-garden-night.webp?v=223c6293', live: 'art/campaign/place-garden-night.json?v=3132adad', w: 300, h: 600, spots: {"rounds":[[112,384],[186,302],[150,228]]} },
+  "place-spire-night": { src: 'art/campaign/place-spire-night.webp?v=7fa23646', live: 'art/campaign/place-spire-night.json?v=c448f71c', w: 300, h: 600, spots: {"rounds":[[118,384],[180,300],[150,236]]} },
+  "place-root": { src: 'art/campaign/place-root.webp?v=e366aef9', live: 'art/campaign/place-root.json?v=5ee76402', w: 300, h: 600, spots: {"rounds":[[98,384],[118,320],[150,238]]} },
   "world-3": { src: 'art/campaign/world-3.webp?v=26862284', live: 'art/campaign/world-3.json?v=1f38296a', w: 300, h: 760, spots: {"start":[150,128],"levels":[[192,262],[112,396],[204,520],[96,652],[262,640]]} },
   "place-fields-night": { src: 'art/campaign/place-fields-night.webp?v=b3ae832b', live: 'art/campaign/place-fields-night.json?v=c969a2a7', w: 300, h: 600, spots: {"rounds":[[98,378],[196,304],[150,232]]} },
   "place-pass-night": { src: 'art/campaign/place-pass-night.webp?v=6689a963', live: 'art/campaign/place-pass-night.json?v=6e095122', w: 300, h: 600, spots: {"rounds":[[118,386],[168,302],[150,232]]} },

@@ -3,6 +3,11 @@
 // where its levels or rounds sit.
 export const PICS = {
   "world-1": { src: 'art/campaign/world-1.webp?v=65b07aa2', live: 'art/campaign/world-1.json?v=982153b3', w: 300, h: 760, spots: {"start":[150,742],"levels":[[96,652],[204,520],[112,396],[192,262],[150,128]]} },
+  "world-5": { src: 'art/campaign/world-5.webp?v=4535f6ba', live: 'art/campaign/world-5.json?v=b9a41d8a', w: 300, h: 760, spots: {"start":[150,742],"levels":[[96,610],[204,470],[116,330],[150,150]]} },
+  "place-library": { src: 'art/campaign/place-library.webp?v=11d0621c', live: 'art/campaign/place-library.json?v=39e39702', w: 300, h: 600, spots: {"rounds":[[150,384],[136,300],[150,232]]} },
+  "place-glassmere": { src: 'art/campaign/place-glassmere.webp?v=f9b3288b', live: 'art/campaign/place-glassmere.json?v=d5ea362b', w: 300, h: 600, spots: {"rounds":[[150,384],[176,302],[156,236]]} },
+  "place-blackwall": { src: 'art/campaign/place-blackwall.webp?v=b3c20732', live: 'art/campaign/place-blackwall.json?v=f2744ec3', w: 300, h: 600, spots: {"rounds":[[150,384],[150,304],[150,236]]} },
+  "place-nightharbor": { src: 'art/campaign/place-nightharbor.webp?v=1fd4a2a8', live: 'art/campaign/place-nightharbor.json?v=8da2c6ea', w: 300, h: 600, spots: {"rounds":[[150,384],[150,304],[150,236]]} },
   "world-4": { src: 'art/campaign/world-4.webp?v=36aac852', live: 'art/campaign/world-4.json?v=478b74b3', w: 300, h: 760, spots: {"start":[150,742],"levels":[[96,640],[204,518],[110,398],[194,262],[150,128]]} },
   "place-ford-night": { src: 'art/campaign/place-ford-night.webp?v=a968d865', live: 'art/campaign/place-ford-night.json?v=aaf7f69d', w: 300, h: 600, spots: {"rounds":[[132,384],[174,300],[150,226]]} },
   "place-causeway-night": { src: 'art/campaign/place-causeway-night.webp?v=ec6b1e65', live: 'art/campaign/place-causeway-night.json?v=9e1e8e7c', w: 300, h: 600, spots: {"rounds":[[150,384],[150,300],[150,246]]} },

@@ -1193,6 +1193,20 @@ Freeing Ione lets the dawn rise a little. Then the Eclipse takes what it wanted 
 - **The pictures are World 2's under the Eclipse,** with one new place: the Root of the Dawn. A tree's trunk rises out of the black water with its branches across the whole sky. The drowned sun glows gold through the water, wrapped in its roots, motes of it rising. A path of roots above the water leads out to the trunk.
 - `ui-campaign-world.mjs 4`: 12 checks pass.
 
+## The campaign: World 5, The Edge of Night (2026-11-11)
+
+The deep east, all new, where the land turns to black glass and the night has an edge. The Eclipse has taken the Legends who beat it. With Ione's Spellbloom you free them one by one; four levels, no one else:
+
+- Seren, in a library of black glass, reading her own notebooks rewritten in the Eclipse's hand;
+- Hush, on a mere frozen to glass with her fog caught inside it;
+- Halvard, holding the gate of a black wall built from his own stones;
+- the boss: Marisol, keeping the ledger of a harbor where ships of night dock, at the edge of the world. She brings 6 more Life, 1 more Energy every turn, and a Pearl Diver and a Wavewarden on the table from the start.
+
+Freed, Marisol knows where the Eclipse keeps the sun: "Everyone together now. Let's go and collect."
+
+- **The pictures** (`campaign-art.js` `edgeOfNight`, `library`, `glassMere`, `blackWall`, `nightHarbor`) are black glass with violet and white glints, ash drifting, and the Eclipse huge in the sky. At the world's edge the rim of the held-down sun burns gold.
+- `ui-campaign-world.mjs 5`: 12 checks pass. `look-world.mjs` now handles a world of any size.
+
 ## The campaign's pictures (2026-11-11)
 
 Asaf, on the first map: "this looks more clipart. Not the cool style we have on the cards. You could even have subtle things like wind blowing grass. It should be objectively beautiful." And: stopping at a place should "zoom you into that area and expand so the three steps within it then show up and the theme expands around you".

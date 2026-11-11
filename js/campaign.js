@@ -406,6 +406,87 @@ export const WORLDS = [{
       ],
       lose: ['“Roots always win,” reads Ione. “Give them time.”'] },
   ],
+}, {
+  // World 5: the deep east, all new. The Eclipse has taken the Legends who beat
+  // it; with Ione's deck you free them one by one, Marisol last (Spellbloom's
+  // results: Storm Rising 75%, Fogbound 43%, The Wall 39%, The Long Game 40%).
+  // Four levels: your companions, no one else.
+  id: 5,
+  name: 'The Edge of Night',
+  deck: 'ultra-spellbloom',
+  map: 'world-5',
+  next: 'draft',
+  intro: [
+    'Ione leads you east past the drowned tree, to where the land turns to black glass and the night has an edge.',
+    '“It took them because they beat it,” she says. “It keeps what it fears. So it fears them, and so it can be beaten.”',
+    'Far ahead, under the Eclipse, the sky has a rim of gold: the sun, held down below the edge of the world.',
+  ],
+  done: 'Marisol is free, and everyone with her. Together now: World 6, the Eclipse itself.',
+  stages: [
+    { deck: 'ultra-storm-rising', place: 'The Glass Library', pic: 'place-library', odds: 0.75, hollow: true, powers: { life: 2 },
+      before: [
+        'In a library of black glass every book is one of Seren’s notebooks, rewritten in the Eclipse’s hand. Seren reads them aloud, one after another.',
+        '“Ione. I took such good notes on you. Would you like to hear what happens next?”',
+      ],
+      back: [
+        ['The shelves have grown in the night, and every page on them is a storm. “Revised,” says Seren. “Expanded.”'],
+        ['Seren tears out every page at once, and they whirl round her like a storm. “The final edition.”'],
+      ],
+      escape: [
+        ['Seren steps between two shelves and is gone.', '“A footnote,” says the voice. “To be continued.”'],
+        ['A page tears free and drifts down, in Seren’s own hand: keep going.', '“Ignore that,” says the voice.'],
+      ],
+      win: ['The black glass cracks from floor to ceiling, and Seren drops her notebook, blinking.', '“It reads us,” she says. “It learns us, so it can hold us. But it can’t read Hush. Nobody can. Find her next.”'],
+      lose: ['“Your mistake is in the first line,” says Seren in its voice. “Again.”'] },
+    { deck: 'ultra-fogbound', place: 'The Glass Mere', pic: 'place-glassmere', odds: 0.43, hollow: true, powers: { life: 3 },
+      before: [
+        'Here the mere is frozen into black glass, and Hush’s fog is frozen in it, a cloud in stone. Hush stands on the glass, very still.',
+        '“I hid from it for a hundred years, Ione. It found me in a day. Come closer. I can’t hide anymore.”',
+      ],
+      back: [
+        ['Fog pours out of the cracked glass, and every shape in it is Hush. “It made me so many faces,” she says.'],
+        ['Hush stands alone on the glass, without her fog for the first time. “No more hiding. Find me.”'],
+      ],
+      escape: [
+        ['Hush breaks into fog and drifts away over the glass.', '“Warm,” giggles the voice. “But not found.”'],
+        ['For a moment the fog clears, and Hush looks straight at you.', '“There,” she whispers. “There I am. Again.”'],
+      ],
+      win: ['The black glass shatters, and the fog under it rises soft and grey again, and Hush with it.', '“Halvard built it a wall,” she says, shivering, “out of his own stones. It made him hold it against us.”'],
+      lose: ['“You looked everywhere,” whispers Hush, “everywhere but here.”'] },
+    { deck: 'ultra-the-wall', place: 'The Black Wall', pic: 'place-blackwall', odds: 0.39, hollow: true, powers: { life: 4, energy: 1 },
+      before: [
+        'Across the edge of the world runs a wall of black glass, and Halvard stands in its only gate, his shield gone dark.',
+        '“Nothing passes, Ione. Not grain, not coin, not dawn. I hold. It is all I know how to do.”',
+      ],
+      back: [
+        ['The wall has grown in the night, glass on glass. “The Eclipse lends me stones,” says Halvard. “It has so many.”'],
+        ['Halvard plants his dark shield in the gate. “The last stone of this wall is me. Again.”'],
+      ],
+      escape: [
+        ['Halvard steps back behind the glass, and it closes over him.', '“The wall bends,” says the voice. “It does not break.”'],
+        ['For a moment Halvard’s shield shines silver.', '“Harder,” he says. “I can’t open it from this side.”'],
+      ],
+      win: ['The black wall cracks from end to end, and Halvard lowers his shield for the second time in a hundred years.', '“I held its gate,” he says, “and behind it Marisol keeps its harbor. Every ship of the night docks there and pays her. Go. Quickly.”'],
+      lose: ['“The wall holds,” says Halvard, in a voice that isn’t his. “It always holds.”'] },
+    { deck: 'ultra-the-long-game', place: 'The Night Harbor', pic: 'place-nightharbor', odds: 0.4, boss: true, hollow: true, powers: { life: 6, energy: 1, board: ['pearl-diver', 'wavewarden'] },
+      before: [
+        'At the edge of the world lies a harbor where ships of night come in from nowhere. On the quay, keeping its ledger, stands Marisol, the Harbormistress, with the Eclipse in her eyes.',
+        '“Every ship that docks pays me a little, Ione. The night docks here now, and it pays very well.”',
+      ],
+      back: [
+        ['More ships of night in the harbor, black sails to the horizon. “Trade is good,” says Marisol. “Better than it ever was.”'],
+        ['Marisol closes her ledger. “No more bargains. Everything I’ve earned, all at once.”'],
+      ],
+      escape: [
+        ['Marisol steps aboard a black ship, and it slides out into the dark.', '“A small loss,” says the voice. “The ledger balances.”'],
+        ['Marisol’s ledger falls open, and you see a page in her own hand: the harbor, the market, the road. Home.', '“Close it,” says the voice. “Close it.”'],
+      ],
+      win: [
+        'The black ships sink without a sound, and Marisol drops her ledger into the sea.',
+        '“I kept its accounts,” she says. “I know what it owes, and I know where it keeps the sun.” She looks out past the edge of the world, where the gold rim burns. “Everyone together now. Let’s go and collect.”',
+      ],
+      lose: ['“The ledger always balances,” says Marisol, in its voice. “Always.”'] },
+  ],
 }];
 
 export const worldOf = (id) => WORLDS.find((w) => w.id === id) || null;

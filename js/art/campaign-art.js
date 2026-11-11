@@ -1080,8 +1080,210 @@ function rootOfDawn(s, live) {
   return { spots: { rounds: [[98, 384], [118, 320], [150, 238]] } };
 }
 
+// ── World 5: The Edge of Night ──────────────────────────────────────
+// black glass: a shard (a sliver of a polygon) and glints along its edge
+const shard = (x, base, w, h, lean = 0) => poly([[x - w / 2, base], [x - w * 0.15 + lean * 0.6, base - h * 0.7], [x + lean, base - h], [x + w * 0.3 + lean * 0.5, base - h * 0.55], [x + w / 2, base]]);
+// the Eclipse, big, and the sky's few stars
+function eclipseSky(s, live, [x, y], r, seed) {
+  live.add(particles({ seed, n: 30, x: [4, s.w - 4], y: [4, y + r * 2], r: [0.3, 0.7], fill: '#e8dcff', cls: 'twinkle', op: [0.2, 0.8], t: [2.5, 6] }));
+  s.glow(x, y, r * 7, '#7a5aff', 0.42);
+  s.glow(x, y, r * 2.6, '#efe6ff', 0.6);
+  s.add(`<circle cx="${x}" cy="${y}" r="${r}" fill="#030106"/><circle cx="${x}" cy="${y}" r="${f1(r + 0.8)}" fill="none" stroke="#f8f0ff" stroke-width="1.8" opacity=".92"/>`);
+  live.add(`<circle class="breathe" cx="${x}" cy="${y}" r="${f1(r * 1.9)}" fill="${live.rad([[0, '#ffffff', 0], [0.5, '#ffffff', 0], [0.56, '#efe6ff', 0.5], [1, '#8a6aff', 0]])}"/>`);
+}
+
+// 300 × 760, read bottom to top: the drowned tree's shore, gold from below;
+// plains of black glass and the library of glass where Seren is held; a mere
+// frozen to glass with Hush's fog caught in it; the black wall across the
+// world, Halvard in its gate; and at the top, at the edge of the world, the
+// night's harbor, Marisol on its quay, under the Eclipse, the held-down sun's
+// rim burning gold below the edge.
+function edgeOfNight(s, live) {
+  const ROAD = [[150, 742], [124, 700], [100, 650], [96, 610], [132, 560], [190, 512], [204, 470], [168, 420], [128, 372], [116, 330], [136, 280], [168, 230], [160, 190], [150, 150]];
+  s.rect(s.lin([[0, '#040208'], [0.08, '#0e0a1e'], [0.16, '#1a1230'], [0.4, '#16112a'], [1, '#0c0a14']]));
+  eclipseSky(s, live, [150, 54], 22, 5101);
+  // the edge of the world: the sea falls away, the sun's rim burning gold beneath it
+  s.glow(150, 120, 220, '#ffb050', 0.32);
+  s.add(`<path d="${line([[-10, 118], [60, 112], [150, 110], [240, 112], [310, 118]])}" stroke="#ffd890" stroke-width="2.4" fill="none" opacity=".8"/>`);
+  s.add(`<path d="${line([[-10, 118], [60, 112], [150, 110], [240, 112], [310, 118]])}" stroke="#fff4d0" stroke-width=".8" fill="none"/>`);
+  // the night's sea and its harbor: a quay, black ships with black sails
+  s.path(poly([[-10, 118], [310, 118], [310, 210], [-10, 210]]), s.linU(0, 118, 0, 210, [[0, '#3a2c3c'], [0.3, '#16112a'], [1, '#0a0814']]));
+  live.add(Array.from({ length: 18 }, (_, i) => { const R = rng(5102 + i), y = 124 + R() * 80, x = R() * 300, len = 4 + R() * 10; return `<path class="twinkle" style="--t:${f1(1.6 + R() * 2.4)}s;--d:${f1(-R() * 3)}s" d="M${f1(x)},${f1(y)}h${f1(len)}" stroke="${y < 150 ? '#ffd8a0' : '#cfc0ff'}" stroke-width=".7" stroke-linecap="round" opacity=".5"/>`; }).join(''));
+  const ship = (x, y, k) => U(poly([[x - 12 * k, y], [x + 12 * k, y], [x + 8 * k, y + 4 * k], [x - 8 * k, y + 4 * k]]), quad(x - 0.5 * k, y - 22 * k, 1 * k, 22 * k), poly([[x + 1 * k, y - 21 * k], [x + 11 * k, y - 4 * k], [x + 1 * k, y - 3 * k]]), poly([[x - 1 * k, y - 18 * k], [x - 9 * k, y - 4 * k], [x - 1 * k, y - 4 * k]]));
+  s.figure(`<path d="${U(ship(56, 150, 1), ship(240, 160, 1.1), ship(270, 136, 0.7), ship(30, 132, 0.6))}"/>`, { fill: '#0a0812', rim: '#c4a8ff', offsets: [[0, -0.8]], rimOp: 0.55 });
+  s.figure(`<path d="${U(poly([[110, 212], [124, 160], [176, 160], [190, 212]]), quad(118, 156, 64, 6), ...[0, 1, 2, 3].map((k) => quad(124 + k * 16, 150, 3, 8)))}"/>`, { fill: '#1a1428', rim: '#d8c8ff', offsets: [[0, -1]], rimOp: 0.6, shade: 0.4 });
+  live.add([[124, 146], [176, 146], [150, 150]].map(([x, y], i) => `<circle class="breathe" style="--d:${-i * 0.5}s" cx="${x}" cy="${y}" r="4" fill="${live.rad([[0, '#f0e6ff', 0.95], [0.5, '#a080ff', 0.5], [1, '#7a5aff', 0]])}"/>`).join(''));
+  // the land of black glass below it: ash grey, glinting
+  s.layer(ledge([[-10, 214], [80, 206], [160, 216], [240, 206], [310, 214]], 770), s.lin([[0, '#241e34'], [0.4, '#16121f'], [1, '#0e0b14']]), { rough: 0.8, seed: 5103 });
+  // the black wall across the world, Halvard's gate in it
+  {
+    const top = 300, merl = [];
+    for (let x = -4; x < 304; x += 12) merl.push(quad(x, top - 8, 7, 9));
+    const wall = U(quad(-10, top, 320, 46), merl, quad(26, 280, 22, 66), quad(252, 280, 22, 66), ...[[26, 280], [252, 280]].flatMap(([x, t]) => [0, 1, 2].map((k) => quad(x + 1 + k * 7, t - 7, 5, 7))));
+    s.figure(`<path d="${wall}"/>`, { fill: '#0e0a18', rim: '#d0c0ff', offsets: [[0, -1], [-0.6, -0.8]], rimOp: 0.6, shade: 0.3, light: [0, -1] });
+    s.add(`<path d="${Array.from({ length: 16 }, (_, i) => { const R = rng(5110 + i), x = R() * 300; return `M${f1(x)},${f1(304 + R() * 8)}l${f1(6 + R() * 8)},${f1(14 + R() * 18)}`; }).join('')}" stroke="#b8a8f0" stroke-width=".6" opacity=".4"/>`);
+    s.path(U(quad(100, 306, 32, 40), ell(116, 306, 16, 12, 0, 22)), '#04020a');
+    s.glow(116, 322, 40, '#8a6aff', 0.4);
+    for (const x of [18, 60, 180, 230, 284]) live.add(`<ellipse class="breathe" style="--d:${f1(-x / 60)}s" cx="${x}" cy="292" rx="5" ry="7" fill="${live.rad([[0, '#f0e6ff', 0.95], [0.4, '#a080ff', 0.55], [1, '#6a4aff', 0]])}"/>`);
+  }
+  // the mere frozen to glass, Hush's fog caught in it like clouds in ice
+  const mereD = blob([[130, 470], [170, 440], [236, 436], [282, 456], [270, 494], [210, 506], [150, 498]], 6);
+  s.path(mereD, s.linU(0, 436, 0, 506, [[0, '#4a4070'], [0.4, '#1a1430'], [1, '#0a0814']]));
+  s.add(`<path d="${U([[180, 466, 18, 6], [226, 458, 22, 7], [250, 482, 16, 5], [196, 488, 14, 5]].map(([x, y, rx, ry]) => ell(x, y, rx, ry, -8, 18)))}" fill="#d0ccf0" opacity=".22"/>`);
+  s.add(`<path d="M150,476L182,470L196,486M220,446L232,470L262,476M240,500L252,486" stroke="#e8e0ff" stroke-width=".6" fill="none" opacity=".5"/>`);
+  // the library of glass: tall black shelves of glass, lit violet within
+  {
+    const R = rng(5104), shelves = [];
+    for (let i = 0; i < 9; i++) { const x = 40 + i * 16 + (R() - 0.5) * 6, hgt = 40 + R() * 46 - Math.abs(i - 4) * 4; shelves.push(quad(x - 6, 640 - hgt, 12, hgt + 6), poly([[x - 7, 640 - hgt], [x, 640 - hgt - 8], [x + 7, 640 - hgt]])); }
+    s.figure(`<path d="${U(shelves)}"/>`, { fill: '#100c1c', rim: '#c8b4ff', offsets: [[-0.6, -0.8]], rimOp: 0.55, shade: 0.4 });
+    s.bloom(`<path d="${U(Array.from({ length: 22 }, (_, i) => { const R2 = rng(5130 + i); return quad(36 + R2() * 136, 584 + R2() * 50, 3, 2); }))}" fill="#c8a8ff"/>`, { sd: 1.2, k: 1.2 });
+  }
+  // shards of black glass jutting from the plains
+  { const R = rng(5105), sh = []; for (let i = 0; i < 26; i++) { const x = R() * 300, y = 240 + R() * 480; if (Math.abs(x - 150) < 40 && y > 680) continue; sh.push(shard(x, y, 5 + R() * 8, 10 + R() * 22, (R() - 0.5) * 8)); } s.figure(`<path d="${U(sh)}"/>`, { fill: '#0c0814', rim: '#d0c0ff', offsets: [[-0.5, -0.8]], rimOp: 0.55 }); }
+  // the drowned tree's shore at the bottom: gold from under the water, roots
+  s.glow(150, 760, 160, '#ffb050', 0.42);
+  s.path(poly([[-10, 716], [310, 716], [310, 770], [-10, 770]]), s.linU(0, 716, 0, 770, [[0, '#3a2a3a'], [1, '#1a1420']]));
+  s.add(`<path d="${U([-1, -0.4, 0.4, 1].map((a) => taper([[150 + a * 30, 770], [150 + a * 60, 736], [150 + a * 120, 722]], [6, 4, 1], { per: 4 })))}" fill="#120c1c" opacity=".85"/>`);
+  // the road: pale ash, worn into the glass
+  const widths = ROAD.map((_, i) => 9 - (i / (ROAD.length - 1)) * 5);
+  const road = taper(ROAD, widths, { per: 8 });
+  s.layer(road, '#05040a', { blur: 1.6, extra: 'opacity=".5" transform="translate(.8 1.4)"' });
+  s.path(road, s.linU(0, 760, 0, 140, [[0, '#d8b888'], [0.2, '#9a90a8'], [1, '#b8acd8']]));
+  s.add(`<path d="${line(ROAD, 8)}" stroke="#f4eeff" stroke-width=".7" fill="none" opacity=".28" stroke-dasharray="1.5 6" stroke-linecap="round"/>`);
+  live.motes({ seed: 5106, n: 40, x: [0, 300], y: [200, 740], r: [0.3, 0.8], fill: '#b8a0ff', cls: 'float', op: [0.3, 0.8], t: [6, 11] });
+  drifting(live, [[-40, 200, 236, 10, 0.16], [120, 340, 400, 10, 0.14], [-40, 180, 540, 9, 0.12], [140, 340, 660, 9, 0.12]], '#c8b8f0');
+  s.finish({ hi: '#d8b8ff', lo: '#040208', at: [150, 54], reach: 760, grade: 0.42, vignette: 0.42, grain: 0.06 });
+  return { spots: { start: [150, 742], levels: [[96, 610], [204, 470], [116, 330], [150, 150]] } };
+}
+
+// The Glass Library: shelves of black glass taller than towers, every book on
+// them a notebook of Seren's rewritten in the Eclipse's hand; pages drifting;
+// a lectern at the end of the aisle, where she reads.
+function library(s, live) {
+  s.rect(s.lin([[0, '#05030c'], [0.25, '#120c24'], [0.45, '#22183e']]));
+  eclipseSky(s, live, [150, 70], 16, 5201);
+  // the aisle's two walls of shelves, rising toward us
+  const R = rng(5202), shelves = [], lit = [];
+  for (const side of [-1, 1]) for (let i = 0; i < 6; i++) {
+    const t = i / 5, near = 1 - t, x = 150 + side * (34 + near * 112), wd = 16 + near * 46, top = 150 - near * 150 + R() * 10, base = 250 + near * 380;
+    shelves.push(poly([[x - wd / 2, base], [x - wd / 2, top + 6], [x, top], [x + wd / 2, top + 6], [x + wd / 2, base]]));
+    for (let k = 0; k < 5 + near * 7; k++) lit.push(quad(x - wd / 2 + 2 + R() * (wd - 6), top + 14 + R() * (base - top - 20), 1.2 + near * 3, 0.8 + near * 1.6));
+  }
+  s.figure(`<path d="${U(shelves)}"/>`, { fill: '#0e0a18', rim: '#c8b4ff', offsets: [[0, -1]], rimOp: 0.55, shade: 0.4 });
+  s.bloom(`<path d="${U(lit)}" fill="#b89cff"/>`, { sd: 1.2, k: 1.2 });
+  // the floor of the aisle: black glass, the Eclipse reflected in it
+  s.path(poly([[60, 610], [240, 610], [170, 250], [130, 250]]), s.linU(0, 610, 0, 250, [[0, '#1a1428'], [0.7, '#2a2244'], [1, '#4a3c74']]));
+  s.add(`<ellipse cx="150" cy="330" rx="10" ry="40" fill="${s.radU(150, 330, 40, [[0, '#e8dcff', 0.35], [1, '#e8dcff', 0]])}"/>`);
+  // the lectern at the end
+  s.figure(`<path d="${U(poly([[142, 246], [146, 214], [154, 214], [158, 246]]), poly([[136, 214], [164, 206], [164, 212], [136, 220]]))}"/>`, { fill: '#100a1c', rim: '#efe6ff', offsets: [[0, -0.8]], rimOp: 0.6 });
+  s.glow(150, 206, 30, '#c8a8ff', 0.5);
+  // pages drifting up the aisle, and lightning caught in the glass
+  live.add(Array.from({ length: 18 }, (_, i) => { const R2 = rng(5203 + i), x = 70 + R2() * 160, y = 200 + R2() * 300, k = 0.6 + R2() * 0.8; return `<g class="float" style="--t:${f1(5 + R2() * 4)}s;--d:${f1(-R2() * 5)}s"><path d="${poly([[x, y], [x + 5 * k, y - 1.4 * k], [x + 5.6 * k, y + 3.4 * k], [x + 0.6 * k, y + 4.6 * k]])}" fill="#e8e0ff" opacity=".55"/></g>`; }).join(''));
+  const zig = (pts) => taper(pts, pts.map((_, i) => 1.4 - (i / (pts.length - 1)) * 1), { per: 2 });
+  live.add(`<g class="twinkle" style="--t:1.4s;--d:-.3s"><path d="${zig([[40, 160], [52, 200], [44, 220], [58, 260]])}${zig([[262, 150], [250, 190], [258, 214], [244, 250]])}" fill="#f0e8ff"/></g>`);
+  drifting(live, [[-60, 360, 250, 10, 0.16]], '#c8b8f0');
+  s.finish({ hi: '#d0b8ff', lo: '#040208', at: [150, 206], reach: 440, grade: 0.42, vignette: 0.55, grain: 0.06 });
+  return { spots: { rounds: [[150, 384], [136, 300], [150, 232]] } };
+}
+
+// The Glass Mere: the mere frozen into black glass, Hush's fog caught inside
+// it like clouds in ice, cracks running out across it; the Eclipse above and
+// again below, in the glass.
+function glassMere(s, live) {
+  s.rect(s.lin([[0, '#05030c'], [0.25, '#14102a'], [0.4, '#2a2048']]));
+  eclipseSky(s, live, [196, 90], 18, 5301);
+  s.layer(ridge({ seed: 5302, base: 236, amp: 18, freq: 3, peaks: true, x1: 308, bottom: 250 }), '#1a1430', { blur: 0.8 });
+  // the glass: a mirror of the sky, darker toward us
+  s.path(poly([[-10, 244], [310, 244], [310, 610], [-10, 610]]), s.linU(0, 244, 0, 610, [[0, '#4a3c74'], [0.25, '#1e1838'], [1, '#08060e']]));
+  s.add(`<ellipse cx="196" cy="300" rx="14" ry="40" fill="${s.radU(196, 300, 40, [[0, '#efe6ff', 0.4], [1, '#efe6ff', 0]])}"/><circle cx="196" cy="290" r="10" fill="#030106" opacity=".7"/>`);
+  // the fog caught in the glass: pale clouds and faces, frozen
+  { const R = rng(5303), fogs = []; for (let i = 0; i < 12; i++) { const x = R() * 300, y = 270 + R() ** 1.2 * 320, rx = 12 + (y - 260) / 340 * 40, ry = rx * 0.28; fogs.push(ell(x, y, rx, ry, (R() - 0.5) * 16, 20)); } s.add(`<path d="${U(fogs)}" fill="#d8d4f4" opacity=".16"/>`); }
+  // cracks across the glass, glinting
+  { const R = rng(5304); let d = ''; for (let i = 0; i < 9; i++) { let x = 150 + (R() - 0.5) * 60, y = 330 + R() * 40; d += `M${f1(x)},${f1(y)}`; for (let k = 0; k < 5; k++) { x += (R() - 0.5) * 70; y += 10 + R() * 30; d += `L${f1(x)},${f1(y)}`; } } s.add(`<path d="${d}" stroke="#e8e0ff" stroke-width=".7" fill="none" opacity=".45"/>`); }
+  live.add(Array.from({ length: 20 }, (_, i) => { const R = rng(5305 + i), y = 260 + R() * 300, x = R() * 300; return `<circle class="twinkle" style="--t:${f1(1.6 + R() * 2.4)}s;--d:${f1(-R() * 3)}s" cx="${f1(x)}" cy="${f1(y)}" r="${f1(0.6 + R())}" fill="#f4eeff"/>`; }).join(''));
+  // reeds frozen at the edge, and grass at our feet
+  { const R = rng(5306), reeds = []; for (let i = 0; i < 30; i++) { const x = R() * 300, y = 248 + R() * 6, hh = 4 + R() * 8; reeds.push(taper([[x, y], [x + (R() - 0.5) * 2, y - hh]], [0.9, 0.2], { per: 2 })); } s.figure(`<path d="${U(reeds)}"/>`, { fill: '#0e0a18', rim: '#c4b0ff', offsets: [[0, -0.6]], rimOp: 0.45 }); }
+  live.grass({ seed: 5307, x0: -6, x1: 90, base: 606, depth: 26, h: [12, 22], n: 12, fill: '#0c0a16', lit: '#a898e8' });
+  live.grass({ seed: 5308, x0: 210, x1: 306, base: 606, depth: 26, h: [12, 22], n: 12, fill: '#0c0a16', lit: '#a898e8' });
+  live.motes({ seed: 5309, n: 24, x: [0, 300], y: [100, 420], r: [0.3, 0.8], fill: '#b8a0ff', cls: 'float', op: [0.3, 0.8], t: [6, 11] });
+  drifting(live, [[-60, 360, 250, 12, 0.22], [-40, 220, 320, 10, 0.14]], '#d8d4f4');
+  s.finish({ hi: '#d8c8ff', lo: '#040208', at: [196, 90], reach: 460, grade: 0.42, vignette: 0.52, grain: 0.06 });
+  return { spots: { rounds: [[150, 384], [176, 302], [156, 236]] } };
+}
+
+// The Black Wall: a wall of black glass across the edge of the world, built of
+// Halvard's own stones; its one gate, violet fire either side, and the road up
+// to it between shards.
+function blackWall(s, live) {
+  s.rect(s.lin([[0, '#040208'], [0.2, '#120c24'], [0.38, '#24183e']]));
+  eclipseSky(s, live, [236, 70], 16, 5401);
+  const top = 150, merl = [];
+  for (let x = -6; x < 306; x += 13) merl.push(quad(x, top - 9, 8, 10));
+  const towers = [[52, 92, 46], [202, 92, 46]].map(([x, t, w]) => U(quad(x, t, w, 320), ...[0, 1, 2, 3].map((k) => quad(x + 1 + k * (w - 2) / 4, t - 9, (w - 2) / 4 - 3, 9))));
+  s.figure(`<path d="${U(quad(-10, top, 320, 300), merl, towers)}"/>`, { fill: '#0c0814', rim: '#d0c0ff', offsets: [[0, -1], [-0.6, -0.8]], rimOp: 0.6, shade: 0.35, light: [0.4, -1] });
+  // the glass: long glints down its face, and cracks
+  s.add(`<path d="${Array.from({ length: 30 }, (_, i) => { const R = rng(5402 + i), x = R() * 300, y = 160 + R() * 240; return `M${f1(x)},${f1(y)}l${f1(4 + R() * 6)},${f1(20 + R() * 40)}`; }).join('')}" stroke="#c8b8f0" stroke-width=".6" opacity=".35"/>`);
+  live.add(Array.from({ length: 16 }, (_, i) => { const R = rng(5440 + i), x = R() * 300, y = 160 + R() * 240; return `<path class="twinkle" style="--t:${f1(1.8 + R() * 2.4)}s;--d:${f1(-R() * 3)}s" d="M${f1(x)},${f1(y)}l2,9" stroke="#f4eeff" stroke-width="1" stroke-linecap="round"/>`; }).join(''));
+  // the gate: black, a violet light deep inside, Halvard's dark shield above it
+  s.path(U(quad(118, 270, 64, 130), ell(150, 270, 32, 28, 0, 26)), s.linU(0, 240, 0, 400, [[0, '#2a1c48'], [1, '#050208']]));
+  s.glow(150, 330, 70, '#8a6aff', 0.45);
+  s.figure(`<path d="${blob([[136, 196], [164, 196], [164, 212], [150, 226], [136, 212]], 3)}"/>`, { fill: '#1a1428', rim: '#e8dcff', offsets: [[0, -0.8]], rimOp: 0.6 });
+  for (const [x, y] of [[104, 256], [196, 256], [30, 146], [270, 146]]) live.add(`<ellipse class="breathe" style="--d:${f1(-x / 50)}s" cx="${x}" cy="${y}" rx="7" ry="10" fill="${live.rad([[0, '#f4ecff', 0.95], [0.4, '#a080ff', 0.6], [1, '#6a4aff', 0]])}"/>`);
+  // the ground before it, ash and shards, the road up to the gate
+  s.path(poly([[-10, 400], [310, 400], [310, 610], [-10, 610]]), s.lin([[0, '#16121f'], [1, '#08060c']]));
+  s.path(poly([[-20, 610], [320, 610], [190, 400], [110, 400]]), s.linU(0, 610, 0, 400, [[0, '#2e2840'], [1, '#4a4264']]));
+  { const R = rng(5403), sh = []; for (let i = 0; i < 22; i++) { const left = R() < 0.5, y = 410 + R() * 190, t = (y - 400) / 210, x = left ? 10 + R() * (90 - t * 80) : 290 - R() * (90 - t * 80), k = 0.5 + t; sh.push(shard(x, y, 6 * k, 18 * k, (R() - 0.5) * 8)); } s.figure(`<path d="${U(sh)}"/>`, { fill: '#0a0812', rim: '#d0c0ff', offsets: [[-0.5, -0.8]], rimOp: 0.55 }); }
+  live.motes({ seed: 5404, n: 26, x: [0, 300], y: [140, 520], r: [0.3, 0.8], fill: '#b8a0ff', cls: 'float', op: [0.3, 0.8], t: [6, 11] });
+  drifting(live, [[-60, 360, 404, 10, 0.18]], '#c8b8f0');
+  s.finish({ hi: '#c8b0ff', lo: '#040208', at: [150, 330], reach: 420, grade: 0.42, vignette: 0.5, grain: 0.06 });
+  return { spots: { rounds: [[150, 384], [150, 304], [150, 236]] } };
+}
+
+// The Night Harbor: at the edge of the world a quay runs out into a black
+// sea where ships of night come in from nowhere; past it the sea falls away,
+// the held-down sun's rim burning gold below the edge, and over all of it the
+// Eclipse, enormous. Marisol keeps its ledger at the quay's end.
+function nightHarbor(s, live) {
+  s.rect(s.lin([[0, '#030106'], [0.2, '#0e0a1e'], [0.36, '#1e1636']]));
+  eclipseSky(s, live, [150, 100], 34, 5501);
+  // the edge of the world: the sea's rim, and the sun's gold light from below it
+  s.glow(150, 226, 260, '#ffa040', 0.4);
+  s.glow(150, 226, 90, '#ffe0a0', 0.42);
+  s.add(`<path d="${line([[-10, 228], [80, 222], [150, 220], [220, 222], [310, 228]])}" stroke="#ffd890" stroke-width="3" fill="none" opacity=".85"/><path d="${line([[-10, 228], [80, 222], [150, 220], [220, 222], [310, 228]])}" stroke="#fff6dc" stroke-width="1" fill="none"/>`);
+  // the black sea, gold on its far edge
+  s.path(poly([[-10, 228], [310, 228], [310, 610], [-10, 610]]), s.linU(0, 228, 0, 610, [[0, '#5a3a40'], [0.08, '#2a1e30'], [0.4, '#100c1c'], [1, '#040208']]));
+  live.add(Array.from({ length: 28 }, (_, i) => { const R = rng(5502 + i), t = R(), y = 234 + t * 300, x = R() * 300, len = 4 + R() * (6 + t * 12); return `<path class="twinkle" style="--t:${f1(1.6 + R() * 2.4)}s;--d:${f1(-R() * 3)}s" d="M${f1(x)},${f1(y)}h${f1(len)}" stroke="${y < 290 ? '#ffd8a0' : '#cfc0ff'}" stroke-width="${f1(0.5 + t * 0.8)}" stroke-linecap="round" opacity=".5"/>`; }).join(''));
+  // ships of night, black-sailed, coming in from nowhere
+  const ship = (x, y, k) => U(poly([[x - 14 * k, y], [x + 14 * k, y], [x + 9 * k, y + 5 * k], [x - 9 * k, y + 5 * k]]), quad(x - 0.6 * k, y - 30 * k, 1.2 * k, 30 * k), poly([[x + 1.2 * k, y - 29 * k], [x + 13 * k, y - 5 * k], [x + 1.2 * k, y - 4 * k]]), poly([[x - 1.2 * k, y - 25 * k], [x - 11 * k, y - 5 * k], [x - 1.2 * k, y - 5 * k]]));
+  s.figure(`<path d="${U(ship(46, 270, 1.3), ship(250, 290, 1.6), ship(214, 244, 0.7), ship(92, 240, 0.6), ship(276, 236, 0.5))}"/>`, { fill: '#08060e', rim: '#d8c0ff', offsets: [[0, -0.8], [0.5, -0.6]], rimOp: 0.55 });
+  // the quay: stone, bollards, violet lanterns, out to its end where the ledger lies
+  s.path(poly([[60, 610], [240, 610], [176, 250], [124, 250]]), s.linU(0, 610, 0, 250, [[0, '#2a2438'], [1, '#4a4064']]));
+  let slabs = '';
+  for (let k = 1; k < 16; k++) { const t = k / 16, y = 250 + 360 * t ** 1.5, half = 26 + 64 * t ** 1.5; slabs += `M${f1(150 - half)},${f1(y)}H${f1(150 + half)}`; }
+  s.add(`<path d="${slabs}" stroke="#141020" stroke-width=".9" opacity=".7"/><path d="M124,250L60,610M176,250L240,610" stroke="#d8c8ff" stroke-width="1" opacity=".35"/>`);
+  const bol = [], lan = [];
+  for (let k = 0; k < 5; k++) { const t = (k + 0.5) / 5, y = 250 + 360 * t ** 1.5, half = 26 + 64 * t ** 1.5, sz = 2 + t * 6; for (const d of [-1, 1]) { bol.push(U(quad(150 + d * half - sz / 2, y - sz * 1.4, sz, sz * 1.4), ell(150 + d * half, y - sz * 1.4, sz * 0.7, sz * 0.4))); if (k % 2 === 0) lan.push([150 + d * half, y - sz * 4, 2 + t * 4]); } }
+  s.figure(`<path d="${U(bol)}"/>`, { fill: '#100c18', rim: '#d8c8ff', offsets: [[0, -0.7]], rimOp: 0.5 });
+  live.add(lan.map(([x, y, r], i) => `<circle class="breathe" style="--d:${-i * 0.45}s" cx="${f1(x)}" cy="${f1(y)}" r="${f1(r * 1.8)}" fill="${live.rad([[0, '#f4ecff', 0.95], [0.45, '#a080ff', 0.5], [1, '#6a4aff', 0]])}"/>`).join(''));
+  // the ledger's desk at the quay's end
+  s.figure(`<path d="${U(quad(140, 238, 20, 10), poly([[138, 238], [162, 238], [158, 232], [142, 232]]))}"/>`, { fill: '#1a1428', rim: '#ffd8a0', offsets: [[0, -0.8]], rimOp: 0.6 });
+  s.glow(150, 234, 22, '#ffd890', 0.45);
+  live.grass({ seed: 5503, x0: -6, x1: 60, base: 606, depth: 26, h: [12, 22], n: 10, fill: '#0c0a16', lit: '#a898e8' });
+  live.grass({ seed: 5504, x0: 240, x1: 306, base: 606, depth: 26, h: [12, 22], n: 10, fill: '#0c0a16', lit: '#a898e8' });
+  live.motes({ seed: 5505, n: 26, x: [0, 300], y: [140, 480], r: [0.3, 0.8], fill: '#b8a0ff', cls: 'float', op: [0.3, 0.8], t: [6, 11] });
+  drifting(live, [[-60, 360, 244, 10, 0.18], [-40, 220, 330, 9, 0.12]], '#d0c0f0');
+  s.finish({ hi: '#ffd090', lo: '#030106', at: [150, 226], reach: 440, grade: 0.4, vignette: 0.52, grain: 0.06 });
+  return { spots: { rounds: [[150, 384], [150, 304], [150, 236]] } };
+}
+
 export const CAMPAIGN_ART = {
   'world-1': { w: 300, h: 760, draw: harborRoad },
+  // World 5, The Edge of Night: all new, the deep east
+  'world-5': { w: 300, h: 760, draw: edgeOfNight },
+  'place-library': { w: 300, h: 600, draw: library },
+  'place-glassmere': { w: 300, h: 600, draw: glassMere },
+  'place-blackwall': { w: 300, h: 600, draw: blackWall },
+  'place-nightharbor': { w: 300, h: 600, draw: nightHarbor },
   // World 4, The Drowned Dawn: World 2's road under the Eclipse, the dawn drowned past the mere
   'world-4': { w: 300, h: 760, draw: eclipsed(fogCountry, { at: [150, 58] }) },
   'place-ford-night': { w: 300, h: 600, draw: eclipsed(ford) },

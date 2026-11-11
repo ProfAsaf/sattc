@@ -60,5 +60,5 @@ You draft a deck with the bot draft that's already in the game (draft.js and dra
 - [x] the eclipse pictures, hollowed faces, boss powers
 - [x] World 3: data, story, the Lighthouse, tests, publish
 - [x] World 4: data, story, Ione's place (the Root of the Dawn), tests, publish
-- [ ] World 5: data, story, new map and five places, tests, publish
+- [x] World 5: data, story, new map and four places (companions only: Seren, Hush, Halvard, Marisol), tests, publish
 - [ ] World 6: the draft in the campaign, the Eclipse, the finale's pictures, tests, publish

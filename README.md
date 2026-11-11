@@ -1123,6 +1123,40 @@ Asaf's idea: playing the bots as a game of its own, a map of levels like Mario's
   - They count for your rating like any practice game.
 - Test: `.phone-tests/ui-campaign.mjs` (32 checks: the opening, the locks, the map moving, into the Market and out by Back and by a swipe with the map's scroll kept, three rounds against Mirelle with both escapes played out at the place and the bot at each level, the road opening only after the third, On to the Cliffs, a fight's pictures let go and a reload mid-fight, a loss, a reload).
 
+## The campaign: World 2, The Fog Country (2026-11-11)
+
+Asaf: "Start building." World 1 ended with Halvard looking east "into a fog that wasn't there yesterday", so World 2 goes there, with Halvard's deck (The Wall).
+
+- **Its Legends are ones nobody has met yet.** They're ordered from the one The Wall beats most often to its hardest. Every Ultra deck was played against every other again: 3,198 duels with Practice on both sides (`MATRIX=<file> node tools/train.mjs decks practice 1600`, about 2 minutes). The Wall's results against the decks met in World 1 matched the first run exactly.
+  - The Red Ford: Vesh, the Red Widow (Blood and Bone), 78%.
+  - The Causeway: Kasimir, the First Blade (The Charge), 71%.
+  - The Bone Garden: Morrow, the Bone Gardener (Rot and Bloom), 59%.
+  - The Storm Spire: Oriel, Lady of Storms (Weathermakers), 45%.
+  - The Heart of the Fog, the boss: Hush, the Fog Witch (Fogbound), 27%. She is The Wall's hardest Legend not yet met, and she is the fog Halvard was keeping out.
+  - The Wall's hardest matchup of all is Endless Swarm (20%), but Lumen was already beaten in World 1. The others: Storm Rising 76%, The Long Game 71%, Spellbloom 61%, The Giant 59%, Smoke and Mirrors 33%, Sky and Arrows 32%.
+- **The story** (`js/campaign.js`): Halvard opens the gate he held shut for a hundred years. Marisol opens a fresh ledger: whoever is breathing the fog onto her roads owes her a hundred years of trade. Each Legend points to the next. Kasimir was running from the fog, which "follows whatever's fastest". Morrow's garden drinks it. Oriel has blown on it for twenty years: "It isn't weather. Someone is breathing it." Hush was hiding: "Something drove me west out of the deep east… It's still coming." Beating her brings her deck over for World 3, which isn't built yet.
+- **More than one world**:
+  - A world opens once the one before it is done.
+  - Addresses: a world's map is `#/campaign/w2`, and a place in it is `#/campaign/w2-3`. World 1's places keep their first addresses (`#/campaign/3`), so fights saved before World 2 still come back. `#/campaign` alone opens the furthest world open, so Home's Campaign button lands there.
+  - Once a second world is open, the title lists the worlds: each open one with its stars, and the next one locked.
+  - A finished world's map says how it ended, with "On to World 2". Beating a world's boss ends the fight with the same button.
+- **Its pictures** (`js/art/campaign-art.js`, baked by `tools/bake-campaign.mjs` as World 1's):
+  - The map runs east from the Wall. Its gate stands open, firelit, at the bottom. Above it come the red river and the ford, with an old battle's spears in the water, then the marsh with its causeway of lanterns and a ruined watchtower. Next are the barrows of the bone garden, white with flowers, then the storm spire on its crag. At the top, a still black mere breathes the fog out under a hidden light. Fog drifts between them all, thicker toward the top.
+  - The Red Ford: dusk, the water red with a sun lost in the fog, stepping stones across, Vesh's banner by a dead tree.
+  - The Causeway: a stone road straight out across the marsh into the fog, lanterns on posts, Kasimir's riders where it vanishes.
+  - The Bone Garden: glowing barrows under a hidden moon, and an arch of great ribs with a skull at its top.
+  - The Storm Spire: a white tower on a crag above a sea of fog, lightning on its rods.
+  - The Heart of the Fog: a black mere, a drowned village's roofs, will-o'-wisps, and a boardwalk out to a pale light.
+- Tests: `.phone-tests/ui-campaign-w2.mjs` (16 checks):
+  - Halvard's last defeat opens World 2.
+  - World 2 has its own opening and map.
+  - The world list goes back to World 1, and On to World 2 returns.
+  - Home lands on World 2.
+  - At the Red Ford, The Wall plays Vesh, who escapes and is played out at the place.
+  - Beating Hush ends the world, with World 3 coming soon.
+
+  `ui-campaign.mjs` (World 1, 32 checks) still passes. `look-world2.mjs` screenshots World 2's map and places.
+
 ## The campaign's pictures (2026-11-11)
 
 Asaf, on the first map: "this looks more clipart. Not the cool style we have on the cards. You could even have subtle things like wind blowing grass. It should be objectively beautiful." And: stopping at a place should "zoom you into that area and expand so the three steps within it then show up and the theme expands around you".

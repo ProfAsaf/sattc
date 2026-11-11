@@ -667,6 +667,18 @@ body[data-page="campaign"] main { padding: 0; max-width: none; }
 .cp-title b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'EB Garamond', Georgia, serif; font-size: 22px; font-weight: 600; line-height: 1.12; color: #f8e9c4; }
 .cp-title span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: rgba(248, 233, 196, .8); }
 .cp-title em { font-style: normal; color: #ffd75e; }
+button.cp-title { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cp-done .btn { margin: 6px auto 0; display: block; }
+/* the worlds (tap the title, once a second world is open) */
+.cp-worlds { display: grid; gap: 8px; }
+.cp-wrow { display: flex; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 14px; background: rgba(255, 240, 200, .05); border: 1px solid rgba(214, 180, 106, .22); color: inherit; text-decoration: none; }
+.cp-wrow.here { border-color: rgba(255, 215, 94, .7); background: rgba(255, 215, 94, .08); }
+.cp-wrow b { display: block; font-family: 'EB Garamond', Georgia, serif; font-size: 18px; line-height: 1.15; color: #f4e2b0; }
+.cp-wrow em { font-style: normal; font-size: 13px; color: var(--muted); }
+.cp-wrow .cp-face { width: 48px; height: 48px; }
+.cp-wrow.locked { opacity: .6; }
+.cp-wlock { width: 48px; height: 48px; display: grid; place-items: center; color: var(--muted); }
+.cp-wlock svg { width: 22px; height: 22px; }
 .cp-done { grid-column: 1 / -1; justify-self: center; margin-top: 6px; padding: 6px 12px; border-radius: 12px; font-size: 13px; text-align: center; color: #f8e9c4; background: rgba(20, 16, 10, .76); border: 1px solid rgba(255, 215, 94, .4); }
 .cp-done span { color: var(--muted); }
 /* a level on the map: its Legend in a gold ring, the place on a plaque, the rounds won */

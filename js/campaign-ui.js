@@ -65,26 +65,28 @@ function mapHTML(W, p) {
     </div>
     <header class="cp-bar">
       <a class="cp-btn" href="#/" aria-label="Home">${BACK}</a>
-      <div class="cp-title"><b>${esc(W.name)}</b><span>World ${W.id} · <em>★ ${total}</em> of ${W.stages.length * 3}</span></div>
+      ${Camp.worldOpen(p, 2)
+    ? `<button class="cp-title" data-act="cp-worlds" aria-label="The worlds"><b>${esc(W.name)}</b><span>World ${W.id} · <em>★ ${total}</em> of ${W.stages.length * 3} ▾</span></button>`
+    : `<div class="cp-title"><b>${esc(W.name)}</b><span>World ${W.id} · <em>★ ${total}</em> of ${W.stages.length * 3}</span></div>`}
       <button class="cp-btn" data-act="cp-help" aria-label="How the campaign works">?</button>
-      ${over ? `<div class="cp-done">${esc(W.done)} <span>(Coming soon.)</span></div>` : ''}
+      ${over ? `<div class="cp-done">${esc(W.done)} ${Camp.worldOf(W.id + 1) ? `<a class="btn primary" href="${Camp.mapHash(W.id + 1)}">On to World ${W.id + 1}</a>` : '<span>(Coming soon.)</span>'}</div>` : ''}
     </header>
   </div>`;
 }
 
-// The campaign page: World 1's map (the only world so far); with a level's
-// number (#/campaign/2) that level's place, over it. Going between the two
-// while the page is up zooms rather than redrawing ('kept': the router leaves
-// the scroll alone).
+// The campaign page: a world's map (campaign.js placeOf: the address names it,
+// else the furthest world open); with a level, that level's place, over it.
+// Going between the two while the page is up zooms rather than redrawing
+// ('kept': the router leaves the scroll alone); another world is drawn afresh.
 export function campaignPage(view, arg) {
-  const i = /^\d+$/.test(arg || '') ? Number(arg) : null;
+  const p = Camp.progress(), { w, i } = Camp.placeOf(arg, p);
   if (document.body.classList.contains('in-game')) { view.innerHTML = ''; ui = null; return; } // (a fight is on: drawn afresh when it ends)
-  if (ui && ui.view === view && ui.root.isConnected) {
+  if (ui && ui.view === view && ui.root.isConnected && ui.W.id === w) {
     go(() => (i == null ? closePlace() : openPlace(i)));
     return 'kept';
   }
   leaveCampaign();
-  const W = Camp.worldOf(1), p = Camp.progress();
+  const W = Camp.worldOf(w);
   view.innerHTML = mapHTML(W, p);
   ui = { view, W, root: view.querySelector('.cp-world'), place: null, pushed: false, chain: Promise.resolve() };
   const img = ui.root.querySelector('.cp-pic');
@@ -126,19 +128,20 @@ function onClick(e) {
   if (n) {
     const i = Number(n.dataset.stage);
     if (n.classList.contains('locked')) lockedSheet(ui.W, i);
-    else { ui.pushed = true; location.hash = `#/campaign/${i}`; }
+    else { ui.pushed = true; location.hash = Camp.placeHash(ui.W.id, i); }
     return;
   }
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'cp-help') introSheet(ui.W);
+  else if (act === 'cp-worlds') worldsSheet();
   else if (act === 'cp-back') back();
-  else if (act === 'cp-onward') location.replace(`#/campaign/${ui.place.i + 1}`);
+  else if (act === 'cp-onward') location.replace(Camp.placeHash(ui.W.id, ui.place.i + 1));
   const f = e.target.closest('[data-diff]');
   if (f && ui.place) startCampaign(ui.W.id, ui.place.i, Number(f.dataset.diff));
 }
 // to the map: back through the history if the map is where we came from
 function back() {
-  if (ui.pushed) history.back(); else location.replace('#/campaign');
+  if (ui.pushed) history.back(); else location.replace(Camp.mapHash(ui.W.id));
 }
 
 // ── a place ─────────────────────────────────────────────────────────
@@ -249,7 +252,7 @@ async function openPlace(i, instant = false) {
   const { W, root } = ui, p = Camp.progress();
   if (!W.stages[i] || !Camp.isOpen(p, W.id, i)) {
     if (ui.place) await closePlace();
-    history.replaceState(null, '', '#/campaign');
+    history.replaceState(null, '', Camp.mapHash(W.id));
     if (W.stages[i]) lockedSheet(W, i);
     return;
   }
@@ -381,6 +384,16 @@ function introSheet(W) {
     <p class="cp-how">Each place on the road has a Legend to beat three times: ★ Casual, then ★★ Practice, then ★★★ Expert. They get away the first two times and come back with better fighters; the third win beats them for good and opens the road on.</p>
     <button class="btn primary" data-act="cp-close">Set out</button>`);
   Camp.markSeen(`w${W.id}`);
+}
+
+// The worlds: the ones open, to go to, and the next one, locked.
+function worldsSheet() {
+  const p = Camp.progress();
+  sheet(`<div class="cp-worlds">${Camp.WORLDS.filter((W) => W.id <= Camp.latestWorld(p) + 1).map((W) => {
+    if (!Camp.worldOpen(p, W.id)) return `<div class="cp-wrow locked"><span class="cp-wlock">${LOCK}</span><span><b>World ${W.id}</b><em>Beat World ${W.id - 1}’s boss to open it</em></span></div>`;
+    return `<a class="cp-wrow${W.id === ui.W.id ? ' here' : ''}" href="${Camp.mapHash(W.id)}">${face(legendOf(W.deck))}<span><b>World ${W.id} · ${esc(W.name)}</b><em>★ ${Camp.worldStars(p, W)} of ${W.stages.length * 3}</em></span></a>`;
+  }).join('')}</div>
+    <button class="btn ghost" data-act="cp-close">Close</button>`);
 }
 
 function lockedSheet(W, i) {

@@ -31,7 +31,7 @@ export const WORLDS = [{
     'Marisol, the Harbormistress, shuts her ledger. “Trade doesn’t stop by itself. Someone is choking it.”',
     '“I’ll take the road up to the Wall and find out who. And every coin I earn on the way, I’ll put to work.”',
   ],
-  done: 'Halvard joins you. World 2, The Wall, is next on the road.',
+  done: 'Halvard joins you, and the Wall opens. World 2, The Fog Country, lies beyond it.',
   stages: [
     { deck: 'ultra-smoke-and-mirrors', place: 'The Market', pic: 'place-market', odds: 0.82,
       before: [
@@ -112,9 +112,122 @@ export const WORLDS = [{
       ],
       lose: ['“The Wall holds,” says Halvard. “It always holds.”'] },
   ],
+}, {
+  // World 2 (2026-11-11): east of the Wall, into the fog, with Halvard's deck.
+  // Its levels are Legends nobody has met yet, from the one The Wall beats
+  // most often to its hardest: Hush, whose fog Halvard was keeping out. (The
+  // Wall's results, Practice against Practice: Blood and Bone 78%, The Charge
+  // 71%, Rot and Bloom 59%, Weathermakers 45%, Fogbound 27%.)
+  id: 2,
+  name: 'The Fog Country',
+  deck: 'ultra-the-wall',
+  map: 'world-2',
+  next: 'ultra-fogbound',
+  intro: [
+    'Beyond the Wall the old east road runs down into the fog, and for a hundred years nobody has walked it and come back.',
+    'Halvard lifts the bar from the gate himself. “I held this gate shut against the fog, and it came on anyway, a little more each year. A wall only makes it wait.”',
+    '“So we go to it,” says Marisol, opening a fresh ledger. “Whoever is breathing that fog onto my roads owes me a hundred years of trade.”',
+  ],
+  done: 'Hush joins you. World 3 lies farther east, where the dawn should be.',
+  stages: [
+    { deck: 'ultra-blood-and-bone', place: 'The Red Ford', pic: 'place-ford', odds: 0.78,
+      before: [
+        'Where the east road meets the river, the water runs red, and on the far bank waits Vesh, the Red Widow, a blade in each hand.',
+        '“The wall-builder comes out at last. Did you bring your wounds, Halvard? I always bring mine.”',
+      ],
+      back: [
+        ['By dawn Vesh is back in the ford, with fresh cuts and twice the fighters. “Every scar teaches me something,” she says. “I study hard.”'],
+        ['Vesh stands alone in the red water, bleeding from a dozen cuts, and smiling. “Now I’m ready. Hit me.”'],
+      ],
+      escape: [
+        ['Vesh staggers back into the fog, laughing through her teeth.', '“First blood to the wall-builder. It only makes me hungrier.”'],
+        ['Vesh wades off downstream, the river reddening behind her.', '“Bleed me once more and you’ll see what I really am.”'],
+      ],
+      win: ['Vesh sinks to one knee in the ford and wipes her blades on her sleeve.', '“You don’t bleed, wall-builder. It isn’t fair.” She nods east. “The fog took my husband. Find whoever sends it, and give them a cut from me.”'],
+      lose: ['“You hold so carefully,” sighs Vesh, “and still you break.”'] },
+    { deck: 'ultra-the-charge', place: 'The Causeway', pic: 'place-causeway', odds: 0.71,
+      before: [
+        'A stone causeway runs straight out across the marsh, and from its far end comes a horn: Kasimir, the First Blade, and his riders.',
+        '“I have ridden this causeway a thousand times and never once arrived second. Stand aside, or be ridden down.”',
+      ],
+      back: [
+        ['Hooves ring on the stones again: Kasimir has gathered his fastest riders. “That was a stumble. This is a charge.”'],
+        ['Kasimir rides out of the fog alone, lance lowered. “No riders this time. Just me, and the first blow.”'],
+      ],
+      escape: [
+        ['Kasimir wheels his horse and is gone down the causeway before you can follow.', '“Second,” he spits. “Once. Never again.”'],
+        ['The riders scatter into the reeds, and Kasimir gallops after them.', '“You don’t chase. You just stand there. I hate that.”'],
+      ],
+      win: ['Kasimir’s lance breaks on Halvard’s shield, and for once he stops.', '“I was never racing anyone,” he admits. “I was running from the fog. It follows whatever’s fastest.” He points into the mist. “Ask the gardener what it waters.”'],
+      lose: ['“First again,” laughs Kasimir, already galloping away.'] },
+    { deck: 'ultra-rot-and-bloom', place: 'The Bone Garden', pic: 'place-garden', odds: 0.59,
+      before: [
+        'Past the marsh the fog lies thick over a garden of barrows, every mound white with flowers. Morrow, the Bone Gardener, is planting.',
+        '“Mind the beds, Halvard. Everything here was someone once, and everything here will be something again.”',
+      ],
+      back: [
+        ['Overnight the barrows have bloomed again, taller and paler. “Nothing stays buried in my garden,” says Morrow. “Not even my losses.”'],
+        ['Morrow kneels at the oldest barrow, and the ground opens around her. “This bed I’ve kept a long time. Let’s see what comes up.”'],
+      ],
+      escape: [
+        ['Morrow sinks into the soft earth like a seed.', '“Planted,” says her voice from under the flowers. “I’ll come up stronger.”'],
+        ['The garden folds over Morrow, and the flowers close for the night.', '“Patience. Every bloom needs its winter.”'],
+      ],
+      win: ['Morrow sits back on her heels and brushes the soil from her hands.', '“The fog waters my garden. I never asked what it drowns.” She points at a dark tower above the mist. “Oriel has tried to blow it away for years. Ask her why she can’t.”'],
+      lose: ['“Back to the earth with you,” says Morrow kindly. “You’ll grow back.”'] },
+    { deck: 'ultra-weathermakers', place: 'The Storm Spire', pic: 'place-spire', odds: 0.45,
+      before: [
+        'On a crag above the fog stands a white tower crowned with lightning. Oriel, Lady of Storms, is giving the sky its orders.',
+        '“Another wall-builder come to tell me to stop? Fog doesn’t listen to walls. It will listen to thunder.”',
+      ],
+      back: [
+        ['The tower bristles with new rods, and the clouds over it boil. “The sky has more weather in it than you have shields,” says Oriel.'],
+        ['Oriel brings the whole storm down at once and stands in its eye. “Every gale I ever kept. Hold this, Unbroken.”'],
+      ],
+      escape: [
+        ['A gust lifts Oriel back up to her balcony.', '“A lull. The sky owes me a better storm.”'],
+        ['Lightning strikes the spire, and when the light clears Oriel is gone.', '“Next time,” the thunder rumbles, “I give orders to the whole sky.”'],
+      ],
+      win: ['The clouds over the spire break, and for a moment there is sun.', '“I’ve blown on that fog for twenty years,” says Oriel quietly. “It doesn’t move, because it isn’t weather. Someone is breathing it.” She points east, where the mist is thickest. “Hush lives at its heart.”'],
+      lose: ['“The weather always wins,” says Oriel. “Ask any wall.”'] },
+    { deck: 'ultra-fogbound', place: 'The Heart of the Fog', pic: 'place-mere', odds: 0.27, boss: true,
+      before: [
+        'At the heart of the fog lies a still black mere, and the fog rises off it like breath. Somewhere out on it, Hush, the Fog Witch, is humming.',
+        '“A hundred years you kept me out, Halvard. A hundred years I waited at your wall. Come closer. You won’t find me.”',
+      ],
+      back: [
+        ['Overnight the fog has thickened and filled with shapes. “I have so many faces in here,” whispers Hush. “Find the real one.”'],
+        ['The mere goes silent. Hush stands on the water with all the fog gathered round her like a cloak. “Then come and find me.”'],
+      ],
+      escape: [
+        ['The shape you struck melts into mist.', '“Warm,” giggles Hush from everywhere at once. “But not found.”'],
+        ['Hush sinks into the mere without a ripple.', '“Closer, closer. The last of me is the hardest to find.”'],
+      ],
+      win: [
+        'The fog thins, and Hush is only a small, cold woman standing in the reeds.',
+        '“I wasn’t choking your roads,” she says. “I was hiding. Something drove me west out of the deep east, and I hid in my own fog.” She looks east, where the dawn should be and isn’t. “It’s still coming.”',
+      ],
+      lose: ['“You looked everywhere,” whispers Hush, “everywhere but here.”'] },
+  ],
 }];
 
 export const worldOf = (id) => WORLDS.find((w) => w.id === id) || null;
+// A world opens once the one before it is done (its boss beaten for good).
+export const worldOpen = (p, w) => w === 1 || (!!worldOf(w - 1) && beaten(p, w - 1, worldOf(w - 1).stages.length - 1));
+export const latestWorld = (p) => WORLDS.reduce((best, W) => (worldOpen(p, W.id) ? W.id : best), 1);
+// Addresses: a world's map is #/campaign/w2, a place in it #/campaign/w2-3;
+// World 1's places keep their first addresses (#/campaign/3), so fights saved
+// before there was a World 2 come back to them. #/campaign alone is the
+// furthest world open.
+export const mapHash = (w) => `#/campaign/w${w}`;
+export const placeHash = (w, i) => (w === 1 ? `#/campaign/${i}` : `#/campaign/w${w}-${i}`);
+export function placeOf(arg, p = progress()) {
+  let w = null, i = null, m;
+  if (/^\d+$/.test(arg || '')) { w = 1; i = Number(arg); }
+  else if ((m = /^w(\d+)(?:-(\d+))?$/.exec(arg || ''))) { w = Number(m[1]); i = m[2] != null ? Number(m[2]) : null; }
+  if (w == null || !worldOf(w) || !worldOpen(p, w)) return { w: latestWorld(p), i: null };
+  return { w, i };
+}
 
 // How a matchup looks from your side, in words (from `odds`).
 export function matchupText(odds) {

@@ -24,6 +24,7 @@ export const WORLDS = [{
   id: 1,
   name: 'The Harbor Road',
   deck: 'ultra-the-long-game',
+  map: 'world-1', // its painting (js/art/campaign-art.js); each level's place has one too
   next: 'ultra-the-wall',
   intro: [
     'The delta has gone quiet. No barges come down the river, no carts come over the hills, and the harbor’s ledgers are running red.',
@@ -32,7 +33,7 @@ export const WORLDS = [{
   ],
   done: 'Halvard joins you. World 2, The Wall, is next on the road.',
   stages: [
-    { deck: 'ultra-smoke-and-mirrors', place: 'The Market', odds: 0.82,
+    { deck: 'ultra-smoke-and-mirrors', place: 'The Market', pic: 'place-market', odds: 0.82,
       before: [
         'In the market square every stall sells the same mask, and behind every mask is Mirelle, the Mask-Maker.',
         '“Coins, Harbormistress? I can make them look like anything. Even like yours.”',
@@ -47,7 +48,7 @@ export const WORLDS = [{
       ],
       win: ['The masks clatter to the cobbles. Mirelle only laughs.', '“Fine: the false coins came from upriver, not from me. Ask the wind who carried them.”'],
       lose: ['“Nothing here is what it looks like,” Mirelle whispers. “Least of all your winning hand.”'] },
-    { deck: 'ultra-sky-and-arrows', place: 'The Cliffs', odds: 0.63,
+    { deck: 'ultra-sky-and-arrows', place: 'The Cliffs', pic: 'place-cliffs', odds: 0.63,
       before: [
         'On the cliffs above the bay every wind blows against the sails. Aeris, Queen of the Winds, rides them all.',
         '“The sky is mine. Your ships pay my toll, or they turn back.”',
@@ -62,7 +63,7 @@ export const WORLDS = [{
       ],
       win: ['The wind drops. “You don’t fight the weather,” Aeris admits. “You outlast it.”', '“The road inland is blocked by something much bigger than me. Go and see.”'],
       lose: ['Arrows fall out of a clear sky. “Come back when you can reach me,” laughs Aeris.'] },
-    { deck: 'ultra-the-giant', place: 'The Pass', odds: 0.48,
+    { deck: 'ultra-the-giant', place: 'The Pass', pic: 'place-pass', odds: 0.48,
       before: [
         'The mountain pass is gone. In its place sits Ymra, Heart of the Mountain, growing one stone at a time.',
         '“Build all you like, little trader. I am already built.”',
@@ -77,7 +78,7 @@ export const WORLDS = [{
       ],
       win: ['Ymra settles back into the hillside with a rumble you feel in your teeth.', '“The fields up there… something is eating them at night. Not me.”'],
       lose: ['“Patience,” grinds the mountain. “I have more of it than you.”'] },
-    { deck: 'ultra-endless-swarm', place: 'The Fields at Night', odds: 0.35,
+    { deck: 'ultra-endless-swarm', place: 'The Fields at Night', pic: 'place-fields', odds: 0.35,
       before: [
         'Night falls on the grain fields, and the fields begin to move: moths, thousands of them, and at their heart Lumen, Mother of Moths.',
         '“One moth is nothing. A thousand is a famine. Death by a thousand cuts, Harbormistress.”',
@@ -92,7 +93,7 @@ export const WORLDS = [{
       ],
       win: ['Dawn breaks, and the swarm scatters into the light.', 'Lumen’s voice comes from everywhere at once: “We were only hungry. The Wall stopped the grain. Ask Halvard why.”'],
       lose: ['“Every one of us you swat makes the rest stronger,” hums the swarm. “Every one.”'] },
-    { deck: 'ultra-the-wall', place: 'The Wall', odds: 0.29, boss: true,
+    { deck: 'ultra-the-wall', place: 'The Wall', pic: 'place-wall', odds: 0.29, boss: true,
       before: [
         'At the top of the road stands the Wall, and on it Halvard, the Unbroken.',
         '“Nothing passes. Not grain, not coin, not you. The Wall holds. It is all I know how to do.”',
@@ -144,6 +145,10 @@ export const nextStage = (p, W) => { const i = W.stages.findIndex((_, k) => !bea
 // what a level's Legend says before a round
 export const beforeLines = (S, round) => (round > 1 ? S.back[round - 2] : S.before);
 export function markSeen(what) { const p = progress(); p.seen[what] = true; keep(p); }
+// How many of a level's rounds its place last showed won (undefined: never
+// shown), so a win is played out there the next time you look.
+export const shownOf = (p, w, i) => p.seen[`v${key(w, i)}`];
+export function markShown(w, i, n) { const p = progress(); p.seen[`v${key(w, i)}`] = n; keep(p); }
 
 // A finished campaign fight ({ world, stage, diff }: diff is the round). Only
 // the round due counts: a win there is a star; the third beats the Legend and

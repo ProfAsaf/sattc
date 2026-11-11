@@ -264,8 +264,11 @@ export function rays({ cx, cy, n = 9, from = -150, to = -30, len = 260, spread =
 // ── scene builder ───────────────────────────────────────────────────
 
 export class Scene {
-  constructor(id) {
+  // (`w`, `h`: another canvas than a card's, e.g. the campaign's tall maps)
+  constructor(id, { w = W, h = H } = {}) {
     this.id = id;
+    this.w = w;
+    this.h = h;
     this.defs = [];
     this.body = [];
     this.k = 0;
@@ -304,7 +307,7 @@ export class Scene {
   add(...svg) { this.body.push(...svg); return this; }
   rect(fill, op = 1) {
     if (this.sky === undefined) this.sky = fill;
-    return this.add(`<rect x="-5" y="-5" width="${W + 10}" height="${H + 10}" fill="${fill}"${op !== 1 ? ` opacity="${op}"` : ''}/>`);
+    return this.add(`<rect x="-5" y="-5" width="${this.w + 10}" height="${this.h + 10}" fill="${fill}"${op !== 1 ? ` opacity="${op}"` : ''}/>`);
   }
   path(d, fill, extra = '') { return this.add(`<path d="${d}" fill="${fill}" ${extra}/>`); }
   // Soft round light.
@@ -331,7 +334,7 @@ export class Scene {
     if (!this.fxc.has(key)) {
       const id = this.uid('fx');
       const reg = o.bbox ? 'x="-.3" y="-.3" width="1.6" height="1.6"'
-        : `filterUnits="userSpaceOnUse" x="${o.box ? o.box[0] : -10}" y="${o.box ? o.box[1] : -10}" width="${o.box ? o.box[2] : W + 20}" height="${o.box ? o.box[3] : H + 20}"`;
+        : `filterUnits="userSpaceOnUse" x="${o.box ? o.box[0] : -10}" y="${o.box ? o.box[1] : -10}" width="${o.box ? o.box[2] : this.w + 20}" height="${o.box ? o.box[3] : this.h + 20}"`;
       let g = '';
       if (kind === 'blur') g = `<feGaussianBlur stdDeviation="${f2(o.sd ?? 1.2)}"/>`;
       else if (kind === 'bloom' || kind === 'halo') {
@@ -402,7 +405,7 @@ export class Scene {
   haze(y0, y1, color, op = 0.45, tail = 14) {
     const top = Math.min(y0, y1), h = Math.abs(y1 - y0) + tail, t = Math.abs(y1 - y0) / h;
     const g = this.lin([[0, color, 0], [f2(t * 0.6), color, op * 0.45], [f2(t), color, op], [1, color, 0]]);
-    return this.add(`<rect x="-5" y="${f1(top)}" width="${W + 10}" height="${f1(h)}" fill="${g}"/>`);
+    return this.add(`<rect x="-5" y="${f1(top)}" width="${this.w + 10}" height="${f1(h)}" fill="${g}"/>`);
   }
   // Glowing particles: same options as particles(), drawn as soft dots with a
   // hot centre. `r` is the visible core; the soft edge reaches about 2.4×.
@@ -459,7 +462,7 @@ export class Scene {
   // Low fog bands.
   fog(y, color, op = 0.35, cls = 'drift') {
     const g = this.lin([[0, color, 0], [0.5, color, op], [1, color, 0]], { x1: 0, y1: 0, x2: 1, y2: 0 });
-    return this.add(`<rect class="${cls}" x="-60" y="${f1(y - 7)}" width="${W + 120}" height="14" rx="7" fill="${g}"/>`);
+    return this.add(`<rect class="${cls}" x="-60" y="${f1(y - 7)}" width="${this.w + 120}" height="14" rx="7" fill="${g}"/>`);
   }
 
   // ── the finish ────────────────────────────────────────────────────
@@ -495,9 +498,9 @@ export class Scene {
     if (!lo) lo = skyDark;
     if (vig == null) vig = 0.26 + 0.24 * Math.max(0, Math.min(1, (0.7 - skyLum) / 0.5));
     let out = '';
-    const full = `x="-5" y="-5" width="${W + 10}" height="${H + 10}"`;
+    const full = `x="-5" y="-5" width="${this.w + 10}" height="${this.h + 10}"`;
     if (o.grade > 0) {
-      const [kx, ky] = o.at || (key ? [key[0], key[1]] : [W / 2, H * 0.3]);
+      const [kx, ky] = o.at || (key ? [key[0], key[1]] : [this.w / 2, this.h * 0.3]);
       const g = this.radU(kx, ky, o.reach, [[0, tint(hi, o.hiL, o.sat)], [0.4, '#808080'], [1, tint(lo, o.loL, o.sat)]]);
       out += `<rect ${full} fill="${g}" opacity="${f2(o.grade)}" style="mix-blend-mode:${o.blend}"/>`;
     }
@@ -521,6 +524,6 @@ export class Scene {
   }
   svg() {
     const fin = this.fin === false ? '' : this.finishSVG();
-    return `<svg class="art-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>${this.defs.join('')}</defs>${this.body.join('')}${fin}</svg>`;
+    return `<svg class="art-svg" viewBox="0 0 ${this.w} ${this.h}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>${this.defs.join('')}</defs>${this.body.join('')}${fin}</svg>`;
   }
 }

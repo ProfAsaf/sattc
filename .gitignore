@@ -1,5 +1,6 @@
 # full-size originals stay local (Dropbox); the published site uses art/*.webp
 art/raw/
+art/campaign/raw/
 tools/*.png
 tools/shots-*/
 __pycache__/

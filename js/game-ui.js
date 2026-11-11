@@ -589,6 +589,7 @@ function mount() {
     });
   }
   document.body.classList.add('in-game');
+  window.dispatchEvent(new Event('collective:game')); // (a page under the game may let go of what it holds: the campaign's pictures)
   keepAwake('game', true);
   return root;
 }
@@ -666,8 +667,8 @@ function save() {
 export function autoResume() {
   const saved = store.get();
   if (!saved || saved.over || saved.left || !saved.at || Date.now() - saved.at > 20 * 60000 || G) return false;
-  const page = saved.campaign ? '#/campaign' : '#/play'; // (a campaign fight comes back over its map)
-  if (!['', '#', '#/', page].includes(location.hash)) return false; // (a page opened on purpose stays open)
+  const page = saved.campaign ? `#/campaign/${saved.campaign.stage}` : '#/play'; // (a campaign fight comes back over its place)
+  if (!['', '#', '#/', page, ...(saved.campaign ? ['#/campaign'] : [])].includes(location.hash)) return false; // (a page opened on purpose stays open)
   if (location.hash !== page) location.hash = page;
   begin(saved);
   return true;
@@ -2961,9 +2962,9 @@ function campaignOverHTML(win, score) {
     ${news ? `<div class="cp-news">${esc(news)}</div>` : ''}
     ${G.rec ? Ins.overSummaryHTML(G.rec, { score }) : ''}
     <div class="btn-row">
-      ${next ? `<button class="btn primary" data-act="camp-next">Round ${next} now</button><button class="btn" data-act="camp-map">Back to the map</button>`
-        : win ? '<button class="btn primary" data-act="camp-map">Back to the map</button>'
-          : '<button class="btn primary" data-act="camp-again">Try again</button><button class="btn" data-act="camp-map">Back to the map</button><button class="btn" data-act="undo">Take back a move</button>'}
+      ${next ? `<button class="btn primary" data-act="camp-next">Round ${next} now</button><button class="btn" data-act="camp-map">Back to ${esc(St0.place)}</button>`
+        : win ? `<button class="btn primary" data-act="camp-map">Back to ${esc(St0.place)}</button>`
+          : `<button class="btn primary" data-act="camp-again">Try again</button><button class="btn" data-act="camp-map">Back to ${esc(St0.place)}</button><button class="btn" data-act="undo">Take back a move</button>`}
     </div></div></div>`;
 }
 
@@ -3873,8 +3874,8 @@ function onAct(act, el) {
       dispatch({ t: 'concede', p: G.me });
       break;
     case 'rules': leave('#/rules'); break;
-    case 'leave': leave(G?.campaign ? '#/campaign' : undefined); break;
-    case 'camp-map': leave('#/campaign'); break;
+    case 'leave': leave(G?.campaign ? `#/campaign/${G.campaign.stage}` : undefined); break;
+    case 'camp-map': leave(`#/campaign/${G.campaign.stage}`); break; // back to the place, where a win plays out
     case 'camp-again': { const c = G.campaign; startCampaign(c.world, c.stage, c.diff); break; }
     case 'camp-next': { const c = G.campaign; startCampaign(c.world, c.stage, Math.min(3, c.diff + 1)); break; }
     case 'reload': location.reload(); break;

@@ -625,40 +625,124 @@ details.fine li { font-size: 14px; }
 
 .pp-misfit { margin: -4px 0 0; color: #ffb38a; }
 
-/* ── the campaign (js/campaign-ui.js): a world's map, its levels, their sheets ── */
-.cp-page { padding: 0 12px 28px; max-width: 480px; margin: 0 auto; }
-.cp-head { display: flex; gap: 12px; align-items: center; margin: 4px 0 12px; }
-.cp-head .cp-face, .cp-who .cp-face { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex: none; }
-.cp-world { font-family: 'EB Garamond', Georgia, serif; font-size: 22px; line-height: 1.15; color: #f4e2b0; }
-.cp-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
-.cp-total { color: var(--gold); white-space: nowrap; }
-.cp-done { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: rgba(214, 180, 106, .14); border: 1px solid rgba(214, 180, 106, .4); font-size: 14px; }
+/* ── the campaign (js/campaign-ui.js): a world's painted map, and the place each level zooms into ── */
+body[data-page="campaign"] main { padding: 0; max-width: none; }
+.cp-world { position: relative; min-height: 100vh; min-height: 100dvh; overflow: hidden; background: #0a0b1c; } /* (the map, zooming, never makes the page longer) */
+.cp-mapwrap { position: relative; width: min(100%, 480px); margin: 0 auto; }
+.cp-stage { position: relative; overflow: hidden; background: #191a3c; }
+.cp-pic { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .45s ease-out; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+.cp-pic.ready { opacity: 1; }
+/* the picture's moving parts: sprites that move as a whole (the compositor's work, nothing redrawn) */
+.cp-live { position: absolute; inset: 0; pointer-events: none; }
+.cp-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.cp-sp { position: absolute; display: block; overflow: visible; }
+/* the bar over the sky */
+.cp-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 20; width: min(100%, 480px); margin: 0 auto; display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; gap: 8px; padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 28px; background: linear-gradient(rgba(6, 7, 22, .86), rgba(6, 7, 22, .5) 62%, rgba(6, 7, 22, 0)); pointer-events: none; transition: opacity .3s; }
+.cp-bar > * { pointer-events: auto; }
+.cp-world.placed .cp-bar { opacity: 0; }
+.cp-world.placed .cp-bar > * { pointer-events: none; }
+.cp-btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; padding: 0; color: #f6e6bd; background: rgba(12, 11, 26, .55); border: 1px solid rgba(246, 226, 176, .35); font: 600 19px/1 'EB Garamond', Georgia, serif; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cp-btn svg { width: 22px; height: 22px; }
+.cp-title { min-width: 0; display: grid; justify-items: center; text-align: center; text-shadow: 0 1px 8px rgba(0, 0, 0, .9); }
+.cp-title b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'EB Garamond', Georgia, serif; font-size: 22px; font-weight: 600; line-height: 1.12; color: #f8e9c4; }
+.cp-title span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: rgba(248, 233, 196, .8); }
+.cp-title em { font-style: normal; color: #ffd75e; }
+.cp-done { grid-column: 1 / -1; justify-self: center; margin-top: 6px; padding: 6px 12px; border-radius: 12px; font-size: 13px; text-align: center; color: #f8e9c4; background: rgba(20, 16, 10, .76); border: 1px solid rgba(255, 215, 94, .4); }
 .cp-done span { color: var(--muted); }
-.cp-map { position: relative; width: 100%; aspect-ratio: 400 / 1000; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
-.cp-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.cp-node, .cp-start { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.cp-node { background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink); -webkit-tap-highlight-color: transparent; }
-.cp-ring { position: relative; width: 62px; height: 62px; border-radius: 50%; border: 3px solid #e8d2a2; overflow: hidden; background: #221d18; box-shadow: 0 4px 12px rgba(0, 0, 0, .55); }
-.cp-node.boss .cp-ring { width: 78px; height: 78px; border-color: #ffd98a; }
+/* a level on the map: its Legend in a gold ring, the place on a plaque, the rounds won */
+.cp-node, .cp-start { position: absolute; display: flex; flex-direction: column; align-items: center; }
+.cp-node { --r: 58px; transform: translate(-50%, calc(var(--r) / -2)); background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink); -webkit-tap-highlight-color: transparent; }
+.cp-node.boss { --r: 70px; }
+.cp-ring { position: relative; width: var(--r); height: var(--r); border-radius: 50%; overflow: hidden; background: #221d18; box-shadow: 0 0 0 2.5px #f3dca4, 0 0 0 5px rgba(34, 22, 12, .85), 0 8px 18px rgba(0, 0, 0, .55); transition: transform .15s; }
+.cp-node:active .cp-ring { transform: scale(.94); }
 .cp-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cp-node.locked .cp-img { filter: grayscale(1) brightness(.45); }
-.cp-node.locked .cp-ring { border-color: #8d826f; }
-.cp-lock { position: absolute; inset: 0; display: grid; place-items: center; color: #e8d2a2; }
+.cp-node.locked .cp-img { filter: grayscale(1) brightness(.42); }
+.cp-node.locked .cp-ring { box-shadow: 0 0 0 2px #8d826f, 0 0 0 4.5px rgba(20, 16, 12, .85), 0 6px 14px rgba(0, 0, 0, .5); }
+.cp-node.done .cp-ring { box-shadow: 0 0 0 2.5px #ffd75e, 0 0 0 5px rgba(60, 38, 8, .9), 0 0 18px rgba(255, 200, 90, .35), 0 8px 18px rgba(0, 0, 0, .55); }
+.cp-lock, .cp-won { position: absolute; inset: 0; display: grid; place-items: center; }
+.cp-lock { color: #e8d2a2; }
 .cp-lock svg { width: 22px; height: 22px; }
-.cp-label { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: rgba(12, 10, 8, .74); white-space: nowrap; }
-.cp-stars i { font-style: normal; color: rgba(255, 255, 255, .28); }
-.cp-stars i.on { color: #ffd75e; }
-.cp-node .cp-stars { font-size: 13px; line-height: 1.25; padding: 0 6px; border-radius: 999px; background: rgba(12, 10, 8, .6); }
-/* the level to play next breathes (a ring that grows and fades: nothing to repaint) */
-.cp-node.next .cp-ring { border-color: #ffd75e; }
-.cp-node.next::before { content: ''; position: absolute; top: 0; left: 50%; width: 62px; height: 62px; margin-left: -31px; border-radius: 50%; border: 3px solid #ffd75e; animation: cp-pulse 1.8s ease-out infinite; pointer-events: none; }
-.cp-node.boss.next::before { width: 78px; height: 78px; margin-left: -39px; }
-@keyframes cp-pulse { from { transform: scale(1); opacity: .9; } to { transform: scale(1.55); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .cp-node.next::before { animation: none; } }
-.cp-start { pointer-events: none; }
-.cp-start .cp-img { width: 46px; height: 46px; border-radius: 50%; border: 2px solid #9fe0c0; box-shadow: 0 3px 10px rgba(0, 0, 0, .5); }
-.cp-start span { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: rgba(12, 10, 8, .74); white-space: nowrap; }
-.cp-how { font-size: 13px; color: var(--muted); text-align: center; margin: 12px 4px 0; line-height: 1.45; }
+.cp-won { color: #fff4cf; background: radial-gradient(circle, rgba(60, 40, 10, .2), rgba(60, 40, 10, .55)); }
+.cp-won svg { width: 28px; height: 28px; }
+/* the level to play next glows, and a ring grows from it and fades (nothing to redraw) */
+.cp-node.next .cp-ring { box-shadow: 0 0 0 2.5px #ffe08a, 0 0 0 5px rgba(60, 38, 8, .9), 0 0 26px 6px rgba(255, 196, 96, .55), 0 8px 18px rgba(0, 0, 0, .55); }
+.cp-node.next::before { content: ''; position: absolute; top: 0; left: 50%; width: var(--r); height: var(--r); margin-left: calc(var(--r) / -2); border-radius: 50%; border: 2.5px solid #ffe08a; box-sizing: border-box; animation: cp-pulse 2s ease-out infinite; pointer-events: none; }
+@keyframes cp-pulse { from { transform: scale(1); opacity: .9; } to { transform: scale(1.6); opacity: 0; } }
+.cp-world.placed .cp-node.next::before { animation: none; } /* (hidden under a place: a hidden animation would tick on the main thread) */
+.cp-plaque { margin-top: 9px; display: grid; justify-items: center; padding: 3px 11px 4px; border-radius: 11px; white-space: nowrap; background: linear-gradient(rgba(28, 22, 32, .88), rgba(12, 10, 16, .88)); border: 1px solid rgba(243, 220, 164, .32); box-shadow: 0 4px 10px rgba(0, 0, 0, .4); }
+.cp-plaque b { font-family: 'EB Garamond', Georgia, serif; font-size: 15px; font-weight: 600; line-height: 1.15; color: #f8e9c4; }
+.cp-plaque .cp-stars { font-size: 12px; line-height: 1.15; letter-spacing: 2px; }
+.cp-node.locked .cp-plaque b { color: rgba(248, 233, 196, .55); }
+.cp-stars i { font-style: normal; color: rgba(255, 255, 255, .25); }
+.cp-stars i.on { color: #ffd75e; text-shadow: 0 0 6px rgba(255, 200, 80, .6); }
+/* where you set out: your Legend at the harbor, sitting just above the road's end, the line beside */
+.cp-start { flex-direction: row; gap: 6px; transform: translate(-24px, calc(-100% + 8px)); pointer-events: none; }
+.cp-start .cp-img { width: 48px; height: 48px; border-radius: 50%; box-shadow: 0 0 0 2.5px #a8ecc8, 0 0 0 5px rgba(10, 30, 24, .8), 0 6px 14px rgba(0, 0, 0, .55); }
+.cp-start span { font-size: 12px; padding: 2px 10px; border-radius: 999px; white-space: nowrap; color: #dff6ea; background: rgba(10, 14, 16, .78); border: 1px solid rgba(168, 236, 200, .35); }
+
+/* a place, over the map: its picture fills the screen; the bar above, the story below */
+.cp-place { position: fixed; inset: 0; z-index: 40; touch-action: none; }
+.cp-frame { position: absolute; top: 0; bottom: 0; left: 0; right: 0; width: min(100%, 480px); margin: 0 auto; }
+.cp-scene { position: absolute; inset: 0; overflow: hidden; background: #0d0b12; }
+.cp-pstage { position: absolute; }
+.cp-burst { position: fixed; z-index: 2; width: 150px; height: 150px; margin: -75px 0 0 -75px; border-radius: 50%; pointer-events: none; opacity: 0; background: radial-gradient(circle, rgba(255, 240, 200, .95), rgba(255, 196, 110, .5) 38%, rgba(255, 170, 90, 0) 70%); }
+.cp-ptop { position: absolute; top: 0; left: 0; right: 0; display: grid; grid-template-columns: 40px 1fr 52px; align-items: center; gap: 8px; padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 30px; background: linear-gradient(rgba(8, 7, 14, .82), rgba(8, 7, 14, .45) 60%, rgba(8, 7, 14, 0)); opacity: 0; transform: translateY(-8px); transition: opacity .15s, transform .15s; }
+.cp-ptop .cp-stars { font-size: 15px; letter-spacing: 1px; text-align: right; }
+.cp-place.in .cp-ptop { opacity: 1; transform: none; transition: opacity .35s ease-out, transform .35s ease-out; } /* (in slowly, out at once) */
+.cp-panel { position: absolute; left: 0; right: 0; bottom: 0; display: grid; gap: 10px; padding: 40px 16px calc(env(safe-area-inset-bottom, 0px) + 14px); background: linear-gradient(rgba(10, 8, 14, 0), rgba(10, 8, 14, .8) 38px, rgba(10, 8, 14, .93) 96px); opacity: 0; transform: translateY(26px); transition: opacity .15s, transform .15s; }
+.cp-place.in .cp-panel { opacity: 1; transform: none; transition: opacity .4s ease-out .12s, transform .45s cubic-bezier(.2, .8, .2, 1) .12s; }
+.cp-panel .cp-story { max-height: 30vh; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.cp-panel .cp-story p { margin: 0 0 6px; font-family: 'EB Garamond', Georgia, serif; font-size: 18.5px; line-height: 1.32; color: #f6eedd; }
+.cp-panel .cp-story p:last-child { margin: 0; }
+.cp-panel .cp-match { padding: 0; background: none; font-size: 13px; color: #b9cfe0; }
+.cp-panel .cp-match b { font-weight: 600; color: #e6f0f8; }
+.cp-panel .cp-beaten { text-align: left; }
+.cp-fight { width: 100%; min-height: 50px; font-size: 16px; }
+.cp-acts { display: flex; gap: 8px; }
+.cp-acts .btn { flex: 1; min-height: 48px; }
+/* a round on the path: won (gold), due (lit, the Legend waiting above it), or still to come */
+.cp-rnd { position: absolute; width: 0; height: 0; }
+.cp-disc { position: absolute; left: -20px; top: -20px; width: 40px; height: 40px; box-sizing: border-box; border-radius: 50%; display: grid; place-items: center; }
+.cp-disc b { font-size: 12px; line-height: 1; letter-spacing: -1px; }
+.cp-disc svg { width: 22px; height: 22px; }
+.cp-tag { position: absolute; left: 0; top: 25px; transform: translateX(-50%); white-space: nowrap; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; letter-spacing: .02em; color: rgba(248, 233, 196, .9); background: rgba(10, 8, 14, .74); }
+.cp-rnd.later .cp-disc { color: rgba(243, 220, 164, .55); background: rgba(14, 12, 22, .62); border: 1.5px solid rgba(243, 220, 164, .4); }
+.cp-rnd.later .cp-tag { color: rgba(248, 233, 196, .55); }
+.cp-rnd.won .cp-disc { color: #3a2208; background: radial-gradient(circle at 38% 32%, #fff0b8, #e7b24a 55%, #96621c); box-shadow: 0 0 0 1.5px rgba(255, 242, 200, .85), 0 0 16px rgba(255, 200, 90, .45), 0 4px 10px rgba(0, 0, 0, .45); }
+.cp-rnd.won .cp-tag { color: #ffe08a; }
+.cp-rnd.due .cp-disc { left: -24px; top: -24px; width: 48px; height: 48px; color: #ffd75e; background: radial-gradient(circle at 50% 38%, #5a3c18, #1c1208 70%); box-shadow: 0 0 0 2.5px #ffe08a, 0 0 0 5px rgba(40, 24, 6, .8), 0 0 26px 6px rgba(255, 186, 90, .55); }
+.cp-rnd.due .cp-disc b { font-size: 14px; }
+.cp-rnd.due .cp-tag { top: 30px; color: #ffe7a6; background: rgba(40, 26, 8, .86); border: 1px solid rgba(255, 224, 138, .5); }
+.cp-rnd.due::before { content: ''; position: absolute; left: -24px; top: -24px; width: 48px; height: 48px; box-sizing: border-box; border-radius: 50%; border: 2.5px solid #ffe08a; animation: cp-pulse 2s ease-out infinite; }
+/* the round the Legend stands on: their face is its marker (its disc hidden under it) */
+.cp-rnd.held .cp-disc { visibility: hidden; }
+.cp-rnd.held .cp-tag { top: 37px; }
+.cp-rnd.due.held::before { left: -29px; top: -29px; width: 58px; height: 58px; }
+/* the Legend: a medallion on the round due, bobbing; grey, with a gold check, once beaten */
+.cp-foe { position: absolute; width: 0; height: 0; }
+.cp-foe-in { position: absolute; left: -29px; top: -29px; width: 58px; height: 58px; border-radius: 50%; overflow: hidden; background: #221d18; box-shadow: 0 0 0 2.5px #ffcf7a, 0 0 0 5px rgba(40, 18, 8, .9), 0 0 26px 6px rgba(255, 120, 70, .45), 0 8px 16px rgba(0, 0, 0, .5); }
+.cp-foe-won { display: none; position: absolute; left: 12px; top: 8px; width: 26px; height: 26px; border-radius: 50%; place-items: center; color: #3a2208; background: radial-gradient(circle at 38% 32%, #fff0b8, #e7b24a 55%, #96621c); box-shadow: 0 0 0 1.5px rgba(255, 242, 200, .85), 0 3px 8px rgba(0, 0, 0, .5); }
+.cp-foe-won svg { width: 16px; height: 16px; }
+.cp-foe.beaten .cp-foe-won { display: grid; }
+.cp-foe.beaten .cp-foe-in { filter: grayscale(.9) brightness(.7); box-shadow: 0 0 0 2.5px #9a8f7a, 0 0 0 5px rgba(20, 16, 12, .9), 0 8px 16px rgba(0, 0, 0, .5); transition: filter .9s, box-shadow .9s; }
+/* coming in: the rounds come up the path one by one, the Legend drops in */
+.cp-place:not(.lit) .cp-rnd, .cp-place:not(.lit) .cp-foe { opacity: 0; }
+.cp-place.lit .cp-rnd { animation: cp-pop .55s cubic-bezier(.2, 1.5, .4, 1) calc(.1s + var(--k) * .14s) both; }
+.cp-place.lit .cp-foe { animation: cp-drop .7s cubic-bezier(.2, 1.4, .4, 1) .5s both; }
+.cp-place.lit .cp-foe:not(.beaten) .cp-foe-in { animation: cp-bob 3.4s ease-in-out 1.2s infinite alternate; }
+/* a win played out: the round flares gold; the next one lights up */
+.cp-place.lit .cp-rnd.just { animation: cp-win .8s cubic-bezier(.2, 1.6, .4, 1) both; }
+.cp-rnd.just::after { content: ''; position: absolute; left: -20px; top: -20px; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 232, 170, .95), rgba(255, 200, 90, 0) 70%); animation: cp-flare .9s ease-out both; pointer-events: none; }
+.cp-place.lit .cp-rnd.lit { animation: cp-pop .6s cubic-bezier(.2, 1.5, .4, 1) both; }
+@keyframes cp-pop { from { opacity: 0; transform: scale(.3); } to { opacity: 1; transform: none; } }
+@keyframes cp-drop { from { opacity: 0; transform: translateY(-26px); } to { opacity: 1; transform: none; } }
+@keyframes cp-bob { from { transform: translateY(0); } to { transform: translateY(-6px); } }
+@keyframes cp-win { 0% { transform: scale(1); } 35% { transform: scale(1.4); } 100% { transform: scale(1); } }
+@keyframes cp-flare { from { transform: scale(.4); opacity: 1; } to { transform: scale(3.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .cp-node.next::before, .cp-rnd.due::before, .cp-rnd.just::after { animation: none; display: none; }
+  .cp-place.lit .cp-rnd, .cp-place.lit .cp-foe, .cp-place.lit .cp-foe-in { animation: none; }
+}
 /* a level's sheet, and the world's opening */
 .cp-sheet { position: fixed; inset: 0; z-index: 70; display: flex; align-items: flex-end; justify-content: center; padding: 12px 12px calc(env(safe-area-inset-bottom, 0px) + 12px); background: rgba(8, 6, 4, .8); animation: fade .15s ease-out; }
 .cp-sheet-in { width: min(100%, 460px); max-height: 88vh; overflow-y: auto; display: grid; gap: 12px; padding: 16px; border-radius: 18px; background: #1d1813; border: 1px solid rgba(214, 180, 106, .3); box-shadow: 0 -10px 40px rgba(0, 0, 0, .5); }
@@ -668,15 +752,10 @@ details.fine li { font-size: 14px; }
 .cp-story p { margin: 0 0 8px; font-size: 15px; line-height: 1.5; }
 .cp-story p:last-child { margin-bottom: 0; }
 .cp-match { font-size: 13px; line-height: 1.4; padding: 8px 10px; border-radius: 10px; color: #cfe6f5; background: rgba(150, 210, 255, .08); }
-/* a level's three rounds: won, due, still to come */
-.cp-rounds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.cp-rounds span { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; border-radius: 10px; border: 1px solid var(--line); font-size: 14px; color: rgba(255, 255, 255, .35); }
-.cp-rounds small { font-size: 11px; color: var(--muted); }
-.cp-rounds .won { color: #ffd75e; border-color: rgba(255, 215, 94, .45); background: rgba(255, 215, 94, .08); }
-.cp-rounds .due { color: var(--ink); border-color: var(--gold); }
 .cp-beaten { text-align: center; font-size: 14px; color: #9fe0a0; }
 .cp-locked { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
 .cp-locked svg { width: 18px; height: 18px; color: #e8d2a2; flex: none; }
+.cp-sheet .cp-how { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
 /* the end of a campaign fight (inside the game's end screen) */
 .cp-said { display: flex; gap: 12px; align-items: flex-start; text-align: left; max-width: 34em; margin: 0 auto; }
 .cp-said img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex: none; }

@@ -374,3 +374,10 @@
   inset: 0;
   transform: rotateY(180deg);
 }
+/* the campaign's pictures (js/art/campaign-art.js): grass and reeds bend from
+   their roots, a windmill's sails turn */
+.anim .art-svg .sway { transform-box: fill-box; transform-origin: 50% 100%; animation: art-sway var(--t, 3.6s) ease-in-out var(--d, 0s) infinite alternate; }
+.anim .art-svg .turn { animation: art-turn 18s linear infinite; }
+@keyframes art-sway { from { transform: rotate(-4deg); } to { transform: rotate(3deg); } }
+@keyframes art-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .anim .art-svg .sway, .anim .art-svg .turn { animation: none; } }

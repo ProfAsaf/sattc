@@ -1109,16 +1109,37 @@ Asaf's idea: playing the bots as a game of its own, a map of levels like Mario's
   - A level's stars are the rounds won; only the round due counts (`record`).
   - The first version (stars for the hardest difficulty beaten, one star opening the next level) gave stars nothing to do.
   - Progress stays on the phone (`collective.campaign`).
-- **The screens** (`js/campaign-ui.js`, Home → Campaign):
-  - The map is drawn in code: the harbor town and bay, the market square, the cliffs and lighthouse, the mountain pass, the high fields under the moon, the Wall on its ridge. Plain shapes and no filters; the next level's ring pulses by scale and fade only.
-  - Each level is a medallion with its Legend's picture, a lock until it opens, then its stars.
-  - Tap one for the scene before the round that's due, how the matchup looks from your side, the three rounds (won, due, to come) and one fight button: "Round 2 of 3 · ★★ Practice".
-  - A beaten level shows how it ended, with a fight again at Expert for fun. The first visit opens with the world's story.
+- **The screens** (`js/campaign-ui.js`, Home → Campaign): a painted map of the world, and a painted place for each level that the map zooms into (see "The campaign's pictures", below).
+  - On the map, each level is a medallion with its Legend's picture on a plaque with the place's name: a lock until it opens, then its stars. The level to play next glows and pulses.
+  - Tap one and the map dives toward it while the place opens out of the medallion as a widening circle. The place shows the three rounds along its path (won in gold, the one due, the ones to come), with the Legend's face standing on the round that's due. The story so far and one Fight button ("Fight · Round 2 of 3 · ★★ Practice") sit below.
+  - Back, or a swipe to the right, closes the circle back into the medallion; the map is where you left it. Each place has its own address (`#/campaign/2`), so the phone's Back works and a reload opens it again.
+  - A beaten place shows how it ended, a fight again at Expert for fun, and "On to The Cliffs", which zooms out and into the next place.
+  - The first visit opens with the world's story and how a rivalry works; "?" on the map shows it again.
 - **The fights** are practice games (`game-ui.js` `startCampaign`): your world's deck and Legend against the level's, the bot at the difficulty's level.
-  - They carry `campaign: { world, stage, diff }` through saves and restarts; one that the phone closed comes back over the map.
-  - At the end the Legend's line shows (an escape, the last defeat, or their gloating), then the rounds won, what comes next ("Mirelle will be back with better fighters: round 2, ★★ Practice"), the usual summary, and the next step: "Round 2 now", "Try again" or "Back to the map".
+  - They carry `campaign: { world, stage, diff }` through saves and restarts; one that the phone closed comes back at its place.
+  - At the end the Legend's line shows (an escape, the last defeat, or their gloating), then the rounds won, what comes next ("Mirelle will be back with better fighters: round 2, ★★ Practice"), the usual summary, and the next step: "Round 2 now", "Try again" or "Back to The Market".
+  - Back at the place, a win not seen there yet plays out: the Legend runs up the path to the next round and the round left behind turns gold, or, the third time, they grey out where they stand.
+  - While a fight is on, the campaign's pictures are let go (`collective:game`): tens of MB on a phone that the game can use. Leaving the fight draws the place afresh.
   - They count for your rating like any practice game.
-- Test: `.phone-tests/ui-campaign.mjs` (19 checks: the opening, the locks, three rounds against Mirelle with both escapes and the bot at each level, the road opening only after the third, a beaten level's sheet, a loss, a reload).
+- Test: `.phone-tests/ui-campaign.mjs` (32 checks: the opening, the locks, the map moving, into the Market and out by Back and by a swipe with the map's scroll kept, three rounds against Mirelle with both escapes played out at the place and the bot at each level, the road opening only after the third, On to the Cliffs, a fight's pictures let go and a reload mid-fight, a loss, a reload).
+
+## The campaign's pictures (2026-11-11)
+
+Asaf, on the first map: "this looks more clipart. Not the cool style we have on the cards. You could even have subtle things like wind blowing grass. It should be objectively beautiful." And: stopping at a place should "zoom you into that area and expand so the three steps within it then show up and the theme expands around you".
+
+- **Painted like the cards** (`js/art/campaign-art.js`, with the card art's kit `js/art/kit.js`, whose scenes now take any size): the map (300 × 760) and five places (300 × 600 each), lit and graded like the card art.
+  - The map, read bottom to top: the harbor town at sunset with its market square and lanterns, the cliffs and the lighthouse over the bay, green slopes with a windmill, the mountain pass at dusk, the high fields under the moon, and the Wall on its ridge at night.
+  - The Market: a night street of mask stalls under strings of lanterns, up to Mirelle's pavilion. The Cliffs: a stair cut up the rock at sunset to Aeris's eyrie. The Pass: a valley climbing to a glowing notch, Ymra's face in the mountain, ember veins. The Fields at Night: the moon behind a tree, a scarecrow, wheat, moths. The Wall: the gate with torches and banners, a shield wall, Halvard on top.
+  - Each place's three rounds sit along its path (`spots.rounds`); the map's levels along its road (`spots.levels`).
+- **Baked** (`tools/bake-campaign.mjs` + `tools/bake-campaign.html`): the pictures are full of filters, far too slow to draw on a phone, so they are photographed once at four times their size (sharp at full width on a 3x phone) into `art/campaign/<id>.webp` (120–180 KB each). `js/campaign-pics.js` lists each picture's files with versions, size and spots, so the page never loads the drawing code.
+- **What moves** (the drawing's `live` layer): grass and wheat bending from their roots, smoke and embers rising, moths, gulls and fireflies floating, stars and window lights glimmering, lanterns breathing, clouds drifting, the windmill turning, a fountain falling. The bake cuts each moving thing out as its own little picture (a sprite) with where it sits, the point it bends or turns from, and how it moves: `art/campaign/<id>.json`, 213 on the map, 31–174 in a place.
+  - On the page each sprite is an HTML element moved as a whole (a transform or an opacity, Web Animations), which the phone's compositor runs: nothing is redrawn while the grass blows. Measured in Chrome over idle seconds: no style or layout work on the main thread, on the map or in a place.
+  - Three things made it tick on the main thread, all fixed: an animation on an element clipped out of sight (a place crops its picture to fill the screen; its off-screen sprites are paused); animations left running on elements taken off the page (cancelled when a place closes, a fight starts, or you leave the campaign); and the map's pulse running hidden under a place.
+  - Started under a zooming parent, the moving parts are made afresh once the zoom is over.
+  - Reduced motion (the phone's setting): nothing moves, and places open without the zoom.
+- **The zoom**: the map scales toward the medallion while the place opens in a circle clipped from it (`clip-path`, about 0.86 s), then the rounds pop up the path one by one, the Legend drops in, and the story slides up. The picture is lifted, if need be, to keep the lowest round clear of the story (by its position, not a transform: under a transformed parent the sprites would tick on the main thread).
+- Tests and tools: `.phone-tests/look-campaign-art.mjs` (each picture with its moving parts and spots marked), `look-campaign-ui.mjs` (the map, a place, the zoom; `STARS=`, `SHOWN=`, `NODE=`), `look-campaign-zoom.mjs` (the zoom at a tenth of its speed), `look-campaign-cost.mjs` and `look-campaign-cost2.mjs` (main-thread work while idle).
+- Also found on the way: the browser restored an old scroll position on Back before the router ran; the app now places the scroll itself (`history.scrollRestoration = 'manual'`).
 
 ## Reading a Legend (2026-11-10)
 

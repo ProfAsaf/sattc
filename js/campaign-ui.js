@@ -1,140 +1,438 @@
 // The campaign's screens (campaign.js has the worlds, the story and your
-// progress): a world's map, the road from your harbor up to its boss, each
-// level a medallion with the Legend you'll meet there and your stars; tap
-// one for its scene and the three difficulties. The fights themselves are
-// practice games (game-ui.js startCampaign) that come back here.
+// progress). A world is a painted map (js/art/campaign-art.js, baked by
+// tools/bake-campaign.mjs into js/campaign-pics.js): the road from your
+// harbor up to its boss, each level a medallion with the Legend you'll meet
+// there. Tap one and the map zooms into that place: its own painting, the
+// three rounds along its path with the Legend waiting at the one that's due,
+// the story so far, and the one fight to have now. The fights are practice
+// games (game-ui.js startCampaign) that come back to the place, where a win
+// is played out: the round turns gold and the Legend runs on up the path, or
+// is beaten for good.
 
 import { BY_ID, ULTRA_STARTERS } from './cards.js';
 import { artURL, esc } from './render.js';
 import * as Camp from './campaign.js';
+import { PICS } from './campaign-pics.js';
 import { startCampaign } from './game-ui.js';
 
 const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7.5a5 5 0 0 1 10 0V10" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="5" y="10" width="14" height="10" rx="2.2" fill="currentColor"/></svg>';
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 12.5l4.2 4.2L18.5 7.8"/></svg>';
 const starter = (id) => ULTRA_STARTERS.find((d) => d.id === id);
 const legendOf = (deckId) => BY_ID[starter(deckId)?.legend];
 const shortName = (name) => name.split(',')[0];
 const face = (card, cls = 'cp-face') => `<img class="${cls}" src="${esc(artURL(card) || '')}" alt="">`;
-const starRow = (n) => `<span class="cp-stars" aria-label="${n} of 3 stars">${[1, 2, 3].map((k) => `<i class="${k <= n ? 'on' : ''}">★</i>`).join('')}</span>`;
+const starRow = (n) => `<span class="cp-stars" aria-label="${n} of 3 rounds won">${[1, 2, 3].map((k) => `<i class="${k <= n ? 'on' : ''}">★</i>`).join('')}</span>`;
+const pc = (v) => `${(v * 100).toFixed(3)}%`;
+const at = (P, [x, y]) => `left:${pc(x / P.w)};top:${pc(y / P.h)}`;
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const done = (anims) => Promise.all(anims.map((a) => a.finished.catch(() => {})));
 
-// Where each level sits on World 1's map (in its 400 × 1000 drawing), the
-// harbor at the bottom, the Wall at the top; and the road through them.
-const SPOTS = { 1: { start: [200, 962], stages: [[128, 828], [272, 680], [150, 522], [256, 366], [200, 182]] } };
-
-// World 1, drawn: a harbor town on a bay at sunset, the market square, the
-// cliffs, a mountain pass, high fields under the night, and the Wall on its
-// ridge. Plain shapes, no filters: a page that scrolls on any phone.
-function harborRoad() {
-  const stars = [[24, 30], [62, 92], [118, 40], [160, 74], [232, 26], [290, 64], [338, 22], [376, 88], [96, 128], [314, 120], [40, 186], [366, 168], [204, 54]]
-    .map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i % 3 ? 1.1 : 1.7}" fill="#fff" opacity="${i % 2 ? 0.55 : 0.85}"/>`).join('');
-  const moths = [[226, 330], [238, 316], [276, 334], [290, 352], [214, 382], [300, 388], [262, 312], [246, 404], [282, 410]]
-    .map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 1.6 : 2.3}" fill="#fff3c4" opacity=".85"/>`).join('');
-  const merlons = Array.from({ length: 19 }, (_, i) => `M${22 + i * 19},150h10v-9h-10z`).join('');
-  return `<svg class="cp-art" viewBox="0 0 400 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-    <defs>
-      <linearGradient id="cp-sky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#15142c"/><stop offset=".24" stop-color="#2c2448"/><stop offset=".38" stop-color="#6f415e"/>
-        <stop offset=".45" stop-color="#d98d5a"/><stop offset=".5" stop-color="#f2c179"/><stop offset="1" stop-color="#f2c179"/>
-      </linearGradient>
-      <linearGradient id="cp-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f7f99"/><stop offset="1" stop-color="#173b52"/></linearGradient>
-      <linearGradient id="cp-night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2c3a"/><stop offset=".6" stop-color="#22403f"/><stop offset="1" stop-color="#2b5243"/></linearGradient>
-    </defs>
-    <rect width="400" height="1000" fill="url(#cp-sky)"/>
-    ${stars}
-    <path d="M70 52a16 16 0 1 0 16 22 13 13 0 1 1-16-22z" fill="#f7efd2" opacity=".9"/>
-    <!-- the high fields, at night -->
-    <path d="M0 236 C90 214 300 214 400 240 L400 610 L0 610 Z" fill="url(#cp-night)"/>
-    <path d="M200 306 C240 296 300 292 334 300 C344 340 348 392 340 428 C300 438 236 440 192 432 C186 392 188 340 200 306 Z" fill="#5a5a34" opacity=".55"/>
-    <path d="M202 336 C250 328 300 326 340 332 M196 366 C250 360 300 358 344 364 M194 398 C250 394 300 392 344 396" stroke="#8a8446" stroke-width="2" fill="none" opacity=".5"/>
-    ${moths}
-    <!-- the ridge and the Wall -->
-    <path d="M0 238 C80 206 150 198 200 196 C260 196 330 204 400 232 L400 262 L0 262 Z" fill="#22213a"/>
-    <path d="M18 196 L382 196 L382 150 L18 150 Z" fill="#3e3b57"/>
-    <path d="${merlons}" fill="#3e3b57"/>
-    <path d="M18 150 L382 150" stroke="#d8a96b" stroke-width="2" opacity=".8"/>
-    <path d="M52 196V128h28v68zM138 196V132h26v64zM236 196V132h26v64zM320 196V128h28v68z" fill="#47445f"/>
-    <path d="M52 128h28M138 132h26M236 132h26M320 128h28" stroke="#d8a96b" stroke-width="2" opacity=".7"/>
-    <path d="M182 196 L182 172 Q200 150 218 172 L218 196 Z" fill="#141322"/>
-    <!-- far mountains and the pass -->
-    <path d="M0 520 L40 470 L78 492 L112 446 L142 500 L132 540 L0 560 Z" fill="#4d4560"/>
-    <path d="M168 540 L190 470 L222 440 L262 486 L300 452 L346 494 L400 470 L400 560 L170 560 Z" fill="#4d4560"/>
-    <path d="M112 446 L142 500 L128 520 Z M222 440 L262 486 L236 492 Z M300 452 L346 494 L318 498 Z" fill="#7d6f86" opacity=".75"/>
-    <path d="M88 548 L120 500 L138 512 L128 560 Z M176 562 L196 512 L214 528 L206 566 Z" fill="#6d6064"/>
-    <!-- green hills -->
-    <path d="M0 560 C70 540 140 556 200 548 C270 540 330 556 400 544 L400 1000 L0 1000 Z" fill="#2e5c41"/>
-    <path d="M0 640 C90 610 170 640 240 622 C300 608 350 630 400 620 L400 1000 L0 1000 Z" fill="#3b7048"/>
-    <!-- the cliffs over the bay, and their birds -->
-    <path d="M300 640 C330 630 370 632 400 640 L400 800 L322 800 C330 760 306 720 300 640 Z" fill="#8a745c"/>
-    <path d="M300 640 C330 630 370 632 400 640" stroke="#c4a77e" stroke-width="5" fill="none"/>
-    <path d="M318 606 q6 -6 12 0 q6 -6 12 0 M352 590 q5 -5 10 0 q5 -5 10 0" stroke="#2a2a3a" stroke-width="2" fill="none"/>
-    <path d="M0 740 C80 716 160 744 230 730 C280 720 300 740 322 760 L322 1000 L0 1000 Z" fill="#4b874f"/>
-    <!-- the bay -->
-    <path d="M232 790 C270 770 300 790 330 790 C360 790 380 784 400 786 L400 1000 L220 1000 C210 940 214 860 232 790 Z" fill="url(#cp-sea)"/>
-    <path d="M262 830h26M300 856h30M250 890h22M318 912h40M270 960h30" stroke="#a9d3e0" stroke-width="2" stroke-linecap="round" opacity=".5"/>
-    <path d="M232 936h96v8h-96z" fill="#6b4a32"/>
-    <path d="M294 900h34l-5 10h-24z" fill="#5a3a2a"/><path d="M310 900v-30l14 26z" fill="#f4ead2"/>
-    <path d="M344 968h40l-6 12h-28z" fill="#5a3a2a"/><path d="M362 968v-34l16 30z" fill="#f4ead2"/>
-    <path d="M360 760h16l4 56h-24z" fill="#efe6d4"/><path d="M357 776h22v8h-22zM356 796h24v8h-24z" fill="#b8473c"/>
-    <circle cx="368" cy="752" r="9" fill="#ffe6a0" opacity=".9"/>
-    <!-- the town and its market -->
-    <path d="M24 900h44v40h-44zM80 910h40v34h-40zM34 960h50v40h-50zM120 950h42v50h-42zM170 960h40v40h-40z" fill="#c9875a"/>
-    <path d="M20 900l26-20 26 20zM76 910l24-18 24 18zM30 960l29-20 29 20zM116 950l25-20 25 20zM166 960l24-18 24 18z" fill="#6b3b2e"/>
-    <circle cx="128" cy="828" r="52" fill="#d8c39a"/>
-    <circle cx="128" cy="828" r="52" fill="none" stroke="#b9a37a" stroke-width="3" stroke-dasharray="2 6"/>
-    ${[150, 190, 228, 266].map((a) => { const r = 62, x = 128 + r * Math.cos((a * Math.PI) / 180), y = 828 + r * Math.sin((a * Math.PI) / 180);
-      return `<path d="M${(x - 11).toFixed(1)} ${(y + 2).toFixed(1)}h22v9h-22z" fill="#7a4e33"/><path d="M${(x - 12).toFixed(1)} ${(y - 8).toFixed(1)}h24v9h-24z" fill="#e05a4a"/>`
-        + `<path d="M${(x - 12).toFixed(1)} ${(y - 8).toFixed(1)}h24" stroke="#fff" stroke-width="3" stroke-dasharray="4 4"/>`; }).join('')}
-    <!-- the road -->
-    <path id="cp-road" d="M200 975 C190 930 112 880 128 828 C144 774 286 742 272 680 C262 628 138 594 150 522 C160 462 270 432 256 366 C244 300 200 252 200 190"
-      fill="none" stroke="#e8d2a2" stroke-width="13" stroke-linecap="round"/>
-    <path d="M200 975 C190 930 112 880 128 828 C144 774 286 742 272 680 C262 628 138 594 150 522 C160 462 270 432 256 366 C244 300 200 252 200 190"
-      fill="none" stroke="#b39461" stroke-width="2" stroke-dasharray="7 9" stroke-linecap="round"/>
-  </svg>`;
+// ── the moving parts ────────────────────────────────────────────────
+// A picture's moving parts come as sprites: each a little picture placed in
+// the drawing's units that moves as a whole (a transform or an opacity, which
+// the phone's compositor runs: nothing is redrawn). Grass bends from its
+// roots, smoke and embers rise, moths and gulls float, stars and lanterns
+// glimmer, clouds drift, a windmill turns.
+const LIGHTS = new Set(['twinkle', 'rise', 'breathe', 'fall']);
+const MOVES = { // -> [keyframes, seconds, back and forth?, easing]
+  sway: (u, s) => [[{ transform: 'rotate(-4deg)' }, { transform: 'rotate(3deg)' }], s.t ?? 3.6, true],
+  turn: () => [[{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], 18, false, 'linear'],
+  rise: (u, s) => [[{ transform: 'translate(0,0)', opacity: 0 }, { opacity: s.o ?? 1, offset: 0.15 }, { opacity: s.o ?? 1, offset: 0.8 }, { transform: `translate(${7 * u}px,${-52 * u}px)`, opacity: 0 }], s.t ?? 6, false, 'linear'],
+  float: (u, s) => [[{ transform: `translate(${-3 * u}px,${2 * u}px)` }, { transform: `translate(${3 * u}px,${-4 * u}px)` }], s.t ?? 7, true],
+  twinkle: (u, s) => [[{ opacity: 0.12 }, { opacity: s.o ?? 1 }], s.t ?? 4, true],
+  drift: (u) => [[{ transform: `translateX(${-16 * u}px)` }, { transform: `translateX(${16 * u}px)` }], 16, true],
+  breathe: (u, s) => [[{ opacity: 0.65 * (s.o ?? 1), transform: 'scale(.93)' }, { opacity: s.o ?? 1, transform: 'scale(1.07)' }], 3.4, true],
+  fall: (u) => [[{ transform: `translate(0,${-5 * u}px)`, opacity: 0 }, { opacity: 0.95, offset: 0.25 }, { transform: `translate(${-3 * u}px,${7 * u}px)`, opacity: 0 }], 1.6, false, 'linear'],
+};
+const lives = new Map(); // picture -> its sprites, fetched once
+function liveOf(id) {
+  if (!lives.has(id)) lives.set(id, fetch(PICS[id].live).then((r) => (r.ok ? r.json() : null)).catch(() => null));
+  return lives.get(id);
+}
+// Lay a picture's sprites into its box (inside the picture's stage), then set them moving.
+async function liven(box) {
+  const id = box.dataset.pic, P = PICS[id], L = await liveOf(id);
+  if (!L || !box.isConnected) return;
+  box.innerHTML = `<svg class="cp-defs" aria-hidden="true"><defs>${L.defs}</defs></svg>${L.sprites.map((s, i) => `<svg class="cp-sp" data-i="${i}" viewBox="${s.x} ${s.y} ${s.w} ${s.h}" preserveAspectRatio="none" aria-hidden="true" style="left:${pc(s.x / P.w)};top:${pc(s.y / P.h)};width:${pc(s.w / P.w)};height:${pc(s.h / P.h)};transform-origin:${s.ox}% ${s.oy}%${LIGHTS.has(s.a) && s.o != null ? `;opacity:${s.o}` : ''}">${s.svg}</svg>`).join('')}`;
+  box.live = L;
+  move(box);
+  if (box.closest('.cp-place.in')) restart(box, true);
+}
+// (Again when the picture changes size: drifts and rises are in the drawing's units.)
+function move(box) {
+  const L = box.live;
+  if (!L || still() || !box.animate) return;
+  const u = box.offsetWidth / PICS[box.dataset.pic].w;
+  if (box.anims && box.u && Math.abs(u / box.u - 1) < 0.02) return;
+  const old = box.anims || [];
+  box.u = u;
+  box.anims = [...box.querySelectorAll('.cp-sp')].map((el, k) => {
+    const s = L.sprites[el.dataset.i], [frames, t, alt, easing = 'ease-in-out'] = MOVES[s.a](u, s);
+    const a = el.animate(frames, { duration: t * 1000, delay: (s.d || 0) * 1000, iterations: Infinity, direction: alt ? 'alternate' : 'normal', easing });
+    if (old[k]) { a.currentTime = old[k].currentTime; old[k].cancel(); }
+    if (box.held) a.pause();
+    return a;
+  });
+}
+// Start the moving parts afresh where they are, once a zoom is over (begun
+// under a zooming parent, a browser may leave them ticking on the main
+// thread); and in a place, still the ones outside the screen (the picture is
+// cropped to fill it): moving out of sight, they would tick there too.
+function restart(box, cull = false) {
+  setTimeout(() => {
+    if (!box?.isConnected || !box.live) return;
+    box.u = 0;
+    move(box);
+    if (!cull || box.held) return;
+    const W = innerWidth, H = innerHeight;
+    box.querySelectorAll('.cp-sp').forEach((el, k) => {
+      const r = el.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > H || r.right < 0 || r.left > W) box.anims[k]?.pause();
+    });
+  }, 160);
+}
+// Stop a picture's moving parts for good when it leaves the page: an
+// animation left running on an element that's gone keeps the browser ticking.
+function drop(box) {
+  for (const a of box?.anims || []) a.cancel();
+  if (box) box.anims = [];
+}
+// Leaving the campaign (another page, or a fight over it): let it all go.
+export function leaveCampaign() {
+  if (!ui) return;
+  ui.root.querySelectorAll('.cp-live').forEach(drop);
+  ui = null;
+}
+function hold(box, on) {
+  if (!box) return;
+  box.held = on;
+  for (const a of box.anims || []) on ? a.pause() : a.play();
 }
 
+// ── the map ─────────────────────────────────────────────────────────
+let ui = null; // the page up: { view, root, W, place, pushed, chain }
+const go = (fn) => { const u = ui; u.chain = u.chain.then(fn).catch((e) => console.error(e)); };
+
 function mapHTML(W, p) {
-  const spot = SPOTS[W.id], next = Camp.nextStage(p, W);
-  const node = (i) => {
-    const S = W.stages[i], L = legendOf(S.deck), n = Camp.starsOf(p, W.id, i), open = Camp.isOpen(p, W.id, i);
-    const [x, y] = spot.stages[i];
-    const cls = !open ? 'locked' : i === next ? 'next' : n >= 3 ? 'done' : 'open';
-    return `<button class="cp-node ${cls}${S.boss ? ' boss' : ''}" data-stage="${i}" style="left:${(x / 4).toFixed(2)}%;top:${(y / 10).toFixed(2)}%"
-      aria-label="${esc(S.place)}: ${esc(L.name)}${open ? `, ${n} of 3 stars` : ', locked'}">
-      <span class="cp-ring">${face(L, 'cp-img')}${open ? '' : `<span class="cp-lock">${LOCK}</span>`}</span>
-      <span class="cp-label">${esc(shortName(L.name))}</span>${open ? starRow(n) : ''}
+  const P = PICS[W.map], me = legendOf(W.deck), next = Camp.nextStage(p, W);
+  const total = Camp.worldStars(p, W), over = Camp.beaten(p, W.id, W.stages.length - 1);
+  const node = (S, i) => {
+    const L = legendOf(S.deck), n = Camp.starsOf(p, W.id, i), open = Camp.isOpen(p, W.id, i);
+    const cls = !open ? 'locked' : n >= 3 ? 'done' : i === next ? 'next' : 'open';
+    return `<button class="cp-node ${cls}${S.boss ? ' boss' : ''}" data-stage="${i}" style="${at(P, P.spots.levels[i])}" aria-label="${esc(S.place)}: ${esc(L.name)}${open ? `, ${n} of 3 rounds won` : ', locked'}">
+      <span class="cp-ring">${face(L, 'cp-img')}${!open ? `<span class="cp-lock">${LOCK}</span>` : n >= 3 ? `<span class="cp-won">${CHECK}</span>` : ''}</span>
+      <span class="cp-plaque"><b>${esc(S.place)}</b>${open ? starRow(n) : ''}</span>
     </button>`;
   };
-  const me = legendOf(W.deck);
-  const [sx, sy] = spot.start;
-  return `<div class="cp-map">${harborRoad()}
-    <div class="cp-start" style="left:${(sx / 4).toFixed(2)}%;top:${(sy / 10).toFixed(2)}%">${face(me, 'cp-img')}<span>${esc(shortName(me.name))} sets out</span></div>
-    ${W.stages.map((_, i) => node(i)).join('')}
+  return `<div class="cp-world">
+    <div class="cp-mapwrap">
+      <div class="cp-stage cp-mapstage" style="aspect-ratio:${P.w} / ${P.h}">
+        <img class="cp-pic" src="${P.src}" alt="" decoding="async">
+        <div class="cp-live" data-pic="${W.map}"></div>
+        <div class="cp-start" style="${at(P, P.spots.start)}">${face(me, 'cp-img')}<span>${esc(shortName(me.name))} sets out</span></div>
+        ${W.stages.map(node).join('')}
+      </div>
+    </div>
+    <header class="cp-bar">
+      <a class="cp-btn" href="#/" aria-label="Home">${BACK}</a>
+      <div class="cp-title"><b>${esc(W.name)}</b><span>World ${W.id} · <em>★ ${total}</em> of ${W.stages.length * 3}</span></div>
+      <button class="cp-btn" data-act="cp-help" aria-label="How the campaign works">?</button>
+      ${over ? `<div class="cp-done">${esc(W.done)} <span>(Coming soon.)</span></div>` : ''}
+    </header>
   </div>`;
 }
 
-// The campaign page: World 1 (the only one so far) with your stars.
-export function campaignPage(view) {
-  const W = Camp.worldOf(1), p = Camp.progress(), me = legendOf(W.deck), mine = starter(W.deck);
-  const total = Camp.worldStars(p, W), done = Camp.beaten(p, W.id, W.stages.length - 1);
-  view.innerHTML = `
-    <header class="pagehead"><a class="back" href="#/" aria-label="Home">${BACK}</a><h2>Campaign</h2></header>
-    <div class="cp-page">
-      <div class="cp-head">
-        ${face(me)}
-        <div><div class="cp-world">World ${W.id} · ${esc(W.name)}</div>
-        <div class="cp-sub">You play ${esc(mine.name)}, led by ${esc(shortName(me.name))} · <b class="cp-total">★ ${total} / ${W.stages.length * 3}</b></div></div>
+// The campaign page: World 1's map (the only world so far); with a level's
+// number (#/campaign/2) that level's place, over it. Going between the two
+// while the page is up zooms rather than redrawing ('kept': the router leaves
+// the scroll alone).
+export function campaignPage(view, arg) {
+  const i = /^\d+$/.test(arg || '') ? Number(arg) : null;
+  if (document.body.classList.contains('in-game')) { view.innerHTML = ''; ui = null; return; } // (a fight is on: drawn afresh when it ends)
+  if (ui && ui.view === view && ui.root.isConnected) {
+    go(() => (i == null ? closePlace() : openPlace(i)));
+    return 'kept';
+  }
+  leaveCampaign();
+  const W = Camp.worldOf(1), p = Camp.progress();
+  view.innerHTML = mapHTML(W, p);
+  ui = { view, W, root: view.querySelector('.cp-world'), place: null, pushed: false, chain: Promise.resolve() };
+  const img = ui.root.querySelector('.cp-pic');
+  ready(img);
+  liven(ui.root.querySelector('.cp-live'));
+  ui.root.addEventListener('click', onClick);
+  // in view: the place asked for, else the level to play next (once the router has scrolled to the top)
+  const next = Camp.nextStage(p, W);
+  setTimeout(() => centerOn(i ?? next ?? W.stages.length - 1), 0);
+  if (i != null) go(() => openPlace(i, true));
+  else if (!p.seen[`w${W.id}`]) introSheet(W);
+  // the next place's picture, ahead of the tap
+  if (next != null) img.addEventListener('load', () => { const id = W.stages[next].pic; new Image().src = PICS[id].src; liveOf(id); }, { once: true });
+}
+// A fight opens over the page (game-ui.js): the campaign's pictures and moving
+// parts (tens of MB on a phone) go while it's on; leaving the fight comes back
+// to #/campaign/<level>, drawn afresh, where a win plays out.
+window.addEventListener('collective:game', () => {
+  if (!ui) return;
+  const root = ui.root;
+  leaveCampaign();
+  root.remove();
+});
+
+// a picture fades in once it has arrived
+function ready(img) {
+  const on = () => img.classList.add('ready');
+  if (img.complete && img.naturalWidth) on(); else img.addEventListener('load', on, { once: true });
+}
+function centerOn(i, smooth = false) {
+  const n = ui?.root.querySelector(`.cp-node[data-stage="${i}"] .cp-ring`);
+  if (!n) return;
+  const r = n.getBoundingClientRect();
+  window.scrollTo({ top: Math.max(0, window.scrollY + r.top + r.height / 2 - innerHeight * 0.55), behavior: smooth ? 'smooth' : 'auto' });
+}
+
+function onClick(e) {
+  const n = e.target.closest('.cp-node');
+  if (n) {
+    const i = Number(n.dataset.stage);
+    if (n.classList.contains('locked')) lockedSheet(ui.W, i);
+    else { ui.pushed = true; location.hash = `#/campaign/${i}`; }
+    return;
+  }
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'cp-help') introSheet(ui.W);
+  else if (act === 'cp-back') back();
+  else if (act === 'cp-onward') location.replace(`#/campaign/${ui.place.i + 1}`);
+  const f = e.target.closest('[data-diff]');
+  if (f && ui.place) startCampaign(ui.W.id, ui.place.i, Number(f.dataset.diff));
+}
+// to the map: back through the history if the map is where we came from
+function back() {
+  if (ui.pushed) history.back(); else location.replace('#/campaign');
+}
+
+// ── a place ─────────────────────────────────────────────────────────
+// A round on the path: won (gold), due, or still to come. The Legend stands
+// on the round due (or, beaten, on the last): that round is `held`, the
+// Legend's face its marker.
+function roundHTML(P, k, n) {
+  const d = Camp.DIFFS[k], st = n > k ? 'won' : n === k ? 'due' : 'later', stars = '★'.repeat(d.stars);
+  return `<div class="cp-rnd ${st}${k === Math.min(n, 2) ? ' held' : ''}" data-k="${k}" style="${at(P, P.spots.rounds[k])};--k:${k}">
+    <span class="cp-disc">${st === 'won' ? CHECK : `<b>${stars}</b>`}</span>
+    <span class="cp-tag">${st === 'won' ? `Won · ${d.name}` : st === 'due' ? `Round ${k + 1} · ${stars} ${d.name}` : `Round ${k + 1} · ${d.name}`}</span>
+  </div>`;
+}
+const foeAt = (P, n) => at(P, P.spots.rounds[Math.min(n, 2)]);
+function panelHTML(W, i, n) {
+  const S = W.stages[i], L = legendOf(S.deck), round = n < 3 ? n + 1 : null;
+  const onward = i + 1 < W.stages.length && Camp.isOpen(Camp.progress(), W.id, i + 1);
+  const story = (round ? Camp.beforeLines(S, round) : S.win).map((t) => `<p>${esc(t)}</p>`).join('');
+  const act = round
+    ? `<button class="btn primary cp-fight" data-diff="${round}">Fight · Round ${round} of 3 · ${'★'.repeat(round)} ${Camp.DIFFS[round - 1].name}</button>`
+    : `<div class="cp-beaten">${esc(shortName(L.name))} is beaten.</div>
+      <div class="cp-acts"><button class="btn" data-diff="3">Fight again · ★★★</button>${onward ? `<button class="btn primary" data-act="cp-onward">On to ${esc(W.stages[i + 1].place)}</button>` : ''}</div>`;
+  return `<div class="cp-story">${story}</div><div class="cp-match"><b>${esc(starter(S.deck).name)}</b> · ${esc(Camp.matchupText(S.odds))}</div>${act}`;
+}
+// `from`: how many rounds the path shows won at first (fewer than `n` when a
+// win is still to be played out here)
+function placeHTML(W, i, from, n) {
+  const S = W.stages[i], L = legendOf(S.deck), P = PICS[S.pic];
+  return `<div class="cp-frame">
+    <div class="cp-scene">
+      <div class="cp-stage cp-pstage">
+        <img class="cp-pic" src="${P.src}" alt="" decoding="async">
+        <div class="cp-live" data-pic="${S.pic}"></div>
+        ${[0, 1, 2].map((k) => roundHTML(P, k, from)).join('')}
+        <div class="cp-foe${from >= 3 ? ' beaten' : ''}" style="${foeAt(P, from)}"><span class="cp-foe-in">${face(L, 'cp-img')}</span><span class="cp-foe-won">${CHECK}</span></div>
       </div>
-      ${done ? `<div class="cp-done">${esc(W.done)} <span>(Coming soon.)</span></div>` : ''}
-      ${mapHTML(W, p)}
-      <p class="cp-how">Each Legend is fought three times: ★ Casual, then ★★ Practice, then ★★★ Expert. They get away the first two times and come back with better fighters; the third win beats them for good and opens the road on.</p>
-    </div>`;
-  view.onclick = (e) => {
-    const n = e.target.closest('.cp-node');
-    if (n) stageSheet(W, Number(n.dataset.stage));
+    </div>
+    <header class="cp-ptop">
+      <button class="cp-btn" data-act="cp-back" aria-label="Back to the map">${BACK}</button>
+      <div class="cp-title"><b>${esc(S.place)}</b><span>${esc(L.name)}${S.boss ? ' · the boss' : ''}</span></div>
+      ${starRow(n)}
+    </header>
+    <div class="cp-panel">${panelHTML(W, i, n)}</div>
+  </div>`;
+}
+
+// Size the place's picture to fill the screen; and how far to lift it once the
+// story is up, to keep its rounds clear of the story below them. (It fills
+// the screen as it opens; then it moves up by its position, not a transform:
+// under a transformed parent every moving part would tick on the main thread.)
+function layoutPlace() {
+  const pl = ui?.place;
+  if (!pl) return;
+  const el = pl.el, P = PICS[ui.W.stages[pl.i].pic], stage = el.querySelector('.cp-pstage');
+  const frame = el.querySelector('.cp-frame'), fw = frame.clientWidth, fh = frame.clientHeight;
+  const k = Math.max(fw / P.w, fh / P.h), w = P.w * k, h = P.h * k, top = (fh - h) / 2;
+  const ys = P.spots.rounds.map(([, y]) => top + y * k);
+  const textTop = fh - el.querySelector('.cp-panel').offsetHeight + 18, barBottom = el.querySelector('.cp-ptop').offsetHeight - 14;
+  const lift = Math.max(0, Math.min(Math.max(...ys) + 62 - textTop, Math.min(...ys) - 44 - barBottom)); // the lowest marker's tag; the top one's face
+  Object.assign(pl, { top, lift: Math.round(lift) });
+  stage.style.cssText = `left:${(fw - w) / 2}px;top:${top - (pl.settled ? pl.lift : 0)}px;width:${w}px;height:${h}px`;
+  move(stage.querySelector('.cp-live'));
+}
+// the lift, once the story is up: a glide that leaves no transform behind
+function settle(pl) {
+  pl.settled = true;
+  const stage = pl.el.querySelector('.cp-pstage'), box = stage.querySelector('.cp-live');
+  if (!pl.lift) { restart(box, true); return; }
+  stage.style.top = `${pl.top - pl.lift}px`;
+  if (still()) return;
+  stage.animate([{ transform: `translateY(${pl.lift}px)` }, { transform: 'none' }], { duration: 500, delay: 100, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' })
+    .finished.then(() => restart(box, true), () => {});
+}
+let resizing = 0;
+window.addEventListener('resize', () => {
+  clearTimeout(resizing);
+  resizing = setTimeout(() => {
+    if (!ui?.root.isConnected) return;
+    layoutPlace();
+    if (ui.place) restart(ui.place.el.querySelector('.cp-live'), true);
+    move(ui.root.querySelector('.cp-mapstage .cp-live'));
+  }, 150);
+});
+
+// A soft burst of light where the map opens into the place.
+function burst(host, x, y) {
+  const b = document.createElement('div');
+  b.className = 'cp-burst';
+  b.style.cssText = `left:${x}px;top:${y}px`;
+  host.append(b);
+  return b;
+}
+
+// Into a place: the map dives toward its medallion, and the place opens out
+// of the medallion as a widening circle; then the rounds come up along the
+// path and the story slides in. (A clip and transforms: the compositor's work.)
+const OPEN = 1.08; // the place starts a touch closer, inside its circle, and settles (never smaller than the screen: no edges)
+const circle = (r, x, y) => `circle(${r.toFixed(1)}px at ${x.toFixed(1)}px ${y.toFixed(1)}px)`;
+function zoomFrame(el, wrap, node) {
+  const r = node.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, wr = wrap.getBoundingClientRect();
+  const scene = el.querySelector('.cp-scene'), fr = scene.getBoundingClientRect(), x = cx - fr.left, y = cy - fr.top;
+  wrap.style.transformOrigin = `${cx - wr.left}px ${cy - wr.top}px`;
+  scene.style.transformOrigin = `${x}px ${y}px`;
+  const far = Math.hypot(Math.max(x, fr.width - x), Math.max(y, fr.height - y)) + 4;
+  return { scene, cx, cy, small: circle(r.width / 2 / OPEN, x, y), big: circle(far, x, y) };
+}
+async function openPlace(i, instant = false) {
+  if (!ui || ui.place?.i === i) return;
+  const { W, root } = ui, p = Camp.progress();
+  if (!W.stages[i] || !Camp.isOpen(p, W.id, i)) {
+    if (ui.place) await closePlace();
+    history.replaceState(null, '', '#/campaign');
+    if (W.stages[i]) lockedSheet(W, i);
+    return;
+  }
+  if (ui.place) await closePlace(true);
+  const S = W.stages[i], n = Camp.starsOf(p, W.id, i), shown = Camp.shownOf(p, W.id, i);
+  const from = shown != null && shown < n ? shown : n;
+  const el = document.createElement('div');
+  el.className = 'cp-place';
+  el.innerHTML = placeHTML(W, i, from, n);
+  root.append(el);
+  ui.place = { i, el };
+  layoutPlace();
+  const img = el.querySelector('.cp-pic');
+  ready(img);
+  liven(el.querySelector('.cp-live'));
+  swipeBack(el.querySelector('.cp-scene'));
+  const wrap = root.querySelector('.cp-mapwrap'), mapLive = root.querySelector('.cp-mapstage .cp-live');
+  let node = root.querySelector(`.cp-node[data-stage="${i}"] .cp-ring`);
+  if (!instant && !still() && node) {
+    let r = node.getBoundingClientRect();
+    if (r.top < 70 || r.bottom > innerHeight - 70) { centerOn(i, true); await wait(450); r = node.getBoundingClientRect(); }
+    await Promise.race([img.decode ? img.decode().catch(() => {}) : null, wait(450)]);
+    if (ui?.place?.el !== el) return;
+    const z = zoomFrame(el, wrap, node), flash = burst(el, z.cx, z.cy), D = 860;
+    const anims = [
+      wrap.animate([{ transform: 'scale(1)' }, { transform: 'scale(2.4)' }], { duration: D, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'both' }),
+      z.scene.animate([{ clipPath: z.small, transform: `scale(${OPEN})` }, { clipPath: z.big, transform: 'scale(1)' }], { duration: D, easing: 'cubic-bezier(.5,0,.15,1)', fill: 'both' }),
+      flash.animate([{ transform: 'scale(.4)', opacity: 0 }, { opacity: 0.85, offset: 0.2 }, { transform: 'scale(3.2)', opacity: 0 }], { duration: D * 0.6, easing: 'ease-out', fill: 'both' }),
+    ];
+    await done(anims);
+    flash.remove();
+    wrap.style.visibility = 'hidden';
+    anims.forEach((a) => a.cancel());
+  }
+  wrap.style.visibility = 'hidden';
+  hold(mapLive, true);
+  root.classList.add('placed');
+  requestAnimationFrame(() => { el.classList.add('in', 'lit'); settle(ui.place); }); // (lit stays while it shrinks away; in goes)
+  if (from < n) setTimeout(() => playWin(el, i, from, n), 900);
+  else Camp.markShown(W.id, i, n);
+}
+
+// Back out to the map: the circle closes back into the medallion as the map
+// comes back around it. (`swap`: on to another place right after.)
+async function closePlace(swap = false) {
+  const pl = ui?.place;
+  if (!pl) return;
+  const { root } = ui, el = pl.el;
+  ui.place = null;
+  if (!swap) ui.pushed = false;
+  const wrap = root.querySelector('.cp-mapwrap'), mapLive = root.querySelector('.cp-mapstage .cp-live');
+  wrap.style.visibility = '';
+  hold(mapLive, false);
+  root.classList.remove('placed');
+  const node = root.querySelector(`.cp-node[data-stage="${pl.i}"] .cp-ring`);
+  if (still() || !node) { drop(el.querySelector('.cp-live')); el.remove(); return; }
+  const r = node.getBoundingClientRect();
+  if (r.top < 70 || r.bottom > innerHeight - 70) centerOn(pl.i);
+  el.classList.remove('in');
+  const z = zoomFrame(el, wrap, node), D = 700;
+  const anims = [
+    wrap.animate([{ transform: 'scale(2.4)' }, { transform: 'scale(1)' }], { duration: D, easing: 'cubic-bezier(.3,0,.2,1)', fill: 'both' }),
+    z.scene.animate([{ clipPath: z.big, transform: 'scale(1)', opacity: 1 }, { clipPath: z.small, transform: `scale(${OPEN})`, opacity: 1, offset: 0.9 }, { clipPath: z.small, transform: `scale(${OPEN})`, opacity: 0 }], { duration: D, easing: 'cubic-bezier(.5,0,.3,1)', fill: 'both' }),
+  ];
+  await done(anims);
+  drop(el.querySelector('.cp-live'));
+  el.remove();
+  anims.forEach((a) => a.cancel());
+  wrap.style.transformOrigin = '';
+  restart(mapLive);
+}
+
+// A win not yet seen here: the Legend runs on up the path, and the rounds
+// left behind turn gold; the round they stop at lights up. The third time
+// there's nowhere left to run: they fall where they stand.
+async function playWin(el, i, from, n) {
+  if (ui?.place?.el !== el) return;
+  const P = PICS[ui.W.stages[i].pic], stage = el.querySelector('.cp-pstage'), foe = stage.querySelector('.cp-foe');
+  const swap = (k, cls) => {
+    const old = stage.querySelector(`.cp-rnd[data-k="${k}"]`);
+    old.insertAdjacentHTML('afterend', roundHTML(P, k, n));
+    old.remove();
+    if (cls) stage.querySelector(`.cp-rnd[data-k="${k}"]`).classList.add(cls);
   };
-  if (!p.seen[`w${W.id}`]) introSheet(W);
-  // the level to play next, in view
-  setTimeout(() => document.querySelector('.cp-node.next')?.scrollIntoView({ block: 'center' }), 0);
+  const to = Math.min(n, 2), behind = () => { for (let k = from; k < n; k++) if (k !== to) swap(k, 'just'); };
+  Camp.markShown(ui.W.id, i, n);
+  if (Math.min(from, 2) !== to && !still()) {
+    const a = foe.getBoundingClientRect(), [tx, ty] = P.spots.rounds[to], s = stage.getBoundingClientRect();
+    const dx = s.left + (tx / P.w) * s.width - a.left, dy = s.top + (ty / P.h) * s.height - a.top;
+    const run = foe.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${dx * 0.5}px,${dy * 0.5 - 34}px)`, offset: 0.5 }, { transform: `translate(${dx}px,${dy}px)` }], { duration: 1000, easing: 'cubic-bezier(.45,0,.35,1)', fill: 'forwards' });
+    await wait(380);
+    behind();
+    await done([run]);
+    foe.style.cssText = foeAt(P, n);
+    run.cancel();
+  } else {
+    foe.style.cssText = foeAt(P, n);
+    behind();
+  }
+  if (n >= 3) { swap(2, 'just'); foe.classList.add('beaten'); } else swap(to, 'lit');
+}
+
+// A swipe to the right goes back to the map (as on a phone's own screens).
+function swipeBack(el) {
+  let x0 = 0, y0 = 0, t0 = 0;
+  el.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; t0 = Date.now(); });
+  el.addEventListener('pointerup', (e) => {
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    if (dx > 70 && Math.abs(dy) < dx * 0.6 && Date.now() - t0 < 800 && ui?.place) back();
+  });
 }
 
 // ── sheets ──────────────────────────────────────────────────────────
@@ -153,28 +451,14 @@ function introSheet(W) {
   const me = legendOf(W.deck);
   sheet(`<div class="cp-who">${face(me)}<div><b>${esc(me.name)}</b><span>World ${W.id} · ${esc(W.name)}</span></div></div>
     <div class="cp-story">${W.intro.map((t) => `<p>${esc(t)}</p>`).join('')}</div>
+    <p class="cp-how">Each place on the road has a Legend to beat three times: ★ Casual, then ★★ Practice, then ★★★ Expert. They get away the first two times and come back with better fighters; the third win beats them for good and opens the road on.</p>
     <button class="btn primary" data-act="cp-close">Set out</button>`);
   Camp.markSeen(`w${W.id}`);
 }
 
-// A level: its Legend, the scene before the round that's due (or how it
-// ended, once beaten), the three rounds, and the one fight to have now.
-function stageSheet(W, i) {
-  const p = Camp.progress(), S = W.stages[i], L = legendOf(S.deck), deck = starter(S.deck);
-  const n = Camp.starsOf(p, W.id, i), open = Camp.isOpen(p, W.id, i), round = Camp.roundOf(p, W.id, i);
-  const prev = i > 0 ? legendOf(W.stages[i - 1].deck) : null;
-  const rounds = `<div class="cp-rounds">${Camp.DIFFS.map((d) => `<span class="${n >= d.stars ? 'won' : d.stars === round ? 'due' : ''}">${'★'.repeat(d.stars)}<small>${d.name}</small></span>`).join('')}</div>`;
-  const fight = !open ? `<div class="cp-locked">${LOCK}Beat ${esc(shortName(prev.name))} three times at ${esc(W.stages[i - 1].place)} to open this road.</div>`
-    : round ? `${rounds}<button class="btn primary" data-diff="${round}">Round ${round} of 3 · ${'★'.repeat(round)} ${Camp.DIFFS[round - 1].name}</button>`
-      : `${rounds}<div class="cp-beaten">${esc(shortName(L.name))} is beaten.</div><button class="btn" data-diff="3">Fight again at ★★★ Expert</button>`;
-  sheet(`<div class="cp-who">${face(L)}<div><b>${esc(L.name)}</b><span>${esc(deck.name)} · ${esc(S.place)}${S.boss ? ' · the boss' : ''}</span></div></div>
-    <div class="cp-story">${(round ? Camp.beforeLines(S, round) : S.win).map((t) => `<p>${esc(t)}</p>`).join('')}</div>
-    <div class="cp-match">${esc(Camp.matchupText(S.odds))}</div>
-    ${fight}
-    <button class="btn ghost" data-act="cp-close">Close</button>`, (e) => {
-    const b = e.target.closest('[data-diff]');
-    if (!b) return;
-    closeSheet();
-    startCampaign(W.id, i, Number(b.dataset.diff));
-  });
+function lockedSheet(W, i) {
+  const S = W.stages[i], L = legendOf(S.deck), prev = W.stages[i - 1];
+  sheet(`<div class="cp-who">${face(L)}<div><b>${esc(S.place)}</b><span>${esc(L.name)} waits here</span></div></div>
+    <div class="cp-locked">${LOCK}Beat ${esc(shortName(legendOf(prev.deck).name))} three times at ${esc(prev.place)} to open this road.</div>
+    <button class="btn ghost" data-act="cp-close">Close</button>`);
 }

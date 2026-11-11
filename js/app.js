@@ -6,7 +6,7 @@ import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin } from './render.
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, autoResume, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
-import { campaignPage, closeSheet as closeCampaignSheet } from './campaign-ui.js';
+import { campaignPage, closeSheet as closeCampaignSheet, leaveCampaign } from './campaign-ui.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
 
@@ -522,20 +522,26 @@ function play() {
 }
 
 // ── router ──────────────────────────────────────────────────────────
-const ROUTES = { '': home, cards: gallery, decks: deckList, deck: builder, rules, play, insights: () => insightsPage(view), campaign: () => campaignPage(view) };
+const ROUTES = { '': home, cards: gallery, decks: deckList, deck: builder, rules, play, insights: () => insightsPage(view), campaign: (arg) => campaignPage(view, arg) };
 
 function route() {
   const [path = '', arg] = location.hash.replace(/^#\/?/, '').split('/');
   closeZoom();
   closeSheet();
   closeCampaignSheet();
+  if (path !== 'campaign') leaveCampaign(); // (its moving parts stop with it)
   document.body.dataset.page = path && ROUTES[path] ? path : 'home';
-  (ROUTES[path] || home)(arg ? decodeURIComponent(arg) : undefined);
+  // ('kept': the page changed in place, as the campaign does going into a place and out)
+  if ((ROUTES[path] || home)(arg ? decodeURIComponent(arg) : undefined) === 'kept') return;
   window.scrollTo(0, 0);
   document.body.classList.remove('scrolled');
 }
 
 Mode.paint();
+// The router places the scroll itself (each page from its top; the campaign's
+// map where it was, under a place it zooms out of): the browser's own restoring
+// on Back would jump the map first.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 window.addEventListener('hashchange', route);
 // A page's title bar gets its backdrop once the page scrolls under it.
 window.addEventListener('scroll', () => document.body.classList.toggle('scrolled', window.scrollY > 4), { passive: true });

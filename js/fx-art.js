@@ -100,7 +100,7 @@ function paint(w, h, px) {
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
-  const g = c.getContext('2d'), im = g.createImageData(w, h), d = im.data;
+  const g = c.getContext('2d', { willReadFrequently: true }), im = g.createImageData(w, h), d = im.data; // (kept off the GPU: reading it back from there waits on a GPU busy drawing the page)
   for (let y = 0, i = 0; y < h; y++) {
     for (let x = 0; x < w; x++, i += 4) {
       const [r, gr, b, a] = px((x + 0.5) / w, (y + 0.5) / h);
@@ -108,7 +108,12 @@ function paint(w, h, px) {
     }
   }
   g.putImageData(im, 0, 0);
-  return new Promise((ok) => c.toBlob((blob) => ok(blob ? URL.createObjectURL(blob) : c.toDataURL())));
+  // (encoded at once: one this small takes a moment, where toBlob waits for
+  // idle time, which a busy page may not have for seconds), and kept as a blob,
+  // so that every flame showing it carries a short link, not the picture
+  const bin = atob(c.toDataURL().split(',')[1]), bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
 }
 
 let made = null;
@@ -124,7 +129,10 @@ export function fxArt() {
     };
     for (const v of [1, 2, 3]) for (const what of ['char', 'glow']) jobs[`scorch${v}:${what}`] = [64, 64, scorch(20 + v * 7, what)];
     const out = {};
-    for (const [name, [w, h, px]] of Object.entries(jobs)) out[name] = await paint(w, h, px);
+    for (const [name, [w, h, px]] of Object.entries(jobs)) {
+      out[name] = paint(w, h, px);
+      await new Promise((ok) => setTimeout(ok)); // (the page free between pictures)
+    }
     await Promise.all(Object.values(out).map((src) => { const im = new Image(); im.src = src; return im.decode().catch(() => {}); }));
     return out;
   })();

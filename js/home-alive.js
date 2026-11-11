@@ -9,8 +9,9 @@
 // leave their card and swoop at Seraphine from the other side, a gloom
 // spreading round them. She throws up both wings, their edges lit gold: a
 // shield. Fire and ghosts strike the wings' very edges and are thrown back,
-// the fire rolling up into smoke, the ghosts tumbling home. The scorches
-// smoulder, go out and heal. A touch stops it all at once.
+// the fire rolling up into smoke, the ghosts tumbling home. The scorches,
+// on the dragon's card and on Seraphine's where the fire struck, burn on till
+// the dragon's head is back, then go out and heal. A touch stops it all at once.
 //
 // Everything moves by transforms and opacity (the compositor's work, as
 // js/sprites.js), and every motion of a scene lasts the whole scene (END), its
@@ -23,7 +24,7 @@ import { fxArt } from './fx-art.js';
 
 const IDLE = 1000; // ms without a touch before a scene
 const GAP = 1000; // ms from one scene's end to the next
-const END = 4400; // a scene's length
+const END = 4500; // a scene's length
 const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let run = null;
 
@@ -45,6 +46,8 @@ function frame(st, el) {
   for (const p of ps) p.remove();
   const map = (x, y) => [a[0] + x * (b[0] - a[0]) + y * (c[0] - a[0]), a[1] + x * (b[1] - a[1]) + y * (c[1] - a[1])];
   map.tilt = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
+  const ux = b[0] - a[0], uy = b[1] - a[1], vx = c[0] - a[0], vy = c[1] - a[1], det = ux * vy - uy * vx || 1;
+  map.inv = (X, Y) => [((X - a[0]) * vy - (Y - a[1]) * vx) / det, (ux * (Y - a[1]) - uy * (X - a[0])) / det]; // (and back)
   return map;
 }
 
@@ -165,7 +168,7 @@ function scene(st) {
   st.idle = [];
   const from = (el) => pose.get(el) || 'none';
   // where things are, on the fan: points of each picture, in its drawing's units
-  const mA = frame(st, A), mS = frame(st, S), mQ = frame(st, Q);
+  const mA = frame(st, A), mS = frame(st, S), mQ = frame(st, Q), faceS = S.closest('.card').querySelector('.card-face'), cS = frame(st, faceS);
   const PA = (x, y) => mA(x / 300, y / 210), PS = (x, y) => mS(x / 300, y / 210);
   const uA = unit(A), FW = st.fan.clientWidth, FH = st.fan.clientHeight;
   const inFan = ([x, y]) => x > 3 && x < FW - 3 && y > 3 && y < FH - 3; // (out of sight, a motion would tick on the main thread)
@@ -236,29 +239,35 @@ function scene(st) {
       [t + ms * 0.25, { transform: `translate(${(dx * 0.2).toFixed(1)}px, ${(-rise * 0.25).toFixed(1)}px) rotate(${r + 20}deg) scale(1, 1)`, opacity: 0.5 }],
       [t + ms, { transform: `translate(${dx.toFixed(1)}px, ${(-rise).toFixed(1)}px) rotate(${r + 50}deg) scale(2, 2)`, opacity: 0 }]]);
   };
-  // A scorch where fire lands, in a card's picture (at x, y, `size` across, in
-  // its drawing's units): it spreads (t0 to t1), smoulders, goes out (from
-  // `out`), and heals (from `heal` to `whole`), a light passing over it.
-  const scorch = (box, [x, y], size, v, t0, t1, out, heal, whole) => {
+  // A scorch where fire lands, on `host` (at fractions ax, ay of it, `px`
+  // across; squashed to `flat` when it lies on the ground): it spreads (t0 to
+  // t1) and burns on, smouldering, till the dragon's head is back (`heal`);
+  // then it goes out and heals by `whole`, a light passing over it.
+  const scorch = (host, [ax, ay], px, v, flat, t0, t1, heal, whole) => {
+    const at = (w, h) => `left:calc(${(ax * 100).toFixed(2)}% - ${(w / 2).toFixed(1)}px);top:calc(${(ay * 100).toFixed(2)}% - ${(h / 2).toFixed(1)}px);width:${w.toFixed(1)}px;height:${h.toFixed(1)}px`;
     const wrap = document.createElement('div');
     wrap.className = 'fx-scorch';
-    wrap.style.cssText = `left:${pc((x - size / 2) / 300)};top:${pc((y - size / 2) / 210)};width:${pc(size / 300)};height:${pc(size / 210)}`;
+    wrap.style.cssText = at(px, px);
     for (const what of ['char', 'glow']) {
       const im = document.createElement('img');
       im.src = art[`scorch${v}:${what}`]; im.alt = '';
       if (what === 'glow') im.className = 'lit';
       wrap.append(im);
     }
-    add(box, wrap);
-    const r = ((rand() - 0.5) * 16).toFixed(1), [ch, gl] = wrap.children; // (flat on the ground: squashed)
-    act(wrap, [[t0, { transform: `rotate(${r}deg) scale(.15, .07)` }, 'cubic-bezier(.2,.7,.4,1)'], [t1, { transform: `rotate(${r}deg) scale(1, .45)` }]]);
-    act(ch, [[t0, { opacity: 0 }], [t0 + 80, { opacity: 1 }], [heal, { opacity: 1 }, eio], [whole, { opacity: 0 }]]);
+    add(host, wrap);
+    const r = ((rand() - 0.5) * (flat < 0.8 ? 16 : 360)).toFixed(1), [ch, gl] = wrap.children;
+    act(wrap, [[t0, { transform: `rotate(${r}deg) scale(.15, ${(0.15 * flat).toFixed(3)})` }, 'cubic-bezier(.2,.7,.4,1)'], [t1, { transform: `rotate(${r}deg) scale(1, ${flat})` }]]);
+    act(ch, [[t0, { opacity: 0 }], [t0 + 80, { opacity: 1 }], [heal + 150, { opacity: 1 }, eio], [whole, { opacity: 0 }]]);
     const gs = [[t0, { opacity: 0 }], [t0 + 80, { opacity: 0.95 }, eio]];
-    for (let t = t0 + 80, k = 0; (t += 90 + rand() * 70) < out; k++) gs.push([t, { opacity: k % 2 ? 1 : 0.7 }, eio]);
-    gs.push([out, { opacity: 1 }, 'ease-in'], [out + 450, { opacity: 0 }]);
+    for (let t = t0 + 80, k = 0; (t += 90 + rand() * 70) < heal; k++) gs.push([t, { opacity: k % 2 ? 1 : 0.7 }, eio]);
+    gs.push([heal, { opacity: 1 }, 'ease-in'], [heal + 500, { opacity: 0 }]);
     act(gl, gs);
-    fx(lightIn(box, 'g-heal', [x, y], size * 1.3, size * 0.7), [[heal, { transform: 'scale(.6)', opacity: 0 }, 'ease-out'], [heal + 260, { transform: 'scale(1)', opacity: 0.85 }], [whole, { transform: 'scale(1.25)', opacity: 0 }]]);
+    const lt = document.createElement('i');
+    lt.className = 'fx lit g-heal';
+    lt.style.cssText = at(px * 1.3, px * 1.3 * flat);
+    fx(add(host, lt), [[heal + 150, { transform: 'scale(.6)', opacity: 0 }, 'ease-out'], [heal + 400, { transform: 'scale(1)', opacity: 0.85 }], [whole, { transform: 'scale(1.25)', opacity: 0 }]]);
   };
+  const BACK = 3480; // (the dragon's head is round again: the burning stops, and the healing starts)
 
   // ── 1. Ashmaw swings its head round to the right (0-900 ms), breathing
   //       fire the whole way down on the burning city, scorching the ground
@@ -277,10 +286,11 @@ function scene(st) {
       [t + 350, { transform: `translate(${(-3 * uA).toFixed(1)}px, ${(-14 * uA).toFixed(1)}px) rotate(${r + 20}deg) scale(1, 1)`, opacity: 0.55 }],
       [t + 1500, { transform: `translate(${(-10 * uA).toFixed(1)}px, ${(-52 * uA).toFixed(1)}px) rotate(${r + 50}deg) scale(2, 2)`, opacity: 0 }]]);
   }
-  // scorches where it lands: spreading, smouldering, out, and healed
+  // scorches where it lands, flat on the ground, burning on till its head is back
   for (let k = 0; k < 3; k++) {
-    const t = 150 + k * 270;
-    scorch(A, [mouthX(t + 120) + (rand() - 0.5) * 10, ground + 6], 58 + rand() * 12, k + 1, t + 200, t + 900, 1900 + k * 180, 2700 + k * 150, 3500 + k * 150);
+    const t = 150 + k * 270, x = mouthX(t + 120) + (rand() - 0.5) * 10;
+    scorch(A, [x / 300, (ground + 6) / 210], (58 + rand() * 12) * uA, k + 1, 0.45, t + 200, t + 900, BACK + k * 60, BACK + 800 + k * 60);
+    for (let j = 0; j < 2; j++) flicker(picIn(A, j ? 'flame' : 'flame2', [x + (j ? 9 : -8) + (rand() - 0.5) * 4, ground + 8], 9 + rand() * 3, 14 + rand() * 7, { base: true }), t + 320 + j * 110, BACK - 100 + rand() * 80);
   }
   // its breath: a cone of flame from its mouth to the ground (and a hotter one
   // inside it), swept along with the head
@@ -351,6 +361,12 @@ function scene(st) {
     const p = PS(x - 3, y);
     if (inFan(p)) flicker(pic(k % 2 ? 'flame' : 'flame2', p, 11 + rand() * 4, 16 + rand() * 9, { base: true }), 1680 + Math.abs(k - 3) * 70 + rand() * 50, 2450 + rand() * 200, 14);
   }
+  // where it strikes, the fire scorches her card, burning on till the dragon's head is back
+  [[-4, 2, 38, 1700], [-11, 24, 26, 1880], [9, -12, 22, 2080]].forEach(([dx, dy, px, t0], k) => {
+    const p = [F[0] + dx, F[1] + dy];
+    scorch(faceS, cS.inv(...p), px, k + 1, 0.9, t0, t0 + 650, BACK + k * 60, BACK + 800 + k * 60);
+    if (inFan(p)) flicker(pic(k % 2 ? 'flame' : 'flame2', [p[0] + (rand() - 0.5) * 6, p[1] + 4], 9 + rand() * 3, 13 + rand() * 6, { base: true }), t0 + 200, BACK - 100 + rand() * 80, 8);
+  });
   // the light where it strikes, beating with the blows; sparks and smoke flung back
   const il = [[1660, { transform: 'scale(.4)', opacity: 0 }, 'ease-out'], [1740, { transform: 'scale(1.1)', opacity: 0.95 }]];
   for (let t = 1860, k = 0; t < 2600; t += 120, k++) il.push([t, { transform: `scale(${k % 2 ? 1.12 : 0.95})`, opacity: k % 2 ? 0.95 : 0.75 }, eio]);
@@ -418,10 +434,6 @@ function scene(st) {
       fx(pic('gloom', out[j], 40, 40, { lit: false, low: true }), [[t, { transform: 'translate(0px, 0px) scale(.7)', opacity: 0 }, 'ease-out'],
         [t + 160, { transform: `translate(${(dr * 0.3).toFixed(1)}px, -2px) scale(1.3)`, opacity: 0.5 }], [t + 1100, { transform: `translate(${dr.toFixed(1)}px, -10px) scale(2.6)`, opacity: 0 }]]);
     }
-    // breaking against the shield in violet light
-    fx(light('g-violet', P, 56), [[hit, { transform: 'scale(.3)', opacity: 0 }, 'ease-out'], [hit + 90, { transform: 'scale(1)', opacity: 0.95 }, 'ease-out'], [hit + 520, { transform: 'scale(1.7)', opacity: 0 }]]);
-    spark('ff-spark violet', P, hit, (rand() - 0.5) * 2.4, 16 + rand() * 14);
-    spark('ff-spark violet', P, hit + 40, (rand() - 0.5) * 2.4, 16 + rand() * 14);
   });
 
   // ── 4. Seraphine throws up both wings (1350-1700), their edges lit gold:

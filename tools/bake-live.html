@@ -52,41 +52,68 @@ window.prepPuppet = (id) => {
   a.innerHTML = artSVG(id) || '';
   const svg = a.querySelector('svg');
   let groups = null;
-  const resolve = (key) => {
-    if (key.startsWith('fig:')) return [svg.querySelectorAll('g.fig')[+key.slice(4)]].filter(Boolean);
-    const m = key.match(/^alive:(\d+)(?:\s*-\s*(.+))?$/);
-    if (m) { groups ??= gatherAlive(svg, id); const g = groups[+m[1]]?.g; return g ? [...g.children].filter((el) => !(m[2] && el.matches(m[2]))) : []; }
-    return [...svg.querySelectorAll(key)];
+  // A source: the elements to hide to take it out of the picture (`hide`), and
+  // to show (with `dim` hidden) to see it alone. Keys (js/art/puppets.js):
+  //   'fig:N'            the Nth figure
+  //   'fig:N selector'   the pieces of figure N's own drawing (in its defs) that
+  //                      the selector picks: hidden there, they leave all of the
+  //                      figure's layers at once (rim, fill, glow)
+  //   'alive:N - sel'    the Nth character (js/art/alive.js) without what sel picks
+  //   any selector       those elements
+  // or a list of keys (all of them together).
+  const one = (key) => {
+    let m = key.match(/^fig:(\d+)\s+(.+)$/);
+    if (m) {
+      const fig = svg.querySelectorAll('g.fig')[+m[1]];
+      const ref = fig && svg.querySelector(fig.querySelector('use')?.getAttribute('href') || 'none');
+      if (!ref) return { hide: [], show: [], dim: [] };
+      const picked = [...ref.querySelectorAll(m[2])];
+      return { hide: picked, show: [fig], dim: [...ref.children].filter((el) => !picked.includes(el) && !picked.some((x) => el.contains(x))) };
+    }
+    if (/^fig:\d+$/.test(key)) { const f = svg.querySelectorAll('g.fig')[+key.slice(4)]; return f ? { hide: [f], show: [f], dim: [] } : { hide: [], show: [], dim: [] }; }
+    m = key.match(/^alive:(\d+)(?:\s*-\s*(.+))?$/);
+    if (m) {
+      groups ??= gatherAlive(svg, id);
+      const g = groups[+m[1]]?.g, els = g ? [...g.children].filter((el) => !(m[2] && el.matches(m[2]))) : [];
+      return { hide: els, show: els, dim: [] };
+    }
+    const els = [...svg.querySelectorAll(key)];
+    return { hide: els, show: els, dim: [] };
   };
-  let sources = [...new Set(spec.parts.map((p) => p.of))].map((key) => ({ key, els: resolve(key), cut: spec.parts.some((p) => p.of === key && p.cut) }));
+  const resolve = (of) => [].concat(of).map(one).reduce((x, y) => ({ hide: [...x.hide, ...y.hide], show: [...x.show, ...y.show], dim: [...x.dim, ...y.dim] }), { hide: [], show: [], dim: [] });
+  const keyOf = (of) => JSON.stringify(of);
+  let sources = [...new Set(spec.parts.map((p) => keyOf(p.of)))].map((key) => ({ key, ...resolve(JSON.parse(key)), cut: spec.parts.some((p) => keyOf(p.of) === key && p.cut) }));
   const all = [...svg.querySelectorAll('*')];
-  sources = sources.filter((s) => s.els.length).sort((x, y) => all.indexOf(x.els[0]) - all.indexOf(y.els[0]));
+  sources = sources.filter((s) => s.show.length).sort((x, y) => all.indexOf(x.show[0]) - all.indexOf(y.show[0]));
   // a cut part leaves the rest of its source in the picture: the source shown
   // through a mask without the part's polygon (keeping the joint, so it never gapes)
   spec.parts.forEach((p, k) => {
     if (!p.cut) return;
-    const src = sources.find((s) => s.key === p.of);
+    const src = sources.find((s) => s.key === keyOf(p.of));
     const mask = document.createElementNS(NS, 'mask');
     mask.setAttribute('id', `pupcut${k}`);
     mask.setAttribute('maskUnits', 'userSpaceOnUse');
     for (const [n, v] of [['x', -50], ['y', -50], ['width', 400], ['height', 310]]) mask.setAttribute(n, v);
     mask.innerHTML = `<rect x="-50" y="-50" width="400" height="310" fill="#fff"/><path d="M${p.poly.map(([x, y]) => `${x},${y}`).join('L')}Z" fill="#000"/><circle cx="${p.pivot[0]}" cy="${p.pivot[1]}" r="${p.joint || 4}" fill="#fff"/>`;
     svg.querySelector('defs').append(mask);
-    src.wraps = src.els.map((el) => { const g = document.createElementNS(NS, 'g'); el.before(g); g.append(el); return g; });
+    src.wraps = src.show.map((el) => { const g = document.createElementNS(NS, 'g'); el.before(g); g.append(el); return g; });
     src.mask = `url(#pupcut${k})`;
   });
   pup = { svg, sources };
-  return { sources: sources.map((s) => s.key), parts: spec.parts.map((p) => ({ name: p.name, src: sources.findIndex((s) => s.key === p.of), pivot: p.pivot, poly: p.poly || null })) };
+  return { sources: sources.map((s) => s.key), parts: spec.parts.map((p) => ({ name: p.name, src: sources.findIndex((s) => s.key === keyOf(p.of)), pivot: p.pivot, poly: p.poly || null })) };
 };
 // 'full', 'upto' i (sources after i hidden), 'below' i (i and after hidden),
 // 'alone' i (only source i, no finish), or 'base' (the parts taken out).
 window.viewPup = (mode, i = 0) => {
   const { svg, sources } = pup;
   svg.style.visibility = '';
-  for (const s of sources) { for (const el of s.els) el.style.visibility = ''; for (const w of s.wraps || []) w.removeAttribute('mask'); }
-  const hide = (list) => list.forEach((s) => s.els.forEach((el) => (el.style.visibility = 'hidden')));
-  if (mode === 'alone') { svg.style.visibility = 'hidden'; for (const el of sources[i].els) el.style.visibility = 'visible'; }
-  else if (mode === 'upto') hide(sources.slice(i + 1));
+  for (const s of sources) { for (const el of [...s.hide, ...s.show, ...s.dim]) el.style.visibility = ''; for (const w of s.wraps || []) w.removeAttribute('mask'); }
+  const hide = (list) => list.forEach((s) => s.hide.forEach((el) => (el.style.visibility = 'hidden')));
+  if (mode === 'alone') {
+    svg.style.visibility = 'hidden';
+    for (const el of sources[i].show) el.style.visibility = 'visible';
+    for (const el of sources[i].dim) el.style.visibility = 'hidden';
+  } else if (mode === 'upto') hide(sources.slice(i + 1));
   else if (mode === 'below') hide(sources.slice(i));
   else if (mode === 'base') for (const s of sources) { if (s.cut) for (const w of s.wraps) w.setAttribute('mask', s.mask); else hide([s]); }
   return painted();

@@ -1180,25 +1180,27 @@ Asaf's first big idea: "every card when you open it big the creatures or charact
 
 ## Home's fan acts on its own (a prototype, 2026-11-11)
 
-Asaf, on the breathing: "Yes they move now, but not in a way that is fun." His idea: cards that "look alive anytime the user isn't touching the screen. Including dragon breathing fire in the card, but also maybe at cards nearby... Some cards waving", without slowing anything down. A first test of it, on Home's fan only:
+Asaf, on the breathing: "Yes they move now, but not in a way that is fun." Their idea: cards that "look alive anytime the user isn't touching the screen. Including dragon breathing fire in the card, but also maybe at cards nearby... Some cards waving", without slowing anything down. A first test of it, on Home's fan only:
 
-- **When**: after 3 seconds without a touch the cards stir: Seraphine's wings beat slowly, the Barrow Queen's six ghosts sway. Every 12 seconds of that, a scene:
-  1. Ashmaw opens its jaws as a glow builds in its mouth, then lobs a fireball, embers trailing, over to Seraphine.
-  2. She throws up her wings, braces, and the fire breaks into a burst of light and sparks.
-  3. The ghosts drift over to watch, then back.
+- **When**: after 3 seconds without a touch the cards stir: Seraphine's wings beat slowly, the Barrow Queen's six ghosts sway. Every 12 seconds of that, a scene. This is its second version. On the first (the dragon lobbed a fireball; the ghosts drifted over to watch), Asaf said the dragon "would need to move its head towards the right and then breathe the fire", that the ghosts were "hard to tell" moving, and suggested this: "breathing fire as it turns its head making fire on bottom of the card until it is to the right and then wings lift to block it. On the other side the ghosts drift off the card to attack and are blocked by the wings on the right."
+  1. Ashmaw swings its head round to face right, breathing fire the whole way. A jet from its mouth sweeps flames along the burning city at the bottom of its card. Then it rears up and breathes a stream of fire across at Seraphine.
+  2. Meanwhile the Queen's ghosts leave their card one after another and swoop at Seraphine from the other side. The three that faced their Queen turn round first.
+  3. She throws up both wings, timed so the fire and the ghosts land together. The left wing takes the fire, the right the ghosts, each breaking into light and sparks (warm, and violet). Then the wings come down, the dragon turns back, and the ghosts rise back into their card.
 
   A touch stops it all at once; it comes back once you've let go. Reduce Motion: none of it. (`js/home-alive.js`)
-- **Puppets** (`js/art/puppets.js`): each card's moving parts, cut at their joints, with the joint each one turns about:
-  - Ashmaw's lower jaw: a polygon of the dragon's figure. The rest of the dragon stays in the picture, through a mask that keeps the hinge.
+- **Puppets** (`js/art/puppets.js`): each card's moving parts, with the joint each one turns about:
+  - Ashmaw's head and neck, with its jaws, horns and spikes, turning at the base of the neck. To face right it narrows to a sliver and widens again mirrored, as if turning its head toward you and round. The fire it breathes as drawn is a part too, so that fire dies down while the head is away.
   - Seraphine's two wings, and herself with her halo and blade above them.
   - The Queen's six ghosts.
 
-  The wings and ghosts are tagged in their drawings (`data-part`). Nothing drawn changes.
-- **Cut cleanly** (`tools/bake-live.mjs`): each part's source is photographed with what's drawn after it hidden (F), without itself as well (B), and alone (A). Its colours (F − B(1 − A)) / A are complete even where something in front covered them, so a raised wing shows no hole where her body was. The picture under the parts has them taken out.
-- **Cost**: everything moves by transforms and opacity. The page works only in short bursts as effects start and end (a few dozen style recalcs a scene), and not at all in between. Two lessons:
-  - two motions on one part at once (its idle beat and the scene's) put it on the main thread, so the scene takes over from the idle motion at the pose it was in;
-  - the idle motion mustn't restart mid-scene.
-- Test: `.phone-tests/look-home-scene.mjs`. It checks that the scene starts by itself, that a touch stops it, that it cleans up and what it costs, and records it as a GIF.
+  The parts are tagged in their drawings (`data-part`): the dragon's head is its own group within the figure, and its static look is identical to before. Nothing else drawn changes.
+- **Cut cleanly** (`tools/bake-live.mjs`): each part's source is photographed three ways: with what's drawn after it hidden (F), without itself as well (B), and alone (A). Its colours (F − B(1 − A)) / A are complete even where something in front covered them, so a raised wing shows no hole where her body was. The picture under the parts has them taken out. A source can also be pieces of a figure's own drawing (`'fig:0 [data-part=head]'`). Hidden there, they leave all of the figure's layers at once: rim, fill and glow.
+- **Off the card**: a ghost on the Queen's card is clipped by its frame. To fly free, it hands over to a double above the fan (`.fan-fx`) at the same place and tilt. It's gone from the card the moment the double takes off.
+- **Cost**: everything moves by transforms and opacity, on the compositor: **2 style recalcs and about 30 ms of main-thread work in a scene**. Three lessons:
+  - Two motions on one part at once (its idle beat and the scene's) put it on the main thread, so the scene takes over from the idle motion at the pose it was in.
+  - The idle motion mustn't restart mid-scene.
+  - **All of a scene's motions share one start and one end.** A motion that starts or ends at a moment of its own (a `delay`) wakes the main thread to note it. With some 70 of them staggered, it woke every frame: about 200 style recalcs and 0.9 s of main-thread work a scene, though a trace showed every animation composited. Now each motion lasts the whole scene, with its moment written into its keyframes (`place`, `move`, `flash`).
+- Test: `.phone-tests/look-home-scene.mjs`. It checks that the scene starts by itself, that a touch stops it, that it cleans up and what it costs. It records the scene frame by frame as a GIF, with `window.__sceneHold` set so the scene doesn't clean up mid-recording.
 
 ## Reading a Legend (2026-11-10)
 

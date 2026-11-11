@@ -566,25 +566,29 @@ const emberScenes = {
     // the dragon: wing bones, black body, neck reared back
     const bonesL = taper([W0, [112, 70], [92, 50], wrist], [11, 8, 6, 4.5]) + taper([wrist, [64, 22], [62, 15]], [4, 2, 0.4]) +
       tips.map((t, i) => taper([wrist, lerp(lerp(wrist, t, 0.5), [W0[0], 120], 0.08 + i * 0.02), t], [3.4, 2, 0.6])).join('');
-    const body = [
+    // (the head and neck, jaws, horns and spikes, on their own: a puppet part on Home, js/art/puppets.js)
+    const head = [
       taper([[146, 94], [142, 76], [132, 61], [118, 52], [104, 51]], [29, 23, 18, 16, 15]),
       taper([[97, 52], [84, 56], [67, 63]], [14, 9, 3.6]),
       taper([[97, 61], [86, 70], [73, 80]], [10, 7, 2.8]),
       taper([[106, 47], [118, 36], [134, 31]], [7, 4.4, 0.6]) + taper([[100, 45], [104, 31], [113, 20]], [5.5, 3.6, 0.5]),
       [[136, 66, 124, 70], [128, 58, 118, 60], [146, 80, 136, 82]].map(([x, y, bx, by]) => taper([[x, y], [bx, by - 9]], [5, 0.4])).join(''),
+    ].join('');
+    const body = [
       limb([140, 110], [124, 121], [116, 108], 13, 8.5, 6.5) + taper([[116, 108], [110, 102]], [4, 0.5]) + taper([[116, 108], [108, 108]], [3.6, 0.5]) + taper([[117, 107], [114, 99]], [3.6, 0.5]),
       limb([162, 112], [174, 126], [168, 138], 13, 8.5, 6.5) + taper([[168, 138], [162, 144]], [4, 0.5]) + taper([[168, 138], [170, 146]], [3.6, 0.5]),
       taper([[162, 156], [184, 166], [208, 162], [227, 148], [235, 130], [231, 114], [221, 108]], [22, 16, 12, 8, 5, 3, 0.6]),
     ].join('');
     s.figure(P(bonesL, body, blob([[134, 90], [150, 82], [166, 90], [173, 110], [171, 134], [165, 156], [150, 168], [135, 156], [129, 134], [127, 110]])) +
-      G('rotate(-5 162 92)', P(mirror(bonesL))) + E(99, 54, 14, 10.5, 15) + C(141, 160, 13) + C(163, 160, 13),
+      G('rotate(-5 162 92)', P(mirror(bonesL))) + `<g data-part="head">${P(head)}${E(99, 54, 14, 10.5, 15)}</g>` + C(141, 160, 13) + C(163, 160, 13),
     { fill: '#0b0303', rim: '#ffab52', offsets: [[0, 1.2], [-1.1, 0.4], [1.1, 0.4], [0, -0.9]], rimOp: 0.9, shade: 0.55, light: [0, 1], halo: { op: 0.5, sd: 3 } });
     // belly plates catching the firelight, a burning eye
     s.add(`<path d="M138,112Q150,116 162,112M137,124Q150,128 163,124M138,136Q150,140 162,136M140,148Q150,152 160,148" stroke="#ff8a3a" stroke-width="1.4" fill="none" opacity=".55"/>`);
-    s.add('<path d="M90,50L100,53L91,55Z" fill="#ffe7a3"/>');
+    s.add('<path data-part="head" d="M90,50L100,53L91,55Z" fill="#ffe7a3"/>');
     // fire rolling out of its jaws and curling down into the city
     const breath = [[72, 72], [58, 84], [48, 102], [46, 122], [54, 138], [68, 146]];
     const q = spline(breath, 6);
+    s.add('<g data-part="breath">');
     s.glow(56, 110, 52, '#ffb04a', 0.55);
     const BR = rng(384);
     let outer = '', mid = '', licks = '';
@@ -600,6 +604,7 @@ const emberScenes = {
     s.bloom(`<path d="${outer}" fill="#ff6a1f" opacity=".9"/><path d="${licks}" fill="#ff7a2e" opacity=".9"/><path d="${mid}" fill="#ffb04a"/>` +
       `<path d="${taper([[73, 72], [62, 81], [54, 93]], [3.5, 5.5, 1.5])}" fill="#fff0c4"/>`,
     { sd: 2.2, k: 1.4, box: [10, 40, 110, 130] });
+    s.add('</g>');
     // the walled city, tiny beneath it, burning
     s.add(`<path d="${flameWall({ seed: 381, base: 162, h: [10, 36], w: [8, 15], lean: 5, gap: [5, 10] })}" fill="${s.lin([[0, '#ff5a1a', 0.2], [0.5, '#ff9a3a', 0.9], [1, '#ffd27a']])}"/>`);
     s.path(skyline({ seed: 385, base: 164, x0: -10, x1: 310, h: [5, 16], w: [6, 12], spire: 0.3, dome: 0.15 }), '#1e0806');

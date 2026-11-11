@@ -20,11 +20,14 @@ const GHOST_POLYS = [
 ];
 
 export const PUPPETS = {
-  // the dragon's lower jaw, hinged under its eye (the fire comes out between the jaws, at 70, 70)
+  // the dragon's head and neck (its own pieces of the figure, and its eye),
+  // turning about the base of its neck; and the fire it breathes as drawn
   ashmaw: {
-    mouth: [70, 70],
-    parts: [{ name: 'jaw', of: 'fig:0', cut: true, pivot: [98, 59], joint: 5,
-      poly: [[95, 61.5], [101, 59], [104, 62], [101, 68], [92, 76], [80, 85], [70, 86], [66, 83], [71, 76], [79, 70], [87, 65.5]] }],
+    neck: [146, 90], mouth: [70, 70],
+    parts: [
+      { name: 'head', of: ['fig:0 [data-part=head]', ':scope > [data-part=head]'], pivot: [146, 90] },
+      { name: 'breath', of: '[data-part=breath]', pivot: [72, 72] },
+    ],
   },
   // her wings, one each side, at the shoulders; she herself (with halo and blade) above them
   seraphine: {

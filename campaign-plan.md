@@ -54,6 +54,8 @@ A setup without it plays as before, and saved games replay the same way.
 
 You draft a deck with the bot draft that's already in the game (draft.js and draft-ui.js, "Bots: draft a deck against them"), and the campaign keeps it for the finale. You can redraft whenever you like. Its levels are the Eclipse's heralds and then the Eclipse, with the strongest boss powers.
 
+As built: three levels. The Echo of Hush (the Falls of Night) and the Echo of Ymra (the Stair of Ash), copies the Eclipse made, in the Legends' faces; then the Eclipse itself (Under the World), 20 more Life, 2 more Energy every turn and three creatures on the table. Beaten, the map turns to the sunrise.
+
 ## Status
 
 - [x] World 1, World 2
@@ -61,4 +63,4 @@ You draft a deck with the bot draft that's already in the game (draft.js and dra
 - [x] World 3: data, story, the Lighthouse, tests, publish
 - [x] World 4: data, story, Ione's place (the Root of the Dawn), tests, publish
 - [x] World 5: data, story, new map and four places (companions only: Seren, Hush, Halvard, Marisol), tests, publish
-- [ ] World 6: the draft in the campaign, the Eclipse, the finale's pictures, tests, publish
+- [x] World 6: the draft in the campaign (one bot, kept apart, redraft any time), the Echoes and the Eclipse, the finale's pictures and the sunrise map, tests, publish

@@ -3,6 +3,11 @@
 // where its levels or rounds sit.
 export const PICS = {
   "world-1": { src: 'art/campaign/world-1.webp?v=65b07aa2', live: 'art/campaign/world-1.json?v=982153b3', w: 300, h: 760, spots: {"start":[150,742],"levels":[[96,652],[204,520],[112,396],[192,262],[150,128]]} },
+  "world-6": { src: 'art/campaign/world-6.webp?v=f2fc4e8a', live: 'art/campaign/world-6.json?v=7f9cc207', w: 300, h: 760, spots: {"start":[150,122],"levels":[[92,300],[210,462],[150,612]]} },
+  "world-6-dawn": { src: 'art/campaign/world-6-dawn.webp?v=09aa067f', live: 'art/campaign/world-6-dawn.json?v=7829ca43', w: 300, h: 760, spots: {"start":[150,122],"levels":[[92,300],[210,462],[150,612]]} },
+  "place-falls": { src: 'art/campaign/place-falls.webp?v=952849ec', live: 'art/campaign/place-falls.json?v=6ea4497b', w: 300, h: 600, spots: {"rounds":[[150,384],[140,304],[150,236]]} },
+  "place-stair": { src: 'art/campaign/place-stair.webp?v=12d8299d', live: 'art/campaign/place-stair.json?v=6cd486b0', w: 300, h: 600, spots: {"rounds":[[150,384],[146,304],[150,236]]} },
+  "place-eclipse": { src: 'art/campaign/place-eclipse.webp?v=ae07e687', live: 'art/campaign/place-eclipse.json?v=112e6da6', w: 300, h: 600, spots: {"rounds":[[150,384],[150,304],[150,236]]} },
   "world-5": { src: 'art/campaign/world-5.webp?v=4535f6ba', live: 'art/campaign/world-5.json?v=b9a41d8a', w: 300, h: 760, spots: {"start":[150,742],"levels":[[96,610],[204,470],[116,330],[150,150]]} },
   "place-library": { src: 'art/campaign/place-library.webp?v=11d0621c', live: 'art/campaign/place-library.json?v=39e39702', w: 300, h: 600, spots: {"rounds":[[150,384],[136,300],[150,232]]} },
   "place-glassmere": { src: 'art/campaign/place-glassmere.webp?v=f9b3288b', live: 'art/campaign/place-glassmere.json?v=d5ea362b', w: 300, h: 600, spots: {"rounds":[[150,384],[176,302],[156,236]]} },

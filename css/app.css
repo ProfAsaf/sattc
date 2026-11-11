@@ -671,6 +671,12 @@ body[data-page="campaign"] main { padding: 0; max-width: none; }
 .cp-node.hollow .cp-img, .cp-foe.hollow .cp-img { filter: grayscale(.65) brightness(.85) sepia(.35) hue-rotate(215deg) saturate(1.7); }
 .cp-node.hollow .cp-ring, .cp-foe.hollow .cp-foe-in { box-shadow: 0 0 0 2px rgba(150, 118, 255, .9), 0 0 14px rgba(140, 100, 255, .75); }
 .cp-powers { margin-top: -4px; font-size: 13px; color: #c9b6ff; }
+/* the finale: the Eclipse's own face, a black sun in a pale ring; the draft before its fights */
+.cp-eclipse { display: block; border-radius: 50%; background: radial-gradient(circle, #000 0 45%, #fff3d6 48.5%, #dcc6ff 53%, #7250c8 61%, #1c1238 71%, #07040f 100%); }
+.cp-face.cp-eclipse, .cp-said .cp-eclipse { width: 56px; height: 56px; flex: none; }
+.cp-who .cp-face { width: 56px; height: 56px; flex: none; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px rgba(243, 220, 164, .8); }
+.cp-redraft { padding: 0; border: 0; background: none; font: inherit; color: #ffd75e; text-decoration: underline; cursor: pointer; }
+.cp-end { display: block; margin-top: 2px; font-family: 'EB Garamond', Georgia, serif; font-size: 18px; color: #ffd75e; }
 button.cp-title { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .cp-done .btn { margin: 6px auto 0; display: block; }
 /* the worlds (tap the title, once a second world is open) */

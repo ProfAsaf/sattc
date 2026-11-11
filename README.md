@@ -1207,6 +1207,19 @@ Freed, Marisol knows where the Eclipse keeps the sun: "Everyone together now. Le
 - **The pictures** (`campaign-art.js` `edgeOfNight`, `library`, `glassMere`, `blackWall`, `nightHarbor`) are black glass with violet and white glints, ash drifting, and the Eclipse huge in the sky. At the world's edge the rim of the held-down sun burns gold.
 - `ui-campaign-world.mjs 5`: 12 checks pass. `look-world.mjs` now handles a world of any size.
 
+## The campaign: World 6, The Eclipse (2026-11-11)
+
+The finale. Past the edge of the world the sea pours down into the dark, and under the world the Eclipse holds the sun. The Eclipse has learned every deck there is, so you bring it one it has never seen: **a deck you draft**.
+
+- **The draft.** World 6's opening (and its first place) asks for a deck: the practice draft against one bot, Ultra cards, 30 picks (`draft-ui.js` `campaignDraft`). It runs over the campaign with its own way back (‹ Campaign); left halfway, it is kept (`collective.draft.campaign.v1`, apart from the Play page's draft) and the place offers "Resume your draft · 12/30". Its last button is "Take it to the Eclipse": the deck goes into the campaign's progress (`campaign.js` `setDraft`, `progress().draft.counts`) and you're back where you were, with the fight. "Draft again" sits beside the fights; a new draft replaces the deck only when it is taken. Your Legend is the one the engine finds for the deck (`cards.js` `legendFor`).
+- **The foes wear borrowed faces** (`foe` on a level: a name and a face, or none for the Eclipse's own, a black sun drawn in CSS, `.cp-eclipse`):
+  - the Echo of Hush at the Falls of Night: Fogbound, hollowed, 6 more Life and 1 more Energy every turn;
+  - the Echo of Ymra on the Stair of Ash: The Giant, 10 more Life, 1 more Energy, a Patient Giant on the table from the start;
+  - the boss: the Eclipse itself, Under the World: the Swarm, 20 more Life, 2 more Energy every turn, and a Choirmother and two Lantern Moths on the table from the start.
+- **The end.** Beaten, the Eclipse breaks and the sun rises. The map changes to its sunrise (`after: 'world-6-dawn'`): the sun up, the Eclipse in pieces round it, everything gold. Its banner ends "The end."
+- **The pictures** (`campaign-art.js` `underWorld`, `fallsOfNight`, `stairOfAsh`, `underTheWorld`): the map is read top down, from the quay at the edge of the world, down a rib of rock with the falls pouring off either side into the dark, the stair cut into it, to the sun held in the Eclipse's fingers. The falls are a curtain helper (`curtain`); the Eclipse's swarm is motes of every colour (`swarm`); its fingers close round the light (`fingers`).
+- `ui-campaign-w6.mjs`: 16 checks, from World 5's boss to the sunrise.
+
 ## The campaign's pictures (2026-11-11)
 
 Asaf, on the first map: "this looks more clipart. Not the cool style we have on the cards. You could even have subtle things like wind blowing grass. It should be objectively beautiful." And: stopping at a place should "zoom you into that area and expand so the three steps within it then show up and the theme expands around you".

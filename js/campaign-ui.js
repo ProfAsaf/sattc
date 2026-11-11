@@ -7,9 +7,12 @@
 // the story so far, and the one fight to have now. The fights are practice
 // games (game-ui.js startCampaign) that come back to the place, where a win
 // is played out: the round turns gold and the Legend runs on up the path, or
-// is beaten for good.
+// is beaten for good. In the finale (World 6) your deck is one you draft
+// (draft-ui.js campaignDraft), and the foes wear borrowed faces (`foe`).
 
-import { BY_ID, ULTRA_STARTERS } from './cards.js';
+import { BY_ID, ULTRA_STARTERS, legendFor } from './cards.js';
+import * as Decks from './decks.js';
+import { campaignDraft, savedCampaignDraft } from './draft-ui.js';
 import { artURL, esc } from './render.js';
 import * as Camp from './campaign.js';
 import { PICS } from './campaign-pics.js';
@@ -23,6 +26,22 @@ const starter = (id) => ULTRA_STARTERS.find((d) => d.id === id);
 const legendOf = (deckId) => BY_ID[starter(deckId)?.legend];
 const shortName = (name) => name.split(',')[0];
 const face = (card, cls = 'cp-face') => `<img class="${cls}" src="${esc(artURL(card) || '')}" alt="">`;
+// Who leads you through a world: its deck's Legend; in the finale, the Legend
+// of the deck you drafted (cards.js legendFor), and Marisol until you have.
+function leaderOf(W) {
+  if (W.deck !== 'draft') return legendOf(W.deck);
+  const d = Camp.draftOf();
+  return d ? BY_ID[legendFor(Decks.cardList(d.counts))] : legendOf(Camp.WORLDS[0].deck);
+}
+// Whom you meet at a level: its deck's Legend, or (`foe`, the finale) a name
+// and a borrowed face, or the Eclipse's own: a black sun.
+function foeOf(S) {
+  if (!S.foe) { const L = legendOf(S.deck); return { name: L.name, face: (cls) => face(L, cls) }; }
+  const L = S.foe.face && BY_ID[S.foe.face];
+  return { name: S.foe.name, face: (cls = 'cp-face') => (L ? face(L, cls) : `<span class="${cls} cp-eclipse" aria-hidden="true"></span>`) };
+}
+// the finale's deck, still to draft
+const undrafted = (W) => W.deck === 'draft' && !Camp.draftOf();
 const starRow = (n) => `<span class="cp-stars" aria-label="${n} of 3 rounds won">${[1, 2, 3].map((k) => `<i class="${k <= n ? 'on' : ''}">★</i>`).join('')}</span>`;
 const pc = (v) => `${(v * 100).toFixed(3)}%`;
 const at = (P, [x, y]) => `left:${pc(x / P.w)};top:${pc(y / P.h)}`;
@@ -44,13 +63,13 @@ let ui = null; // the page up: { view, root, W, place, pushed, chain }
 const go = (fn) => { const u = ui; u.chain = u.chain.then(fn).catch((e) => console.error(e)); };
 
 function mapHTML(W, p) {
-  const P = PICS[W.map], me = legendOf(W.deck), next = Camp.nextStage(p, W);
   const total = Camp.worldStars(p, W), over = Camp.beaten(p, W.id, W.stages.length - 1);
+  const pic = over && W.after ? W.after : W.map, P = PICS[pic], me = leaderOf(W), next = Camp.nextStage(p, W);
   const node = (S, i) => {
-    const L = legendOf(S.deck), n = Camp.starsOf(p, W.id, i), open = Camp.isOpen(p, W.id, i);
+    const F = foeOf(S), n = Camp.starsOf(p, W.id, i), open = Camp.isOpen(p, W.id, i);
     const cls = !open ? 'locked' : n >= 3 ? 'done' : i === next ? 'next' : 'open';
-    return `<button class="cp-node ${cls}${S.boss ? ' boss' : ''}${S.hollow ? ' hollow' : ''}" data-stage="${i}" style="${at(P, P.spots.levels[i])}" aria-label="${esc(S.place)}: ${esc(L.name)}${S.hollow ? ', hollowed' : ''}${open ? `, ${n} of 3 rounds won` : ', locked'}">
-      <span class="cp-ring">${face(L, 'cp-img')}${!open ? `<span class="cp-lock">${LOCK}</span>` : n >= 3 ? `<span class="cp-won">${CHECK}</span>` : ''}</span>
+    return `<button class="cp-node ${cls}${S.boss ? ' boss' : ''}${S.hollow ? ' hollow' : ''}" data-stage="${i}" style="${at(P, P.spots.levels[i])}" aria-label="${esc(S.place)}: ${esc(F.name)}${S.hollow ? ', hollowed' : ''}${open ? `, ${n} of 3 rounds won` : ', locked'}">
+      <span class="cp-ring">${F.face('cp-img')}${!open ? `<span class="cp-lock">${LOCK}</span>` : n >= 3 ? `<span class="cp-won">${CHECK}</span>` : ''}</span>
       <span class="cp-plaque"><b>${esc(S.place)}</b>${open ? starRow(n) : ''}</span>
     </button>`;
   };
@@ -58,8 +77,8 @@ function mapHTML(W, p) {
     <div class="cp-mapwrap">
       <div class="cp-stage cp-mapstage" style="aspect-ratio:${P.w} / ${P.h}">
         <img class="cp-pic" src="${P.src}" alt="" decoding="async">
-        <div class="cp-live" data-pic="${W.map}"></div>
-        <div class="cp-start" style="${at(P, P.spots.start)}">${face(me, 'cp-img')}<span>${esc(shortName(me.name))} sets out</span></div>
+        <div class="cp-live" data-pic="${pic}"></div>
+        <div class="cp-start" style="${at(P, P.spots.start)}">${face(me, 'cp-img')}<span>${undrafted(W) ? 'Everyone' : esc(shortName(me.name))} sets out</span></div>
         ${W.stages.map(node).join('')}
       </div>
     </div>
@@ -69,7 +88,7 @@ function mapHTML(W, p) {
     ? `<button class="cp-title" data-act="cp-worlds" aria-label="The worlds"><b>${esc(W.name)}</b><span>World ${W.id} · <em>★ ${total}</em> of ${W.stages.length * 3} ▾</span></button>`
     : `<div class="cp-title"><b>${esc(W.name)}</b><span>World ${W.id} · <em>★ ${total}</em> of ${W.stages.length * 3}</span></div>`}
       <button class="cp-btn" data-act="cp-help" aria-label="How the campaign works">?</button>
-      ${over ? `<div class="cp-done">${esc(W.done)} ${Camp.worldOf(W.id + 1) ? `<a class="btn primary" href="${Camp.mapHash(W.id + 1)}">On to World ${W.id + 1}</a>` : '<span>(Coming soon.)</span>'}</div>` : ''}
+      ${over ? `<div class="cp-done">${esc(W.done)} ${Camp.worldOf(W.id + 1) ? `<a class="btn primary" href="${Camp.mapHash(W.id + 1)}">On to World ${W.id + 1}</a>` : '<b class="cp-end">The end.</b>'}</div>` : ''}
     </header>
   </div>`;
 }
@@ -133,11 +152,24 @@ function onClick(e) {
   }
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'cp-help') introSheet(ui.W);
+  else if (act === 'cp-draft') draftNow();
   else if (act === 'cp-worlds') worldsSheet();
   else if (act === 'cp-back') back();
   else if (act === 'cp-onward') location.replace(Camp.placeHash(ui.W.id, ui.place.i + 1));
   const f = e.target.closest('[data-diff]');
   if (f && ui.place) startCampaign(ui.W.id, ui.place.i, Number(f.dataset.diff));
+}
+// The finale's deck: drafted against a bot on the draft screen, over this
+// page; taken (or left, to finish later), the page is drawn afresh with it.
+function draftNow() {
+  const here = location.hash;
+  const again = () => {
+    leaveCampaign();
+    if (location.hash === here) window.dispatchEvent(new HashChangeEvent('hashchange'));
+    else location.hash = here;
+  };
+  closeSheet();
+  campaignDraft({ play: (you) => { Camp.setDraft(you.counts); again(); }, back: again });
 }
 // to the map: back through the history if the map is where we came from
 function back() {
@@ -157,39 +189,53 @@ function roundHTML(P, k, n) {
 }
 const foeAt = (P, n) => at(P, P.spots.rounds[Math.min(n, 2)]);
 function panelHTML(W, i, n) {
-  const S = W.stages[i], L = legendOf(S.deck), round = n < 3 ? n + 1 : null;
+  const S = W.stages[i], F = foeOf(S), round = n < 3 ? n + 1 : null;
   const onward = i + 1 < W.stages.length && Camp.isOpen(Camp.progress(), W.id, i + 1);
   const story = (round ? Camp.beforeLines(S, round) : S.win).map((t) => `<p>${esc(t)}</p>`).join('');
-  const act = round
-    ? `<button class="btn primary cp-fight" data-diff="${round}">Fight · Round ${round} of 3 · ${'★'.repeat(round)} ${Camp.DIFFS[round - 1].name}</button>`
-    : `<div class="cp-beaten">${esc(shortName(L.name))} is beaten.</div>
+  const act = undrafted(W) ? draftHTML()
+    : round
+      ? `<button class="btn primary cp-fight" data-diff="${round}">Fight · Round ${round} of 3 · ${'★'.repeat(round)} ${Camp.DIFFS[round - 1].name}</button>`
+      : `<div class="cp-beaten">${esc(shortName(F.name))} is beaten.</div>
       <div class="cp-acts"><button class="btn" data-diff="3">Fight again · ★★★</button>${onward ? `<button class="btn primary" data-act="cp-onward">On to ${esc(W.stages[i + 1].place)}</button>` : ''}</div>`;
-  return `<div class="cp-story">${story}</div><div class="cp-match"><b>${esc(starter(S.deck).name)}</b> · ${esc(Camp.matchupText(S.odds))}</div>${S.powers ? `<div class="cp-powers">${esc(powersText(S))}</div>` : ''}${act}`;
+  const match = S.note
+    ? `${esc(S.note)}${W.deck === 'draft' && !undrafted(W) ? ' <button class="cp-redraft" data-act="cp-draft">Draft again</button>' : ''}`
+    : `<b>${esc(starter(S.deck).name)}</b> · ${esc(Camp.matchupText(S.odds))}`;
+  return `<div class="cp-story">${story}</div><div class="cp-match">${match}</div>${S.powers ? `<div class="cp-powers">${esc(powersText(S))}</div>` : ''}${act}`;
+}
+// The finale's first step: the draft (or the one under way, to finish).
+function draftHTML() {
+  const d = savedCampaignDraft();
+  return `<button class="btn primary cp-fight" data-act="cp-draft">${!d ? 'Draft your deck' : d.done ? 'Take your drafted deck' : `Resume your draft · ${d.picks}/${d.of}`}</button>`;
 }
 // What a boss brings that no PvP game has (campaign.js `powers`), in words.
 function powersText(S) {
   const p = S.powers, bits = [];
   if (p.life) bits.push(`${p.life} more Life`);
   if (p.energy) bits.push(`${p.energy} more Energy every turn`);
-  if (p.board?.length) bits.push(`${p.board.map((cid) => BY_ID[cid]?.name || cid).join(' and ')} on the table from the start`);
+  if (p.board?.length) {
+    const n = {}; // (the same card twice: "two Lantern Moths")
+    for (const cid of p.board) n[cid] = (n[cid] || 0) + 1;
+    const say = Object.entries(n).map(([cid, k]) => { const name = BY_ID[cid]?.name || cid; return k > 1 ? `${['', '', 'two', 'three', 'four'][k] || k} ${name}s` : name; });
+    bits.push(`${say.join(' and ')} on the table from the start`);
+  }
   return `${S.hollow ? 'Hollowed' : 'Boss powers'}: ${bits.join(', ')}.`;
 }
 // `from`: how many rounds the path shows won at first (fewer than `n` when a
 // win is still to be played out here)
 function placeHTML(W, i, from, n) {
-  const S = W.stages[i], L = legendOf(S.deck), P = PICS[S.pic];
+  const S = W.stages[i], F = foeOf(S), P = PICS[S.pic];
   return `<div class="cp-frame">
     <div class="cp-scene">
       <div class="cp-stage cp-pstage">
         <img class="cp-pic" src="${P.src}" alt="" decoding="async">
         <div class="cp-live" data-pic="${S.pic}"></div>
         ${[0, 1, 2].map((k) => roundHTML(P, k, from)).join('')}
-        <div class="cp-foe${from >= 3 ? ' beaten' : ''}${S.hollow ? ' hollow' : ''}" style="${foeAt(P, from)}"><span class="cp-foe-in">${face(L, 'cp-img')}</span><span class="cp-foe-won">${CHECK}</span></div>
+        <div class="cp-foe${from >= 3 ? ' beaten' : ''}${S.hollow ? ' hollow' : ''}" style="${foeAt(P, from)}"><span class="cp-foe-in">${F.face('cp-img')}</span><span class="cp-foe-won">${CHECK}</span></div>
       </div>
     </div>
     <header class="cp-ptop">
       <button class="cp-btn" data-act="cp-back" aria-label="Back to the map">${BACK}</button>
-      <div class="cp-title"><b>${esc(S.place)}</b><span>${esc(L.name)}${S.hollow ? ' · hollowed' : ''}${S.boss ? ' · the boss' : ''}</span></div>
+      <div class="cp-title"><b>${esc(S.place)}</b><span>${esc(F.name)}${S.hollow ? ' · hollowed' : ''}${S.boss ? ' · the boss' : ''}</span></div>
       ${starRow(n)}
     </header>
     <div class="cp-panel">${panelHTML(W, i, n)}</div>
@@ -386,11 +432,12 @@ function sheet(html, onClick) {
 export function closeSheet() { document.querySelector('.cp-sheet')?.remove(); }
 
 function introSheet(W) {
-  const me = legendOf(W.deck);
-  sheet(`<div class="cp-who">${face(me)}<div><b>${esc(me.name)}</b><span>World ${W.id} · ${esc(W.name)}</span></div></div>
+  const me = leaderOf(W), draft = undrafted(W);
+  sheet(`<div class="cp-who">${face(me)}<div><b>${esc(draft ? 'Everyone, together' : me.name)}</b><span>World ${W.id} · ${esc(W.name)}</span></div></div>
     <div class="cp-story">${W.intro.map((t) => `<p>${esc(t)}</p>`).join('')}</div>
-    <p class="cp-how">Each place on the road has a Legend to beat three times: ★ Casual, then ★★ Practice, then ★★★ Expert. They get away the first two times and come back with better fighters; the third win beats them for good and opens the road on.</p>
-    <button class="btn primary" data-act="cp-close">Set out</button>`);
+    <p class="cp-how">Each place on the road has a Legend to beat three times: ★ Casual, then ★★ Practice, then ★★★ Expert. They get away the first two times and come back with better fighters; the third win beats them for good and opens the road on.${W.deck === 'draft' ? ' Here your deck is one you draft first, and you can draft again whenever you like.' : ''}</p>
+    ${draft ? '<div class="cp-acts"><button class="btn" data-act="cp-close">Later</button><button class="btn primary" data-act="cp-draft">Draft your deck</button></div>'
+    : '<button class="btn primary" data-act="cp-close">Set out</button>'}`, (e) => { if (e.target.closest('[data-act="cp-draft"]')) draftNow(); });
   Camp.markSeen(`w${W.id}`);
 }
 
@@ -399,14 +446,14 @@ function worldsSheet() {
   const p = Camp.progress();
   sheet(`<div class="cp-worlds">${Camp.WORLDS.filter((W) => W.id <= Camp.latestWorld(p) + 1).map((W) => {
     if (!Camp.worldOpen(p, W.id)) return `<div class="cp-wrow locked"><span class="cp-wlock">${LOCK}</span><span><b>World ${W.id}</b><em>Beat World ${W.id - 1}’s boss to open it</em></span></div>`;
-    return `<a class="cp-wrow${W.id === ui.W.id ? ' here' : ''}" href="${Camp.mapHash(W.id)}">${face(legendOf(W.deck))}<span><b>World ${W.id} · ${esc(W.name)}</b><em>★ ${Camp.worldStars(p, W)} of ${W.stages.length * 3}</em></span></a>`;
+    return `<a class="cp-wrow${W.id === ui.W.id ? ' here' : ''}" href="${Camp.mapHash(W.id)}">${face(leaderOf(W))}<span><b>World ${W.id} · ${esc(W.name)}</b><em>★ ${Camp.worldStars(p, W)} of ${W.stages.length * 3}</em></span></a>`;
   }).join('')}</div>
     <button class="btn ghost" data-act="cp-close">Close</button>`);
 }
 
 function lockedSheet(W, i) {
-  const S = W.stages[i], L = legendOf(S.deck), prev = W.stages[i - 1];
-  sheet(`<div class="cp-who">${face(L)}<div><b>${esc(S.place)}</b><span>${esc(L.name)} waits here</span></div></div>
-    <div class="cp-locked">${LOCK}Beat ${esc(shortName(legendOf(prev.deck).name))} three times at ${esc(prev.place)} to open this road.</div>
+  const S = W.stages[i], F = foeOf(S), prev = W.stages[i - 1];
+  sheet(`<div class="cp-who">${F.face()}<div><b>${esc(S.place)}</b><span>${esc(F.name)} waits here</span></div></div>
+    <div class="cp-locked">${LOCK}Beat ${esc(shortName(foeOf(prev).name))} three times at ${esc(prev.place)} to open this road.</div>
     <button class="btn ghost" data-act="cp-close">Close</button>`);
 }

@@ -487,6 +487,78 @@ export const WORLDS = [{
       ],
       lose: ['“The ledger always balances,” says Marisol, in its voice. “Always.”'] },
   ],
+}, {
+  // World 6, the finale: under the edge of the world, where the Eclipse holds
+  // the sun. Your deck is one you draft (`deck: 'draft'`: the bot draft,
+  // draft-ui.js campaignDraft; kept in the campaign's progress, `draft`), as
+  // the Eclipse has learned every deck there is. It fights in borrowed faces
+  // (`foe`: a name, and the Legend whose face it wears, or none for its own),
+  // with powers no PvP game has, and last as itself.
+  id: 6,
+  name: 'The Eclipse',
+  deck: 'draft',
+  map: 'world-6',
+  after: 'world-6-dawn', // the map once it's done: the sun up
+  next: null,
+  intro: [
+    'Past the edge of the world the sea pours down into the dark, and below it, held under the rim of the world, the sun burns, waiting.',
+    'Marisol, Halvard, Hush, Seren and Ione stand with you at the edge. “It has learned all of us,” says Seren. “Every deck we ever played, it can play. So we bring it something it has never seen.”',
+    '“Draft a deck from all of us,” says Marisol. “Something new. Then we go down and collect the sun.”',
+  ],
+  done: 'The sun is up, and every Legend you met stands in the morning with you. The road home is long, and it is lit the whole way.',
+  stages: [
+    { deck: 'ultra-fogbound', foe: { name: 'The Echo of Hush', face: 'legend-hush' }, place: 'The Falls of Night', pic: 'place-falls', hollow: true, powers: { life: 6, energy: 1 },
+      note: 'Your drafted deck against its copy of Fogbound.',
+      before: [
+        'At the edge of the world the sea pours over into the dark, roaring. Out of the falling water steps a shape in a cloak of fog: Hush’s face, Hush’s fog, and nothing behind its eyes.',
+        '“Come closer,” says the Echo, in her voice. “You won’t find me. There is no me to find.”',
+      ],
+      back: [
+        ['The falls roar louder, and the Echo has gathered the fog of the whole sea. “I learned her well,” it says.'],
+        ['The Echo stands in the falling water, fog pouring off it like the sea. “Again. Until you are tired.”'],
+      ],
+      escape: [
+        ['The Echo melts into the falls.', '“Warm,” it says, with Hush’s giggle, and the real Hush, beside you, shivers.'],
+        ['The fog tears, and for a moment there is only dark where its face was.', '“Again,” says the dark.'],
+      ],
+      win: ['The Echo comes apart like spray, and the real Hush lets out a breath she has held for a hundred years.', '“It copies,” she says. “It can’t make anything new. That’s why it fears your deck.” Below the falls, a stair of ash goes down into the dark.'],
+      lose: ['“You looked everywhere,” whispers the Echo, “and found only me.”'] },
+    { deck: 'ultra-the-giant', foe: { name: 'The Echo of Ymra', face: 'legend-ymra' }, place: 'The Stair of Ash', pic: 'place-stair', hollow: true, powers: { life: 10, energy: 1, board: ['patient-giant'] },
+      note: 'Your drafted deck against its copy of The Giant.',
+      before: [
+        'A stair of ash goes down past the edge of the world, and at its turning stands a mountain with a face: Ymra’s face, black glass all through.',
+        '“I am already built,” says the Echo. “Every stone you ever broke, I keep.”',
+      ],
+      back: [
+        ['The black mountain has grown across the stair. “Patience,” it grinds. “I learned patience from her.”'],
+        ['The whole stair shakes as the Echo stands. “All of it. Every stone.”'],
+      ],
+      escape: [
+        ['The black stones you broke roll back together.', '“Pebbles,” says the Echo, and the real Ymra, at the top of the stair, snorts.'],
+        ['The Echo sinks into the ash of the stair.', '“Down,” it says. “Come down to the sun.”'],
+      ],
+      win: ['The black mountain breaks into ash, and the stair runs on down into a red light.', '“That was never me,” says Ymra, the real one, warm as a forge. “I was never that cold. Go on. It’s just below.”'],
+      lose: ['“Stone keeps,” grinds the Echo. “Stone always keeps.”'] },
+    { deck: 'ultra-endless-swarm', foe: { name: 'The Eclipse' }, place: 'Under the World', pic: 'place-eclipse', boss: true, powers: { life: 20, energy: 2, board: ['choirmother', 'lantern-moth', 'lantern-moth'] },
+      note: 'Your drafted deck against the Eclipse itself.',
+      before: [
+        'Under the world the sun lies held in the dark like a coin in a fist, and the dark has a shape: the Eclipse, a black sun with every light it ever ate swarming inside it.',
+        '“I have learned everything you are,” it says, in all the Legends’ voices at once. “Not this,” says Marisol. “Nobody has ever seen this deck.”',
+      ],
+      back: [
+        ['The Eclipse swells, and the swarm of stolen lights inside it beats like a heart. “I learn,” it says. “I have learned your deck now.”'],
+        ['The Eclipse pulls the whole night down around the sun. “Everything I have ever eaten. All at once.”'],
+      ],
+      escape: [
+        ['The Eclipse shrinks back round the sun, wounded, and the lights inside it flicker.', '“You surprise me,” it says. “Nothing surprises me.”'],
+        ['A crack opens in the black sun, and gold light spills through it before it closes.', '“Again,” say all the Legends beside you. “Now.”'],
+      ],
+      win: [
+        'The Eclipse breaks like black glass, and every light it ever ate pours out of it at once: moths and lanterns and lightning, and the dawn. The sun rises.',
+        'Every Legend you have met is standing in the first light: the ones you fought, the ones you freed, the ones who walked with you. Marisol closes her ledger. “Paid in full,” she says. “Let’s go home.”',
+      ],
+      lose: ['“I have learned you,” says the Eclipse. “Come back, and I will have learned you more.”'] },
+  ],
 }];
 
 export const worldOf = (id) => WORLDS.find((w) => w.id === id) || null;
@@ -536,6 +608,9 @@ export const nextStage = (p, W) => { const i = W.stages.findIndex((_, k) => !bea
 // what a level's Legend says before a round
 export const beforeLines = (S, round) => (round > 1 ? S.back[round - 2] : S.before);
 export function markSeen(what) { const p = progress(); p.seen[what] = true; keep(p); }
+// The finale's deck: the one drafted for it (draft-ui.js campaignDraft), { counts }.
+export const draftOf = (p = progress()) => p.draft || null;
+export function setDraft(counts) { const p = progress(); p.draft = { counts, at: Date.now() }; keep(p); }
 // How many of a level's rounds its place last showed won (undefined: never
 // shown), so a win is played out there the next time you look.
 export const shownOf = (p, w, i) => p.seen[`v${key(w, i)}`];

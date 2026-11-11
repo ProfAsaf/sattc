@@ -1276,8 +1276,220 @@ function nightHarbor(s, live) {
   return { spots: { rounds: [[150, 384], [150, 304], [150, 236]] } };
 }
 
+// ── World 6: The Eclipse ────────────────────────────────────────────
+// Falling water: a curtain off the rim between x0 and x1, from `top`, gone to
+// spray by `bottom`; streaked, bright where it bends over the rim, glints
+// falling down it. (c: its colours, bright to dark)
+function curtain(s, live, [x0, x1], top, bottom, seed, c = ['#ece4ff', '#9a88dc', '#4a3a90']) {
+  s.path(poly([[x0, top], [x1, top], [x1 + 8, bottom], [x0 - 8, bottom]]), s.linU(0, top, 0, bottom, [[0, c[0], 0.6], [0.3, c[1], 0.34], [1, c[2], 0]]));
+  const R = rng(seed);
+  let d = '';
+  for (let i = 0, n = Math.round((x1 - x0) / 2.6); i < n; i++) { const x = x0 + R() * (x1 - x0); d += `M${f1(x)},${f1(top + R() * 12)}l${f1((R() - 0.5) * 4)},${f1((bottom - top) * (0.25 + R() * 0.6))}`; }
+  s.add(`<path d="${d}" stroke="${c[0]}" stroke-width=".6" fill="none" opacity=".3"/>`);
+  s.add(`<path d="M${x0},${top}H${x1}" stroke="${c[0]}" stroke-width="2" opacity=".8"/>`);
+  live.add(Array.from({ length: Math.round((x1 - x0) / 12) }, (_, i) => { const R2 = rng(seed + 40 + i), x = x0 + R2() * (x1 - x0), y = top + 8 + R2() * (bottom - top) * 0.7; return `<path class="fall" style="--d:${f1(-R2() * 1.6)}s" d="M${f1(x)},${f1(y)}v${f1(5 + R2() * 9)}" stroke="${c[0]}" stroke-width="${f1(0.6 + R2() * 0.7)}" stroke-linecap="round"/>`; }).join(''));
+}
+// Every light the Eclipse ever ate, swarming inside it: n motes of every
+// colour within r of (x, y), none where skip(x, y) says.
+function swarm(x, y, r, seed, n, skip = () => false) {
+  const R = rng(seed), C = ['#ffd890', '#c8a8ff', '#8ef0c8', '#ffffff', '#ffa8c0', '#a8d8ff'];
+  let out = '';
+  for (let i = 0, k = 0; i < n * 5 && k < n; i++) {
+    const a = R() * Math.PI * 2, d = Math.sqrt(R()) * r, px = x + Math.cos(a) * d, py = y + Math.sin(a) * d;
+    if (skip(px, py)) continue;
+    k++;
+    const t = 2 + R() * 4;
+    out += `<circle class="${R() < 0.5 ? 'twinkle' : 'float'}" style="--t:${f1(t)}s;--d:${f1(-R() * t)}s" cx="${f1(px)}" cy="${f1(py)}" r="${f1(0.6 + R() * 1.1)}" fill="${C[k % C.length]}" opacity=".9"/>`;
+  }
+  return out;
+}
+// the Eclipse's fingers, closed round the sun: black, tapering, round its rim
+function fingers(x, y, r, n, seed) {
+  const R = rng(seed), out = [];
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * Math.PI * 2 + R() * 0.4, p = (q, rr) => [x + Math.cos(a + q) * rr, y + Math.sin(a + q) * rr];
+    out.push(taper([p(0, r * 0.9), p(0.2, r * 1.18), p(0.45, r * 1.27), p(0.72, r * 1.18)], [r * 0.12, r * 0.09, r * 0.05, r * 0.01], { per: 5 }));
+  }
+  return U(out);
+}
+
+// 300 × 760, read top down: at the top the edge of the world, the night sea
+// pouring off its rim on either side of a great rib of rock, the falls
+// turning to mist and stars in the dark below; down the rib the road, then a
+// stair of ash past the black glass at its turning; and under the world,
+// past the rib's end, the Eclipse with the sun in its fist. `risen`: the same
+// once it is beaten, the Eclipse in pieces and the sun up, all of it gold.
+function underWorld(s, live, risen = false) {
+  const SUN = [150, 712];
+  s.rect(s.lin(risen
+    ? [[0, '#0e1230'], [0.3, '#2a2048'], [0.6, '#5a2c48'], [0.86, '#c46048'], [1, '#ffb466']]
+    : [[0, '#04020a'], [0.3, '#0c0818'], [0.72, '#140c1e'], [1, '#2a1418']]));
+  // the rib's half width at y, roughly (it narrows to its tip)
+  const half = (y) => (y < 150 ? 0 : y < 600 ? 80 - ((y - 150) / 450) * 40 : Math.max(0, (40 * (654 - y)) / 54));
+  // stars above the world, and below it all round (not on the rock or the falls)
+  {
+    const R = rng(6101), st = [];
+    for (let i = 0; i < 400 && st.length < (risen ? 22 : 40); i++) {
+      const x = 4 + R() * 292, y = 4 + R() * 744;
+      if ((y > 96 && y < 152) || Math.abs(x - 150) < half(y) + 8 || (y < 480 && (x < 106 || x > 194))) continue;
+      st.push([x, y]);
+    }
+    live.add(st.map(([x, y], i) => { const R2 = rng(6150 + i), t = 2.5 + R2() * 3.5; return `<circle class="twinkle" style="--t:${f1(t)}s;--d:${f1(-R2() * t)}s;--o:${f1(0.3 + R2() * 0.5)}" cx="${f1(x)}" cy="${f1(y)}" r="${f1(0.3 + R2() * 0.45)}" fill="${risen ? '#fff0d8' : '#e8dcff'}"/>`; }).join(''));
+  }
+  // the sun's light, up from under the world
+  s.glow(SUN[0], SUN[1], risen ? 420 : 320, risen ? '#ffb050' : '#ff9a40', risen ? 0.55 : 0.4);
+  if (risen) s.shafts({ cx: SUN[0], cy: SUN[1], n: 15, from: -172, to: -8, len: 720, spread: 2.6, color: '#ffe0a0', op: 0.2, seed: 6102 });
+  // the world's last sea at the top, glinting out to the rim
+  s.path(poly([[-10, 104], [310, 104], [310, 150], [-10, 150]]), s.linU(0, 104, 0, 150, risen ? [[0, '#6a5070'], [1, '#3a2840']] : [[0, '#2a2048'], [1, '#120e22']]));
+  s.add(`<path d="${Array.from({ length: 22 }, (_, i) => { const R = rng(6103 + i), x = R() * 300, y = 108 + R() * 38; return `M${f1(x)},${f1(y)}h${f1(4 + R() * 9)}`; }).join('')}" stroke="${risen ? '#ffe0b0' : '#cfc0ff'}" stroke-width=".7" stroke-linecap="round" opacity=".45"/>`);
+  // the falls: the sea pouring off the rim on either side of the rib, into spray
+  const water = risen ? ['#fff4d8', '#ffc880', '#ff9a50'] : undefined;
+  curtain(s, live, [-10, 96], 150, 520, 6104, water);
+  curtain(s, live, [204, 310], 150, 520, 6105, water);
+  s.add(`<path d="${U([[30, 470, 60, 16], [270, 470, 60, 16], [40, 520, 70, 14], [262, 524, 66, 14]].map(([x, y, rx, ry]) => ell(x, y, rx, ry, 0, 22)))}" fill="${risen ? '#ffe8c8' : '#c8bcf0'}" opacity=".14"/>`);
+  // the rib, out from the edge of the world and down to a point over nothing
+  const LEFT = [[70, 150], [76, 196], [70, 236], [80, 268], [62, 296], [66, 314], [86, 332], [92, 372], [100, 420], [106, 470], [112, 520], [118, 566], [128, 604], [140, 636], [150, 654]];
+  const RIGHT = [[150, 654], [162, 636], [178, 604], [194, 566], [210, 520], [228, 482], [238, 452], [232, 420], [216, 372], [228, 330], [224, 280], [234, 236], [226, 190], [230, 150]];
+  s.figure(`<path d="${poly([...spline(LEFT, 4), ...spline(RIGHT, 4)])}"/>`, { fill: risen ? '#3a2a3c' : '#16101f', rim: risen ? '#ffd8a0' : '#c4a8ff', offsets: [[-0.8, -0.7], [0.8, -0.7]], rimOp: 0.55, shade: 0.4, light: [0, -1] });
+  { const R = rng(6106); let d = ''; for (let i = 0; i < 34; i++) { const y = 160 + R() * 460, hw = half(y) - 14; if (hw < 8) continue; d += `M${f1(150 + (R() - 0.5) * 2 * hw * 0.8)},${f1(y)}l${f1(6 + R() * 12)},${f1((R() - 0.5) * 3)}`; } s.add(`<path d="${d}" stroke="${risen ? '#ffd8a8' : '#b8a8f0'}" stroke-width=".6" opacity=".3"/>`); }
+  // black glass at the stair's turning, where the mountain stands
+  { const R = rng(6107), sh = []; for (const [cx, cy, n] of [[228, 432, 5], [102, 500, 3]]) for (let i = 0; i < n; i++) sh.push(shard(cx + (R() - 0.5) * 18, cy + (R() - 0.5) * 14, 4 + R() * 5, 9 + R() * 14, (R() - 0.5) * 6)); s.figure(`<path d="${U(sh)}"/>`, { fill: '#0a0812', rim: risen ? '#ffd8a0' : '#d0c0ff', offsets: [[-0.5, -0.8]], rimOp: 0.55 }); }
+  // the end of the night's quay, where everyone sets out
+  s.figure(`<path d="${U(quad(116, 136, 68, 14), ...[0, 1, 2, 3].map((k) => quad(120 + k * 18, 130, 3, 7)))}"/>`, { fill: risen ? '#3a2c40' : '#1a1428', rim: risen ? '#ffe0b0' : '#d8c8ff', offsets: [[0, -1]], rimOp: 0.6, shade: 0.4 });
+  live.add([[110, 132], [190, 132]].map(([x, y], i) => `<circle class="breathe" style="--d:${-i * 0.6}s" cx="${x}" cy="${y}" r="4" fill="${live.rad(risen ? [[0, '#fff6dc', 0.95], [0.5, '#ffc870', 0.5], [1, '#ff9a40', 0]] : [[0, '#f0e6ff', 0.95], [0.5, '#a080ff', 0.5], [1, '#7a5aff', 0]])}"/>`).join(''));
+  // the road down the rib, and from the falls on a stair, steps cut across it
+  const ROAD = [[150, 122], [176, 160], [200, 196], [188, 232], [144, 256], [106, 282], [92, 300], [100, 326], [140, 350], [188, 376], [214, 404], [222, 436], [210, 462], [178, 494], [142, 520], [130, 548], [136, 584], [150, 612]];
+  const road = taper(ROAD, ROAD.map((_, i) => 8 - (i / (ROAD.length - 1)) * 2.5), { per: 8 });
+  s.layer(road, '#05040a', { blur: 1.6, extra: 'opacity=".5" transform="translate(.8 1.4)"' });
+  s.path(road, s.linU(0, 122, 0, 612, risen ? [[0, '#e8d0b0'], [1, '#fff0c8']] : [[0, '#b8acd8'], [0.6, '#9a90a8'], [1, '#d8b888']]));
+  { const P = spline(ROAD.slice(6), 10); let d = ''; for (let i = 2; i < P.length - 1; i += 3) { const [ax, ay] = P[i - 1], [bx, by] = P[i + 1], L = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / L, ny = (bx - ax) / L; d += `M${f1(P[i][0] - nx * 3.2)},${f1(P[i][1] - ny * 3.2)}L${f1(P[i][0] + nx * 3.2)},${f1(P[i][1] + ny * 3.2)}`; } s.add(`<path d="${d}" stroke="${risen ? '#8a6a5a' : '#2a2236'}" stroke-width=".9" opacity=".75"/>`); }
+  if (!risen) {
+    // under the world: the sun, held in the Eclipse's fist
+    s.glow(SUN[0], SUN[1], 110, '#ffd890', 0.6);
+    s.add(`<circle cx="${SUN[0]}" cy="${SUN[1]}" r="50" fill="${s.radU(SUN[0], SUN[1], 50, [[0, '#fff6dc'], [0.7, '#ffd070'], [1, '#ff9a3a']])}"/>`);
+    s.add(`<circle cx="${SUN[0]}" cy="${SUN[1]}" r="41" fill="#030106"/><circle cx="${SUN[0]}" cy="${SUN[1]}" r="41.8" fill="none" stroke="#fff6e0" stroke-width="1.4" opacity=".9"/>`);
+    s.figure(`<path d="${fingers(SUN[0], SUN[1], 42, 7, 6108)}"/>`, { fill: '#05030a', rim: '#ffd8a0', offsets: [[0, -0.8]], rimOp: 0.5 });
+    live.add(swarm(SUN[0], SUN[1], 32, 6109, 16));
+    live.add(`<circle class="breathe" cx="${SUN[0]}" cy="${SUN[1]}" r="72" fill="${live.rad([[0, '#ffffff', 0], [0.55, '#ffffff', 0], [0.6, '#ffe8b0', 0.5], [1, '#ff9a40', 0]])}"/>`);
+  } else {
+    // the sun up, and the Eclipse in pieces, flung out round it
+    s.glow(SUN[0], SUN[1], 140, '#fff0c0', 0.8);
+    s.add(`<circle cx="${SUN[0]}" cy="${SUN[1]}" r="54" fill="${s.radU(SUN[0], SUN[1], 54, [[0, '#ffffff'], [0.5, '#fff4d0'], [0.85, '#ffd070'], [1, '#ffa040']])}"/>`);
+    const R = rng(6110), sh = [];
+    for (let i = 0; i < 60 && sh.length < 14; i++) { const a = R() * Math.PI * 2, d = 66 + R() * 70, x = SUN[0] + Math.cos(a) * d, y = SUN[1] + Math.sin(a) * d; if (y < 664 || y > 756) continue; sh.push(shard(x, y, 4 + R() * 6, 8 + R() * 12, (R() - 0.5) * 10)); }
+    s.figure(`<path d="${U(sh)}"/>`, { fill: '#0a0610', rim: '#ffe0a0', offsets: [[0, -0.8], [-0.6, -0.6]], rimOp: 0.65 });
+    live.add(`<circle class="breathe" cx="${SUN[0]}" cy="${SUN[1]}" r="86" fill="${live.rad([[0, '#fffbe8', 0.6], [0.5, '#ffd890', 0.3], [1, '#ffb050', 0]])}"/>`);
+    live.add(particles({ seed: 6111, n: 22, x: [40, 260], y: [580, 740], r: [0.5, 1.2], fill: '#ffe0a0', cls: 'rise', op: [0.5, 1], t: [5, 9] }));
+  }
+  live.motes({ seed: 6112, n: 26, x: [0, 300], y: [160, 690], r: [0.3, 0.8], fill: risen ? '#ffd890' : '#b8a0ff', cls: 'float', op: [0.3, 0.8], t: [6, 11] });
+  drifting(live, [[-60, 120, 480, 12, 0.18], [180, 360, 500, 12, 0.18], [-40, 100, 560, 10, 0.12], [200, 340, 580, 10, 0.12]], risen ? '#ffe8c8' : '#c8b8f0');
+  s.finish(risen
+    ? { hi: '#ffe0a0', lo: '#140a20', at: SUN, reach: 900, grade: 0.36, vignette: 0.36, grain: 0.05 }
+    : { hi: '#ffc880', lo: '#030106', at: SUN, reach: 760, grade: 0.42, vignette: 0.42, grain: 0.06 });
+  return { spots: { start: [150, 122], levels: [[92, 300], [210, 462], [150, 612]] } };
+}
+
+// The Falls of Night: the sea pours off the edge of the world in one curtain,
+// wall to wall, down into the dark; a ledge of the rib juts out into its
+// spray, where the Echo waits in a cloak of fog.
+function fallsOfNight(s, live) {
+  s.rect(s.lin([[0, '#030106'], [0.2, '#0c0818'], [0.6, '#100a1e'], [1, '#05030a']]));
+  live.add(particles({ seed: 6201, n: 12, x: [4, 296], y: [4, 108], r: [0.3, 0.7], fill: '#e8dcff', cls: 'twinkle', op: [0.2, 0.8], t: [2.5, 6] }));
+  s.glow(150, 640, 260, '#ff9a40', 0.24); // the sun, far below
+  curtain(s, live, [-10, 310], 116, 480, 6202);
+  // the spray where it breaks up, and the Echo's fog round the ledge's end
+  s.add(`<path d="${U([[60, 430, 80, 20], [230, 440, 90, 22], [150, 480, 120, 24], [20, 500, 60, 14], [280, 494, 50, 14]].map(([x, y, rx, ry]) => ell(x, y, rx, ry, 0, 24)))}" fill="#c8bcf0" opacity=".15"/>`);
+  s.glow(150, 240, 80, '#d8d0ff', 0.35);
+  // the ledge: black rock from us out into the spray, wet and glinting
+  const L = [[36, 612], [70, 520], [104, 420], [126, 320], [138, 256], [143, 232]], Rt = [[157, 232], [162, 256], [174, 320], [196, 420], [230, 520], [264, 612]];
+  s.figure(`<path d="${poly([...spline(L, 6), ...spline(Rt, 6)])}"/>`, { fill: '#120e1c', rim: '#d8ccff', offsets: [[0, -1], [-0.7, -0.7], [0.7, -0.7]], rimOp: 0.55, shade: 0.4, light: [0, -1] });
+  s.add(`<path d="${poly([[110, 612], [190, 612], [157, 240], [143, 240]])}" fill="${s.linU(0, 612, 0, 240, [[0, '#2a2440', 0.55], [1, '#8a7cc8', 0.45]])}"/>`);
+  live.add(Array.from({ length: 14 }, (_, i) => { const R = rng(6203 + i), t = R(), y = 250 + t * 350, side = R() < 0.5 ? -1 : 1, x = 150 + side * (8 + t * 100) * (0.8 + R() * 0.2); return `<path class="twinkle" style="--t:${f1(1.6 + R() * 2.4)}s;--d:${f1(-R() * 3)}s" d="M${f1(x)},${f1(y)}l${f1(side * 2)},${f1(3 + t * 4)}" stroke="#f4eeff" stroke-width="${f1(0.6 + t * 0.8)}" stroke-linecap="round"/>`; }).join(''));
+  // the dark below on either side: stars, spray drifting off into them
+  live.add(particles({ seed: 6204, n: 8, x: [4, 50], y: [470, 596], r: [0.3, 0.7], fill: '#e8dcff', cls: 'twinkle', op: [0.2, 0.7], t: [2.5, 6] }));
+  live.add(particles({ seed: 6205, n: 8, x: [250, 296], y: [470, 596], r: [0.3, 0.7], fill: '#e8dcff', cls: 'twinkle', op: [0.2, 0.7], t: [2.5, 6] }));
+  live.motes({ seed: 6206, n: 22, x: [0, 300], y: [140, 520], r: [0.3, 0.8], fill: '#c8b8ff', cls: 'float', op: [0.3, 0.8], t: [6, 11] });
+  drifting(live, [[-60, 360, 420, 14, 0.22], [-40, 240, 470, 12, 0.16], [60, 360, 520, 12, 0.14], [96, 210, 252, 10, 0.2]], '#d8d0f8');
+  s.finish({ hi: '#e0d4ff', lo: '#030106', at: [150, 200], reach: 460, grade: 0.4, vignette: 0.5, grain: 0.06 });
+  return { spots: { rounds: [[150, 384], [140, 304], [150, 236]] } };
+}
+
+// The Stair of Ash: a stair cut down the rib between walls of black rock,
+// away from us into the dark; at its turning a mountain of black glass with
+// Ymra's face, rimmed red, and past it the stair runs on down into a red
+// light: the sun, below. Ash drifts; embers rise.
+function stairOfAsh(s, live) {
+  s.rect(s.lin([[0, '#040208'], [0.25, '#120a16'], [0.45, '#2a1018'], [0.6, '#140a12'], [1, '#060408']]));
+  live.add(particles({ seed: 6301, n: 10, x: [40, 260], y: [4, 70], r: [0.3, 0.7], fill: '#e8dcff', cls: 'twinkle', op: [0.2, 0.7], t: [2.5, 6] }));
+  // far off on either side, the falls: pale threads down into the dark
+  curtain(s, live, [-10, 30], 60, 380, 6302);
+  curtain(s, live, [270, 310], 40, 360, 6303);
+  // the red light from below, past the turning
+  s.glow(150, 250, 250, '#ff5a28', 0.42);
+  s.glow(150, 250, 90, '#ffb070', 0.5);
+  // the black mountain at the turning, the Echo: black glass rimmed red, and a face in it
+  const crag = poly([[50, 262], [66, 214], [80, 190], [96, 150], [112, 136], [124, 104], [140, 92], [152, 68], [166, 96], [180, 104], [192, 132], [208, 146], [222, 190], [234, 214], [250, 262]]);
+  s.figure(`<path d="${crag}"/>`, { fill: '#0a0610', rim: '#ff9a60', offsets: [[0, -1], [-0.7, -0.7], [0.7, -0.7]], rimOp: 0.7, shade: 0.35, light: [0, -1] });
+  s.add(`<path d="M96,150L126,190L112,262M152,68L150,150M208,146L176,190L196,262M124,104L150,150L180,104" stroke="#ff9a70" stroke-width=".7" fill="none" opacity=".35"/>`);
+  s.add(`<path d="${taper([[114, 194], [132, 186], [150, 191], [168, 186], [186, 194]], [1, 3.6, 2, 3.6, 1], { per: 4 })}" fill="#020104"/>`);
+  live.add([[133, 202], [167, 202]].map(([x, y], i) => `<ellipse class="breathe" style="--d:${-i * 0.3}s" cx="${x}" cy="${y}" rx="4.6" ry="2.4" fill="${live.rad([[0, '#ffe6ff', 1], [0.4, '#b088ff', 0.7], [1, '#7a5aff', 0]])}"/>`).join(''));
+  // the walls of the cut, either side
+  s.figure(`<path d="${U(poly([[-10, 612], [40, 612], [128, 262], [96, 252], [40, 238], [-10, 242]]), poly([[310, 612], [260, 612], [172, 262], [204, 252], [260, 238], [310, 242]]))}"/>`, { fill: '#0e0a14', rim: '#ff8a5a', offsets: [[0, -1]], rimOp: 0.45, shade: 0.45 });
+  // the stair: ash-grey treads, each lip lit by the red below
+  s.path(poly([[40, 612], [260, 612], [172, 262], [128, 262]]), s.linU(0, 612, 0, 262, [[0, '#3a3440'], [0.6, '#4a3a44'], [1, '#7a4a44']]));
+  let steps = '', lips = '';
+  for (let k = 1; k < 18; k++) { const t = (k / 18) ** 1.6, y = 262 + 350 * t, hw = 22 + 88 * t; steps += `M${f1(150 - hw)},${f1(y)}H${f1(150 + hw)}`; lips += `M${f1(150 - hw)},${f1(y - 0.8 - t * 1.6)}H${f1(150 + hw)}`; }
+  s.add(`<path d="${steps}" stroke="#120e16" stroke-width="1.2" opacity=".85"/><path d="${lips}" stroke="#ff9a70" stroke-width=".6" opacity=".35"/>`);
+  // shards of black glass in the walls, glinting red
+  { const R = rng(6304), sh = []; for (let i = 0; i < 18; i++) { const left = R() < 0.5, y = 300 + R() * 300, t = (y - 262) / 350, x = left ? 14 + R() * (56 - t * 36) : 286 - R() * (56 - t * 36); sh.push(shard(x, y, 5 + t * 6, 12 + t * 16, (R() - 0.5) * 8)); } s.figure(`<path d="${U(sh)}"/>`, { fill: '#08060c', rim: '#ff9a70', offsets: [[-0.5, -0.8]], rimOp: 0.5 }); }
+  // ash drifting; embers rising out of the red
+  live.motes({ seed: 6305, n: 26, x: [0, 300], y: [80, 560], r: [0.3, 0.8], fill: '#b8b0c0', cls: 'float', op: [0.3, 0.7], t: [6, 11] });
+  live.add(particles({ seed: 6306, n: 12, x: [110, 190], y: [200, 300], r: [0.4, 0.9], fill: '#ffb070', cls: 'rise', op: [0.5, 1], t: [4, 8] }));
+  drifting(live, [[-60, 360, 270, 10, 0.16]], '#d8b0b0');
+  s.finish({ hi: '#ffb070', lo: '#040208', at: [150, 240], reach: 440, grade: 0.42, vignette: 0.52, grain: 0.07 });
+  return { spots: { rounds: [[150, 384], [146, 304], [150, 236]] } };
+}
+
+// Under the World: the rib's last rock juts out over nothing, and over its
+// end the Eclipse holds the sun like a coin in a fist: a black sun ringed in
+// gold fire, its fingers round the light, and inside it every light it ever
+// ate, swarming. Far above, the falls pour off the world into the dark.
+function underTheWorld(s, live) {
+  const E = [150, 226], r = 74;
+  s.rect(s.lin([[0, '#020104'], [0.35, '#0a0614'], [1, '#030106']]));
+  // the world's underside, far above, and the sea pouring off its edges
+  s.path(poly([[-10, -10], [310, -10], [310, 40], [240, 52], [150, 58], [60, 52], [-10, 40]]), '#0e0a18');
+  curtain(s, live, [-10, 40], 44, 420, 6402);
+  curtain(s, live, [262, 310], 44, 420, 6403);
+  live.add(particles({ seed: 6404, n: 8, x: [4, 56], y: [330, 600], r: [0.3, 0.7], fill: '#f0e4d8', cls: 'twinkle', op: [0.2, 0.7], t: [2.5, 6] }));
+  live.add(particles({ seed: 6405, n: 8, x: [244, 296], y: [330, 600], r: [0.3, 0.7], fill: '#f0e4d8', cls: 'twinkle', op: [0.2, 0.7], t: [2.5, 6] }));
+  // the sun behind the black, its fire streaming out all round
+  s.glow(E[0], E[1], 330, '#ff9a40', 0.42);
+  s.shafts({ cx: E[0], cy: E[1], n: 20, from: -180, to: 180, len: 280, spread: 2, color: '#ffd890', op: 0.24, seed: 6406 });
+  s.glow(E[0], E[1], r * 1.5, '#fff0c0', 0.8);
+  s.add(`<circle cx="${E[0]}" cy="${E[1]}" r="${r + 9}" fill="${s.radU(E[0], E[1], r + 9, [[0.8, '#fff6dc'], [0.92, '#ffd070'], [1, '#ff9a3a', 0.5]])}"/>`);
+  s.add(`<circle cx="${E[0]}" cy="${E[1]}" r="${r}" fill="${s.radU(E[0], E[1], r, [[0, '#0c0618'], [0.8, '#040208'], [1, '#020104']])}"/><circle cx="${E[0]}" cy="${E[1]}" r="${r + 0.8}" fill="none" stroke="#fffbe8" stroke-width="1.8" opacity=".95"/>`);
+  s.figure(`<path d="${fingers(E[0], E[1], r, 8, 6407)}"/>`, { fill: '#05030a', rim: '#ffd8a0', offsets: [[0, -0.8], [0.6, -0.6]], rimOp: 0.55 });
+  live.add(`<circle class="breathe" cx="${E[0]}" cy="${E[1]}" r="${f1(r * 1.32)}" fill="${live.rad([[0, '#ffffff', 0], [0.7, '#ffffff', 0], [0.76, '#ffe8b0', 0.55], [1, '#ff9a40', 0]])}"/>`);
+  // the rib's last rock, from us out to its end under the black sun
+  const L = [[52, 612], [86, 500], [112, 400], [130, 320], [142, 268], [146, 250]], Rt = [[154, 250], [158, 268], [170, 320], [188, 400], [214, 500], [248, 612]];
+  s.figure(`<path d="${poly([...spline(L, 6), ...spline(Rt, 6)])}"/>`, { fill: '#0e0a14', rim: '#ffd8a0', offsets: [[0, -1], [-0.7, -0.7], [0.7, -0.7]], rimOp: 0.6, shade: 0.4, light: [0, -1] });
+  s.add(`<path d="${poly([[118, 612], [182, 612], [154, 256], [146, 256]])}" fill="${s.linU(0, 612, 0, 256, [[0, '#2a2030', 0.5], [1, '#c89a60', 0.4]])}"/>`);
+  live.add(swarm(E[0], E[1], r - 8, 6408, 26, (x, y) => y > 240 && Math.abs(x - 150) < 14 + (y - 240) * 0.35));
+  live.motes({ seed: 6409, n: 20, x: [0, 300], y: [300, 580], r: [0.3, 0.8], fill: '#ffd890', cls: 'float', op: [0.3, 0.8], t: [6, 11] });
+  drifting(live, [[-60, 360, 420, 10, 0.14], [-40, 260, 520, 10, 0.12]], '#e0c8b0');
+  s.finish({ hi: '#ffd890', lo: '#030106', at: E, reach: 480, grade: 0.45, vignette: 0.55, grain: 0.06 });
+  return { spots: { rounds: [[150, 384], [150, 304], [150, 236]] } };
+}
+
 export const CAMPAIGN_ART = {
   'world-1': { w: 300, h: 760, draw: harborRoad },
+  // World 6, The Eclipse: past the edge of the world, down to where it holds the sun (and the sun up, once it's beaten)
+  'world-6': { w: 300, h: 760, draw: (s, live) => underWorld(s, live) },
+  'world-6-dawn': { w: 300, h: 760, draw: (s, live) => underWorld(s, live, true) },
+  'place-falls': { w: 300, h: 600, draw: fallsOfNight },
+  'place-stair': { w: 300, h: 600, draw: stairOfAsh },
+  'place-eclipse': { w: 300, h: 600, draw: underTheWorld },
   // World 5, The Edge of Night: all new, the deep east
   'world-5': { w: 300, h: 760, draw: edgeOfNight },
   'place-library': { w: 300, h: 600, draw: library },

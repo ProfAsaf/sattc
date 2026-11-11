@@ -15,6 +15,8 @@
 //   onRoomInfo(code, info, refresh)  each lobby update of the room this phone is in
 //   beforeStart(code, info)          the host's Start game in a draft room
 //   leaveRoom()                      this phone leaves the room
+// and campaign-ui.js, for the campaign's finale (World 6), whose deck you draft:
+//   campaignDraft(ctx), savedCampaignDraft()
 
 import { BY_ID, KEYWORDS } from './cards.js';
 import { cardHTML, cardRowHTML, esc, factionCoin } from './render.js';
@@ -30,12 +32,14 @@ import {
   newSeed, poolKey, replay, roundPicks, adviceFor, draftPool, kindInfo,
 } from './draft.js';
 
-const SAVE = 'collective.draft.snake.v1';
-const store = {
-  get() { try { return JSON.parse(localStorage.getItem(SAVE)); } catch { return null; } },
-  set(v) { try { localStorage.setItem(SAVE, JSON.stringify(v)); } catch { /* fine without */ } },
-  clear() { try { localStorage.removeItem(SAVE); } catch { /* fine */ } },
-};
+const kept = (key) => ({
+  get() { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
+  set(v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* fine without */ } },
+  clear() { try { localStorage.removeItem(key); } catch { /* fine */ } },
+});
+const store = kept('collective.draft.snake.v1');
+const campStore = kept('collective.draft.campaign.v1'); // the campaign's draft, apart from the Play page's
+const boxOf = (d) => (d.campaign ? campStore : store);
 const BOT_MS = 700; // practice bots pick after this long, so you see what they took
 
 // R: the draft of the online room this phone is in (kept while in the room,
@@ -143,6 +147,7 @@ function closeScreen() {
 
 // Back to the Play page (the draft carries on; the Play page can reopen it).
 function backToPlay() {
+  if (V?.kind === 'practice' && P?.campaign) { clearTimeout(P.timer); toast('Your draft is saved: carry on with it from World 6.'); closeScreen(); P.back?.(); return; }
   if (V?.kind === 'online' && R) R.dismissed = true;
   if (V?.kind === 'practice') { clearTimeout(P?.timer); toast('Your draft is saved: resume it from Play.'); }
   closeScreen();
@@ -163,7 +168,7 @@ function render() {
   if (!V) return;
   const d = cur();
   if (!d || !d.st || stale(d)) {
-    const back = `<div class="dr-top"><button class="dr-back" data-act="draft-close">‹ ${V.kind === 'online' ? 'Lobby' : 'Play'}</button><span class="dr-kicker">Draft night</span><span></span></div>`;
+    const back = `<div class="dr-top"><button class="dr-back" data-act="draft-close">‹ ${V.kind === 'online' ? 'Lobby' : P?.campaign ? 'Campaign' : 'Play'}</button><span class="dr-kicker">Draft night</span><span></span></div>`;
     setRegion('head', back);
     setRegion('main', d?.st ? `<div class="dr-wait"><h3>Update needed</h3><p class="dr-stale">${STALE}</p><button class="btn primary" data-act="draft-reload">Reload this page</button></div>`
       : '<div class="dr-wait"><h3>Dealing the cards<span class="dr-dots"><i></i><i></i><i></i></span></h3></div>');
@@ -213,8 +218,8 @@ function flyAway(e, d, delay = 0) {
 function headHTML(d) {
   const st = d.st;
   const top = `<div class="dr-top">
-      <button class="dr-back" data-act="draft-close">‹ ${d.kind === 'online' ? 'Lobby' : 'Play'}</button>
-      <span class="dr-kicker">Draft night</span>
+      <button class="dr-back" data-act="draft-close">‹ ${d.kind === 'online' ? 'Lobby' : d.campaign ? 'Campaign' : 'Play'}</button>
+      <span class="dr-kicker">${d.campaign ? 'A deck for the Eclipse' : 'Draft night'}</span>
       ${myDone(d) ? '<span></span>' : `<button class="g-icon g-bulb dr-bulb${adviceOpen(d) ? ' on' : ''}" data-act="draft-advice" aria-label="Advice for this round">💡</button>`}
     </div>`;
   if (myDone(d)) return `${top}<div class="dr-title">Your deck</div>`;
@@ -316,7 +321,7 @@ function endHTML(d) {
 
 function endFootHTML(d) {
   if (d.kind === 'practice') {
-    return `<button class="btn primary dr-go" data-act="draft-play" ${d.st.done ? '' : 'disabled'}>${d.st.done ? 'Play' : 'Waiting for the bots…'}</button>`;
+    return `<button class="btn primary dr-go" data-act="draft-play" ${d.st.done ? '' : 'disabled'}>${!d.st.done ? 'Waiting for the bots…' : d.campaign ? 'Take it to the Eclipse' : 'Play'}</button>`;
   }
   const info = d.info;
   if (info.host === Net.clientId()) {
@@ -537,8 +542,8 @@ function pickFor(d) {
 }
 
 // ── practice against bots ───────────────────────────────────────────
-function loadPractice() {
-  const s = store.get();
+function loadPractice(box = store) {
+  const s = box.get();
   if (!s || ![2, 3].includes(s.n) || !Number.isInteger(s.seed) || !Array.isArray(s.picks)) return null;
   try { replay(s, s.picks); return s; } catch { return null; }
 }
@@ -548,6 +553,7 @@ function practiceFrom(saved, ctx) {
   const d = {
     kind: 'practice', seed: saved.seed, n: saved.n, ultra: !!saved.ultra, picks: [...saved.picks], me: 0,
     names: ['You', ...bots.map((p) => `Bot ${p}`)], bots, play: ctx.play, timer: null,
+    ...(saved.campaign ? { campaign: true, back: ctx.back } : {}),
   };
   d.st = replay(d, d.picks);
   noteDraft(d);
@@ -555,7 +561,7 @@ function practiceFrom(saved, ctx) {
 }
 
 function savePractice() {
-  if (P) store.set({ seed: P.seed, n: P.n, ultra: !!P.ultra, picks: P.picks, at: Date.now() });
+  if (P) boxOf(P).set({ seed: P.seed, n: P.n, ultra: !!P.ultra, picks: P.picks, at: Date.now(), ...(P.campaign ? { campaign: true } : {}) });
 }
 
 function startPracticeDraft(bots, ctx) {
@@ -600,12 +606,12 @@ function playPractice() {
   const st = P.st;
   const you = { id: 'draft-you', name: 'Your draft', counts: deckCounts(st.pools[0]) };
   const bots = P.bots.map((p) => ({ id: `draft-bot-${p}`, name: `${deckName(st.pools[p])} draft`, counts: deckCounts(st.pools[p]) }));
-  const bad = [you, ...bots].map((d) => Decks.validateDrafted(d.counts)).find((v) => !v.ok);
+  const bad = (P.campaign ? [you] : [you, ...bots]).map((d) => Decks.validateDrafted(d.counts)).find((v) => !v.ok);
   if (bad) { toast(bad.errors[0]); return; }
   const play = P.play, ultra = !!P.ultra;
   clearTimeout(P.timer);
+  boxOf(P).clear();
   P = null;
-  store.clear();
   closeScreen();
   play(you, bots, { ultra }); // (the game plays by the rules the draft was dealt with)
 }
@@ -720,6 +726,24 @@ export function onPlayAct(act, el, ctx = {}) {
       if (ctx.code) Net.startDraft(ctx.code, { again: true, pool: poolKey(!!ctx.ultra), ultra: !!ctx.ultra }).catch(fail);
       break;
   }
+}
+
+// The campaign's finale (campaign-ui.js): a deck drafted against one bot, from
+// the Ultra cards, kept apart from the Play page's draft. The one under way
+// carries on, else a new one. ctx.play(you) takes the finished deck;
+// ctx.back() is the way out, the draft kept.
+export function campaignDraft(ctx) {
+  const s = loadPractice(campStore);
+  P = practiceFrom(s || { seed: newSeed(), n: 2, ultra: true, picks: [], campaign: true }, ctx);
+  if (!s) savePractice();
+  openScreen('practice');
+  botsTick();
+}
+export function savedCampaignDraft() {
+  const s = loadPractice(campStore);
+  if (!s) return null;
+  const picks = replay(s, s.picks).pools[0].length;
+  return { picks, of: PICKS, done: picks >= PICKS };
 }
 
 // A practice draft against bots to come back to: how far it got, or null.

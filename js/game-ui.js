@@ -421,9 +421,11 @@ function pickBots(n, which, mine) {
 export function startCampaign(world, stage, diff) {
   const W = Camp.worldOf(world), S = W.stages[stage], D = Camp.DIFFS[diff - 1];
   const deck = (id) => ULTRA_STARTERS.find((d) => d.id === id);
-  const mine = deck(W.deck), theirs = deck(S.deck);
-  const players = [{ name: 'You', deck: Decks.cardList(mine.counts), legend: mine.legend },
-    { name: `Bot · ${theirs.name}`, deck: Decks.cardList(theirs.counts), legend: theirs.legend, ...(S.powers ? { powers: S.powers } : {}) }];
+  // your deck: the world's, or in the finale the one you drafted for it (its Legend found by the engine, cards.js legendFor)
+  const mine = W.deck === 'draft' ? Camp.draftOf() : deck(W.deck), theirs = deck(S.deck);
+  if (!mine) return;
+  const players = [{ name: 'You', deck: Decks.cardList(mine.counts), ...(mine.legend ? { legend: mine.legend } : {}) },
+    { name: S.foe ? S.foe.name : `Bot · ${theirs.name}`, deck: Decks.cardList(theirs.counts), legend: theirs.legend, ...(S.powers ? { powers: S.powers } : {}) }];
   const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, deckClock: true, champions: false, ultra: ULTRA_V };
   begin({ mode: 'practice', setup, actions: [], me: 0, bots: [1], level: D.level, campaign: { world, stage, diff } });
 }
@@ -2944,8 +2946,9 @@ function overHTML() {
 // next round, the same one again, or back to the map.
 function campaignOverHTML(win, score) {
   const s = S(), c = G.campaign, W = Camp.worldOf(c.world), St0 = W.stages[c.stage];
-  const L = BY_ID[ULTRA_STARTERS.find((d) => d.id === St0.deck)?.legend];
-  const who = L ? L.name.split(',')[0] : shortName(s.players[s.winner]?.name || 'Nobody');
+  // whom you met: the deck's Legend, or (the finale) a name in a borrowed face, or the Eclipse's own
+  const F = St0.foe, L = F ? F.face && BY_ID[F.face] : BY_ID[ULTRA_STARTERS.find((d) => d.id === St0.deck)?.legend];
+  const who = F ? F.name : L ? L.name.split(',')[0] : shortName(s.players[s.winner]?.name || 'Nobody');
   const r = G.campaignResult || { now: 0 };
   const stars = (n) => [1, 2, 3].map((k) => `<i class="${k <= n ? 'on' : ''}">★</i>`).join('');
   const lines = !win ? St0.lose : r.escaped ? St0.escape[c.diff - 1] : St0.win;
@@ -2957,7 +2960,7 @@ function campaignOverHTML(win, score) {
     : next ? `${who} will be back with better fighters: round ${next}, ${'★'.repeat(next)} ${Camp.DIFFS[next - 1].name}.` : '';
   return `<div class="g-sheet"><div class="g-sheet-inner g-full" style="min-height:70vh;justify-content:center">
     <div class="winner">${win ? 'You win!' : `${esc(who)} wins`}</div>
-    <div class="cp-said">${L ? `<img src="${esc(artURL(L) || '')}" alt="">` : ''}<div>${lines.map((t) => `<p>${esc(t)}</p>`).join('')}</div></div>
+    <div class="cp-said">${L ? `<img src="${esc(artURL(L) || '')}" alt="">` : F ? '<span class="cp-eclipse" aria-hidden="true"></span>' : ''}<div>${lines.map((t) => `<p>${esc(t)}</p>`).join('')}</div></div>
     <div class="cp-result">${esc(result)} · <span class="cp-stars">${stars(r.now)}</span> at ${esc(St0.place)}</div>
     ${news ? `<div class="cp-news">${esc(news)}</div>` : ''}
     ${G.rec ? Ins.overSummaryHTML(G.rec, { score }) : ''}

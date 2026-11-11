@@ -431,6 +431,9 @@ export class Scene {
   figure(inner, { fill, rim, offsets = [[-1.2, -1]], rimOp = 1, shade = 0, edge = 0, halo = 0, light = null, depth = 2 }) {
     const id = this.uid('f');
     this.defs.push(`<g id="${id}">${inner}</g>`);
+    // (all its layers in one group, `fig`, its glow marked `fig-halo`: a
+    // figure that comes alive in a close-up moves as one; js/art/alive.js)
+    this.add('<g class="fig">');
     let [lx, ly] = light || offsets.reduce(([a, b], [x, y]) => [a + x, b + y], [0, 0]);
     const ll = Math.hypot(lx, ly);
     if (ll < 1e-6) { lx = 0; ly = -1; } else { lx /= ll; ly /= ll; }
@@ -438,7 +441,7 @@ export class Scene {
       // pushed toward the light, so it spills past the lit side only
       const h = typeof halo === 'object' ? halo : { op: halo };
       const c = h.color || rim, sd = h.sd ?? 2.4;
-      this.add(`<use href="#${id}" fill="${c}" stroke="${c}" opacity="${f2(h.op ?? 0.6)}" transform="translate(${f1(lx * sd * 0.9)} ${f1(ly * sd * 0.9)})" ${this.fx('blur', { sd, bbox: true })}/>`);
+      this.add(`<use class="fig-halo" href="#${id}" fill="${c}" stroke="${c}" opacity="${f2(h.op ?? 0.6)}" transform="translate(${f1(lx * sd * 0.9)} ${f1(ly * sd * 0.9)})" ${this.fx('blur', { sd, bbox: true })}/>`);
     }
     if (rim) {
       for (const [dx, dy] of offsets) {
@@ -457,6 +460,7 @@ export class Scene {
       // through it (one filter, only as big as the figure)
       this.add(`<use href="#${id}" fill="${rim}" stroke="${rim}" opacity="${f2(edge)}" ${this.fx('edge', { dx: +f1(-lx * depth), dy: +f1(-ly * depth), sd: +f2(depth * 0.45), bbox: true })}/>`);
     }
+    this.add('</g>');
     return this;
   }
   // Low fog bands.

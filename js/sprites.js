@@ -23,6 +23,9 @@ const MOVES = { // -> [keyframes, seconds, back and forth?, easing]; u: px per u
   drift: (u) => [[{ transform: `translateX(${-16 * u}px)` }, { transform: `translateX(${16 * u}px)` }], 16, true],
   breathe: (u, s) => [[{ opacity: 0.65 * (s.o ?? 1), transform: 'scale(.93)' }, { opacity: s.o ?? 1, transform: 'scale(1.07)' }], 3.4, true],
   fall: (u) => [[{ transform: `translate(0,${-5 * u}px)`, opacity: 0 }, { opacity: 0.95, offset: 0.25 }, { transform: `translate(${-3 * u}px,${7 * u}px)`, opacity: 0 }], 1.6, false, 'linear'],
+  // a character breathing (js/art/alive.js; the same numbers as card.css .alive)
+  ground: () => [[{ transform: 'none' }, { transform: 'scale(1.006, 1.016)' }], 2.8, true],
+  air: () => [[{ transform: 'none' }, { transform: 'scale(1.012)' }], 3.4, true],
 };
 
 const files = new Map(); // a sprites file -> its contents, fetched once
@@ -39,7 +42,11 @@ const boxes = new Set(); // every box with moving parts, so none is left running
 export async function liven(box, pic, { clip = null } = {}) {
   const L = await fetchSprites(pic.live);
   if (!L || !box.isConnected) return;
-  box.innerHTML = `<svg class="sp-defs" aria-hidden="true"><defs>${L.defs}</defs></svg>${L.sprites.map((s, i) => `<svg class="sp" data-i="${i}" viewBox="${s.x} ${s.y} ${s.w} ${s.h}" preserveAspectRatio="none" aria-hidden="true" style="left:${pc(s.x / pic.w)};top:${pc(s.y / pic.h)};width:${pc(s.w / pic.w)};height:${pc(s.h / pic.h)};transform-origin:${s.ox}% ${s.oy}%${LIGHTS.has(s.a) && s.o != null ? `;opacity:${s.o}` : ''}">${s.svg}</svg>`).join('')}`;
+  const at = (s) => `left:${pc(s.x / pic.w)};top:${pc(s.y / pic.h)};width:${pc(s.w / pic.w)};height:${pc(s.h / pic.h)};transform-origin:${s.ox}% ${s.oy}%`;
+  // (a character is a picture cut from the finished art; the rest are drawn)
+  box.innerHTML = `<svg class="sp-defs" aria-hidden="true"><defs>${L.defs}</defs></svg>${L.sprites.map((s, i) => (s.img
+    ? `<img class="sp" data-i="${i}" src="${s.img}" alt="" decoding="async" style="${at(s)}">`
+    : `<svg class="sp" data-i="${i}" viewBox="${s.x} ${s.y} ${s.w} ${s.h}" preserveAspectRatio="none" aria-hidden="true" style="${at(s)}${LIGHTS.has(s.a) && s.o != null ? `;opacity:${s.o}` : ''}">${s.svg}</svg>`)).join('')}`;
   box.live = L;
   box.pic = pic;
   boxes.add(box);

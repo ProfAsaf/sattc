@@ -978,7 +978,8 @@ export const ultra_c = {
     s.fog(162, '#9a86c4', 0.3);
     s.path(ledge([[-10, 188], [40, 184], [100, 187], [160, 189], [220, 186], [310, 188]]), s.lin([[0, '#1d1530'], [1, '#08060c']]));
     // the rune ring on the ground, cracks of light running out of it
-    const glyphs = [(x, y) => `M${x},${y + 2.4}v-4.8M${x},${y}l-1.5,-2.2M${x},${y}l1.5,-2.2`, (x, y) => `M${x},${y - 2.4}l1.6,2.4l-1.6,2.4l-1.6,-2.4Z`,
+    // (x, y come as text: +y + 2.4, not y + 2.4)
+    const glyphs = [(x, y) => `M${x},${f1(+y + 2.4)}v-4.8M${x},${y}l-1.5,-2.2M${x},${y}l1.5,-2.2`, (x, y) => `M${x},${y - 2.4}l1.6,2.4l-1.6,2.4l-1.6,-2.4Z`,
       (x, y) => `M${x - 1.4},${y - 2.4}h2.8l-2.8,4.8h2.8Z`, (x, y) => `M${x - 1.7},${y}a1.7,1.7 0 1,0 3.4,0a1.7,1.7 0 1,0 -3.4,0`];
     let runes = '';
     for (let i = 0; i < 16; i++) {

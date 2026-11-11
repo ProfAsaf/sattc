@@ -4,6 +4,7 @@
 import { BY_ID, CARDS, CHAMPIONS, FACTIONS, FACTION_ORDER, KEYWORDS, LEGENDS, RULES, SET, STARTERS, TOKENS, ULTRA, ULTRA_OUT, ULTRA_POOL, ULTRA_RULES, ULTRA_STARTERS, ULTRA_V2, isTrick } from './cards.js';
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin, livenArt } from './render.js';
 import { hold, sweep } from './sprites.js';
+import { gatherAlive } from './art/alive.js';
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, autoResume, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
@@ -118,6 +119,8 @@ function openZoom(id, deckCtx = null) {
       </div>`;
   };
   render();
+  // its characters breathe (js/art/alive.js: found once the card is on the page)
+  const wake = () => zoomEl.querySelectorAll('.card .art-svg').forEach((svg) => gatherAlive(svg, id));
 
   zoomEl.addEventListener('click', (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
@@ -127,6 +130,7 @@ function openZoom(id, deckCtx = null) {
       deckCtx.change(id, act === 'plus' ? 1 : -1);
       const flipped = zoomEl.querySelector('.flipper').classList.contains('flipped');
       render();
+      wake();
       if (flipped) zoomEl.querySelector('.flipper').classList.add('flipped');
       return;
     }
@@ -134,6 +138,7 @@ function openZoom(id, deckCtx = null) {
     if (!e.target.closest('.zoom-inner')) closeZoom();
   });
   document.body.appendChild(zoomEl);
+  wake();
 }
 
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeZoom(); homeMenu(false); } });

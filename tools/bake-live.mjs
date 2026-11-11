@@ -1,15 +1,23 @@
 // Bake cards that stay on screen with their art moving (Home's fan): the
-// picture without its moving parts as a WebP, and those parts as sprites
-// (js/sprites.js moves them: the compositor's work, nothing redrawn). The
-// same art drawn live as an SVG repaints every frame, filters and all.
+// picture without its moving parts or its characters as a WebP; its ambient
+// moving parts as sprites; and each character (js/art/alive.js) as a picture
+// of its own, cut from the finished art so it keeps the grade, vignette and
+// grain, to breathe over the rest (js/sprites.js moves them all: the
+// compositor's work, nothing redrawn). The same art drawn live as an SVG
+// repaints every frame, filters and all.
+//
+// A character's picture: the art photographed whole (F), without the
+// characters (B), and the character alone on nothing (its coverage, a); its
+// colours are what, laid over B with that coverage, give back F exactly:
+// (F - B(1 - a)) / a.
 //
 //   python tools/serve.py 8770          (in another terminal)
 //   node tools/bake-live.mjs             (Home's fan: Ashmaw, Seraphine, the Barrow Queen)
 //   node tools/bake-live.mjs id1,id2     (these cards; the others baked before stay)
 //
-// Writes art/live/<id>.webp and art/live/<id>.json, and js/art-live.js (every
-// card baked so far, with cache-busting versions). Raw PNGs: art/live/raw
-// (kept out of git).
+// Writes art/live/<id>.webp, art/live/<id>-a<k>.webp (its characters) and
+// art/live/<id>.json, and js/art-live.js (every card baked so far, with
+// cache-busting versions). Raw PNGs: art/live/raw (kept out of git).
 
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -52,6 +60,7 @@ async function evaluate(expression) {
 }
 
 const dir = join(ROOT, 'art', 'live'), raw = join(dir, 'raw');
+const pics = {}; // id -> its ambient sprites and characters
 mkdirSync(raw, { recursive: true });
 try {
   let targets = [];
@@ -64,36 +73,72 @@ try {
   for (let k = 0; k < 60 && !(await evaluate('!!window.ready').catch(() => false)); k++) await sleep(250);
   const [w, h] = await evaluate('window.size');
   await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: SCALE, mobile: false });
+  await send('Emulation.setDefaultBackgroundColorOverride', { color: { r: 0, g: 0, b: 0, a: 0 } }); // (a character alone: on nothing)
+  const shot = async (file) => {
+    const { data } = await send('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: w, height: h, scale: 1 } });
+    writeFileSync(join(raw, file), Buffer.from(data, 'base64'));
+  };
   for (const id of ids) {
     const L = await evaluate(`window.live(${JSON.stringify(id)})`);
-    writeFileSync(join(dir, `${id}.json`), JSON.stringify(L));
-    await evaluate(`window.show(${JSON.stringify(id)})`);
-    const { data } = await send('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: w, height: h, scale: 1 } });
-    writeFileSync(join(raw, `${id}.png`), Buffer.from(data, 'base64'));
-    process.stdout.write(`${id} (${L.sprites.length} moving) `);
+    const groups = await evaluate(`window.prep(${JSON.stringify(id)})`);
+    await evaluate(`window.view('base')`); await shot(`${id}.png`);
+    await evaluate(`window.view('full')`); await shot(`${id}-full.png`);
+    for (let k = 0; k < groups.length; k++) { await evaluate(`window.view('alpha', ${k})`); await shot(`${id}-a${k}.png`); }
+    pics[id] = { L, groups };
+    process.stdout.write(`${id} (${L.sprites.length} moving, ${groups.length} alive) `);
   }
   console.log(`\nbaked ${ids.length} cards`);
 } finally {
   try { ws?.close(); } catch { /* closed */ }
   await closeBrowser();
 }
-// PNG -> WebP (only what changed)
+// The bases to WebP; each character cut from the finished art
 const conv = spawnSync('python', ['-c', `
+import json, re
 from pathlib import Path
+import numpy as np
 from PIL import Image
-out = Path(${JSON.stringify(dir)})
-for src in sorted((out / 'raw').glob('*.png')):
-    dst = out / (src.stem + '.webp')
-    if not dst.exists() or dst.stat().st_mtime < src.stat().st_mtime:
-        Image.open(src).convert('RGB').save(dst, 'WEBP', quality=82, method=6)
-`], { stdio: 'inherit' });
-if (conv.status) process.exit(conv.status);
-// every card baked so far, with versions
+out = Path(${JSON.stringify(dir)}); raw = out / 'raw'
+todo = json.loads(${JSON.stringify(JSON.stringify(Object.fromEntries(Object.entries(pics).map(([id, p]) => [id, p.groups.length]))))})
+cuts = {}
+for id, n in todo.items():
+    Image.open(raw / (id + '.png')).convert('RGB').save(out / (id + '.webp'), 'WEBP', quality=82, method=6)
+    B = np.asarray(Image.open(raw / (id + '.png')).convert('RGB'), dtype=np.float32)
+    F = np.asarray(Image.open(raw / (id + '-full.png')).convert('RGB'), dtype=np.float32)
+    cuts[id] = []
+    for k in range(n):
+        A = np.asarray(Image.open(raw / ('%s-a%d.png' % (id, k))).convert('RGBA'), dtype=np.float32)[..., 3] / 255.0
+        ys, xs = np.nonzero(A > 0.03)
+        if not len(xs):
+            cuts[id].append(None); continue
+        x0, x1, y0, y1 = max(0, xs.min() - 2), min(A.shape[1], xs.max() + 3), max(0, ys.min() - 2), min(A.shape[0], ys.max() + 3)
+        a = A[y0:y1, x0:x1]
+        C = np.clip((F[y0:y1, x0:x1] - B[y0:y1, x0:x1] * (1 - a[..., None])) / np.maximum(a, 0.03)[..., None], 0, 255)
+        alpha = np.where(a > 0.03, a, 0) * 255
+        Image.fromarray(np.dstack([C, alpha]).round().astype(np.uint8), 'RGBA').save(out / ('%s-a%d.webp' % (id, k)), 'WEBP', quality=90, alpha_quality=95, method=6)
+        cuts[id].append({ 'x': int(x0), 'y': int(y0), 'w': int(x1 - x0), 'h': int(y1 - y0) })
+print('CUTS' + json.dumps(cuts))
+`], { encoding: 'utf8' });
+if (conv.status) { console.log(conv.stdout, conv.stderr); process.exit(conv.status); }
+const cuts = JSON.parse(conv.stdout.split('CUTS')[1]);
 const ver = (f) => createHash('sha1').update(readFileSync(join(dir, f))).digest('hex').slice(0, 8);
-const baked = readdirSync(dir).filter((f) => f.endsWith('.webp')).map((f) => f.slice(0, -5)).filter((id) => existsSync(join(dir, `${id}.json`))).sort();
+const r1 = (v) => Math.round(v * 10) / 10;
+for (const [id, { L, groups }] of Object.entries(pics)) {
+  // each character under the ambient sprites, breathing from its feet (or, in the air, its middle)
+  const chars = groups.map((g, k) => {
+    const c = cuts[id][k];
+    if (!c) return null;
+    const x = c.x / SCALE, y = c.y / SCALE, w = c.w / SCALE, h = c.h / SCALE;
+    const ox = r1(((g.box.x + g.box.w / 2 - x) / w) * 100), oy = r1(((g.box.y + (g.kind === 'ground' ? g.box.h : g.box.h / 2) - y) / h) * 100);
+    return { a: g.kind, x: r1(x), y: r1(y), w: r1(w), h: r1(h), ox, oy, d: g.d, img: `art/live/${id}-a${k}.webp?v=${ver(`${id}-a${k}.webp`)}` };
+  }).filter(Boolean);
+  writeFileSync(join(dir, `${id}.json`), JSON.stringify({ defs: L.defs, sprites: [...chars, ...L.sprites] }));
+}
+// every card baked so far, with versions
+const baked = readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5)).filter((id) => existsSync(join(dir, `${id}.webp`))).sort();
 writeFileSync(join(ROOT, 'js', 'art-live.js'), `// Written by tools/bake-live.mjs: cards whose art, shown big and moving, is a
-// baked picture without its moving parts, with those parts as sprites over it
-// (js/sprites.js): nothing redrawn while they move.
+// baked picture without its moving parts or characters, with those as
+// sprites over it (js/sprites.js): nothing redrawn while they move.
 export const LIVE = {
 ${baked.map((id) => `  ${JSON.stringify(id)}: { src: 'art/live/${id}.webp?v=${ver(`${id}.webp`)}', live: 'art/live/${id}.json?v=${ver(`${id}.json`)}' },`).join('\n')}
 };

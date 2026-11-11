@@ -1152,6 +1152,32 @@ Measured while building the campaign: sitting on Home, its three fanned cards (A
 - **Now**: Home sitting for 4 seconds does 0 style recalcs, 0 layouts, about 6 ms of work. It looks the same (`.phone-tests/look-home-art.mjs`, with the old and new side by side).
 - The card close-up still draws its card live (crisp at any size, open only for a moment).
 
+## Characters that breathe (2026-11-11)
+
+Asaf's first big idea: "every card when you open it big the creatures or characters or scene or whatever move and do something like they are alive". Until now only the light and air moved (embers, motes, stars, glows). Now the characters breathe: a slow rise and fall of about 1.6% from their feet (a little wider too), every 2.8 seconds each way; one in the air swells a little from its middle instead (no lift: a figure taken for flying may be standing on a high horizon). Each in its own time.
+
+- **Which figures** (`js/art/alive.js`): the kit draws every figure as a rim-lit silhouette, now with all its layers in one group (`kit.js` `figure`: `<g class="fig">`, its glow `fig-halo`; nothing drawn changes). A figure is a character unless the rules say it's scenery:
+  - tiny;
+  - along the bottom edge;
+  - wide and short (clouds, rows of riders, a line of fire);
+  - a bank off the side;
+  - a backdrop spilling past the edges.
+
+  `ALIVE` corrects them per card (about 50 entries, from a look at every card with `tools/alive-review.html` and `.phone-tests/look-alive.mjs`): props and buildings kept still (a brazier, a tombstone, a door, a kiln, a lighthouse, a library, a war chest), and characters as big as the picture woken (the Angry Mountain, Ymra, the Kiss of Night's face, the Vesper Bat).
+- **What moves with it**:
+  - figures that overlap become one creature (wings and body, a hand and its shield);
+  - the details next to it in the drawing that lie within it, or are centred on it, come too: Seraphine's wings, halo and blade, Ashmaw's wing membranes, belly plates and fire breath;
+  - scenery never does: the ground, a skyline or road at its feet, the horizon.
+
+  The picture's finish (grade, vignette, grain) stays on top.
+- **In a close-up** (tapping a card, in the gallery or on Home): the live drawing's characters are gathered once the card is on the page (`app.js` `openZoom`) and breathe by CSS (`card.css` `.alive`). The close-up already redrew every frame for its embers, so this costs nothing new.
+- **On Home's fan**: `tools/bake-live.mjs` now photographs each card three ways: whole (F), without its characters (B), and each character alone (its coverage, a). A character's picture is the colour that, laid over B with that coverage, gives back F exactly: (F − B(1 − a)) / a. So it keeps the finish and the details painted over it. Home shows B, each character as a picture sprite (`art/live/<id>-a<k>.webp`) breathing over it, and the ambient sprites on top. Still 0 style recalcs and 0 layouts while Home sits there.
+- Checked:
+  - every card's close-up at rest and at the top of a breath, with what moved (`.phone-tests/look-alive-zoom.mjs`; most cards move 1–8% of their pixels);
+  - Home's fan likewise (`look-home-breath.mjs`), the same at rest as before.
+- Reduce Motion (the phone's setting): nobody breathes.
+- Found on the way: Grave Snare's rune ring never drew (a number added to text made "189.92.4" and stopped the path); fixed and its picture re-baked.
+
 ## Reading a Legend (2026-11-10)
 
 Asaf: "For legendary cards I can't seem to figure out from reading them what their powers are."

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<!-- Every card's art with its figures boxed: green breathes from its feet, blue in the air, red stays still (dashed); yellow dots: the group that moves (the figure with its details). For reviewing js/art/alive.js. -->
+<html><head><meta charset="utf-8"><title>alive review</title>
+<style>
+html, body { margin: 0; background: #111; color: #ddd; font: 11px/1.2 system-ui, sans-serif; }
+#grid { display: grid; grid-template-columns: repeat(6, 200px); gap: 2px; width: 1210px; }
+.cell { position: relative; width: 200px; height: 156px; }
+.cell svg { display: block; width: 200px; height: 140px; }
+.lab { height: 16px; overflow: hidden; white-space: nowrap; padding: 1px 3px; }
+</style>
+</head><body><div id="grid"></div>
+<script type="module">
+import { artSVG } from '../js/art/index.js';
+import { SCENES } from '../js/art/scenes.js';
+import { figuresOf, gatherAlive } from '../js/art/alive.js';
+const COL = { ground: '#3cff6a', air: '#3cc8ff', still: '#ff4040' };
+const grid = document.getElementById('grid');
+const only = new URLSearchParams(location.search).get('only');
+const ids = only ? only.split(',') : Object.keys(SCENES);
+const stats = { ground: 0, air: 0, still: 0 };
+ids.forEach((id, n) => {
+  const cell = document.createElement('div');
+  cell.className = 'cell';
+  cell.innerHTML = (artSVG(id) || '') + `<div class="lab">${n} ${id}</div>`;
+  grid.append(cell);
+  const svg = cell.querySelector('svg');
+  if (!svg) return;
+  const figs = figuresOf(svg, id).map(({ k, box, kind }) => ({ k, b: box || { x: 0, y: 0, width: 0, height: 0 }, kind }));
+  const alive = gatherAlive(svg, id);
+  let ov = '';
+  for (const { k, b, kind } of figs) {
+    stats[kind]++;
+    ov += `<rect x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" fill="none" stroke="${COL[kind]}" stroke-width="1.6"${kind === 'still' ? ' stroke-dasharray="5 3"' : ''}/>` +
+      `<text x="${b.x + 2}" y="${b.y + 11}" font-size="11" font-weight="700" fill="${COL[kind]}" stroke="#000" stroke-width="2.4" paint-order="stroke">${k}</text>`;
+  }
+  for (const a of alive) ov += `<rect x="${a.box.x}" y="${a.box.y}" width="${a.box.width}" height="${a.box.height}" fill="none" stroke="#ffe04a" stroke-width="1" stroke-dasharray="1.5 2"/>`;
+  svg.insertAdjacentHTML('beforeend', `<g>${ov}</g>`);
+});
+window.stats = stats;
+window.ready = true;
+</script>
+</body></html>

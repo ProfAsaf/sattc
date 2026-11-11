@@ -187,6 +187,16 @@
   filter: drop-shadow(0 .8cqw 2cqw rgba(0, 0, 0, .35));
 }
 
+/* Characters that come alive (js/art/alive.js): in a card shown big, each
+   breathes, from its feet, or swells a little from its middle if it's in the air.
+   The same numbers move the baked ones (js/sprites.js MOVES). */
+.anim .art-svg .alive { transform-box: fill-box; animation: alive-breathe 2.8s ease-in-out var(--d, 0s) infinite alternate; }
+.anim .art-svg .alive.ground { transform-origin: 50% 100%; }
+.anim .art-svg .alive.air { transform-origin: 50% 50%; animation-name: alive-hover; animation-duration: 3.4s; }
+@keyframes alive-breathe { from { transform: none; } to { transform: scale(1.006, 1.016); } }
+@keyframes alive-hover { from { transform: none; } to { transform: scale(1.012); } }
+@media (prefers-reduced-motion: reduce) { .anim .art-svg .alive { animation: none; } }
+
 /* ── moving parts as sprites (js/sprites.js): each moves as a whole, a
    transform or an opacity the compositor runs; nothing is redrawn ─────── */
 .sp-defs { position: absolute; width: 0; height: 0; overflow: hidden; }

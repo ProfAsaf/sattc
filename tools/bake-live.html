@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<!-- One card's art for tools/bake-live.mjs: its picture without its moving parts (to photograph), and those parts cut out as sprites. -->
+<!-- One card's art for tools/bake-live.mjs: photographed without its moving parts and characters (the base), whole (to cut the characters from), and each character alone (its outline); its ambient moving parts cut out as sprites. -->
 <html><head><meta charset="utf-8"><title>bake live</title>
 <style>
-html, body { margin: 0; background: #000; overflow: hidden; }
+html, body { margin: 0; background: transparent; overflow: hidden; }
 #a, #a svg { display: block; width: 100vw; height: 100vh; }
 #a .rise, #a .float, #a .twinkle, #a .drift, #a .breathe, #a .fall, #a .sway, #a .turn { visibility: hidden; }
 </style>
@@ -11,17 +11,35 @@ html, body { margin: 0; background: #000; overflow: hidden; }
 import { artSVG } from '../js/art/index.js';
 import { SCENES } from '../js/art/scenes.js';
 import { W, H } from '../js/art/kit.js';
+import { gatherAlive } from '../js/art/alive.js';
 window.ids = Object.keys(SCENES);
 window.size = [W, H];
-// The picture without its moving parts; resolves once it's painted.
-window.show = (id) => new Promise((done) => {
-  document.getElementById('a').innerHTML = artSVG(id) || '';
-  requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 200)));
-});
+const painted = () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 150))));
 
-// The moving parts, each cut out as its own little picture (a sprite) with
-// where it sits in the drawing's units, the point it turns from, and how it
-// moves (js/sprites.js moves them). Each keeps the groups it sits in (their
+// The card drawn, its characters gathered (js/art/alive.js): each one's
+// kind, box (in the drawing's units) and moment in its breath.
+let groups = [];
+window.prep = (id) => {
+  const a = document.getElementById('a');
+  a.innerHTML = artSVG(id) || '';
+  groups = gatherAlive(a.querySelector('svg'), id);
+  return groups.map(({ g, kind, box }) => ({ kind, box: { x: box.x, y: box.y, w: box.width, h: box.height }, d: parseFloat(g.style.getPropertyValue('--d')) || 0 }));
+};
+// What to photograph: 'base' (no characters), 'full' (all of it), or 'alpha'
+// (character k alone on nothing: its outline, glow and all). Ambient moving
+// parts never (they're sprites of their own).
+window.view = (mode, k = 0) => {
+  const svg = document.querySelector('#a svg');
+  for (const el of svg.children) {
+    const i = groups.findIndex((x) => x.g === el);
+    el.style.visibility = mode === 'base' ? (i >= 0 ? 'hidden' : '') : mode === 'full' ? '' : (i === k || el.tagName === 'defs' ? '' : 'hidden');
+  }
+  return painted();
+};
+
+// The ambient moving parts, each cut out as its own little picture (a sprite)
+// with where it sits in the drawing's units, the point it turns from, and how
+// it moves (js/sprites.js moves them). Each keeps the groups it sits in (their
 // filters, opacity, transforms); the drawing's defs go along for them.
 const MOVES = ['sway', 'turn', 'rise', 'float', 'twinkle', 'drift', 'breathe', 'fall'];
 const SEL = MOVES.map((c) => `.${c}`).join(',');

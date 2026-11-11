@@ -1,11 +1,10 @@
-// Fire, smoke and burnt edges for the cards' scenes (js/home-alive.js): little
+// Fire, smoke, gloom and scorches for the cards' scenes (js/home-alive.js): little
 // pictures painted once, in code, and shared by every flame that shows one.
 // Each is still. Fire's flicker and roll come from many of them moving at
 // once and adding up their light (the compositor's work).
 
 // colours by heat, 0-1: [heat, r, g, b, alpha]
 const FIRE = [[0, 70, 8, 0, 0], [0.14, 140, 26, 4, 0.3], [0.32, 228, 74, 12, 0.78], [0.52, 255, 146, 34, 0.95], [0.72, 255, 210, 96, 1], [0.92, 255, 248, 220, 1]];
-const SPIRIT = [[0, 36, 8, 70, 0], [0.14, 76, 30, 150, 0.3], [0.32, 132, 76, 238, 0.74], [0.52, 178, 136, 255, 0.92], [0.72, 220, 200, 255, 1], [0.92, 247, 243, 255, 1]];
 const NONE = [0, 0, 0, 0];
 function heat(R, t) {
   if (!(t > 0)) return NONE;
@@ -65,26 +64,35 @@ const smoke = (seed) => {
     return [g, g * 0.9, g * 0.84, Math.min(1, k ** 1.2 * (0.35 + 0.8 * f))];
   };
 };
-// A card's edge burnt in from its `side` (L, R, T), deepest at `hot` along it
-// (0-1): the scorch ('char', with a brown singe beyond it) or its smouldering
-// front ('glow', with sparks of it left in the char behind).
-const burnt = (side, hot, what, R, seed) => {
-  const n = noise(seed), spirit = R === SPIRIT;
+// A dark gloom, the ghosts' shadow: soft and ragged, no fire in it.
+const gloom = (seed) => {
+  const n = noise(seed);
   return (x, y) => {
-    const p = side === 'L' ? x : side === 'R' ? 1 - x : y, q = side === 'T' ? x : y;
-    const reach = 0.14 + 0.62 * Math.exp(-(((q - hot) / 0.24) ** 2)) + 0.16 * (fbm(n, q * 5, 3.7) - 0.5);
-    const e = p - (reach + 0.12 * (fbm(n, p * 5 + 11, q * 13) - 0.5)); // (< 0: burnt)
+    const dx = x - 0.5, dy = y - 0.5, r = Math.hypot(dx, dy) * 2, a = Math.atan2(dy, dx);
+    const k = 1 - r / (0.6 + 0.38 * fbm(n, Math.cos(a) * 1.3 + 2, Math.sin(a) * 1.3 + 2));
+    if (k <= 0) return NONE;
+    const f = fbm(n, x * 3.5 + 1, y * 3.5 + 4);
+    return [20 + 14 * f, 8 + 8 * f, 34 + 20 * f, Math.min(1, k ** 1.1 * (0.5 + 0.7 * f))];
+  };
+};
+// A scorch where fire landed: char in a ragged blot, singed brown round it
+// ('char'), or the smouldering ring at its rim, with sparks of it left inside
+// ('glow').
+const scorch = (seed, what) => {
+  const n = noise(seed);
+  return (x, y) => {
+    const dx = x - 0.5, dy = y - 0.5, r = Math.hypot(dx, dy) * 2, a = Math.atan2(dy, dx);
+    const e = r - (0.34 + 0.38 * fbm(n, Math.cos(a) * 2.2 + 5, Math.sin(a) * 2.2 + 5) + 0.12 * (fbm(n, x * 9, y * 9) - 0.5)); // (< 0: burnt)
     if (what === 'char') {
-      const ins = Math.min(1, Math.max(0, (0.012 - e) / 0.024)), sg = e < 0.14 ? 0.42 * (1 - Math.max(0, e) / 0.14) ** 2 : 0;
+      const ins = Math.min(1, Math.max(0, (0.02 - e) / 0.04)), sg = e < 0.25 ? 0.45 * (1 - Math.max(0, e) / 0.25) ** 2 : 0;
       if (ins <= 0 && sg <= 0) return NONE;
-      const m = 0.8 + 0.35 * fbm(n, p * 9, q * 22), k = Math.min(1, 0.65 + (0.35 * Math.max(0, -e)) / 0.12);
-      const c = spirit ? [30 * m, 12 * m, 46 * m] : [26 * m, 15 * m, 9 * m], s = spirit ? [80, 52, 122] : [96, 54, 22];
-      return [s[0] + (c[0] - s[0]) * ins, s[1] + (c[1] - s[1]) * ins, s[2] + (c[2] - s[2]) * ins, ins * 0.93 * k + (1 - ins) * sg];
+      const m = 0.75 + 0.4 * fbm(n, x * 8 + 3, y * 8), k = Math.min(1, 0.7 + (0.3 * Math.max(0, -e)) / 0.25);
+      return [96 + (24 * m - 96) * ins, 54 + (14 * m - 54) * ins, 22 + (8 * m - 22) * ins, ins * 0.8 * k + (1 - ins) * sg];
     }
-    let t = Math.max(0, 1 - Math.abs(e) / 0.06) * 0.95, halo = 0.2 * (1 - Math.abs(e) / 0.14);
+    let t = Math.max(0, 1 - Math.abs(e) / 0.07) * 0.95, halo = 0.22 * (1 - Math.abs(e) / 0.2);
     if (halo > t) t = halo;
-    if (e < -0.02 && e > -0.3) { const s = fbm(n, p * 26 + 5, q * 64); if (s > 0.62) t = Math.max(t, (s - 0.62) * 2.4 * (1 + e / 0.3)); }
-    return heat(R, t);
+    if (e < -0.04 && e > -0.45) { const s = fbm(n, x * 20 + 5, y * 20); if (s > 0.6) t = Math.max(t, (s - 0.6) * 2.2 * (1 + e / 0.45)); }
+    return heat(FIRE, t);
   };
 };
 
@@ -105,21 +113,16 @@ function paint(w, h, px) {
 
 let made = null;
 // The pictures, as image URLs once painted: flames (and a jet hanging from a
-// mouth), billows of fire, smoke, and for each of `burns` ({ name: [side,
-// hot, 'fire' | 'spirit'] }) its scorch (name:char) and smouldering front
-// (name:glow). Painted one at a time, the page free in between.
-export function fxArt(burns = {}) {
+// mouth), billows of fire, smoke, gloom, and three scorches (scorchN:char and
+// scorchN:glow). Painted one at a time, the page free in between.
+export function fxArt() {
   made ??= (async () => {
     const jobs = {
       flame: [40, 80, tongue(FIRE, 3)], flame2: [40, 80, tongue(FIRE, 8)], jet: [32, 96, tongue(FIRE, 11, true)],
-      spiritFlame: [40, 80, tongue(SPIRIT, 5)], spiritFlame2: [40, 80, tongue(SPIRIT, 15)],
       puff: [56, 56, puff(FIRE, 4, 1.05)], puffHot: [56, 56, puff(FIRE, 9, 1.4)], puffCool: [56, 56, puff(FIRE, 12, 0.78)],
-      smoke: [56, 56, smoke(6)],
+      smoke: [56, 56, smoke(6)], gloom: [56, 56, gloom(13)],
     };
-    for (const [name, [side, hot, kind]] of Object.entries(burns)) {
-      const seed = [...name].reduce((s, ch) => (s * 31 + ch.charCodeAt(0)) % 9973, 7), R = kind === 'spirit' ? SPIRIT : FIRE, vert = side !== 'T';
-      for (const what of ['char', 'glow']) jobs[`${name}:${what}`] = [vert ? 40 : 120, vert ? 160 : 34, burnt(side, hot, what, R, seed)];
-    }
+    for (const v of [1, 2, 3]) for (const what of ['char', 'glow']) jobs[`scorch${v}:${what}`] = [64, 64, scorch(20 + v * 7, what)];
     const out = {};
     for (const [name, [w, h, px]] of Object.entries(jobs)) out[name] = await paint(w, h, px);
     await Promise.all(Object.values(out).map((src) => { const im = new Image(); im.src = src; return im.decode().catch(() => {}); }));

@@ -29,9 +29,11 @@ export const PUPPETS = {
       { name: 'breath', of: '[data-part=breath]', pivot: [72, 72] },
     ],
   },
-  // her wings, one each side, at the shoulders; she herself (with halo and blade) above them
+  // her wings, one each side, at the shoulders; she herself (with halo and blade)
+  // above them. `edges`: her raised wings' outer edges (raised 20°, as far out as
+  // the picture shows them), where blows land on her shield.
   seraphine: {
-    heart: [150, 82],
+    heart: [150, 82], edges: [[33, 38], [267, 38]],
     parts: [
       { name: 'wingL', of: '[data-part=wings]', pivot: [144, 80], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
       { name: 'wingR', of: '[data-part=wings]', pivot: [156, 80], poly: [[150, -20], [320, -20], [320, 230], [150, 230]] },

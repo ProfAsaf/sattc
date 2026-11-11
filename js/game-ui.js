@@ -2938,24 +2938,32 @@ function overHTML() {
     </div></div></div>`;
 }
 
-// A campaign fight's end: what the Legend you met says, the level's stars,
-// what opened, and back to the map (or the same fight again).
+// A campaign fight's end: what the Legend you met says (they get away after
+// your first two wins), the rounds won, what opened, and the next step: the
+// next round, the same one again, or back to the map.
 function campaignOverHTML(win, score) {
   const s = S(), c = G.campaign, W = Camp.worldOf(c.world), St0 = W.stages[c.stage];
   const L = BY_ID[ULTRA_STARTERS.find((d) => d.id === St0.deck)?.legend];
+  const who = L ? L.name.split(',')[0] : shortName(s.players[s.winner]?.name || 'Nobody');
   const r = G.campaignResult || { now: 0 };
   const stars = (n) => [1, 2, 3].map((k) => `<i class="${k <= n ? 'on' : ''}">★</i>`).join('');
-  const news = r.worldDone ? W.done : r.opened != null ? `The road goes on: ${W.stages[r.opened].place} is open.` : '';
+  const lines = !win ? St0.lose : r.escaped ? St0.escape[c.diff - 1] : St0.win;
+  const result = !win ? 'Not this time'
+    : r.escaped ? `Round ${c.diff} of 3 won · ${who} got away`
+      : r.beaten ? `${who} is beaten for good` : `${'★'.repeat(c.diff)} ${Camp.DIFFS[c.diff - 1].name} won`;
+  const next = r.escaped ? c.diff + 1 : null;
+  const news = r.worldDone ? W.done : r.opened != null ? `The road goes on: ${W.stages[r.opened].place} is open.`
+    : next ? `${who} will be back with better fighters: round ${next}, ${'★'.repeat(next)} ${Camp.DIFFS[next - 1].name}.` : '';
   return `<div class="g-sheet"><div class="g-sheet-inner g-full" style="min-height:70vh;justify-content:center">
-    <div class="winner">${win ? 'You win!' : `${esc(L ? L.name.split(',')[0] : shortName(s.players[s.winner]?.name || 'Nobody'))} wins`}</div>
-    <div class="cp-said">${L ? `<img src="${esc(artURL(L) || '')}" alt="">` : ''}<div>${(win ? St0.win : St0.lose).map((t) => `<p>${esc(t)}</p>`).join('')}</div></div>
-    <div class="cp-result">${win ? `${'★'.repeat(c.diff)} ${Camp.DIFFS[c.diff - 1].name} won` : 'Not this time'} · <span class="cp-stars">${stars(r.now)}</span> at ${esc(St0.place)}</div>
+    <div class="winner">${win ? 'You win!' : `${esc(who)} wins`}</div>
+    <div class="cp-said">${L ? `<img src="${esc(artURL(L) || '')}" alt="">` : ''}<div>${lines.map((t) => `<p>${esc(t)}</p>`).join('')}</div></div>
+    <div class="cp-result">${esc(result)} · <span class="cp-stars">${stars(r.now)}</span> at ${esc(St0.place)}</div>
     ${news ? `<div class="cp-news">${esc(news)}</div>` : ''}
     ${G.rec ? Ins.overSummaryHTML(G.rec, { score }) : ''}
     <div class="btn-row">
-      <button class="btn primary" data-act="camp-map">Back to the map</button>
-      <button class="btn" data-act="camp-again">Try again</button>
-      ${!win ? '<button class="btn" data-act="undo">Take back a move</button>' : ''}
+      ${next ? `<button class="btn primary" data-act="camp-next">Round ${next} now</button><button class="btn" data-act="camp-map">Back to the map</button>`
+        : win ? '<button class="btn primary" data-act="camp-map">Back to the map</button>'
+          : '<button class="btn primary" data-act="camp-again">Try again</button><button class="btn" data-act="camp-map">Back to the map</button><button class="btn" data-act="undo">Take back a move</button>'}
     </div></div></div>`;
 }
 
@@ -3868,6 +3876,7 @@ function onAct(act, el) {
     case 'leave': leave(G?.campaign ? '#/campaign' : undefined); break;
     case 'camp-map': leave('#/campaign'); break;
     case 'camp-again': { const c = G.campaign; startCampaign(c.world, c.stage, c.diff); break; }
+    case 'camp-next': { const c = G.campaign; startCampaign(c.world, c.stage, Math.min(3, c.diff + 1)); break; }
     case 'reload': location.reload(); break;
     case 'lobby': Net.backToLobby(G.code).catch((e) => flash(e.message)); break;
     case 'rematch': {

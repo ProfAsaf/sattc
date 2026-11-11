@@ -1103,16 +1103,22 @@ Asaf's idea: playing the bots as a game of its own, a map of levels like Mario's
   - Lumen at the Fields at Night ("Death by a thousand cuts"),
   - and Halvard at the Wall, the boss.
   - Each scene has lines before the fight, after a win and after a loss. Halvard's win line hints at the next worlds: a fog in the east.
-- **Stars:** each level is played at ★ Casual, ★★ Practice or ★★★ Expert. A level's stars are the hardest difficulty beaten, and one star opens the next level. Progress stays on the phone (`collective.campaign`).
+- **Three rounds per Legend** (Asaf's design, the same day): each level is a rivalry fought at ★ Casual, then ★★ Practice, then ★★★ Expert.
+  - The Legend gets away after your first two wins and comes back with better fighters. Only the Expert win beats them for good and opens the next level.
+  - Each level has its lines: the first scene (`before`), two returns (`back`), two escapes (`escape`), the last defeat (`win`) and `lose`. Mirelle's first escape: "A decoy, Harbormistress. I'll bring better faces."
+  - A level's stars are the rounds won; only the round due counts (`record`).
+  - The first version (stars for the hardest difficulty beaten, one star opening the next level) gave stars nothing to do.
+  - Progress stays on the phone (`collective.campaign`).
 - **The screens** (`js/campaign-ui.js`, Home → Campaign):
   - The map is drawn in code: the harbor town and bay, the market square, the cliffs and lighthouse, the mountain pass, the high fields under the moon, the Wall on its ridge. Plain shapes and no filters; the next level's ring pulses by scale and fade only.
   - Each level is a medallion with its Legend's picture, a lock until it opens, then its stars.
-  - Tap one for the scene, how the matchup looks from your side, and the three difficulties. The first visit opens with the world's story.
+  - Tap one for the scene before the round that's due, how the matchup looks from your side, the three rounds (won, due, to come) and one fight button: "Round 2 of 3 · ★★ Practice".
+  - A beaten level shows how it ended, with a fight again at Expert for fun. The first visit opens with the world's story.
 - **The fights** are practice games (`game-ui.js` `startCampaign`): your world's deck and Legend against the level's, the bot at the difficulty's level.
   - They carry `campaign: { world, stage, diff }` through saves and restarts; one that the phone closed comes back over the map.
-  - At the end the Legend's line shows, then the stars, what opened, the usual summary, and "Back to the map" or "Try again".
+  - At the end the Legend's line shows (an escape, the last defeat, or their gloating), then the rounds won, what comes next ("Mirelle will be back with better fighters: round 2, ★★ Practice"), the usual summary, and the next step: "Round 2 now", "Try again" or "Back to the map".
   - They count for your rating like any practice game.
-- Test: `.phone-tests/ui-campaign.mjs` (15 checks: the opening, the locks, the level sheet, the right decks and level, a win's stars and the next level opening, a loss, a reload).
+- Test: `.phone-tests/ui-campaign.mjs` (19 checks: the opening, the locks, three rounds against Mirelle with both escapes and the bot at each level, the road opening only after the third, a beaten level's sheet, a loss, a reload).
 
 ## Reading a Legend (2026-11-10)
 

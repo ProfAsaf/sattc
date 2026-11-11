@@ -97,7 +97,7 @@ function mapHTML(W, p) {
   const node = (i) => {
     const S = W.stages[i], L = legendOf(S.deck), n = Camp.starsOf(p, W.id, i), open = Camp.isOpen(p, W.id, i);
     const [x, y] = spot.stages[i];
-    const cls = !open ? 'locked' : i === next ? 'next' : n ? 'done' : 'open';
+    const cls = !open ? 'locked' : i === next ? 'next' : n >= 3 ? 'done' : 'open';
     return `<button class="cp-node ${cls}${S.boss ? ' boss' : ''}" data-stage="${i}" style="left:${(x / 4).toFixed(2)}%;top:${(y / 10).toFixed(2)}%"
       aria-label="${esc(S.place)}: ${esc(L.name)}${open ? `, ${n} of 3 stars` : ', locked'}">
       <span class="cp-ring">${face(L, 'cp-img')}${open ? '' : `<span class="cp-lock">${LOCK}</span>`}</span>
@@ -115,7 +115,7 @@ function mapHTML(W, p) {
 // The campaign page: World 1 (the only one so far) with your stars.
 export function campaignPage(view) {
   const W = Camp.worldOf(1), p = Camp.progress(), me = legendOf(W.deck), mine = starter(W.deck);
-  const total = Camp.worldStars(p, W), done = Camp.starsOf(p, W.id, W.stages.length - 1) > 0;
+  const total = Camp.worldStars(p, W), done = Camp.beaten(p, W.id, W.stages.length - 1);
   view.innerHTML = `
     <header class="pagehead"><a class="back" href="#/" aria-label="Home">${BACK}</a><h2>Campaign</h2></header>
     <div class="cp-page">
@@ -126,7 +126,7 @@ export function campaignPage(view) {
       </div>
       ${done ? `<div class="cp-done">${esc(W.done)} <span>(Coming soon.)</span></div>` : ''}
       ${mapHTML(W, p)}
-      <p class="cp-how">Each level has three difficulties: ★ Casual, ★★ Practice, ★★★ Expert. One win opens the next level; harder wins earn more stars.</p>
+      <p class="cp-how">Each Legend is fought three times: ★ Casual, then ★★ Practice, then ★★★ Expert. They get away the first two times and come back with better fighters; the third win beats them for good and opens the road on.</p>
     </div>`;
   view.onclick = (e) => {
     const n = e.target.closest('.cp-node');
@@ -157,17 +157,20 @@ function introSheet(W) {
   Camp.markSeen(`w${W.id}`);
 }
 
+// A level: its Legend, the scene before the round that's due (or how it
+// ended, once beaten), the three rounds, and the one fight to have now.
 function stageSheet(W, i) {
   const p = Camp.progress(), S = W.stages[i], L = legendOf(S.deck), deck = starter(S.deck);
-  const n = Camp.starsOf(p, W.id, i), open = Camp.isOpen(p, W.id, i);
+  const n = Camp.starsOf(p, W.id, i), open = Camp.isOpen(p, W.id, i), round = Camp.roundOf(p, W.id, i);
   const prev = i > 0 ? legendOf(W.stages[i - 1].deck) : null;
-  const first = Camp.DIFFS.find((d) => d.stars > n) || Camp.DIFFS[Camp.DIFFS.length - 1];
-  const diffs = Camp.DIFFS.map((d) => `<button class="btn${d === first ? ' primary' : ''} cp-diff" data-diff="${d.stars}">
-      <span>${'★'.repeat(d.stars)} ${d.name}</span>${n >= d.stars ? '<small>won</small>' : ''}</button>`).join('');
+  const rounds = `<div class="cp-rounds">${Camp.DIFFS.map((d) => `<span class="${n >= d.stars ? 'won' : d.stars === round ? 'due' : ''}">${'★'.repeat(d.stars)}<small>${d.name}</small></span>`).join('')}</div>`;
+  const fight = !open ? `<div class="cp-locked">${LOCK}Beat ${esc(shortName(prev.name))} three times at ${esc(W.stages[i - 1].place)} to open this road.</div>`
+    : round ? `${rounds}<button class="btn primary" data-diff="${round}">Round ${round} of 3 · ${'★'.repeat(round)} ${Camp.DIFFS[round - 1].name}</button>`
+      : `${rounds}<div class="cp-beaten">${esc(shortName(L.name))} is beaten.</div><button class="btn" data-diff="3">Fight again at ★★★ Expert</button>`;
   sheet(`<div class="cp-who">${face(L)}<div><b>${esc(L.name)}</b><span>${esc(deck.name)} · ${esc(S.place)}${S.boss ? ' · the boss' : ''}</span></div></div>
-    <div class="cp-story">${S.before.map((t) => `<p>${esc(t)}</p>`).join('')}</div>
+    <div class="cp-story">${(round ? Camp.beforeLines(S, round) : S.win).map((t) => `<p>${esc(t)}</p>`).join('')}</div>
     <div class="cp-match">${esc(Camp.matchupText(S.odds))}</div>
-    ${open ? `<div class="cp-diffs">${diffs}</div>` : `<div class="cp-locked">${LOCK}Win against ${esc(shortName(prev.name))} at ${esc(W.stages[i - 1].place)} to open this road.</div>`}
+    ${fight}
     <button class="btn ghost" data-act="cp-close">Close</button>`, (e) => {
     const b = e.target.closest('[data-diff]');
     if (!b) return;

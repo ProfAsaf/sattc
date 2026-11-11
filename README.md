@@ -1084,6 +1084,19 @@ Measured on a 402×874 screen at 3x with the CPU slowed 4×, at the busiest mome
 - **Sheets** have no backdrop blur (it keeps a blurred copy of the whole screen); they are a little darker instead. The table's attack lines keep still under a fight played big.
 - Tests: `ui-busy.mjs` checks four busy moments against limits (at most 220 moving, 4.5 screens of them, 900 effect elements). It also checks that each moment plays out. `look-deaths.mjs` takes screenshots of deaths partway through.
 
+## Reading a Legend (2026-11-10)
+
+Asaf: "For legendary cards I can't seem to figure out from reading them what their powers are."
+A Legend's card said "Level 2 (5 Guard-turns): …". Nothing on it said what was counted, that Level 1 has no power, that a level keeps the powers before it, or that its powers work only on the table.
+
+- **The card** (`cards.js` `legend`) says what it counts, then the count for each level, and "Also" for the Level 3 power. For example: "Legend. It counts the times you Invest. / Level 2 at 3: 3/5, Reach. Whenever you Invest, draw a card. / Level 3 at 6: 4/6, Reach. Also, your cards that cost 7 or more cost 2 less."
+- **Champions** (the standard game's option): "Level 2 at 8 deaths: …"; their cards have no room for "It counts".
+- **Its close-up** (`levelGuide`) explains Levels: what it counts, all game, even while it waits; each level adds to the one before; the powers work only on the table. Then Levels 1–3, one per line, with numbers and power. The level it's at is marked "now" in gold, and the next one says how far along it is ("4 so far").
+- **A Legend waiting beside the deck** shows the Power and Vitality it would come in with at its level, not its printed ones.
+- **The rules page** says how to read one, and that the ★ on it is its level.
+- The longest texts (Legends, Champions) use slightly tighter paragraph spacing so the flavor line stays in the box (`.phone-tests/look-cardtext.mjs` measures it).
+- Test: `.phone-tests/ui-legend.mjs [base] [legend id]` (7 checks; passes for Marisol, Vesh, Oriel and Halvard).
+
 ## The deck clock (2026-11-10)
 
 Asaf: "I had no idea that trying to draw cards when you have none hurts you. Is that necessary? It is confusing. There is already an obvious punishment from not being able to draw any new cards."

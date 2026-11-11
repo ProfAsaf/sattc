@@ -273,6 +273,9 @@
 .c-box.t-md { font-size: 3.95cqw; }
 .c-box.t-sm { font-size: 3.65cqw; }
 .c-box.t-xs { font-size: 3.4cqw; line-height: 1.22; }
+/* (the longest texts, a Legend's three lines and its flavor: a little closer, so the flavor's last line stays in the box) */
+.c-box.t-xs .c-rules p { margin-bottom: .3em; }
+.c-box.t-xs .c-flavor { padding-top: .4em; }
 .c-rules p { margin: 0 0 .42em; }
 .c-rules p:last-child { margin-bottom: 0; }
 .c-rules .kw { font-weight: 700; }

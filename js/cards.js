@@ -1016,13 +1016,22 @@ export const TOKENS = {
 // level brings new stats (`levels`: Power, Vitality, keywords) and an ability
 // that works on the rest of the deck (engine.js). Not part of the 97-card pool.
 const kwWords = (ks) => (ks.length ? `, ${ks.map((k) => KEYWORDS[k].name).join(', ')}` : '');
+// How a Champion or a Legend levels up, in its card's words (2026-11-10: the
+// old "Level 2 (5 Guard-turns)" left players guessing): what it counts, all
+// game long; the count each level needs; and that each level keeps the power
+// before it ("Also"). The card's close-up lays it out level by level.
+const counts = (xp) => `It counts ${/^times\b/.test(xp.unit) ? 'the ' : ''}${xp.unit}.`;
+// (`unit`: the count's word after it, "Level 2 at 8 deaths", for a Champion's
+// card, which has no room for "It counts".)
+const levelAt = (xp, i, unit) => `Level ${i + 2} at ${xp.at[i]}${unit ? ` ${xp.short}` : ''}${xp.at3 ? ` (${xp.at3[i]} with 3 players)` : ''}`;
+const also = (t) => `Also, ${t[0].toLowerCase()}${t.slice(1)}`;
+const levelLines = (o, unit = false) => `${levelAt(o.xp, 0, unit)}: ${o.levels[1][0]}/${o.levels[1][1]}${kwWords(o.levels[1][2])}. ${o.l2}\n`
+  + `${levelAt(o.xp, 1, unit)}: ${o.levels[2][0]}/${o.levels[2][1]}${kwWords(o.levels[2][2])}. ${also(o.l3)}`;
 const champion = (o) => ({
   ...o, type: 'creature', subtype: 'Champion', cost: 2, champion: true, legendary: true,
   power: o.levels[0][0], vitality: o.levels[0][1], keywords: o.levels[0][2],
   // (short enough for the card's text box; the rules page and a player's sheet say it in full)
-  text: `Starts on the table; attacks from Level 2. If it leaves, it goes back to your hand, 2 Energy dearer.\n`
-    + `Level 2 (${o.xp.at[0]} ${o.xp.short}): ${o.levels[1][0]}/${o.levels[1][1]}${kwWords(o.levels[1][2])}. ${o.l2}\n`
-    + `Level 3 (${o.xp.at[1]} ${o.xp.short}): ${o.levels[2][0]}/${o.levels[2][1]}${kwWords(o.levels[2][2])}. ${o.l3}`,
+  text: `Starts on the table; attacks from Level 2. If it leaves, it goes back to your hand, 2 Energy dearer.\n${levelLines(o, true)}`,
 });
 export const CHAMPIONS = Object.fromEntries([
   champion({ id: 'champion-radiant', name: 'Aurelia, the Lightkeeper', factions: ['radiant'],
@@ -1077,9 +1086,7 @@ function factionCounts(deckIds) {
 const legend = (o) => ({
   ...o, type: 'creature', champion: true, legend: true, legendary: true,
   power: o.levels[0][0], vitality: o.levels[0][1], keywords: o.levels[0][2],
-  text: `Legend: waits beside your deck.\n`
-    + `Level 2 (${o.xp.at[0]} ${o.xp.short}${o.xp.at3 ? `; ${o.xp.at3[0]} with 3 players` : ''}): ${o.levels[1][0]}/${o.levels[1][1]}${kwWords(o.levels[1][2])}. ${o.l2}\n`
-    + `Level 3 (${o.xp.at[1]} ${o.xp.short}${o.xp.at3 ? `; ${o.xp.at3[1]} with 3 players` : ''}): ${o.levels[2][0]}/${o.levels[2][1]}${kwWords(o.levels[2][2])}. ${o.l3}`,
+  text: `Legend. ${counts(o.xp)}\n${levelLines(o)}`,
 });
 // (`xp.at3`: other thresholds with three or more players, where what it counts comes faster)
 export const LEGENDS = Object.fromEntries([

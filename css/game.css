@@ -465,6 +465,15 @@ body:has(> .bf) .gl.attack { animation: none; }
 .hv-info > :first-child { margin-top: auto; }
 .hv-info .kw-help { margin: 0; gap: 4px; }
 .hv-info .kw-help div { font-size: 13px; line-height: 1.35; }
+/* a Legend's levels in its card's guide: the one it's at in gold */
+.kw-help .lv-list { display: grid; gap: 3px; margin-left: 10px; padding-left: 9px; border-left: 2px solid rgba(214, 180, 106, .35); }
+.kw-help .lv-list .lv { color: var(--muted); }
+.kw-help .lv-list .lv b { color: inherit; }
+.kw-help .lv-list .lv.now { color: var(--ink); }
+.kw-help .lv-list .lv.now b { color: var(--gold); }
+.kw-help .lv-list i { font-style: normal; font-size: .85em; padding: 0 6px; border-radius: 999px; white-space: nowrap; }
+.kw-help .lv-list .lv-now { background: rgba(214, 180, 106, .22); color: var(--gold); }
+.kw-help .lv-list .lv-next { background: rgba(239, 230, 210, .1); color: var(--ink); }
 .hv-track {
   --cw: min(64vw, 290px, calc((100vh - 330px) / 1.4)); /* short phones get smaller cards, so the details still fit */
   flex: none;

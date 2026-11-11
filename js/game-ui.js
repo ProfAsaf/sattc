@@ -2950,18 +2950,19 @@ const TERMS = [
 ];
 
 // `now`: its Power and Vitality on the table, `dmg` the damage on it, `granted` keywords it has from elsewhere.
-function cardGuide(d, { cost = d.cost, now = null, dmg = 0, granted = [] } = {}) {
+function cardGuide(d, { cost = d.cost, now = null, dmg = 0, granted = [], champ = null } = {}) {
   const kw = (k) => d.keywords.includes(k);
   const ultra = G?.state?.ultra || (!G && Mode.ultra());
   const E = cost != null ? ` · ${cost} Energy` : '';
   // (a Relic, a Trap… : its kind is a keyword, said once, at the top)
   const own = d.token ? null : d.type === 'relic' ? 'relic' : d.type === 'field' ? 'field' : kw('trap') ? 'trap' : d.stages ? 'ritual' : kw('trick') ? 'trick' : d.legend ? 'legend' : null;
   const lines = [d.token ? '<b>Token creature</b> — made by another card, not a real card: it’s gone for good once it leaves the table.'
+    : own === 'legend' && d.levels ? `<b>Legend</b>${E} — waits beside your deck, not in it: play it from there on any turn you can pay. If it dies, it goes back to wait, 2 Energy dearer. Nothing can be fused into it.`
     : own ? `<b>${KEYWORDS[own].name}</b>${E} — ${esc((ultra && ULTRA_KEYWORDS[own]) || KEYWORDS[own].text)}`
     : d.type === 'creature' ? `<b>Creature</b>${E} — stays on the table: blocks at once, attacks from your next turn.`
     : `<b>Spell</b>${E} — happens once, then goes to your discard pile.`];
-  // (a Legend's levels and how far along it is are on the card and in the note under this)
-  if (d.type === 'creature') {
+  if (d.levels) lines.push(...levelGuide(d, champ));
+  if (d.type === 'creature' && !(d.levels && !champ?.out)) {
     const p = now ? now.power : d.power, v = now ? now.vitality : d.vitality;
     lines.push(`<b>${p}/${v}</b> — ${p} Power (the damage it deals) and ${v} Vitality (the damage it can take)${dmg ? `; ${dmg} damage is on it now` : ''}.${now && (p !== d.power || v !== d.vitality) ? ` Printed ${d.power}/${d.vitality}.` : ''}`);
   }
@@ -3111,7 +3112,9 @@ function cardOpts(s, uid, from = 'hand') {
   const c = s.cards[uid], d = BY_ID[c.cid];
   if (c.zone === 'board') return { power: power(s, c), vitality: vitality(s, c) - (c.dmg || 0) };
   if (c.zone === 'legend') from = 'legend';
-  return { cost: c.owner === G.me && (c.zone === 'hand' || c.zone === 'legend') ? costOf(s, G.me, c, from) : c.zone === 'legend' ? costOf(s, c.owner, c, 'legend') : d.cost };
+  const cost = c.owner === G.me && (c.zone === 'hand' || c.zone === 'legend') ? costOf(s, G.me, c, from) : c.zone === 'legend' ? costOf(s, c.owner, c, 'legend') : d.cost;
+  // (a Legend or Champion comes in at its level: those are the numbers to show)
+  return d.levels && s.players[c.owner]?.champ === d.id ? { cost, power: power(s, c), vitality: vitality(s, c) } : { cost };
 }
 
 // A card's details: how it looks (opts), what's going on with it (note), its
@@ -3125,7 +3128,7 @@ function cardInfo(uid, { from = 'hand' } = {}) {
   let actions = '', note = '';
   const granted = onBoard ? FX.KEYWORD_BADGES.filter((k) => hasKw(s, c, k) && !d.keywords.includes(k)) : [];
   if (c.owner === G.me && s.phase !== 'mulligan' && (c.zone === 'hand' || c.zone === 'legend' || (from === 'discard' && d.echo))) ({ actions, note } = playPanel(uid, from));
-  if (c.zone === 'legend') note += `<div class="sheet-note">${c.owner === G.me ? 'Your' : `${esc(poss(shortName(s.players[c.owner].name)))}`} Legend waits beside the deck, ready to be played. ${esc(champLine(s, c))}.</div>`;
+  if (c.zone === 'legend') note += `<div class="sheet-note">${c.owner === G.me ? 'Your' : `${esc(poss(shortName(s.players[c.owner].name)))}`} Legend waits beside the deck, ready to be played.</div>`;
   if (onBoard) {
     const bits = [];
     const field = s.field != null ? s.cards[s.field].cid : null;
@@ -3142,7 +3145,6 @@ function cardInfo(uid, { from = 'hand' } = {}) {
     if (c.owner !== c.ctrl && !c.stolen) bits.push(`Taken from ${shortName(s.players[c.owner].name)} for good`);
     if (c.sacEnd) bits.push('Borrowed Time: it leaves at the end of this turn');
     if (c.baseCid) bits.push(`Really ${BY_ID[c.baseCid].name}: it turns back if it leaves play`);
-    if (d.champion) bits.push(champLine(s, c));
     if (c.ctrl === G.me) {
       if (myMain() && !attackedThisTurn() && canAttack(s, G.me, c)) actions = `<button class="btn primary" data-act="attack-from-sheet" data-uid="${uid}">${G.atk?.att.includes(uid) ? 'Keep it home' : 'Send it into the attack'}</button>`;
       if (c.hex && myMain()) actions += `<button class="btn primary" data-act="unhex" data-uid="${uid}" ${s.players[G.me].energy >= c.hex ? '' : 'disabled'}>Break the Hex: pay ${c.hex} Energy</button>`;
@@ -3180,7 +3182,9 @@ function cardInfo(uid, { from = 'hand' } = {}) {
     }
     if (bits.length) note = `<div class="sheet-note">${bits.map(esc).join('<br>')}</div>`;
   }
-  const guide = cardGuide(d, { cost: opts.cost ?? d.cost, now: onBoard ? { power: power(s, c), vitality: vitality(s, c) } : null, dmg: onBoard ? c.dmg || 0 : 0, granted });
+  const P = s.players[c.owner];
+  const champ = d.levels && P?.champ === d.id ? { L: champLevel(s, c.owner), n: P.cxp || 0, at: xpAt(s, d.id), out: onBoard } : null;
+  const guide = cardGuide(d, { cost: opts.cost ?? d.cost, now: onBoard || champ ? { power: power(s, c), vitality: vitality(s, c) } : null, dmg: onBoard ? c.dmg || 0 : 0, granted, champ });
   return { d, opts, note, actions, guide };
 }
 
@@ -3252,6 +3256,25 @@ function energyLine(s, P, whose) {
   return `${P.energy} now, ${next} at the start of ${whose} next turn`;
 }
 
+// A Legend's (or Champion's) levels in its card's guide: what it counts, then
+// each level's numbers and power, the one it's at marked, with how far to the
+// next. `champ`: { L, n, at, out } in a game (its level, the count so far, the
+// counts the levels need, on the table or not); null in the card's gallery.
+function levelGuide(d, champ) {
+  const at = champ?.at || d.xp.at;
+  const what = `${/^times\b/.test(d.xp.unit) ? 'the ' : ''}${d.xp.unit}`;
+  const head = `<b>Levels</b> — it counts ${esc(what)}, all game${d.legend ? ', even while it waits' : ''}. Each level adds to the one before; its powers work only on the table.`;
+  const rows = [1, 2, 3].map((L) => {
+    const [p, v, ks] = d.levels[L - 1];
+    const stats = `${p}/${v}${ks.length ? `, ${ks.map((k) => KEYWORDS[k].name).join(', ')}` : ''}`;
+    const power = L === 1 ? 'No power yet.' : L === 2 ? d.l2 : `Also, ${d.l3[0].toLowerCase()}${d.l3.slice(1)}`;
+    const when = L === 1 ? '' : ` at ${at[L - 2]}`;
+    const tag = champ?.L === L ? ' <i class="lv-now">now</i>' : champ && L === champ.L + 1 ? ` <i class="lv-next">${champ.n} so far</i>` : '';
+    return `<div class="lv${champ?.L === L ? ' now' : champ && L < champ.L ? ' past' : ''}"><b>Level ${L}</b>${when}${tag} — ${stats}. ${esc(power)}</div>`;
+  });
+  return [head, `<div class="lv-list">${rows.join('')}</div>`];
+}
+
 // Champions: what a level brings, and how far along one is.
 function levelLine(d, L) {
   const [p, v, ks] = d.levels[L - 1];
@@ -3264,12 +3287,6 @@ function champRow(s, P) {
   const z = u != null ? s.cards[u].zone : null;
   const where = z === 'board' ? 'on the table' : z === 'hand' ? 'in hand' : z === 'legend' ? `beside the deck, ${costOf(s, P.i, s.cards[u], 'legend')} Energy to play` : 'gone';
   return `${d.name.split(',')[0]}, Level ${L} (${where})${L < 3 ? ` · ${P.cxp} of ${xpAt(s, P.champ)[L - 1]} ${d.xp.unit} for Level ${L + 1}` : ''}`;
-}
-function champLine(s, c) {
-  const d = BY_ID[c.cid], P = s.players[c.owner], L = champLevel(s, c.owner);
-  const what = d.legend ? 'Legend' : 'Champion';
-  if (!P.champ) return what;
-  return L >= 3 ? `${what} at Level 3, the top` : `${what} at Level ${L}: ${P.cxp} of ${xpAt(s, c.cid)[L - 1]} ${d.xp.unit} for Level ${L + 1} (${levelLine(d, L + 1)})`;
 }
 
 // Tap a player's bar: everything about them, in words.

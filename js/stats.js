@@ -278,7 +278,7 @@ function momentsOf(rec) {
 // sites grade (Lichess: 5, 10 and 15 points; reviews before 2026-11-10
 // graded the raw score, and say so with no `v`). Accuracy averages a score
 // per move that falls off quickly with the points lost.
-export const REVIEW_V = 3; // (3, 2026-11-10: the cards you play each turn are judged too)
+export const REVIEW_V = 4; // (3, 2026-11-10: the cards you play each turn are judged too. 4: an attack is checked against the turns after it)
 export const GRADES = [
   { min: 15, key: 'blunder', name: 'Blunder' },
   { min: 10, key: 'mistake', name: 'Mistake' },
@@ -357,7 +357,7 @@ function judge(s, a, me, actions, i) {
     if (!t) return null;
     const v = bot.t === 'attack' ? scoreAfterFight(t, me) : evaluate(t, me), now = evaluate(base, me);
     if (decided(v, now)) return null;
-    return { k: 'turn', ...when, loss: lossOf(v, now), left, alt: sayAction(s, bot) };
+    return { k: 'turn', ...when, loss: lossOf(v, now), left, alt: sayAction(s, bot), ahead: [holdBack(base, me), t] };
   }
   if (s.phase === 'main' && a.t === 'attack') {
     const t = step(base, a);
@@ -372,7 +372,8 @@ function judge(s, a, me, actions, i) {
     }
     if (decided(best, mine)) return null;
     const loss = lossOf(best, mine);
-    return { k: 'attack', ...when, loss, cids: a.att.map((u) => s.cards[u].cid), alt: loss > 0.5 ? (alt.t === 'end' ? { t: 'hold' } : sayAction(s, alt)) : null };
+    return { k: 'attack', ...when, loss, cids: a.att.map((u) => s.cards[u].cid), alt: loss > 0.5 ? (alt.t === 'end' ? { t: 'hold' } : sayAction(s, alt)) : null,
+      ahead: [t, alt.t === 'end' ? holdBack(base, me) : step(base, alt)] };
   }
   if (s.phase === 'combat' && a.t === 'block') {
     const t = step(base, a);
@@ -406,6 +407,25 @@ function judge(s, a, me, actions, i) {
     return { k: 'trick', ...when, cid: s.cards[a.uid].cid, gain: r2(100 * (chance(v) - chance(alt))), loss: lossOf(alt, v) };
   }
   return null;
+}
+
+// Not attacking this turn: the position as it is, with the attack used up
+// (so the bot playing on from it can't attack either).
+const holdBack = (s, me) => ({ ...s, players: s.players.map((Q) => (Q.i === me ? { ...Q, attackedOn: s.turn } : Q)) });
+
+// A fight's score sees the blocks (ganging up too) and the damage, but not the
+// turn after: an attack that leaves you open, or a crowd of small creatures
+// ganging up on your big ones and then swinging back (game LFRJ: "attack with
+// both Tortoises", graded a blunder at 44 points, won 18% when played on; what
+// was played won them all). So an attack worth a note is checked against the
+// turns after it, as the economy turns are, and the smaller loss counts.
+async function checkAhead(j, me, seed, pause) {
+  const [u, v] = j.ahead || [];
+  delete j.ahead;
+  if (!u || !v || j.loss < GRADES[GRADES.length - 1].min) return j;
+  j.loss = Math.min(j.loss, await futureLoss(u, v, me, seed, pause));
+  if (j.loss <= 0.5) j.alt = null;
+  return j;
 }
 
 // The cards you played on a turn (and abilities used, Digs, Hexes broken),
@@ -525,7 +545,7 @@ export async function reviewPlay(setup, actions, me, { pause = () => new Promise
         playsOn = s.turn;
         try { const j = await judgePlays(s, me, actions, i, pause); if (j) all.push(j); } catch (e) { /* leave it out */ }
       }
-      try { const j = judge(s, a, me, actions, i); if (j) all.push(j); } catch (e) { /* something the bot can't think about: leave it out */ }
+      try { const j = judge(s, a, me, actions, i); if (j) all.push(await checkAhead(j, me, s.turn * 7919 + i, pause)); } catch (e) { /* something the bot can't think about: leave it out */ }
     }
     s = step(s, a) || s;
     if (Date.now() - t0 > slice) { await pause(); t0 = Date.now(); }

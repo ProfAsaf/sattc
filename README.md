@@ -238,6 +238,11 @@ How you're doing, the way chess.com's Insights and Game Review and 17lands
       - The futures run a step at a time, so the phone doesn't stall.
       - Game VCGW: a ramp turn the plain score called a blunder (bot play-outs: 71% as played against 56%) is no longer one.
     - Game JXJH's review now catches round 6: "You played The Merchant Tortoise and Windborne Sage. The bot would have played Grand Illusion and Patient Giant."
+  - **Attacks checked against the turns after** (since 2026-11-10, review `v: 4`):
+    - A fight's score sees the blocks, ganging up included, and the damage, but not the turn after. An attack can leave you open, and a crowd of small creatures can gang up on your big ones and then swing back.
+    - So an attack worth a note (yours, or one you didn't make when ending your turn) is checked the same way as an economy turn. Both positions, your attack and the one the bot suggests (or holding back), are played on by the bot through your next two turns, 4 times. The smaller loss counts (`checkAhead`).
+    - Game LFRJ, against Endless Swarm: the review graded "attack with both Tortoises" over holding them back as a 44-point blunder. Played on, that attack won 18%, while what was played won all 60, so the note is gone. Accuracy goes from 70% to 80%; the One More Wave note that play-outs backed stays.
+    - Calibration unchanged: a careful bot 100%, a random player 72%.
   - Tricks that won a fight by 5 points or more are Great.
   - Energy kept for a Trick in hand isn't counted against you, and neither is a decision with no choice.
 - **The end screen** adds how long it took, tonight's score (or your record

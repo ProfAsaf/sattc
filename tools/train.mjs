@@ -21,6 +21,8 @@
 //   node tools/train.mjs spsa  <brain> [iterations=500] [name]          fine-tuned → .phone-tests/train/brain-<name>.json
 //   node tools/train.mjs ladder [deals per pair=40]                     the difficulty levels (ai.js LEVELS) rated by Elo, Practice = 1500
 //   node tools/train.mjs decks [level=tough] [deals=150]                each starter's win rate when both sides play at that level
+//     EXTRA='{"name":…,"counts":{…}}': that deck against each starter instead ([deals] per starter, each both ways);
+//     VS=<level>: the starters played at that level (the extra deck at [level])
 // A brain is a name in js/brains.js, or a name saved by this tool. WORKERS=n (default: cores − 2).
 
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
@@ -36,6 +38,8 @@ import { cardList } from '../js/decks.js';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', '.phone-tests', 'train');
 const DECKS = ULTRA_STARTERS.map((d) => { const list = cardList(d.counts); return { name: d.name, list, legend: legendFor(list) }; });
+// (EXTRA: a deck of someone's, last in the list, for `decks`)
+if (process.env.EXTRA) { const e = JSON.parse(process.env.EXTRA); const list = cardList(e.counts); DECKS.push({ name: e.name, list, legend: e.legend || legendFor(list) }); }
 const K = BRAIN_KEYS.length;
 const rng = (seed) => { let x = seed >>> 0 || 1; return () => (x = (Math.imul(x, 1103515245) + 12345) >>> 0) / 4294967296; };
 
@@ -101,7 +105,8 @@ if (!isMainThread) {
       const out = [];
       for (const g of job.games) for (const swap of [false, true]) {
         const dk = swap ? [g.dk[1], g.dk[0]] : g.dk;
-        const { winner } = duel([job.A, job.A], dk, g.seed);
+        // (with an extra deck: its bot plays it, the other bot the starter)
+        const { winner } = duel(dk.map((k) => (job.B && k !== job.extra ? job.B : job.A)), dk, g.seed);
         if (winner != null) out.push([dk[winner], dk[1 - winner]]);
       }
       parentPort.postMessage({ id: job.id, out });
@@ -313,8 +318,23 @@ async function main() {
   if (cmd === 'decks') {
     const [lv = 'tough', n = 150] = args;
     const L = LEVELS.find((x) => x.id === lv);
-    const bot = { brain: loadBrain(L.brain), noise: L.noise, beam: L.beam || 0, plan: L.plan || 0, tries: L.tries || 1, top: L.top || 0, margin: L.margin };
+    const mk = (L) => ({ brain: loadBrain(L.brain), noise: L.noise, beam: L.beam || 0, plan: L.plan || 0, tries: L.tries || 1, top: L.top || 0, margin: L.margin });
+    const bot = mk(L);
     const P = pool(nw);
+    if (process.env.EXTRA) {
+      // the extra deck against each starter, n deals each, both ways
+      const x = DECKS.length - 1, V = process.env.VS ? LEVELS.find((y) => y.id === process.env.VS) : L;
+      const R = rng(5150 + Number(n)), ds = [];
+      for (let i = 0; i < x; i++) for (let k = 0; k < Number(n); k++) ds.push({ id: ds.length, dk: [x, i], seed: 1 + Math.floor(R() * 1e9) });
+      const res = await P.run(chunk(ds, nw * 3).map((games) => ({ kind: 'decks', games, A: bot, B: mk(V), extra: x })));
+      P.close();
+      const w = DECKS.map(() => 0), g = DECKS.map(() => 0);
+      for (const r of res) for (const [win, lose] of r.out) { const other = win === x ? lose : win; g[other]++; if (win === x) w[other]++; }
+      const W = w.reduce((a, b) => a + b, 0), G = g.reduce((a, b) => a + b, 0);
+      console.log(`${DECKS[x].name} (${L.name}) against the starters (${V.name}): won ${W} of ${G}, ${Math.round((100 * W) / G)}% (${secs()})`);
+      DECKS.slice(0, x).map((d, i) => [d.name, w[i], g[i]]).sort((a, b) => a[1] / a[2] - b[1] / b[2]).forEach(([name, a, b]) => console.log(`  vs ${name.padEnd(22)} ${Math.round((100 * a) / b)}% of ${b}`));
+      return;
+    }
     // (deals between two different decks)
     const ds = deals(Number(n) * 2, 4040 + Number(n)).filter((g) => g.dk[0] !== g.dk[1]).slice(0, Number(n));
     const res = await P.run(chunk(ds, nw * 3).map((games) => ({ kind: 'decks', games, A: bot })));

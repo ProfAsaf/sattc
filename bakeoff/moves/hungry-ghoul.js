@@ -49,7 +49,7 @@ export function build(k) {
   const side = T[0] < FT[0] ? -1 : 1;
 
   // ── the poses over time
-  const sw = curve([[0, 1], [2300, 1], [2650, 1.075, 'out'], [2800, 1.065, 'eio'], [3000, 1.072], [BACK, 1]]); // the swell
+  const sw = curve([[0, 1], [2300, 1], [2650, 1.12, 'out'], [2800, 1.1, 'eio'], [3000, 1.11], [BACK, 1]]); // the swell
   const sq = curve([[0, 1], [600, 0.962], [880, 1.018, 'out'], [1500, 1], [BACK, 1]]); // squash and surge
   const lean = curve([[0, 0], [600, -1.6], [880, 2.6, 'out'], [1500, 1.2], [2300, 0.4], [3300, 0]]);
   const bob = curve([[0, 0], [600, 0.9], [880, -0.8, 'out'], [1500, 0], [2300, 0.6], [2650, -1.4, 'out'], [3100, -0.8], [BACK, 0]]);
@@ -86,21 +86,21 @@ export function build(k) {
   const JA = MOUTH(REL), dx = T[0] - JA[0], dy = T[1] - JA[1], len = Math.hypot(dx, dy) || 1, ang = deg(Math.atan2(dy, dx));
   const cordSvg = k.svg('<defs><linearGradient id="c" x1="0" x2="1"><stop offset="0" stop-color="#f6eeff"/><stop offset=".55" stop-color="#b98cff"/><stop offset="1" stop-color="#7a4fd0"/></linearGradient><filter id="b" x="-5%" y="-300%" width="110%" height="700%"><feGaussianBlur stdDeviation="1.1"/></filter></defs><rect x="0" y="4" width="100" height="4" rx="2" fill="#9b6bff" filter="url(#b)" opacity=".85"/><rect x="0" y="5" width="100" height="2" rx="1" fill="url(#c)"/>', 100, 12);
   const cl = (f, o, d = 0, th = 1) => ({ transform: `rotate(${(ang + d).toFixed(1)}deg) translate(${(len * u * f / 2).toFixed(1)}px, 0px) scale(${f.toFixed(3)}, ${(o * th).toFixed(2)})`, opacity: o });
-  fx(k.pic(cordSvg, JA, len, 15), tidy([[REL, cl(0.02, 0.9), 'ease-in'], [REL + 150, cl(0.55, 1)], [IM - 20, cl(1, 1), 'ease-out'], [IM + 120, cl(1, 0.95)], [IM + 380, cl(1, 0.7, 0, 0.8)], [IM + 640, cl(1, 0.4, 0, 0.6)], [IM + 900, cl(1, 0)]]));
-  fx(k.pic(cordSvg, JA, len, 15), tidy([[REL + 40, cl(0.02, 0.6, 3), 'ease-in'], [REL + 200, cl(0.6, 0.7, 2.5)], [IM, cl(1, 0.7, 1.5), 'ease-out'], [IM + 200, cl(1, 0.55, -2)], [IM + 500, cl(1, 0.3, -3, 0.7)], [IM + 760, cl(1, 0)]]));
+  fx(k.pic(cordSvg, JA, len, 24), tidy([[REL, cl(0.02, 0.9), 'ease-in'], [REL + 150, cl(0.55, 1)], [IM - 20, cl(1, 1), 'ease-out'], [IM + 120, cl(1, 0.95)], [IM + 380, cl(1, 0.7, 0, 0.8)], [IM + 640, cl(1, 0.4, 0, 0.6)], [IM + 900, cl(1, 0)]]));
+  fx(k.pic(cordSvg, JA, len, 24), tidy([[REL + 40, cl(0.02, 0.6, 3), 'ease-in'], [REL + 200, cl(0.6, 0.7, 2.5)], [IM, cl(1, 0.7, 1.5), 'ease-out'], [IM + 200, cl(1, 0.55, -2)], [IM + 500, cl(1, 0.3, -3, 0.7)], [IM + 760, cl(1, 0)]]));
   const nx = -dy / len, ny = dx / len;
   const bz = (t, sd) => [JA[0] + dx * t + nx * sd * Math.sin(t * Math.PI), JA[1] + dy * t + ny * sd * Math.sin(t * Math.PI) - 5 * Math.sin(t * Math.PI)];
   for (let i = 0; i < 9; i++) {
-    const t0 = REL + i * 36 + rand() * 20, D = IM - REL + 40 + rand() * 60, sd = (rand() - 0.5) * Math.min(14, len * 0.12), sz = 4 + rand() * 4, ks = [];
+    const t0 = REL + i * 36 + rand() * 20, D = IM - REL + 40 + rand() * 60, sd = (rand() - 0.5) * Math.min(14, len * 0.12), sz = 5.5 + rand() * 5, ks = [];
     for (let j = 0; j <= 7; j++) { const f = j / 7, [x, y] = bz(f, sd); ks.push([t0 + f * D, { transform: `${k.T(x - JA[0], y - JA[1])} scale(${(f < 0.1 ? 0.5 : 1.3 - 0.4 * f).toFixed(2)})`, opacity: j === 0 || j === 7 ? 0 : 0.95 }, 'linear']); }
     fx(k.pic('mote', JA, sz, sz), ks);
   }
 
   // ── IMPACT at T: a flash, two rings, motes thrown, a shadow settling; and the soul standing there
   const ring = k.svg('<defs><filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.6"/></filter></defs><circle cx="50" cy="50" r="40" fill="none" stroke="#9b6bff" stroke-width="6" filter="url(#b)"/><circle cx="50" cy="50" r="40" fill="none" stroke="#efe4ff" stroke-width="1.4"/>', 100, 100);
-  fx(k.light('g-violet', T, 46), tidy([[IM - 60, { transform: 'scale(.4)', opacity: 0 }, 'ease-out'], [IM + 60, { transform: 'scale(1.25)', opacity: 1 }, eio], [IM + 350, { transform: 'scale(.95)', opacity: 0.6 }, eio], [IM + 800, { transform: 'scale(.8)', opacity: 0.35 }, eio], [IM + 1200, { transform: 'scale(.6)', opacity: 0 }]]));
+  fx(k.light('g-violet', T, 64), tidy([[IM - 60, { transform: 'scale(.4)', opacity: 0 }, 'ease-out'], [IM + 60, { transform: 'scale(1.25)', opacity: 1 }, eio], [IM + 350, { transform: 'scale(.95)', opacity: 0.6 }, eio], [IM + 800, { transform: 'scale(.8)', opacity: 0.35 }, eio], [IM + 1200, { transform: 'scale(.6)', opacity: 0 }]]));
   fx(k.pic('gloom', T, 40, 36, { lit: false, low: true }), tidy([[IM - 80, { transform: 'scale(.4)', opacity: 0 }, 'ease-out'], [IM + 300, { transform: 'scale(1)', opacity: 0.8 }, eio], [IM + 1200, { transform: 'scale(1.2) rotate(30deg)', opacity: 0 }]]));
-  for (let i = 0; i < 2; i++) { const t0 = IM + i * 150; fx(k.pic(ring, T, 34, 34), [[t0, { transform: 'scale(.2)', opacity: 0 }, 'ease-out'], [t0 + 70, { transform: 'scale(.5)', opacity: 0.9 }], [t0 + 650, { transform: 'scale(1.5)', opacity: 0 }]]); }
+  for (let i = 0; i < 2; i++) { const t0 = IM + i * 150; fx(k.pic(ring, T, 52, 52), [[t0, { transform: 'scale(.2)', opacity: 0 }, 'ease-out'], [t0 + 70, { transform: 'scale(.5)', opacity: 0.9 }], [t0 + 650, { transform: 'scale(1.5)', opacity: 0 }]]); }
   for (let i = 0; i < 10; i++) {
     const a = -Math.PI * (0.05 + rand() * 0.9), sp = 8 + rand() * 16, t0 = IM + rand() * 40, life = 380 + rand() * 300, sz = 2.4 + rand() * 3;
     const px = (f) => Math.cos(a) * sp * f * u, py = (f) => (Math.sin(a) * sp * f + 22 * f * f) * u;
@@ -110,13 +110,13 @@ export function build(k) {
   const soul = k.svg('<defs><radialGradient id="g" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#cdb8ff"/></radialGradient></defs><path d="M4,10Q4,1.5 9,1.5Q14,1.5 14,10L15.4,22Q12.6,19.4 9,22.6Q5.4,19.4 2.6,22Z" fill="url(#g)"/><ellipse cx="6.8" cy="9" rx="1.2" ry="1.8" fill="#2a1d44"/><ellipse cx="11.2" cy="9" rx="1.2" ry="1.8" fill="#2a1d44"/>', 18, 24);
   const SC = [T[0], T[1] - 6], Mj = MOUTH(1840), sdx = Mj[0] - SC[0], sdy = Mj[1] - SC[1], sa = deg(Math.atan2(sdy, sdx)) + 90;
   const sl = (f, sx, sy, o, r = 0) => ({ transform: `${k.T(sdx * f, sdy * f)} rotate(${(f > 0 ? sa : r).toFixed(1)}deg) scale(${sx.toFixed(2)}, ${sy.toFixed(2)})`, opacity: o });
-  fx(k.pic(soul, SC, 13, 17), [[IM - 240, { transform: 'translate(0px, 4px) scale(.2)', opacity: 0 }, 'ease-out'], [IM - 40, { transform: 'translate(0px, 0px) scale(.95)', opacity: 0.9 }, 'ease-out'],
+  fx(k.pic(soul, SC, 20, 26), [[IM - 240, { transform: 'translate(0px, 4px) scale(.2)', opacity: 0 }, 'ease-out'], [IM - 40, { transform: 'translate(0px, 0px) scale(.95)', opacity: 0.9 }, 'ease-out'],
     [IM + 70, { transform: 'translate(0px, -1px) rotate(-5deg) scale(1.05)', opacity: 1 }, eio], [IM + 150, { transform: 'translate(0px, 0px) rotate(4deg) scale(1)', opacity: 1 }, 'ease-in'],
     [IM + 220, sl(0.02, 0.95, 1.1, 1), 'ease-in'], [IM + 360, sl(0.3, 0.7, 1.9, 0.95)], [IM + 480, sl(0.7, 0.45, 2.8, 0.7)], [1840, sl(1, 0.12, 3.4, 0)]]);
   // motes torn from it stream to the jaws on curving paths, arriving 1650-2300
   const NM = 24;
   for (let i = 0; i < NM; i++) {
-    const t0 = IM + 180 + i * 34 + rand() * 24, D = 420 + rand() * 180, sd = (i % 2 ? 1 : -1) * (5 + rand() * 12), s0 = [T[0] + (rand() - 0.5) * 12, T[1] - 5 + (rand() - 0.5) * 8], sz = 3.6 + rand() * 3.4, ks = [];
+    const t0 = IM + 180 + i * 34 + rand() * 24, D = 420 + rand() * 180, sd = (i % 2 ? 1 : -1) * (5 + rand() * 12), s0 = [T[0] + (rand() - 0.5) * 12, T[1] - 5 + (rand() - 0.5) * 8], sz = 5 + rand() * 4, ks = [];
     const Mh = MOUTH(t0 + D), ddx = Mh[0] - s0[0], ddy = Mh[1] - s0[1], dl = Math.hypot(ddx, ddy) || 1;
     for (let j = 0; j <= 8; j++) {
       const f = j / 8, e = f * f * 0.6 + f * 0.4, sw2 = Math.sin(e * Math.PI) * sd;
@@ -126,10 +126,10 @@ export function build(k) {
   }
 
   // ── the swell: it heaves up a size; a bloom of violet light and two rings from its belly, motes rising
-  fx(k.lightIn('g-violet', BELLY, 64, 52), tidy([[2300, { transform: 'scale(.5)', opacity: 0 }, 'ease-out'], [2650, { transform: 'scale(1.2)', opacity: 0.85 }, eio], [3000, { transform: 'scale(1.05)', opacity: 0.6 }, eio], [3500, { transform: 'scale(.9)', opacity: 0 }]]));
-  for (let i = 0; i < 2; i++) { const t0 = 2480 + i * 200; fx(k.picIn(ring, BELLY, 62, 62), [[t0, { transform: 'scale(.2)', opacity: 0 }, 'ease-out'], [t0 + 90, { transform: 'scale(.4)', opacity: 0.9 }], [t0 + 850, { transform: 'scale(1.3)', opacity: 0 }]]); }
+  fx(k.lightIn('g-violet', BELLY, 90, 74), tidy([[2300, { transform: 'scale(.5)', opacity: 0 }, 'ease-out'], [2650, { transform: 'scale(1.2)', opacity: 0.85 }, eio], [3000, { transform: 'scale(1.05)', opacity: 0.6 }, eio], [3500, { transform: 'scale(.9)', opacity: 0 }]]));
+  for (let i = 0; i < 2; i++) { const t0 = 2480 + i * 200; fx(k.picIn(ring, BELLY, 86, 86), [[t0, { transform: 'scale(.2)', opacity: 0 }, 'ease-out'], [t0 + 90, { transform: 'scale(.4)', opacity: 0.9 }], [t0 + 850, { transform: 'scale(1.3)', opacity: 0 }]]); }
   for (let i = 0; i < 12; i++) {
-    const x = BELLY[0] + (rand() - 0.5) * 50, y = BELLY[1] + (rand() - 0.3) * 26, t0 = 2450 + rand() * 450, sz = 2.4 + rand() * 3;
+    const x = BELLY[0] + (rand() - 0.5) * 50, y = BELLY[1] + (rand() - 0.3) * 26, t0 = 2450 + rand() * 450, sz = 3.4 + rand() * 4;
     fx(k.picIn('mote', [x, y], sz, sz), [[t0, { transform: 'scale(.5)', opacity: 0 }, 'ease-out'], [t0 + 100, { transform: 'scale(1)', opacity: 0.9 }, 'linear'], [t0 + 900, { transform: `${k.T((rand() - 0.5) * 8, -16 - rand() * 14)} scale(.4)`, opacity: 0 }]]);
   }
 }

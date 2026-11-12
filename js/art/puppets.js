@@ -77,7 +77,7 @@ export const PUPPETS = {
   // turns, `shoulderA`/`shoulderB`: where the arms turn, `feet`: where it crouches on the stone (it swells about it),
   // `cross`: the little cross at the left of the foreground (the target when alone)
   'hungry-ghoul': {
-    role: 'support', element: 'shadow', facing: 'left', emit: [109, 69], hit: [172, 74],
+    role: 'support', element: 'shadow', facing: 'left', emit: [107, 69], hit: [171, 69],
     neck: [135, 57], hinge: [127, 65], shoulderA: [158, 50], shoulderB: [168, 53], feet: [174, 98], cross: [66, 140],
     parts: [
       { name: 'body', of: 'fig:1 [data-part=body]', pivot: [174, 98] },

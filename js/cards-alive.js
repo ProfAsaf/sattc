@@ -97,11 +97,42 @@ export function actInZoom(zoomEl, id) {
   };
 }
 
+// ── a card shown big in a game (its viewer: your hand, the table) ────
+// Its picture in sprites laid over its own, its move a moment after it shows
+// and then every few seconds, its effects on an overlay in `host`. The game
+// draws the viewer afresh on every change, so it starts this anew each time.
+// Gives { stop() }, or null when the card can't act.
+export function actBig(host, card, id) {
+  if (!host || !card || !canAct(id)) return null;
+  const swap = inSprites(card, id, '.c-art');
+  const over = document.createElement('div');
+  over.className = 'pp-fx';
+  host.append(over);
+  const st = { on: true, m: null, wake: null };
+  const nap = (ms) => new Promise((r) => { st.wake = r; setTimeout(r, ms); });
+  (async () => {
+    await swap.ready;
+    const m = st.on ? await build(id, card, over) : null;
+    if (!st.on) { dropMove(m); return; }
+    st.m = m;
+    if (m) await settle([over, card]);
+    for (let first = true; st.on && m; first = false) {
+      await nap(first ? 300 : 1200);
+      if (!st.on) break;
+      if (document.hidden) continue;
+      play(m);
+      await nap(m.END + 100);
+      halt(m);
+    }
+  })();
+  return { stop() { st.on = false; st.wake?.(); dropMove(st.m); over.remove(); swap.undo(); } };
+}
+
 // ── a stage: one card acting at a time, while nothing else happens ──
 // A game's table and Cards are stages, each with its own cards, its own way of
 // choosing who acts on whom, and its own overlay. A scene starts once the stage
 // has been quiet (no touch, and its own quiet()) for `idle` ms.
-const GAP = 1600; // ms from one scene's end to the next
+const GAP = 1000; // ms from one scene's end to the next
 const stages = new Map();
 
 function startStage(name, o) {
@@ -109,7 +140,7 @@ function startStage(name, o) {
   if (still()) return;
   const st = { ...o, name, last: Date.now(), ended: 0, scene: null, busy: false, lastEl: null };
   const touched = () => { st.last = Date.now(); endScene(st); };
-  const evs = ['pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll'];
+  const evs = ['pointerdown', 'pointerup', 'keydown', 'wheel', 'touchstart', 'scroll'];
   for (const e of evs) window.addEventListener(e, touched, { passive: true, capture: true });
   st.off = () => { for (const e of evs) window.removeEventListener(e, touched, { capture: true }); };
   st.timer = setInterval(() => tick(st), 250);
@@ -136,21 +167,21 @@ function tick(st) {
 // `quiet()`: the game at rest (no move playing out, nothing open, nobody choosing).
 export function startTableAlive(root, quiet) {
   startStage('table', {
-    root, quiet, idle: 2500, art: '.tc-art', overIn: root, overCls: 'pp-fx pp-game',
+    root, quiet, idle: 1000, art: '.tc-art', overIn: root, overCls: 'pp-fx pp-game',
     joltOf: (el) => el.querySelector('.tc-body') || el, // (the game's own shakes move .tc-body, never the tilted card)
     pick: (st) => pickAcross(st, onScreen(root.querySelectorAll('.g-side .tcard.on-board[data-cid]'), (el) => el.dataset.cid), inHand(root)),
   });
 }
-// The cards in your hand whose picture shows: on screen, and its middle not
-// under another card of the fan.
+// The card raised in your hand (the fan's focus), if its picture shows: the
+// others lie partly under their neighbours.
 function inHand(root) {
-  const vw = innerWidth, vh = innerHeight;
-  return [...root.querySelectorAll('.tc-hand > .tcard.in-hand[data-cid]')].flatMap((el) => {
-    const a = el.querySelector('.tc-art')?.getBoundingClientRect();
-    if (!a || a.width < 24 || a.top < 0 || a.bottom > vh || a.left < 0 || a.right > vw) return [];
-    const top = document.elementFromPoint(a.left + a.width / 2, a.top + a.height / 2)?.closest('.tcard');
-    return top === el ? [{ el, id: el.dataset.cid, r: el.getBoundingClientRect(), side: null, hand: true }] : [];
-  });
+  const fan = [...root.querySelectorAll('.tc-hand > .tcard.in-hand[data-cid]')];
+  const z = (c) => Number(c.style.getPropertyValue('--z')) || 0;
+  const el = fan.find((c) => c.classList.contains('peek')) || fan.reduce((b, c) => (!b || z(c) > z(b) ? c : b), null);
+  const a = el?.querySelector('.tc-art')?.getBoundingClientRect();
+  if (!a || a.width < 24 || a.top < 0 || a.bottom > innerHeight || a.left < 0 || a.right > innerWidth) return [];
+  const top = document.elementFromPoint(a.left + a.width / 2, a.top + a.height / 2)?.closest('.tcard');
+  return top === el ? [{ el, id: el.dataset.cid, r: el.getBoundingClientRect(), side: null, hand: true }] : [];
 }
 export const stopTableAlive = () => stopStage('table');
 // a move is about to play out, or the table to be drawn again: any scene ends now
@@ -164,7 +195,7 @@ export function startCardsAlive(view) {
   const grid = view.querySelector('.grid');
   if (!grid) { stopStage('cards'); return; }
   startStage('cards', {
-    root: grid, quiet: () => true, idle: 2000, art: '.c-art', overIn: document.body, overCls: 'pp-fx pp-screen',
+    root: grid, quiet: () => true, idle: 1000, art: '.c-art', overIn: document.body, overCls: 'pp-fx pp-screen',
     joltOf: (el) => el,
     pick: (st) => pickBeside(st, onScreen(grid.querySelectorAll('.card[data-id]'), (el) => el.dataset.id)),
   });
@@ -185,20 +216,24 @@ function actors(st, cards) {
   const can = cards.filter((c) => canAct(c.id)), fresh = can.filter((c) => c.el !== st.lastEl);
   return fresh.length ? fresh : can;
 }
-// a game: an attacker at a card on another side, a support at the card nearest
-// it on its own; a quarter of the time, and for anyone else, a card alone. A
-// card in your hand always acts alone (aimed at the table, it would look like
-// being played).
+// a game: mostly one card on the table acting on another, an attacker at a
+// card on another side, a support at the card nearest it on its own (a
+// defender it reaches blocks, any other card jolts); about one scene in five
+// the card raised in your hand, alone (aimed at the table, it would look like
+// being played); now and then a table card alone.
 function pickAcross(st, cards, hand = []) {
-  const pool = actors(st, [...cards, ...hand]);
-  if (!pool.length) return null;
-  const a = one(pool);
-  if (a.hand) return { actor: a };
-  const role = PUPPETS[a.id].role, [ax] = mid(a);
-  const foes = cards.filter((c) => c.side !== a.side), mates = cards.filter((c) => c.side === a.side && c !== a);
-  const nearest = (list) => list.slice().sort((p, q) => Math.abs(mid(p)[0] - ax) - Math.abs(mid(q)[0] - ax))[0];
-  const target = Math.random() < 0.25 ? null : role === 'attacker' && foes.length ? one(foes) : role === 'support' && mates.length ? nearest(mates) : null;
-  return target ? { actor: a, target } : { actor: a };
+  const table = actors(st, cards);
+  const raised = hand.find((c) => c.el !== st.lastEl) || (table.length ? null : hand[0]);
+  const foesOf = (a) => cards.filter((c) => c.side !== a.side), matesOf = (a) => cards.filter((c) => c.side === a.side && c !== a);
+  const reach = table.filter((c) => (PUPPETS[c.id].role === 'attacker' && foesOf(c).length) || (PUPPETS[c.id].role === 'support' && matesOf(c).length));
+  const r = Math.random();
+  if (raised && (r < 0.2 || !table.length)) return { actor: raised };
+  if (reach.length && r < 0.9) {
+    const a = one(reach), [ax] = mid(a);
+    const target = PUPPETS[a.id].role === 'attacker' ? one(foesOf(a)) : matesOf(a).sort((p, q) => Math.abs(mid(p)[0] - ax) - Math.abs(mid(q)[0] - ax))[0];
+    return { actor: a, target };
+  }
+  return table.length ? { actor: one(table) } : null;
 }
 // Cards: mostly an attacker or support on the card beside it in its row (either side), sometimes a card alone
 function pickBeside(st, cards) {

@@ -16,14 +16,14 @@ The history, with Asaf's words at each step, is in README.md under "Home's fan a
 - **The kit is shared.** `js/puppet-kit.js` builds a move. Both the harness (`bakeoff/harness.js`) and the game use it.
 - **In the game** (`js/cards-alive.js`):
   - **A card opened big** plays its move a moment after it opens, then every few seconds. It rests while turned over.
-  - **In a game**, after the table has been at rest for 2.5 s, one card on the table acts at a time. Asaf asked for it: "I want it in games (and basically all the time somebody isn't touching the screen or another action isn't happening)".
-    - At rest means nobody touching, no move playing out (including the wait for a tap after an opponent's move), nothing open, nobody aiming or choosing, no fight on, no lesson, and the game not over. That's `atRest()` in `js/game-ui.js`.
-    - An attacker aims its move at a card on another side (`k.aim` = that card's `hit`). A support aims at the card nearest it on its own side.
+  - **In a game**, after the table has been at rest for 1 s, one card acts at a time, with 1 s between scenes. Asaf asked for it: "I want it in games (and basically all the time somebody isn't touching the screen or another action isn't happening)". His notes on the first live try: "Time to have it happen is mabye too long. Can we just do 1 second of wait?", plus no interactions seen and partly hidden hand cards acting.
+    - At rest means nobody touching, nothing open, nobody aiming or choosing, no fight on, no lesson, and the game not over. That's `atRest()` in `js/game-ui.js`. A move playing out isn't at rest, but an opponent's move already shown and waiting for your tap (`gates`) is.
+    - Most scenes, about 9 in 10 when one is possible, are one table card acting on another. An attacker aims its move at a card on another side (`k.aim` = that card's `hit`); a support aims at the card nearest it on its own side.
     - A defender it reaches takes the blow on its nearest guard point (`k.blows` at the attacker's impact). Any other card jolts along the blow; the jolt moves its `.tc-body`, as the game's own shakes do.
-    - A quarter of the time, and always for defenders and auras, a card acts alone.
-    - Cards in your hand act too, always alone, since aimed at the table one would look like being played. That's the only place in a game where spells act. A hand card qualifies when the middle of its picture isn't under another card of the fan (`inHand()`, `elementFromPoint`).
-    - Any touch ends a scene. `draw()`, `redraw()` and `present()` call `hushTable()` first, so the game's own moves never meet one.
-  - **In Cards**, after 2 s untouched, one card acts at a time: an attacker or support aims its move at the card beside it. A defender there takes the blow on its guard; any other card jolts. Some scenes are a card on its own.
+    - About one scene in five is the card raised in your hand (the fan's `.peek`), acting alone, since aimed at the table it would look like being played. The cards under it don't act. That's how spells act in a game.
+    - A card opened big in the viewer (your hand, your opening hand, the table) plays its move a moment after it shows, then every few seconds. That's `actBig()`, restarted by `bigMove()` after each `draw()`.
+    - Any touch, including the lift of a finger, ends a scene. `draw()`, `redraw()` and `present()` call `hushTable()` first, so the game's own moves never meet one.
+  - **In Cards**, after 1 s untouched, one card acts at a time: an attacker or support aims its move at the card beside it. A defender there takes the blow on its guard; any other card jolts. Some scenes are a card on its own.
   - A card's picture is swapped to sprites for its scene only, and swapped back after. Nothing plays with Reduce Motion. A test can set `window.__ppPicks = []` to note who acts on whom.
 - **The foil.** Legendaries in grids lost the moving foil. It moved a background, which repainted every legendary on screen every frame: 270 style recalcs in 3 s on Cards at rest, now 0. Shown big, the foil still slides as a transform.
 - **Cost, measured in headless Chrome:**

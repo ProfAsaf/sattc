@@ -21,7 +21,7 @@ import * as St from './stats.js';
 import * as Rating from './rating.js';
 import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
-import { hushTable, startTableAlive, stopTableAlive } from './cards-alive.js';
+import { actBig, hushTable, startTableAlive, stopTableAlive } from './cards-alive.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
 import * as Camp from './campaign.js';
@@ -600,10 +600,11 @@ function mount() {
   return root;
 }
 
-// The table at rest: no move playing out, nothing open, nobody aiming or
-// choosing, no fight on, no lesson. Its cards then act now and then (js/cards-alive.js).
+// The table at rest: no move playing out (one shown and waiting for your tap
+// is at rest), nothing open, nobody aiming or choosing, no fight on, no lesson.
+// Its cards then act now and then (js/cards-alive.js).
 function atRest() {
-  if (!G || G.busy || G.flow || G.sheet || G.atk || G.blk || G.viewer || G.skipping || G.stale || G.dirty) return false;
+  if (!G || (G.busy && !gates) || G.flow || G.sheet || G.atk || G.blk || G.viewer || G.skipping || G.stale || G.dirty) return false;
   const s = S();
   return s.phase !== 'over' && s.phase !== 'mulligan' && !s.combat && !tutStep() && !decision();
 }
@@ -654,6 +655,8 @@ function beginOnline(info, seat) {
 // an online game carries on and you can go back to it from Play).
 function leave(goTo = '#/play') {
   stopTableAlive();
+  bigAct?.stop();
+  bigAct = null;
   clearTimeout(G?.timer);
   if (G?.mode === 'online' && Push.enabled()) { watchSeen(false); Net.markSeen(G.code, false).catch(() => {}); }
   G?.unsubActions?.();
@@ -2422,6 +2425,7 @@ function draw(root) {
   if (s.phase === 'mulligan' && !me.mull) {
     root.className = 'g-mull';
     morphChildren(root, (s.ultra && !ultraIntroSeen ? ultraIntroHTML() : ultraV2(s) && !ultraNewSeen ? ultraNewHTML() : mulliganHTML()) + (G.sheet ? `<div class="g-sheet" data-sheet="1"><div class="g-sheet-inner">${G.sheet}</div>${G.viewer ? '' : GRAB}</div>` : '') + (G.stale ? STALE_GAME : ''));
+    bigMove(root);
     return;
   }
   // three players with a side folded are laid out (and sized) as a duel
@@ -2439,6 +2443,17 @@ function draw(root) {
   const rings = st?.show || (G.suggest?.show && G.suggest.state === G.state ? G.suggest.show : null);
   if (rings && !G.sheet) for (const sel of rings) root.querySelectorAll(sel).forEach((el) => el.classList.add('coach-on'));
   placeCoach(root);
+  bigMove(root);
+}
+
+// The card shown big (the viewer: your hand, your opening hand, the table)
+// plays its move, started afresh with each drawing (js/cards-alive.js).
+let bigAct = null;
+function bigMove(root) {
+  bigAct?.stop();
+  bigAct = null;
+  const card = G?.viewer ? root.querySelector('.hv-card.on .card[data-id]') : null;
+  if (card) bigAct = actBig(root.querySelector('.hv'), card, card.dataset.id);
 }
 
 // Redraw after a tap: things that moved glide to their new places.

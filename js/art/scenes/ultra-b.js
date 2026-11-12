@@ -748,8 +748,8 @@ export const ultra_b = {
     s.figure(`<path d="${U(row.map(([x, b, k]) => bearer(x, b, k)))}"/>`, { fill: '#2e2218', rim: p.rim, offsets: [[-1.2, -0.6], [-0.4, -1.2]], rimOp: 0.9, shade: 0.4, light: [-1, -0.5] });
     // their shields, each one a little in front of the one behind it
     s.figure(row.slice().reverse().map(([x, b, k]) => `<path d="${boss(x, b, k)}"/>`).join(''), { fill: s.lin([[0, '#5a4128'], [1, '#2e2218']]), rim: '#ffe7a8', offsets: [[-1.2, -0.5], [-0.4, -1.2]], rimOp: 0.95 });
-    s.add(`<g fill="none" stroke="#1e140c" stroke-width="1.3" opacity=".85">${row.slice(0, -1).map(([x, b, k]) => `<path d="M${f1(x + 10 * k)},${f1(b - 11 * k)}L${f1(x + 10.6 * k)},${f1(b - 40 * k)}"/>`).join('')}</g>` +
-      `<g fill="none" stroke="#d2a860" stroke-width=".9" opacity=".8">${row.map(([x, b, k]) => `<circle cx="${f1(x)}" cy="${f1(b - 27 * k)}" r="${f1(3.4 * k)}"/>`).join('')}</g>`);
+    s.add(`<g data-part="rowdeco"><g fill="none" stroke="#1e140c" stroke-width="1.3" opacity=".85">${row.slice(0, -1).map(([x, b, k]) => `<path d="M${f1(x + 10 * k)},${f1(b - 11 * k)}L${f1(x + 10.6 * k)},${f1(b - 40 * k)}"/>`).join('')}</g>` +
+      `<g fill="none" stroke="#d2a860" stroke-width=".9" opacity=".8">${row.map(([x, b, k]) => `<circle cx="${f1(x)}" cy="${f1(b - 27 * k)}" r="${f1(3.4 * k)}"/>`).join('')}</g></g>`);
     // the captain: plumed helm, cape behind, sword up, the tall shield
     // held across her body
     const cx = 104, cy = 193, place = at(cx, cy, 1);
@@ -769,14 +769,14 @@ export const ultra_b = {
     s.figure(`<path d="${her}"/>`, { fill: p.fig, rim: p.rim, offsets: [[-1.3, -0.4], [-0.6, -1.2], [0.6, -1.1]], rimOp: 0.95, shade: 0.45, edge: 0.32, light: [-0.8, -0.6] });
     const shield = place('M-9,-20L-10,-76L-5,-84L8,-87L21,-84L26,-76L25,-20L8,-15Z');
     s.figure(`<path d="${shield}"/>`, { fill: s.linU(cx - 12, 0, cx + 28, 0, [[0, '#6a4c2a'], [0.5, '#4a3420'], [1, '#2e2016']]), rim: '#ffe7a8', offsets: [[-1.3, -0.4], [-0.5, -1.2]], rimOp: 0.95 });
-    s.add(`<path d="${place('M-6.5,-22L-7.5,-74L-3.5,-81L8,-84L19.5,-81L22.5,-74L21.5,-22L8,-18Z')}" fill="none" stroke="#b48a4a" stroke-width="1.1" opacity=".8"/>`);
+    s.add(`<path data-part="shieldline" d="${place('M-6.5,-22L-7.5,-74L-3.5,-81L8,-84L19.5,-81L22.5,-74L21.5,-22L8,-18Z')}" fill="none" stroke="#b48a4a" stroke-width="1.1" opacity=".8"/>`);
     // her sword and the sun on her shield, catching the light
     s.glow(cx - 27.4, cy - 138, 40, '#fff0c2', 0.5, 'breathe');
-    s.glow(cx + 8, cy - 52, 22, '#ffd77a', 0.5);
-    s.bloom(`<path d="${place(taper([[-27.4, -118], [-27.4, -150], [-27.4, -164]], [3.8, 3.2, 0.4]))}" fill="#fff6dc"/>` +
-      `<path d="${sunMark(cx + 8, cy - 52, 4.6)}" fill="none" stroke="#ffd77a" stroke-width="1.6"/>` +
-      `<path d="${glint(cx - 27.4, cy - 150, 9, 0.14)}" fill="#ffffff"/>` +
-      `<path d="${row.map(([x, b, k]) => glint(x + 13 * k, b - 90 * k, 3.4 * k, 0.2)).join('')}" fill="#fff6dc"/>`, { sd: 1.6, k: 1.4, box: [40, 10, 260, 170] });
+    s.add('<g data-part="sunmark">'); s.glow(cx + 8, cy - 52, 22, '#ffd77a', 0.5); s.add('</g>');
+    s.bloom(`<g data-part="sword"><path d="${place(taper([[-27.4, -118], [-27.4, -150], [-27.4, -164]], [3.8, 3.2, 0.4]))}" fill="#fff6dc"/>` +
+      `<path d="${glint(cx - 27.4, cy - 150, 9, 0.14)}" fill="#ffffff"/></g>` +
+      `<path data-part="sunmark" d="${sunMark(cx + 8, cy - 52, 4.6)}" fill="none" stroke="#ffd77a" stroke-width="1.6"/>` +
+      `<path data-part="rowdeco" d="${row.map(([x, b, k]) => glint(x + 13 * k, b - 90 * k, 3.4 * k, 0.2)).join('')}" fill="#fff6dc"/>`, { sd: 1.6, k: 1.4, box: [40, 10, 260, 170] });
     s.motes({ seed: 12504, n: 18, x: [30, 290], y: [40, 190], r: [0.4, 1], fill: '#ffe39a', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },
@@ -813,34 +813,39 @@ export const ultra_b = {
     }
     for (let i = 0; i < 6; i++) mortar += `M${f1(x0 + i * 29.6 + 10)},${mt}V${top}`;
     mortar += `M${x0},${top}H${x1}`;
-    s.add(`<path d="${lit}" fill="#c49a5c" opacity=".35"/><path d="${mortar}" fill="none" stroke="#3a2814" stroke-width="1.6" opacity=".75"/>`);
+    s.add(`<g data-part="walldeco"><path d="${lit}" fill="#c49a5c" opacity=".35"/><path d="${mortar}" fill="none" stroke="#3a2814" stroke-width="1.6" opacity=".75"/></g>`);
     // the face carved in it: a heavy frowning brow, deep eyes, a straight
     // stern mouth
+    s.add('<g data-part="brow">');
     s.path('M100,80L148,95L152,95L200,80L200,92L152,106L148,106L100,92Z', '#4a3420');
     s.path('M100,79L148,94L152,94L200,79', 'none', 'stroke="#f2d49a" stroke-width="1.6" opacity=".8"');
+    s.add('</g><g data-part="eyes">');
     s.path(`${oval(126, 112, 15, 6.6, 8)}${oval(174, 112, 15, 6.6, -8)}`, '#24170c');
+    s.add('</g><g data-part="nose">');
     s.path('M144,106L156,106L163,138L137,138Z', '#5c4226');
     s.path('M150,106L163,138L156,140', '#3a2814', 'opacity=".7"');
+    s.add('</g><g data-part="mouth">');
     s.path('M118,158L130,152L170,152L182,158L170,156L130,156Z', '#24170c');
+    s.add('</g>');
     // arrows in flight, arrows broken against it and falling, a snapped spear
     const arrow = (x, y, a, L) => rot(U(taper([[x - L, y], [x, y]], 1.4, { per: 2 }), poly([[x + 6, y], [x - 1, y - 2.6], [x - 1, y + 2.6]]),
       poly([[x - L, y], [x - L - 6, y - 3.4], [x - L + 2, y - 0.6]]), poly([[x - L, y], [x - L - 6, y + 3.4], [x - L + 2, y + 0.6]])), x, y, a);
     const broken = (x, y, a, L, head) => rot(U(taper([[x - L, y], [x, y]], 1.4, { per: 2 }), head ? poly([[x + 6, y], [x - 1, y - 2.6], [x - 1, y + 2.6]]) : poly([[x, y - 1], [x + 3, y - 0.2], [x + 1, y + 0.4], [x + 3.4, y + 1.2], [x, y + 0.8]]),
       poly([[x - L, y], [x - L - 6, y - 3.4], [x - L + 2, y - 0.6]])), x, y, a);
-    const flying = U(arrow(30, 58, 18, 24), arrow(18, 104, 8, 24), arrow(274, 70, 160, 24), arrow(288, 124, 172, 22), arrow(44, 146, 2, 22));
-    const falling = U(broken(52, 126, 64, 14, true), broken(80, 176, 112, 12, false), broken(58, 186, 20, 10, true),
+    const flying = [arrow(30, 58, 18, 24), arrow(18, 104, 8, 24), arrow(274, 70, 160, 24), arrow(288, 124, 172, 22), arrow(44, 146, 2, 22)];
+    const falling = [broken(52, 126, 64, 14, true), broken(80, 176, 112, 12, false), broken(58, 186, 20, 10, true),
       broken(252, 104, 116, 13, true), broken(246, 172, 80, 12, false), broken(222, 192, 160, 10, true),
       rot(U(taper([[234, 142], [266, 142]], 2.6, { per: 2 }), poly([[268, 142], [262, 138.6], [262, 145.4]])), 250, 142, -50),
-      rot(taper([[256, 182], [290, 182]], 2.6, { per: 2 }), 273, 182, 22));
-    s.figure(`<path d="${flying}"/>`, { fill: '#2a1f15', rim: '#fff0c2', offsets: [[0, -0.8]], rimOp: 0.7 });
-    s.path(falling, '#2a1f15');
+      rot(taper([[256, 182], [290, 182]], 2.6, { per: 2 }), 273, 182, 22)];
+    s.figure(flying.map((d, i) => `<g data-part="fly${i}"><path d="${d}"/></g>`).join(''), { fill: '#2a1f15', rim: '#fff0c2', offsets: [[0, -0.8]], rimOp: 0.7 });
+    falling.forEach((d, i) => { s.add(`<g data-part="fall${i}">`); s.path(d, '#2a1f15'); s.add('</g>'); });
     // its eyes, and sparks where the arrows strike
     const eyes = `${oval(126, 112, 8.6, 2.2, 8)}${oval(174, 112, 8.6, 2.2, -8)}`;
-    s.glow(126, 112, 16, '#ffd77a', 0.7).glow(174, 112, 16, '#ffd77a', 0.7);
+    s.add('<g data-part="eyes">'); s.glow(126, 112, 16, '#ffd77a', 0.7).glow(174, 112, 16, '#ffd77a', 0.7); s.add('</g>');
     const spark = (x, y, a) => [-40, -20, 0, 20, 40].map((d, i) => { const [ex, ey] = toward(x, y, a + d, i % 2 ? 6 : 9); return `M${x},${y}L${f1(ex)},${f1(ey)}`; }).join('');
-    s.bloom(`<path d="${eyes}" fill="#fff4c8"/>` +
-      `<path d="${spark(68, 70, 200) + spark(232, 118, -20) + spark(68, 150, 180) + spark(232, 160, 0)}" stroke="#fff0c2" stroke-width="1.1" stroke-linecap="round"/>`, { sd: 1.4, k: 1.5, box: [40, 50, 220, 130] });
-    s.path(dots([[72, 196, 3.4], [84, 198, 2.6], [218, 197, 3], [230, 199, 2.4], [62, 199, 2.2]]), '#2a1f15');
+    s.bloom(`<path data-part="eyes" d="${eyes}" fill="#fff4c8"/>` +
+      `<g stroke="#fff0c2" stroke-width="1.1" stroke-linecap="round">${[[68, 70, 200], [232, 118, -20], [68, 150, 180], [232, 160, 0]].map(([x, y, a], i) => `<path data-part="burst${i}" d="${spark(x, y, a)}"/>`).join('')}</g>`, { sd: 1.4, k: 1.5, box: [40, 50, 220, 130] });
+    s.add('<g data-part="pebbles">'); s.path(dots([[72, 196, 3.4], [84, 198, 2.6], [218, 197, 3], [230, 199, 2.4], [62, 199, 2.2]]), '#2a1f15'); s.add('</g>');
     s.motes({ seed: 12604, n: 16, x: [20, 280], y: [30, 190], r: [0.4, 1], fill: '#ffe39a', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },
@@ -894,16 +899,24 @@ export const ultra_b = {
       taper([[136, 132], [138, 126]], 5.4, { per: 2 }),
       profile(141, 119, 0.95, 26),
       ell(136.4, 116.4, 7.2, 7.6), taper([[133, 112], [126, 122], [121, 138]], [10, 8, 3]),
+    );
+    const arms = U(
       taper([[136, 135], [149, 144], [166, 146]], [6, 5.4, 4.6]), ell(168, 146, 3.2, 2.8),
       taper([[131, 138], [144, 154], [168, 155]], [6.4, 5.6, 4.8]), ell(171, 155, 3.2, 2.8),
     );
-    s.figure(`<path d="${Z(medic)}"/>`, { fill: p.fig, rim: p.rim, offsets: [[-1.2, -0.6], [-0.4, -1.2]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [-1, -0.6] });
+    // (each piece keeps the whole figure's bounding box, so its light shades exactly as it did: two
+    // zero-length marks at its corners)
+    const xy = [...(Z(medic) + Z(arms)).matchAll(/(-?[\d.]+),(-?[\d.]+)/g)].map((m) => [+m[1], +m[2]]);
+    const pin = `M${f1(Math.min(...xy.map((q) => q[0])))},${f1(Math.min(...xy.map((q) => q[1])))}ZM${f1(Math.max(...xy.map((q) => q[0])))},${f1(Math.max(...xy.map((q) => q[1])))}Z`;
+    s.figure(`<g data-part="arms"><path d="${Z(arms)}${pin}"/></g><g data-part="her"><path d="${Z(medic)}${pin}"/></g>`, { fill: p.fig, rim: p.rim, offsets: [[-1.2, -0.6], [-0.4, -1.2]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [-1, -0.6] });
     // her tabard, pale even in the shade, the sun sewn on it
+    s.add('<g data-part="tabard">');
     s.path(Z('M128,138L137,136L136,170L125,171Z'), s.lin([[0, '#b2a48c'], [1, '#76685a']]));
     s.path(Z('M124.6,160L136.6,159L136.5,162L124.5,163Z'), '#2a1f15');
     s.add(`<path d="${Z('M128,138L137,136M125,171L136,170')}" stroke="#2a1f15" stroke-width="1"/>`);
     const [ex, ey] = zp(131, 150);
     s.add(`<path d="${sunMark(ex, ey, 2.6)}" fill="none" stroke="#c99a4a" stroke-width="1"/>`);
+    s.add('</g>');
     // the bandage of light: four turns round his forearm, the roll in her
     // hand, a curl of light lifting off it
     const [bx, by] = zp(177, 151);
@@ -911,8 +924,8 @@ export const ultra_b = {
     let wraps = '';
     for (let i = 0; i < 4; i++) wraps += poly([[172 + i * 3.6, 146.4], [174.4 + i * 3.6, 146.4], [173 + i * 3.6, 155.4], [170.6 + i * 3.6, 155.4]]);
     const loose = [[172, 155], [170, 160], [166, 162]], curl = [[183, 147], [186, 140], [182, 134], [176, 135], [177, 140]];
-    s.bloom(`<path d="${Z(wraps)}" fill="#fff4cc"/><path d="${Z(taper(loose, [2.4, 2.2, 1.6]))}" fill="#ffe7a0"/>` +
-      `<path d="${Z(taper(curl, [1.6, 1.4, 1.1, 0.7, 0.3]))}" fill="#ffe7a0" opacity=".8"/>`, { sd: 1.4, k: 1.5, box: [150, 120, 80, 70] });
+    s.bloom(`<path data-part="wraps" d="${Z(wraps)}" fill="#fff4cc"/><path data-part="loose" d="${Z(taper(loose, [2.4, 2.2, 1.6]))}" fill="#ffe7a0"/>` +
+      `<path data-part="curl" d="${Z(taper(curl, [1.6, 1.4, 1.1, 0.7, 0.3]))}" fill="#ffe7a0" opacity=".8"/>`, { sd: 1.4, k: 1.5, box: [150, 120, 80, 70] });
     s.motes({ seed: 12705, n: 14, x: [150, 220], y: [110, 180], r: [0.4, 1], fill: '#ffe39a', hot: '#ffffff', cls: 'rise', t: [4, 8], op: [0.5, 1] });
     s.add(particles({ seed: 12706, n: 10, x: [20, 280], y: [60, 190], r: [0.5, 1.1], fill: '#fff6d8', cls: 'float', t: [5, 9], op: [0.3, 0.7] }));
     return s.svg();

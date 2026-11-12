@@ -85,6 +85,75 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Field Medic: the medic (kneeling, from her knee, with the tabard sewn on her), her two arms (from the
+  // shoulder), the four turns of golden bandage round the knight's forearm (each its own, split out of
+  // one), the loose end of the roll and the curl of light lifting off it, and the wounded knight (his head
+  // split off at the neck; the rest of him, sword and all, from his seat). `emit`: the bandage, where her
+  // gift leaves; `hit`: her middle; `alone`: the knight's heart, where the gift goes when nothing is
+  // aimed at; `shoulder`/`seat`/`neck`/`knee`: the joints; `turns`: the middle of each turn of bandage
+  'field-medic': (() => {
+    const Z = ([x, y]) => [+(170 + (x - 170) * 1.18).toFixed(1), +(190 + (y - 190) * 1.18).toFixed(1)];
+    const col = (i) => (i < 0 ? [[-20, -20], [-20, 230]] : i > 3 ? [[320, -20], [320, 230]] : [Z([176 + 3.6 * i, 140]), Z([172.9 + 3.6 * i, 160])]);
+    const wrap = (i) => { const a = col(i - 1), b = col(i === 3 ? 4 : i), edge = (c) => (c[0][0] === c[1][0] ? [] : c); return [[a[0][0], -20], [b[0][0], -20], ...edge(b), [b[1][0], 230], [a[1][0], 230], ...edge(a).reverse()]; };
+    return {
+      role: 'support', element: 'light', facing: 'right', emit: [178, 144], hit: [125, 140], alone: [210, 146],
+      shoulder: [129.9, 125.1], seat: [203, 176], neck: [212, 118], knee: [124, 185],
+      turns: [0, 1, 2, 3].map((i) => Z([172.3 + 3.6 * i, 151])),
+      parts: [
+        { name: 'knight', of: 'fig:1', pivot: [203, 176], poly: [[-20, -20], [195, -20], [195, 118], [232, 118], [232, -20], [320, -20], [320, 230], [-20, 230]] },
+        { name: 'kHead', of: 'fig:1', pivot: [212, 118], poly: [[195, 85], [232, 85], [232, 118], [195, 118]] },
+        { name: 'arms', of: 'fig:2 [data-part=arms]', pivot: [129.9, 125.1] },
+        { name: 'her', of: ['fig:2 [data-part=her]', '[data-part=tabard]'], pivot: [124, 185] },
+        ...[0, 1, 2, 3].map((i) => ({ name: `wrap${i}`, of: '[data-part=wraps]', pivot: Z([172.3 + 3.6 * i, 151]), poly: wrap(i) })),
+        { name: 'loose', of: '[data-part=loose]', pivot: Z([172, 155]) },
+        { name: 'curl', of: '[data-part=curl]', pivot: Z([183, 147]) },
+      ],
+    };
+  })(),
+  // Bastion Wall: the wall (its figure, with the courses of blocks), the stern face carved in it (brow,
+  // eyes with their light, nose, mouth: each its own), the four bursts of sparks on its flanks, the five
+  // arrows in flight (each turning about its head), the eight broken arrows and spears lying about it
+  // (each from the head end), and the pebbles at its foot. `hit`: its face; `guard`: where blows land
+  // on its sides, where the arrows would strike (left high to low, then right); `base`: its foot;
+  // `eyes`: where its eyes are; `heads`: where each arrow's head is as drawn; `flank`: its two sides' x
+  'bastion-wall': {
+    role: 'defender', element: 'earth', facing: 'front', hit: [150, 125], guard: [[70, 71], [70, 111], [70, 147], [230, 86], [230, 132]],
+    base: [150, 198], eyes: [[126, 112], [174, 112]], flank: [66, 234],
+    heads: [[35.7, 59.9], [23.9, 104.8], [268.4, 72.1], [282.1, 124.8], [50, 146.2]],
+    bursts: [[68, 70], [232, 118], [68, 150], [232, 160]],
+    lying: [[52, 126], [80, 176], [58, 186], [252, 104], [246, 172], [222, 192], [250, 142], [273, 182]],
+    parts: [
+      { name: 'wall', of: ['fig:0', '[data-part=walldeco]'], pivot: [150, 198] },
+      { name: 'brow', of: '[data-part=brow]', pivot: [150, 95] },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [150, 112] },
+      { name: 'nose', of: '[data-part=nose]', pivot: [150, 108] },
+      { name: 'mouth', of: '[data-part=mouth]', pivot: [150, 154] },
+      ...[[68, 70], [232, 118], [68, 150], [232, 160]].map(([x, y], i) => ({ name: `burst${i}`, of: `[data-part=burst${i}]`, pivot: [x, y] })),
+      ...[[35.7, 59.9], [23.9, 104.8], [268.4, 72.1], [282.1, 124.8], [50, 146.2]].map((pv, i) => ({ name: `fly${i}`, of: `fig:1 [data-part=fly${i}]`, pivot: pv })),
+      ...[[52, 126], [80, 176], [58, 186], [252, 104], [246, 172], [222, 192], [250, 142], [273, 182]].map((pv, i) => ({ name: `fall${i}`, of: `[data-part=fall${i}]`, pivot: pv })),
+      { name: 'pebbles', of: '[data-part=pebbles]', pivot: [150, 198] },
+    ],
+  },
+  // Shield Captain: the ten shield-bearers in the line (each cut out of the men, their shields and
+  // the seams and bosses on them, by a vertical split between spears, and standing from its feet),
+  // the captain (from her feet), her tall shield (from its foot, with its inner rim), the sun on it,
+  // and her sword. `hit`: her chest; `guard`: where blows land on her shield's face, high to low,
+  // and on the first bearer's; `feet`/`foot`/`hand`: her joints; `rowFeet`: each bearer's feet
+  'shield-captain': (() => {
+    const ROW = [[162, 190, 0.84], [182, 188.6, 0.77], [200, 187.4, 0.7], [216.6, 186.3, 0.64], [231.6, 185.4, 0.58], [245.4, 184.6, 0.53], [258, 184, 0.48], [269.6, 183.4, 0.44], [280.4, 183, 0.4], [290.4, 182.6, 0.37]];
+    const cut = (i) => (i < 0 ? -20 : i >= ROW.length - 1 ? 320 : +((ROW[i][0] + 11.8 * ROW[i][2] + ROW[i + 1][0] - 10.6 * ROW[i + 1][2]) / 2).toFixed(1));
+    return {
+      role: 'defender', element: 'light', facing: 'front', hit: [108, 132], guard: [[112, 118], [116, 140], [112, 160], [164, 156]],
+      feet: [104, 193], foot: [112, 176], hand: [76.6, 79], sunmark: [112, 141], rowFeet: ROW.map(([x, b]) => [x, b]),
+      parts: [
+        ...ROW.map(([x, b], i) => ({ name: `row${i}`, of: ['fig:0', 'fig:1', '[data-part=rowdeco]'], pivot: [x, b], poly: [[cut(i - 1), -20], [cut(i), -20], [cut(i), 230], [cut(i - 1), 230]] })),
+        { name: 'her', of: 'fig:2', pivot: [104, 193] },
+        { name: 'shield', of: ['fig:3', '[data-part=shieldline]'], pivot: [112, 176] },
+        { name: 'sunmark', of: '[data-part=sunmark]', pivot: [112, 141] },
+        { name: 'sword', of: '[data-part=sword]', pivot: [76.6, 79] },
+      ],
+    };
+  })(),
   // Venom Shard: the black crystal (its faces, green seams and veins, the drop on its point; it
   // turns about its middle), the green pool glowing in the palm, and the hand (palm up, from the
   // wrist). `emit`: the shard's middle, where it is let go from; `tip`/`butt`: its point (down) and

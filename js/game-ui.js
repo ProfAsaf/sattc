@@ -596,19 +596,28 @@ function mount() {
   document.body.classList.add('in-game');
   window.dispatchEvent(new Event('collective:game')); // (a page under the game may let go of what it holds: the campaign's pictures)
   keepAwake('game', true);
-  startTableAlive(root, atRest); // (left be, the table's cards act now and then)
+  startTableAlive(root, () => !restWhy(), restWhy); // (left be, the cards in sight act now and then)
   return root;
 }
 
-// The game at rest: no move playing out (one shown and waiting for your tap is
-// at rest), nobody choosing a target, no fight under way unless it waits on
-// your choice, no lesson. Whatever cards are in sight then act now and then:
-// the table and your hand, your opening hand, a sheet of cards, an attack or
-// block screen (js/cards-alive.js). The viewer plays its own card (bigMove).
-function atRest() {
-  if (!G || (G.busy && !gates) || G.flow || G.viewer || G.skipping || G.stale || G.dirty) return false;
+// Why the game isn't at rest ('' when it is): a move playing out (one shown
+// and waiting for your tap is at rest), someone choosing a target, a card open
+// big, a fight under way unless it waits on your choice, a lesson. At rest,
+// whatever cards are in sight act now and then: the table and your hand, your
+// opening hand, a sheet of cards, an attack or block screen (js/cards-alive.js).
+// The viewer plays its own card (bigMove). (Not G.dirty: it can stay set once a
+// move is over, and only means something while one plays.)
+function restWhy() {
+  if (!G) return 'no game';
+  if (G.busy && !gates) return 'a move playing out';
+  if (G.flow) return 'choosing a target';
+  if (G.viewer) return 'a card open big';
+  if (G.skipping) return 'skipping to your move';
   const s = S();
-  return s.phase !== 'over' && !tutStep() && (!s.combat || !!decision());
+  if (s.phase === 'over') return 'the game is over';
+  if (tutStep()) return 'a lesson';
+  if (s.combat && !decision()) return 'a fight under way';
+  return '';
 }
 
 function begin(rec) {

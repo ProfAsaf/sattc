@@ -24,6 +24,31 @@ import { drop, fetchSprites, still } from './sprites.js';
 const HOME_ONLY = new Set(['seraphine', 'the-barrow-queen']); // (they act in Home's own scene, js/home-alive.js)
 export const canAct = (id) => !!(LIVE[id] && PUPPETS[id] && !HOME_ONLY.has(id)) && !still();
 
+// ── why nothing acts, seen on a phone: open the game once with ?alive=1 for a
+// line at the bottom of the screen saying where the cards are, whether that's
+// at rest (or why not), which cards are in sight, and what the last scene did;
+// ?alive=0 takes it away ──
+const DIAG = (() => {
+  try {
+    const q = new URLSearchParams(location.search).get('alive');
+    if (q === '1' || q === '0') localStorage.setItem('collective.alive', q);
+    return localStorage.getItem('collective.alive') === '1';
+  } catch { return false; }
+})();
+const diag = { where: '', why: '', seen: '', last: '' };
+let diagEl = null;
+function note(part, text) {
+  if (!DIAG || diag[part] === text) return;
+  diag[part] = text;
+  if (!diagEl?.isConnected) {
+    diagEl = document.createElement('div');
+    diagEl.style.cssText = 'position:fixed;left:4px;right:4px;bottom:calc(env(safe-area-inset-bottom, 0px) + 4px);z-index:2147483000;pointer-events:none;font:600 11px/1.35 system-ui, sans-serif;color:#fff;background:rgba(0,0,0,.78);padding:4px 8px;border-radius:8px;white-space:pre-wrap';
+    document.body.append(diagEl);
+  }
+  diagEl.textContent = `${diag.where}: ${diag.why}\n${diag.seen}\n${diag.last}`;
+}
+if (DIAG && still()) note('why', 'Reduce Motion is on: nothing plays');
+
 // ── a move, built on a card on the page ──────────────────────────────
 const mods = new Map(), arts = new Map();
 const moveOf = (id) => {
@@ -47,15 +72,15 @@ function artOf(id, mod) {
 async function build(id, card, over, { aim = null, blows = null } = {}) {
   const box = card.querySelector('.sp-art');
   for (let t = 0; t < 100 && box && !box.live; t++) await sleep(50);
-  if (!box?.live) return null;
+  if (!box?.live) { note('last', `${id}: its picture's parts never came`); return null; }
   await Promise.all([...box.querySelectorAll('img.sp')].map(loaded));
   const mod = await moveOf(id);
-  if (!mod) return null;
+  if (!mod) { note('last', `${id}: its move didn't load`); return null; }
   const art = await artOf(id, mod);
-  if (!card.isConnected || !over.isConnected) return null;
+  if (!card.isConnected || !over.isConnected) { note('last', `${id}: the screen changed first`); return null; }
   const face = card.querySelector('.card-face, .tc-face') || card;
   const m = makeKit({ id, mod, art, box, face, over, aim, blows });
-  try { mod.build(m.k); } catch (e) { console.warn(`${id}: its move didn't build`, e); dropMove(m); return null; }
+  try { mod.build(m.k); } catch (e) { console.warn(`${id}: its move didn't build`, e); note('last', `${id}: its move broke: ${e?.message || e}`); dropMove(m); return null; }
   for (const a of m.anims) a.cancel();
   await Promise.all(m.made.filter((el) => el.tagName === 'IMG').map(loaded));
   return { id, END: m.END, BEATS: mod.BEATS || null, anims: m.anims, made: m.made };
@@ -161,16 +186,21 @@ function stopStage(name) {
 function tick(st) {
   if (!st.root.isConnected) { stopStage(st.name); return; }
   if (window.__sceneHold) return; // (a test stepping through a scene: leave it be)
-  if (document.hidden || document.body.classList.contains('zoom-open') || !st.quiet()) { st.last = Date.now(); endScene(st); return; }
+  const why = document.hidden ? 'the page is hidden' : document.body.classList.contains('zoom-open') ? 'a card zoomed' : st.quiet() ? '' : st.why?.() || 'not at rest';
+  if (DIAG && (st.name === 'table' || !document.body.classList.contains('in-game'))) {
+    note('where', st.name === 'table' ? 'in a game' : 'on a page');
+    note('why', why || (st.scene ? 'at rest: a card acting' : Date.now() - st.last < st.idle ? 'touched just now' : 'at rest'));
+  }
+  if (why) { st.last = Date.now(); endScene(st); return; }
   if (st.scene || st.busy || Date.now() - st.last < st.idle || Date.now() - st.ended < GAP) return;
   st.busy = true;
-  scene(st).catch((e) => { console.warn('cards alive:', e); endScene(st); }).finally(() => { st.busy = false; });
+  scene(st).catch((e) => { console.warn('cards alive:', e); note('last', `went wrong: ${e?.message || e}`); endScene(st); }).finally(() => { st.busy = false; });
 }
 
 // ── a game ───────────────────────────────────────────────────────────
 // `quiet()`: the game at rest (no move playing out, nobody choosing a target).
-export function startTableAlive(root, quiet) {
-  startStage('table', { root, quiet, idle: 1000, pick: (st) => pickGame(st, root) });
+export function startTableAlive(root, quiet, why = null) {
+  startStage('table', { root, quiet, why, idle: 1000, pick: (st) => pickGame(st, root) });
 }
 export const stopTableAlive = () => stopStage('table');
 // a move is about to play out, or the table to be drawn again: any scene ends now
@@ -184,10 +214,12 @@ export function hushTable() {
 // raised in your hand.
 function pickGame(st, root) {
   const full = shown(root.querySelectorAll('.card[data-id]'), (el) => el.dataset.id);
-  if (full.length) return pickBeside(st, full);
+  if (full.length) { note('seen', `full cards in sight: ${full.length}`); return pickBeside(st, full); }
   const dec = shown(root.querySelectorAll('.g-dec .tcard[data-cid]'), (el) => el.dataset.cid);
-  if (dec.length) { const pool = actors(st, dec); return pool.length ? { actor: one(pool) } : null; }
-  return pickAcross(st, shown(root.querySelectorAll('.g-side .tcard.on-board[data-cid]'), (el) => el.dataset.cid), inHand(root));
+  if (dec.length) { note('seen', `cards to choose in sight: ${dec.length}`); const pool = actors(st, dec); return pool.length ? { actor: one(pool) } : null; }
+  const onTable = root.querySelectorAll('.g-side .tcard.on-board[data-cid]'), table = shown(onTable, (el) => el.dataset.cid), hand = inHand(root);
+  note('seen', `table: ${table.length} of ${onTable.length} in sight · hand: ${hand[0]?.id || 'raised card not in sight'}`);
+  return pickAcross(st, table, hand);
 }
 // The card raised in your hand (the fan's focus), if its picture shows: the
 // others lie partly under their neighbours.
@@ -203,7 +235,7 @@ function inHand(root) {
 export function startScreenAlive() {
   startStage('screen', {
     root: document.body, idle: 1000, quiet: () => !document.body.classList.contains('in-game'),
-    pick: (st) => pickBeside(st, shown(document.querySelectorAll('.card[data-id]'), (el) => el.dataset.id)),
+    pick: (st) => { const cards = shown(document.querySelectorAll('.card[data-id]'), (el) => el.dataset.id); note('seen', `cards in sight: ${cards.length}`); return pickBeside(st, cards); },
   });
 }
 
@@ -321,6 +353,8 @@ function jolt(card, END, at, [dx, dy]) {
 async function scene(st) {
   const p = st.pick(st);
   window.__ppPicks?.push(p ? [p.actor.id, p.target?.id ?? null] : null); // (a test noting who acts on whom)
+  const who = p ? `${p.actor.id}${p.target ? ` → ${p.target.id}` : ''}` : '';
+  note('last', p ? `${who}: getting ready` : 'no card here can act');
   if (!p) { st.ended = Date.now(); return; }
   st.lastEl = p.actor.el;
   const sc = { swaps: [], moves: [], anims: [], over: null, timer: 0 };
@@ -360,6 +394,7 @@ async function scene(st) {
   // all from one start
   for (const m of sc.moves) play(m);
   if (p.target && !b) sc.anims.push(jolt(p.target.el, a.END, impact, dir));
+  note('last', `${who}: playing`);
   sc.timer = setTimeout(() => endScene(st), Math.max(...sc.moves.map((m) => m.END)) + 150);
 }
 

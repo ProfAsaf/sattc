@@ -21,6 +21,58 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // the initiate: his body (robe, legs, arms), the spear sliding through his hands, his
+  // streaming hair, the front of him (face, hands) and the torch's blade and flame, each
+  // about its joint; `emit`: the torch's tip, `hand`: the rear hand the spear is levelled from
+  'reckless-initiate': {
+    role: 'attacker', element: 'fire', facing: 'right', emit: [246, 66], hit: [165, 100],
+    feet: [150, 158], hand: [161, 110], head: [178, 72], torch: [239, 73], axis: [0.894, -0.453],
+    parts: [
+      { name: 'body', of: 'fig:0 [data-part=body]', pivot: [150, 158] },
+      { name: 'spear', of: 'fig:0 [data-part=spear]', pivot: [161, 110] },
+      { name: 'hair', of: 'fig:0 [data-part=hair]', pivot: [178, 72] },
+      { name: 'front', of: 'fig:0 [data-part=front]', pivot: [150, 158] },
+      { name: 'tip', of: 'fig:0 [data-part=tip]', pivot: [161, 110] },
+      { name: 'flame', of: '[data-part=flame]', pivot: [239, 73] },
+    ],
+  },
+  // the spark runner: the streak and the fire off its shoulders (under it), its hind legs,
+  // tail, forelegs, ears and body (neck, trunk, head), each about its joint, and its
+  // crackling veins (and eye) over all; `emit`: its muzzle, `feet`: where it turns about
+  'spark-runner': {
+    role: 'attacker', element: 'lightning', facing: 'left', emit: [62, 93], hit: [135, 108],
+    feet: [140, 140], mid: 140, muzzle: [62, 93],
+    parts: [
+      { name: 'trail', of: '[data-part=trail]', pivot: [172, 106] },
+      { name: 'mane', of: '[data-part=mane]', pivot: [100, 94] },
+      { name: 'hind', of: 'fig:0 [data-part=hind]', pivot: [170, 108] },
+      { name: 'tail', of: 'fig:0 [data-part=tail]', pivot: [182, 104] },
+      { name: 'fore', of: 'fig:0 [data-part=fore]', pivot: [108, 118] },
+      { name: 'ears', of: 'fig:0 [data-part=ears]', pivot: [88, 84] },
+      { name: 'body', of: 'fig:0 [data-part=body]', pivot: [140, 140] },
+      { name: 'veins', of: '[data-part=veins]', pivot: [140, 140] },
+    ],
+  },
+  // the feeding of the fire (a spell, an attacker: its fire is the attack): the flames
+  // (outer tongues, inner tongues, white heart) each from their base, the brazier, the
+  // hooded feeder from his feet, his arms (with the hands) from the shoulder, and the
+  // shadow-creature he feeds it (and its eyes); `emit`: the top of the flames, where the
+  // blast leaves, `base`: the fire's base, `bowl`: the brazier's mouth, `held`: the thing
+  // as it's held, `grip`: where the hands hold it, `shoulder`: where the arms turn
+  'feed-the-flame': {
+    role: 'attacker', element: 'fire', facing: 'front', emit: [200, 30], hit: [198, 140],
+    base: [200, 130], bowl: [198, 127], held: [183, 100], grip: [170, 88], shoulder: [126, 102], feet: [115, 187],
+    parts: [
+      { name: 'fireA', of: '[data-part=fireA]', pivot: [200, 130] },
+      { name: 'fireB', of: '[data-part=fireB]', pivot: [200, 130] },
+      { name: 'fireC', of: '[data-part=fireC]', pivot: [200, 130] },
+      { name: 'brazier', of: ['fig:0', '[data-part=lip]'], pivot: [198, 187] },
+      { name: 'man', of: 'fig:1 [data-part=man]', pivot: [115, 187] },
+      { name: 'arms', of: 'fig:1 [data-part=arms]', pivot: [126, 102] },
+      { name: 'thing', of: 'fig:2', pivot: [183, 100] },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [183, 100] },
+    ],
+  },
   // the imp: each wing (membrane and its bones) at its shoulder, the tail at its
   // root, and the imp himself (body, horns, glowing face) crouched from his feet
   cinderling: {

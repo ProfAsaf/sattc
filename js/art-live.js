@@ -5,10 +5,13 @@ export const LIVE = {
   "ashmaw": { src: 'art/live/ashmaw.webp?v=16617e99', live: 'art/live/ashmaw.json?v=650b0640' },
   "bone-lance": { src: 'art/live/bone-lance.webp?v=f4da7f4c', live: 'art/live/bone-lance.json?v=5df1067f' },
   "cinderling": { src: 'art/live/cinderling.webp?v=6d89b188', live: 'art/live/cinderling.json?v=87aced68' },
+  "feed-the-flame": { src: 'art/live/feed-the-flame.webp?v=47c84314', live: 'art/live/feed-the-flame.json?v=966a71f3' },
   "lightning-theorist": { src: 'art/live/lightning-theorist.webp?v=721e5fbf', live: 'art/live/lightning-theorist.json?v=4ae52a1f' },
   "little-gardener": { src: 'art/live/little-gardener.webp?v=c9ae332e', live: 'art/live/little-gardener.json?v=6bea9ed0' },
+  "reckless-initiate": { src: 'art/live/reckless-initiate.webp?v=9ca29763', live: 'art/live/reckless-initiate.json?v=10a094c4' },
   "seraphine": { src: 'art/live/seraphine.webp?v=d5117d2b', live: 'art/live/seraphine.json?v=e3c89cbf' },
   "shieldbearer": { src: 'art/live/shieldbearer.webp?v=cd5ce854', live: 'art/live/shieldbearer.json?v=b8dcebd2' },
+  "spark-runner": { src: 'art/live/spark-runner.webp?v=bdd556e0', live: 'art/live/spark-runner.json?v=4a6093ce' },
   "the-barrow-queen": { src: 'art/live/the-barrow-queen.webp?v=6a8bcf18', live: 'art/live/the-barrow-queen.json?v=ac4ce372' },
   "the-kiln": { src: 'art/live/the-kiln.webp?v=1db9fb98', live: 'art/live/the-kiln.json?v=beef74fc' },
 };

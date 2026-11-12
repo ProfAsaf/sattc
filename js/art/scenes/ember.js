@@ -9,6 +9,11 @@ import { PAL, arcade, faction, mirror, page } from './shared.js';
 const f1 = (n) => (Math.round(n * 10) / 10).toString();
 const P = (...ds) => ds.map((d) => `<path d="${d}"/>`).join('');
 const E = (cx, cy, rx, ry, rot = 0) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"${rot ? ` transform="rotate(${rot} ${cx} ${cy})"` : ''}/>`;
+// A figure's shapes are painted with a gradient that fits each path's own box. When a path is split
+// to tag its pieces, each piece is padded with two zero-length dots at the corners of the box the
+// whole had, so every piece keeps the gradient it was drawn with (nothing is painted by the dots).
+const boxOf = (...ds) => { const n = ds.join(' ').match(/-?\d+\.?\d*/g).map(Number), xs = n.filter((_, i) => i % 2 === 0), ys = n.filter((_, i) => i % 2 === 1); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+const padTo = ([x0, y0, x1, y1], d) => `${d}M${x0},${y0}L${x0},${y0}M${x1},${y1}L${x1},${y1}`;
 const C = (cx, cy, r) => `<circle cx="${cx}" cy="${cy}" r="${r}"/>`;
 // A circle as a clockwise subpath, so a cloud of them can be one path.
 const circ = (cx, cy, r) => `M${f1(cx - r)},${f1(cy)}a${f1(r)},${f1(r)} 0 1 1 ${f1(2 * r)},0a${f1(r)},${f1(r)} 0 1 1 ${f1(-2 * r)},0Z`;
@@ -129,22 +134,27 @@ export const ember = faction('ember', {
       taper([[176, 92], [184, 99], [190, 102]], [7, 6, 5.5]),                // lead arm
       taper([[190, 102], [196, 96], [200, 90]], [5.5, 5, 4.5]),
       taper([[171, 92], [160, 100], [161, 110]], [7, 6, 5]),                 // rear arm
-      taper([[128, 126], [246, 67]], [2.6, 2.2]),                            // spear
+    ];
+    const hair = [
       taper([[187, 67], [176, 64], [164, 66]], [7, 4.5, 0.6]),               // hair blown flat
       taper([[182, 71], [171, 71], [161, 74]], [7, 4, 0.5]),
       taper([[178, 76], [170, 79], [163, 84]], [4.5, 3, 0.4]),
       taper([[176, 72], [162, 69], [148, 73], [138, 70]], [2.4, 2, 1.4, 0.4]), // headband tails
       taper([[176, 74], [163, 76], [151, 81], [142, 80]], [2.2, 1.8, 1.2, 0.4]),
-    ].join('');
-    s.figure(P(robe, limbs, 'M190.5,73L194,76.5L190.5,78.5Z', 'M244.7,64.3L259,60.5L247.3,69.7Z') +
-      C(183, 74, 8) + E(186, 79, 5, 4) + C(200, 90, 3.4) + C(161, 110, 3.2) + E(240, 70, 6, 3.6, -27),
+    ];
+    const spear = taper([[128, 126], [246, 67]], [2.6, 2.2]);                // spear
+    const box = boxOf(...limbs, ...hair, spear);
+    s.figure(`<g data-part="body">${P(robe, padTo(box, limbs.join('')))}</g>` +
+      `<g data-part="spear">${P(padTo(box, spear))}</g><g data-part="hair">${P(padTo(box, hair.join('')))}</g>` +
+      `<g data-part="front">${P('M190.5,73L194,76.5L190.5,78.5Z')}` +
+      C(183, 74, 8) + E(186, 79, 5, 4) + C(200, 90, 3.4) + C(161, 110, 3.2) + `</g><g data-part="tip">${P('M244.7,64.3L259,60.5L247.3,69.7Z')}` + E(240, 70, 6, 3.6, -27) + '</g>',
     { fill: p.fig, rim: p.rim, offsets: [[1.2, -0.8], [-0.4, -1.2]], rimOp: 0.9, shade: 0.5, edge: 0.3, halo: 0.35 });
     // the scorched hem still smoulders
     s.add(`<path d="${poly(hem, false)}" stroke="#ff8a3a" stroke-width="1.2" fill="none" stroke-linejoin="round" opacity=".85"/>`);
     // the torch
     s.glow(236, 58, 40, '#ffb04a', 0.9, 'breathe');
-    s.bloom(`<path d="${tongue(239, 73, 36, 13, -22, 3)}${tongue(243, 70, 34, 8, -4, -2)}${tongue(235, 74, 24, 8, -30, 2)}" fill="${s.lin([[0, '#ff5a1a', 0.5], [0.5, '#ff8a2e'], [1, '#ffd27a']])}"/>` +
-      `<path d="${tongue(240, 73, 20, 7, -10, 1)}" fill="#fff0c0"/>`, { sd: 2, k: 1.4, box: [180, 0, 120, 110] });
+    s.bloom(`<g data-part="flame"><path d="${tongue(239, 73, 36, 13, -22, 3)}${tongue(243, 70, 34, 8, -4, -2)}${tongue(235, 74, 24, 8, -30, 2)}" fill="${s.lin([[0, '#ff5a1a', 0.5], [0.5, '#ff8a2e'], [1, '#ffd27a']])}"/>` +
+      `<path d="${tongue(240, 73, 20, 7, -10, 1)}" fill="#fff0c0"/></g>`, { sd: 2, k: 1.4, box: [180, 0, 120, 110] });
     s.motes({ seed: 103, n: 22, x: [150, 255], y: [24, 92], r: [0.4, 1.1], fill: '#ffa040', hot: '#ffe8b0', cls: 'rise', t: [3, 6] });
     s.motes({ seed: 104, n: 10, x: [40, 260], y: [100, 200], r: [0.4, 1], fill: '#ff8a3a', cls: 'rise', t: [5, 9], op: [0.3, 0.7] });
     return s.svg();
@@ -169,26 +179,25 @@ export const ember = faction('ember', {
     const tr = s.lin([[0, '#ffe7a3', 0.95], [0.22, '#ffb04a', 0.75], [0.6, '#ff7a2e', 0.32], [1, '#ff7a2e', 0]], { x1: 0, y1: 0, x2: 1, y2: 0 });
     s.glow(140, 108, 70, '#ff8a3a', 0.5);
     // the streak it leaves, and fire streaming back off its shoulders and spine
-    s.bloom(`<path d="${taper([[172, 106], [212, 101], [256, 96], [312, 88]], [18, 13, 7, 2])}${taper([[190, 126], [236, 128], [312, 120]], [6, 3.5, 1])}" fill="${tr}"/>` +
-      `<path d="${taper([[100, 94], [114, 84], [130, 80]], [10, 6, 0.4])}${taper([[120, 98], [136, 89], [154, 86]], [11, 6.5, 0.4])}${taper([[142, 100], [158, 92], [176, 90]], [10, 6, 0.4])}${taper([[164, 98], [180, 92], [198, 91]], [9, 5, 0.4])}" fill="${s.lin([[0, '#ffd27a', 0.9], [0.6, '#ff8a2e', 0.6], [1, '#ff6a1f', 0]], { x1: 0, y1: 0, x2: 1, y2: 0 })}"/>`, { sd: 2.2, k: 1.3, box: [80, 50, 240, 110] });
+    s.bloom(`<g data-part="trail"><path d="${taper([[172, 106], [212, 101], [256, 96], [312, 88]], [18, 13, 7, 2])}${taper([[190, 126], [236, 128], [312, 120]], [6, 3.5, 1])}" fill="${tr}"/></g>` +
+      `<g data-part="mane"><path d="${taper([[100, 94], [114, 84], [130, 80]], [10, 6, 0.4])}${taper([[120, 98], [136, 89], [154, 86]], [11, 6.5, 0.4])}${taper([[142, 100], [158, 92], [176, 90]], [10, 6, 0.4])}${taper([[164, 98], [180, 92], [198, 91]], [9, 5, 0.4])}" fill="${s.lin([[0, '#ffd27a', 0.9], [0.6, '#ff8a2e', 0.6], [1, '#ff6a1f', 0]], { x1: 0, y1: 0, x2: 1, y2: 0 })}"/></g>`, { sd: 2.2, k: 1.3, box: [80, 50, 240, 110] });
     // the runner at full stretch: a lean hound of sparks
-    const legs = [
-      taper([[108, 104], [98, 95], [88, 88]], [20, 15, 12]),                        // neck
-      taper([[108, 118], [96, 126], [84, 130], [71, 130]], [12, 7.5, 5, 4]),        // forelegs reaching
-      taper([[114, 122], [103, 132], [91, 139], [79, 142]], [11, 7, 4.5, 3.6]),
-      taper([[170, 106], [184, 116], [195, 122], [210, 120]], [22, 12, 6.5, 4]),     // hind legs flung back
-      taper([[164, 110], [175, 124], [187, 132], [201, 136]], [17, 9, 5.5, 3.6]),
-      taper([[182, 104], [198, 100], [216, 98], [236, 94]], [8, 7, 4, 0.4]),         // tail, turning to streak
-      taper([[87, 82], [91, 70], [97, 62]], [8, 4.5, 0.5]),                          // ears
-      taper([[82, 83], [83, 72], [86, 64]], [6.5, 3.5, 0.4]),
-    ].join('');
+    const neck = taper([[108, 104], [98, 95], [88, 88]], [20, 15, 12]);
+    const fore = taper([[108, 118], [96, 126], [84, 130], [71, 130]], [12, 7.5, 5, 4]) +        // forelegs reaching
+      taper([[114, 122], [103, 132], [91, 139], [79, 142]], [11, 7, 4.5, 3.6]);
+    const hind = taper([[170, 106], [184, 116], [195, 122], [210, 120]], [22, 12, 6.5, 4]) +     // hind legs flung back
+      taper([[164, 110], [175, 124], [187, 132], [201, 136]], [17, 9, 5.5, 3.6]);
+    const tail = taper([[182, 104], [198, 100], [216, 98], [236, 94]], [8, 7, 4, 0.4]);          // tail, turning to streak
+    const ears = taper([[87, 82], [91, 70], [97, 62]], [8, 4.5, 0.5]) + taper([[82, 83], [83, 72], [86, 64]], [6.5, 3.5, 0.4]);
+    const box = boxOf(neck, fore, hind, tail, ears);
     const trunk = blob([[98, 112], [104, 100], [116, 95], [132, 97], [148, 99], [164, 96], [178, 100], [184, 110], [178, 120], [164, 120], [150, 114], [134, 122], [116, 128], [102, 124]]);
-    s.figure(P(legs, trunk, blob([[92, 80], [97, 87], [92, 95], [80, 97], [66, 96], [61, 93], [70, 88], [80, 82]])),
+    s.figure(`<g data-part="hind">${P(padTo(box, hind))}</g><g data-part="tail">${P(padTo(box, tail))}</g><g data-part="fore">${P(padTo(box, fore))}</g>` +
+      `<g data-part="ears">${P(padTo(box, ears))}</g><g data-part="body">${P(padTo(box, neck), trunk, blob([[92, 80], [97, 87], [92, 95], [80, 97], [66, 96], [61, 93], [70, 88], [80, 82]]))}</g>`,
       { fill: p.fig, rim: '#ffb04a', offsets: [[1.2, -0.4], [0, -1.2], [-0.6, 1]], rimOp: 0.9, shade: 0.45, edge: 0.3, halo: 0.4 });
     // crackling veins
     const veins = 'M80,90L88,93L96,92L104,100L114,104L124,103L132,108L142,105L152,107L162,103L172,106L182,113L194,119M114,104L111,114L117,121M142,105L144,113M104,100L100,108L95,118L89,126';
-    s.bloom(`<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${veins}" stroke="#ff7a2e" stroke-width="2.6" opacity=".5"/><path d="${veins}" stroke="#ffe08a" stroke-width="1"/></g>` +
-      '<ellipse cx="81" cy="88" rx="2.4" ry="1.3" fill="#fff0c0"/>', { sd: 1.4, k: 1.5, box: [60, 70, 150, 70] });
+    s.bloom(`<g data-part="veins"><g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${veins}" stroke="#ff7a2e" stroke-width="2.6" opacity=".5"/><path d="${veins}" stroke="#ffe08a" stroke-width="1"/></g>` +
+      '<ellipse cx="81" cy="88" rx="2.4" ry="1.3" fill="#fff0c0"/></g>', { sd: 1.4, k: 1.5, box: [60, 70, 150, 70] });
     s.motes({ seed: 113, n: 28, x: [150, 300], y: [72, 140], r: [0.4, 1.3], fill: '#ffa040', hot: '#fff0c0', cls: 'rise', t: [2.5, 5] });
     s.add(particles({ seed: 114, n: 10, x: [60, 170], y: [66, 150], r: [0.4, 1], fill: '#ffe0a0', cls: 'twinkle', t: [1.5, 3] }));
     return s.svg();
@@ -205,23 +214,24 @@ export const ember = faction('ember', {
     s.add(`<ellipse cx="198" cy="184" rx="96" ry="12" fill="${s.rad([[0, '#ff8a3a', 0.45], [1, '#ff8a3a', 0]])}"/>`);
     // the fire, leaping
     s.glow(198, 80, 80, '#ffb04a', 0.65, 'breathe');
-    s.bloom(`<path d="${tongue(170, 130, 54, 13, -6, 3)}${tongue(184, 130, 80, 18, -8, -4)}${tongue(200, 130, 110, 28, 2, 5)}${tongue(216, 130, 78, 18, 8, -4)}${tongue(229, 130, 48, 12, 10, 3)}${tongue(192, 130, 96, 14, -16, 3)}" fill="${s.lin([[0, '#e2481a', 0.2], [0.35, '#ff6a1f', 0.85], [0.8, '#ff9a3a'], [1, '#ffb04a']])}"/>` +
-      `<path d="${tongue(188, 130, 50, 14, -4, 2)}${tongue(204, 130, 72, 18, 4, -3)}${tongue(218, 130, 40, 11, 6, 2)}" fill="${s.lin([[0, '#ff9a3a', 0.6], [0.6, '#ffc25a'], [1, '#ffd98a']])}"/>` +
-      `<path d="${tongue(200, 130, 32, 24, 0, 0)}" fill="#fff4d2"/>`, { sd: 2.6, k: 1.3, box: [130, 0, 140, 150] });
+    s.bloom(`<g data-part="fireA"><path d="${tongue(170, 130, 54, 13, -6, 3)}${tongue(184, 130, 80, 18, -8, -4)}${tongue(200, 130, 110, 28, 2, 5)}${tongue(216, 130, 78, 18, 8, -4)}${tongue(229, 130, 48, 12, 10, 3)}${tongue(192, 130, 96, 14, -16, 3)}" fill="${s.lin([[0, '#e2481a', 0.2], [0.35, '#ff6a1f', 0.85], [0.8, '#ff9a3a'], [1, '#ffb04a']])}"/></g>` +
+      `<g data-part="fireB"><path d="${tongue(188, 130, 50, 14, -4, 2)}${tongue(204, 130, 72, 18, 4, -3)}${tongue(218, 130, 40, 11, 6, 2)}" fill="${s.lin([[0, '#ff9a3a', 0.6], [0.6, '#ffc25a'], [1, '#ffd98a']])}"/></g>` +
+      `<g data-part="fireC"><path d="${tongue(200, 130, 32, 24, 0, 0)}" fill="#fff4d2"/></g>`, { sd: 2.6, k: 1.3, box: [130, 0, 140, 150] });
     // the brazier
     s.figure(P('M162,126L234,126C232,137 220,147 198,148C176,147 164,137 162,126Z',
       taper([[180, 140], [172, 163], [166, 187]], [5, 4, 3.4]) + taper([[198, 146], [198, 167], [198, 188]], [5, 4, 3.4]) + taper([[216, 140], [224, 163], [230, 187]], [5, 4, 3.4])) +
       E(198, 126, 37, 3.5) + E(166, 188, 5, 2) + E(198, 189, 5, 2) + E(230, 188, 5, 2),
     { fill: p.fig, rim: '#ffb04a', offsets: [[0, -1.4], [1, -0.6]], rimOp: 0.95, shade: 0.5 });
-    s.add('<ellipse cx="198" cy="125.5" rx="33" ry="2" fill="#ffcf6a"/>');
+    s.add('<ellipse data-part="lip" cx="198" cy="125.5" rx="33" ry="2" fill="#ffcf6a"/>');
     // the hooded feeder, arms out over the fire
     // a deep cowl: the front overhangs the face, the back drapes into the robe
     const hood = 'M100,93C94,82 94,66 104,53C113,49 127,52 137,59C141,62 144,66 146,70C142,71 139,72 137,74C134,79 135,86 131,93Z';
     const robe = blob([[116, 86], [130, 92], [138, 104], [140, 122], [138, 144], [136, 162], [124, 168], [106, 172], [88, 176], [86, 164], [90, 140], [94, 112], [98, 92]]);
-    const limbs = taper([[128, 150], [136, 168], [142, 186]], [11, 8, 6.5]) + taper([[102, 162], [99, 175], [97, 186]], [10, 8, 6.5]) +
-      taper([[124, 98], [140, 97], [155, 91], [168, 82]], [13, 10, 7, 5.5]) + taper([[122, 108], [140, 110], [155, 104], [166, 96]], [9, 8, 6, 5]) +
+    const legs = taper([[128, 150], [136, 168], [142, 186]], [11, 8, 6.5]) + taper([[102, 162], [99, 175], [97, 186]], [10, 8, 6.5]);
+    const arms = taper([[124, 98], [140, 97], [155, 91], [168, 82]], [13, 10, 7, 5.5]) + taper([[122, 108], [140, 110], [155, 104], [166, 96]], [9, 8, 6, 5]) +
       taper([[136, 101], [143, 108], [145, 116]], [9, 6, 0.5]);              // the sleeve hanging off the arm
-    s.figure(P(hood, robe, limbs) + C(171, 80, 4) + C(168, 95, 3.5) + E(146, 187, 6.5, 2.4) + E(101, 187, 6, 2.4),
+    const box = boxOf(legs, arms);
+    s.figure(`<g data-part="man">${P(hood, robe, padTo(box, legs))}</g><g data-part="arms">${P(padTo(box, arms))}${C(171, 80, 4)}${C(168, 95, 3.5)}</g><g data-part="man">${E(146, 187, 6.5, 2.4)}${E(101, 187, 6, 2.4)}</g>`,
       { fill: p.fig, rim: p.rim, offsets: [[1.4, -0.4], [0.6, -1.2]], rimOp: 0.9, shade: 0.5, edge: 0.35, halo: 0.35 });
     // the struggling shadow-thing
     const thing = taper([[186, 90], [194, 84], [200, 76]], [3, 2, 0.8]) + taper([[189, 96], [198, 98], [205, 94]], [3, 2, 0.8]) +
@@ -229,7 +239,7 @@ export const ember = faction('ember', {
       taper([[178, 100], [170, 108], [166, 118], [172, 124]], [2.6, 2, 1, 0.3]) +
       taper([[175, 80], [171, 72]], [2.6, 0.4]) + taper([[180, 80], [183, 72]], [2.6, 0.4]);
     s.figure(P(thing) + C(177, 85, 5.5) + E(184, 96, 7, 9, -20), { fill: '#08030a', rim: '#ffd27a', offsets: [[1, -0.6], [0, 1]], rimOp: 0.9, halo: { op: 0.5, sd: 2 } });
-    s.add('<circle cx="175.4" cy="85" r="1" fill="#fff4d8"/><circle cx="179" cy="85.6" r="1" fill="#fff4d8"/>');
+    s.add('<g data-part="eyes"><circle cx="175.4" cy="85" r="1" fill="#fff4d8"/><circle cx="179" cy="85.6" r="1" fill="#fff4d8"/></g>');
     s.motes({ seed: 123, n: 26, x: [168, 236], y: [14, 120], r: [0.4, 1.2], fill: '#ffb04a', hot: '#fff0c0', cls: 'rise', t: [3, 6] });
     return s.svg();
   },

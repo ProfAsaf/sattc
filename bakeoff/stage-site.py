@@ -18,12 +18,18 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT, OUT, TITLE, INTRO, IDS = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3], sys.argv[4], sys.argv[5:]
 IMP = re.compile(r"""(?:import|export)\s[^'"]*?from\s*['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)""")
-if OUT.exists():
-    shutil.rmtree(OUT)
+for _ in range(20):  # (on Windows a file can be held open a moment, by Dropbox or a server: try again)
+    try:
+        if OUT.exists():
+            shutil.rmtree(OUT)
+        break
+    except PermissionError:
+        time.sleep(0.5)
 files = []
 
 

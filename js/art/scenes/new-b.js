@@ -203,7 +203,6 @@ const tide = faction('tide', {
     ]) + '<path d="M100,101V89Q100,80.5 107.5,78.5Q115,80.5 115,89V101Z"/><path d="M100.4,87L96.2,91.5L100.4,96Z"/>' +
       '<ellipse cx="108" cy="106" rx="7" ry="5.5"/><ellipse cx="121" cy="103" rx="7.5" ry="6"/>' +
       '<circle cx="124" cy="69" r="3.4"/><circle cx="125.5" cy="75" r="2"/><circle cx="83" cy="124" r="3.2"/><ellipse cx="98" cy="178" rx="6" ry="2.6"/>';
-    s.add('<g data-part="knight">');
     s.figure(knight, { fill: p.fig, rim: p.rim, offsets: [[-1.2, -0.8], [-0.4, -1.2]], rimOp: 0.95, shade: 0.4, halo: 0.3 });
     s.bloom(`<path d="${taper([[123.5, 65], [118.5, 45], [114, 27]], [3.4, 2.8, 0.3])}" fill="#f2fdfa"/>`, { sd: 1.4, k: 1.4, box: [96, 12, 46, 68] });
     s.add('</g>');
@@ -491,36 +490,45 @@ const tide = faction('tide', {
       const a1 = (150 * Math.PI) / 180, a2 = (212 * Math.PI) / 180;
       return `M${f1(188 + r * Math.cos(a1))},${f1(74.5 + r * Math.sin(a1))}A${r},${r} 0 0 1 ${f1(188 + r * Math.cos(a2))},${f1(74.5 + r * Math.sin(a2))}`;
     };
+    s.add('<g data-part="song">');
     s.bloom(`<g fill="none" stroke="#d9faf7" stroke-linecap="round">${[[12, 1.8, 0.85], [24, 1.6, 0.7], [38, 1.5, 0.55], [54, 1.3, 0.42], [72, 1.2, 0.3], [92, 1.1, 0.2]].map(([r, w, o]) =>
       `<path d="${ring(r)}" stroke-width="${w}" opacity="${o}"/>`).join('')}</g>`, { sd: 1.4, k: 1.2, box: [80, 20, 120, 110] });
+    s.add('</g>');
     // Nerissa: crowned with coral, singing, one hand held out to him; her hair
     // streams back across the moon and her tail sweeps off the rock to its fluke
-    const siren = parts([
-      taper([[202, 62], [214, 64], [222, 72], [232, 78], [240, 88], [250, 94], [260, 104]], [12, 13, 12, 10, 8, 5, 0.6]),
+    const siren = `<g data-part="hair">${parts([taper([[202, 62], [214, 64], [222, 72], [232, 78], [240, 88], [250, 94], [260, 104]], [12, 13, 12, 10, 8, 5, 0.6])])}</g>` +
+      `<g data-part="body">${parts([
       taper([[205, 72], [214, 82], [218, 94], [226, 104], [230, 116]], [9, 9, 8, 6, 0.6]),
+      taper([[199, 79], [201, 87]], [5.6, 7]),
+      taper([[201, 86], [204, 100], [207, 114], [208, 124]], [17, 13, 12, 18]),
+      taper([[209, 90], [217, 104], [220, 120]], [6, 5, 4.2]),
+    ])}</g>` +
+      `<g data-part="head">${parts([
       taper([[192.5, 62], [189, 52], [186, 43]], [3.6, 2.6, 1.2]), taper([[189, 53], [182, 47], [179, 42]], [2, 1.4, 0.6]),
       taper([[198, 60], [198.5, 47], [200, 35]], [4, 2.8, 1.2]), taper([[198.6, 48], [205, 42], [207, 37]], [2, 1.4, 0.6]), taper([[199.4, 41], [194, 36]], [1.6, 0.6]),
       taper([[203.5, 62], [209, 53], [214, 45]], [3.6, 2.6, 1.2]), taper([[209, 53], [211, 45]], [1.8, 0.6]),
-      taper([[199, 79], [201, 87]], [5.6, 7]),
-      taper([[201, 86], [204, 100], [207, 114], [208, 124]], [17, 13, 12, 18]),
+      blob([[195.9, 60.2], [202.8, 61.4], [206.2, 68.3], [203.9, 76.3], [198.2, 79.8], [192.4, 79.8], [190.1, 76.9], [188.4, 75.8], [190.1, 74], [187.8, 72.3], [187.2, 70.1], [190.1, 66], [191.3, 62.5]]),
+    ])}${circ([[186, 43, 1.6], [179, 42, 1.3], [200, 35, 1.7], [207, 37, 1.3], [194, 36, 1.2], [214, 45, 1.6], [211, 45, 1.2]])}</g>` +
+      `<g data-part="arm">${parts([
       taper([[195, 90], [187, 94], [179, 96]], [6.4, 5.4, 4.6]), taper([[179, 96], [171, 95], [164, 92]], [4.6, 4, 3.4]),
       taper([[164, 92], [157, 89.5], [151, 88]], [3.4, 2.8, 0.6]), taper([[163, 90.6], [159, 86.4]], [1.6, 0.5]),
-      taper([[209, 90], [217, 104], [220, 120]], [6, 5, 4.2]),
+    ])}</g>` +
+      `<g data-part="tail">${parts([
       taper([[206, 118], [214, 128], [228, 134], [244, 132], [256, 124], [264, 112], [268, 100]], [22, 20, 16, 12, 8, 5, 3]),
       taper([[268, 101], [258, 88], [251, 80]], [5, 4.6, 0.6], { bulge: 0.3 }), taper([[268, 101], [276, 88], [283, 80]], [5, 4.6, 0.6], { bulge: 0.3 }),
       taper([[228, 131], [234, 122], [242, 120]], [3, 1.6, 0.3]),
-      blob([[195.9, 60.2], [202.8, 61.4], [206.2, 68.3], [203.9, 76.3], [198.2, 79.8], [192.4, 79.8], [190.1, 76.9], [188.4, 75.8], [190.1, 74], [187.8, 72.3], [187.2, 70.1], [190.1, 66], [191.3, 62.5]]),
-    ]) + circ([[186, 43, 1.6], [179, 42, 1.3], [200, 35, 1.7], [207, 37, 1.3], [194, 36, 1.2], [214, 45, 1.6], [211, 45, 1.2], [221, 122, 2.6]]);
+    ])}${circ([[221, 122, 2.6]])}</g>`;
     s.figure(siren, { fill: p.fig, rim: p.rim, offsets: [[0, -1.3], [-1.1, -0.6], [1.1, -0.6], [0, 1]], rimOp: 0.9, shade: 0.35, halo: 0.35 });
     s.glow(200, 40, 17, '#f4f3d6', 0.55);
-    s.add(`<g fill="#fbf8e4">${circ([[186, 43, 1.5], [200, 35, 1.7], [214, 45, 1.5]])}</g><ellipse cx="191.6" cy="69" rx="1.5" ry=".8" fill="#c6f4f6"/>`);
+    s.add(`<g data-part="head" fill="#fbf8e4">${circ([[186, 43, 1.5], [200, 35, 1.7], [214, 45, 1.5]])}</g><ellipse data-part="head" cx="191.6" cy="69" rx="1.5" ry=".8" fill="#c6f4f6"/>`);
     // the knight, wading in to his waist, both arms out to her like a sleepwalker
-    const knight = parts([
+    const knight = '<g data-part="kbody">' + parts([
       blob([[74, 128], [78, 124], [92, 123.6], [96, 127.6], [93, 140], [91, 157], [77, 157], [75, 140]]),
       taper([[85.6, 125], [86, 120.6]], [5, 4.6]),
+    ]) + '<path d="M80.6,121V112.4Q80.6,105.6 87,105Q93.4,105.6 93.4,112L97.4,116.4L93.4,118.6V121Z"/></g>' + '<g data-part="kreach">' + parts([
       taper([[93, 128], [104, 130], [115, 127]], [5.4, 4.6, 4]),
       taper([[88, 132], [100, 136], [112, 134]], [5.4, 4.6, 4]),
-    ]) + '<path d="M80.6,121V112.4Q80.6,105.6 87,105Q93.4,105.6 93.4,112L97.4,116.4L93.4,118.6V121Z"/>' + circ([[116.4, 126.8, 2.4], [113.6, 134, 2.4]]);
+    ]) + circ([[116.4, 126.8, 2.4], [113.6, 134, 2.4]]) + '</g>';
     s.figure(knight, { fill: p.fig, rim: p.rim, offsets: [[1, -0.8], [0.4, -1.2]], rimOp: 0.9 });
     s.add('<ellipse cx="84" cy="156" rx="15" ry="2.6" fill="#e9f8f2" opacity=".75"/><g fill="none" stroke="#cdeee8"><ellipse cx="84" cy="157" rx="25" ry="4" opacity=".4"/><ellipse cx="84" cy="158" rx="37" ry="6" opacity=".2"/></g>');
     // dark rocks and surf at the near corners
@@ -545,18 +553,27 @@ const tide = faction('tide', {
     // the sphere of seawater
     const cx = 150, cy = 92, R = 53;
     s.glow(cx, cy, 90, '#c6f4f6', 0.35, 'breathe');
+    s.add('<g data-part="bubble">');
     s.add(`<circle cx="${cx}" cy="${cy}" r="${R}" fill="${s.rad([[0, '#a9e0dd', 0.62], [0.6, '#6fb5b8', 0.55], [0.88, '#9fd8d8', 0.6], [1, '#e2faf7', 0.92]], { cx: 0.45, cy: 0.4, r: 0.55 })}"/>`);
     s.add(`<ellipse cx="${cx + 8}" cy="${cy + 38}" rx="26" ry="9" fill="#f2fffb" opacity=".25"/>`);
+    s.add('</g>');
     // the fish
     const fx = 'translate(143 97) scale(2.45)';
-    s.figure(`<g transform="${fx}">${fishShape(true)}</g>`, { fill: p.fig, rim: p.rim, offsets: [[0, -1.2], [-0.8, -0.8]], rimOp: 0.9, shade: 0.4 });
-    s.add(`<g transform="${fx}">${fishFace(p.rim)}</g>`);
+    // (fishShape's pieces, each its own part: body, tail, top fin, belly fin and the two horn nubs)
+    s.figure(`<g transform="${fx}"><g data-part="fbody"><ellipse cx="0" cy="0" rx="10" ry="8.6"/></g>` +
+      '<g data-part="ftail"><path d="M7,-1.6C10.5,-4.5 13.5,-9 17.6,-10C16.2,-4 16.2,4 17.6,10C13.5,9 10.5,4.5 7,1.6Z"/></g>' +
+      '<g data-part="ftop"><path d="M-0.6,-8.5C1.4,-13.2 6.4,-14 9.4,-10.6C8,-8.8 6.4,-7.6 4.8,-6.8Z"/></g>' +
+      '<g data-part="fbelly"><path d="M-1.6,7.6C0.2,11.6 4.4,12.2 6.4,9.8C4.8,8.8 3.2,7.9 1.6,7.3Z"/></g>' +
+      '<g data-part="fhorns"><path d="M-7.6,-4.8L-11.6,-10.8L-4.6,-7.2Z"/><path d="M-3.8,-7.6L-5,-13.8L-0.6,-8.4Z"/></g></g>', { fill: p.fig, rim: p.rim, offsets: [[0, -1.2], [-0.8, -0.8]], rimOp: 0.9, shade: 0.4 });
+    s.add(`<g data-part="fface" transform="${fx}">${fishFace(p.rim)}</g>`);
     s.add([[112, 92, 2.4], [108, 80, 1.8], [111, 69, 1.4], [106, 59, 1]].map(([x, y, r], i) =>
       `<circle class="rise" style="--t:${6 + i}s;--d:${-i * 1.5}s;--o:.85" cx="${x}" cy="${y}" r="${r}" fill="none" stroke="#e9fdfb" stroke-width=".7" opacity=".85"/>`).join(''));
     // the light on its skin of water
+    s.add('<g data-part="bshine">');
     s.bloom(`<path d="M${cx - 44},${cy - 22}A50,50 0 0 1 ${cx - 14},${cy - 50}" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="${cx - 40}" cy="${cy - 34}" r="2.4" fill="#fff"/>`,
       { sd: 1.6, k: 1.2, box: [cx - 70, cy - 70, 80, 70] });
     s.add(`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#e9fdfb" stroke-width="1.4" opacity=".8"/>`);
+    s.add('</g>');
     s.add(drops([[146, 152], [156, 157]], '#e9fdfb'));
     s.motes({ seed: 653, n: 10, x: [60, 240], y: [30, 150], r: [0.4, 1], fill: '#e6fbf8', cls: 'float', t: [6, 10], op: [0.3, 0.8] });
     return s.svg();
@@ -571,8 +588,10 @@ const umbral = faction('umbral', {
     s.rect(s.lin([[0, '#07050d'], [0.45, '#1c1430'], [0.72, '#43306a'], [0.8, '#2c2044'], [1, '#100b18']]));
     s.add(particles({ seed: 711, n: 24, x: [80, W], y: [0, 120], r: [0.25, 0.8], fill: '#e8defa', cls: 'twinkle', op: [0.2, 0.85], t: [2.5, 6] }));
     // the moon, a thin crescent
+    s.add('<g data-part="moon">');
     s.glow(226, 46, 86, '#c9b8f2', 0.36);
     s.bloom(`<path d="${crescent(226, 46, 24, 9, -6, 21)}" fill="#ece4f8"/>`, { sd: 2.4, k: 1, box: [176, 0, 100, 100] });
+    s.add('</g>');
     // the moor, and a dead tree on it
     s.path(ledge([[-10, 160], [60, 152], [120, 156], [180, 150], [240, 155], [310, 150]]), '#2c2244');
     s.add(`<g fill="#2c2244">${parts([taper([[262, 154], [262, 132], [258, 118]], [4, 2.6, 0.8]), taper([[262, 136], [272, 126], [278, 124]], [1.8, 1.1, 0.3]), taper([[260, 126], [252, 116]], [1.4, 0.3])])}</g>`);
@@ -580,9 +599,10 @@ const umbral = faction('umbral', {
     s.path(ledge([[-10, 186], [70, 180], [150, 184], [230, 178], [310, 182]]), '#140e1e');
     // the one who blows it: a hooded profile at the left edge, a sleeve raised
     const lady = P(blob([[-14, 36], [10, 27], [34, 28], [52, 36], [64, 46], [69, 56], [66.6, 62.4], [66.4, 66], [68, 70], [69.4, 73], [75, 80], [71, 82.6], [72.4, 85],
-      [74.6, 87.2], [72.6, 89.4], [72.8, 91.2], [69, 96], [64.4, 98.8], [62.6, 104], [66, 112], [70, 128], [74, 150], [76, 178], [72, 220], [-14, 220]], 4)) + P(taper([[66, 136], [74, 118], [82, 105]], [13, 10, 8]));
+      [74.6, 87.2], [72.6, 89.4], [72.8, 91.2], [69, 96], [64.4, 98.8], [62.6, 104], [66, 112], [70, 128], [74, 150], [76, 178], [72, 220], [-14, 220]], 4)).replace(/^/, '<g data-part="lady">') + '</g>' + '<g data-part="sleeve">' + P(taper([[66, 136], [74, 118], [82, 105]], [13, 10, 8])) + '</g>';
     s.figure(lady, { fill: p.fig, rim: '#d9c8f6', offsets: [[1.2, -0.4], [0.8, -1]], rimOp: 0.9, halo: 0.25 });
     // her pale hand, palm up, the kiss leaving it
+    s.add('<g data-part="hand">');
     s.glow(98, 98, 26, '#d9c8f6', 0.4);
     s.bloom(`<g fill="#e6dcf4">${parts([
       blob([[80, 104], [84, 99], [94, 97], [102, 97], [104, 100], [98, 103], [88, 105]]),
@@ -590,11 +610,12 @@ const umbral = faction('umbral', {
       taper([[100, 101.4], [106, 101.6], [111, 102]], [2.8, 2.2, 1.4]), taper([[88, 98], [90, 93], [93, 90]], [3.4, 2.6, 1.8]),
       taper([[81, 105], [87, 101]], [6, 5.4]),
     ])}</g>`, { sd: 1.2, k: 0.6, box: [66, 80, 60, 36] });
+    s.add('</g>');
     // the moths, spiralling up from her fingertips toward the moon
     const wing = s.rad([[0, '#f1e6ff'], [0.45, '#b98cff'], [1, '#6a3fc0']]);
     s.glow(150, 78, 40, '#9b6bff', 0.4).glow(196, 52, 30, '#9b6bff', 0.3);
     s.add([[122, 88, 0.62, 40], [138, 74, 0.82, -12], [156, 86, 0.95, 46], [170, 64, 1.1, -24], [150, 54, 0.74, -46], [186, 46, 0.86, 14], [200, 68, 0.64, 56], [206, 32, 0.54, -8]].map(([x, y, k, a], i) =>
-      `<g class="float" style="--t:${6 + (i % 4)}s;--d:${-i * 0.9}s">${moth(x, y, k, a, wing, '#1a1028')}</g>`).join(''));
+      `<g data-part="moth${i}">${moth(x, y, k, a, wing, '#1a1028')}</g>`).join(''));
     s.motes({ seed: 714, n: 12, x: [110, 230], y: [30, 110], r: [0.4, 1], fill: '#c9a6ff', cls: 'float', t: [5, 9], op: [0.3, 0.8] });
     return s.svg();
   },

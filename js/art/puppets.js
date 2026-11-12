@@ -21,6 +21,70 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Kiss of Night (a Trick, a support: a creature you control gets Venom and Drain, so the boon is the kiss): the crescent
+  // moon (with its glow), the hooded woman (her silhouette, and the sleeve of her raised arm), her pale hand with its glow
+  // and the eight violet moths the kiss became (each its own, flying on their own now); `emit`: the palm's fingertips, where
+  // the kiss leaves from, `tree`: the dead tree on the moor (the target when alone), `lips`: her lips, `wrist`: where the
+  // hand turns, `shoulder`: where the sleeve turns, `moon`: the crescent's middle, `moths`: where the eight moths are
+  // drawn (their middles), `feet`: where the woman stands (she leans about it)
+  'kiss-of-night': {
+    role: 'support', element: 'shadow', facing: 'left', emit: [114, 97], hit: [262, 130],
+    tree: [262, 130], lips: [72, 63], wrist: [84, 104], shoulder: [66, 136], moon: [226, 46], feet: [40, 214],
+    moths: [[122, 88], [138, 74], [156, 86], [170, 64], [150, 54], [186, 46], [200, 68], [206, 32]],
+    parts: [
+      { name: 'moon', of: '[data-part=moon]', pivot: [226, 46] },
+      { name: 'lady', of: 'fig:0 [data-part=lady]', pivot: [40, 214] },
+      { name: 'sleeve', of: 'fig:0 [data-part=sleeve]', pivot: [66, 136] },
+      { name: 'hand', of: '[data-part=hand]', pivot: [66, 136] },
+      { name: 'moth0', of: '[data-part=moth0]', pivot: [122, 88] },
+      { name: 'moth1', of: '[data-part=moth1]', pivot: [138, 74] },
+      { name: 'moth2', of: '[data-part=moth2]', pivot: [156, 86] },
+      { name: 'moth3', of: '[data-part=moth3]', pivot: [170, 64] },
+      { name: 'moth4', of: '[data-part=moth4]', pivot: [150, 54] },
+      { name: 'moth5', of: '[data-part=moth5]', pivot: [186, 46] },
+      { name: 'moth6', of: '[data-part=moth6]', pivot: [200, 68] },
+      { name: 'moth7', of: '[data-part=moth7]', pivot: [206, 32] },
+    ],
+  },
+  // Fish (a token creature, an attacker: a small startled fish in a bubble of seawater, it spits a jet of water): the bubble
+  // (its skin of water and the pale pool under the fish), the fish in six pieces (body, tail, top fin, belly fin, the two
+  // horn nubs left over from what it was, and the face with its round eye, gill and O of a mouth) and the light on the
+  // bubble's skin with its rim; `emit`: its mouth, where the jet leaves from, `hit`: its middle, `centre`: the body's
+  // middle (a fish turning about faces the other way about it), `bubble`: the bubble's centre and radius
+  'fish': {
+    role: 'attacker', element: 'water', facing: 'left', emit: [118.3, 101.7], hit: [143, 98],
+    mouth: [118.3, 101.7], centre: [143, 97], bubble: [150, 92], radius: 53, eye: [132.2, 91.6],
+    parts: [
+      { name: 'bubble', of: '[data-part=bubble]', pivot: [150, 92] },
+      { name: 'fbody', of: 'fig:0 [data-part=fbody]', pivot: [143, 97] },
+      { name: 'ftail', of: 'fig:0 [data-part=ftail]', pivot: [160, 97] },
+      { name: 'ftop', of: 'fig:0 [data-part=ftop]', pivot: [146, 82] },
+      { name: 'fbelly', of: 'fig:0 [data-part=fbelly]', pivot: [145, 116] },
+      { name: 'fhorns', of: 'fig:0 [data-part=fhorns]', pivot: [130, 86] },
+      { name: 'fface', of: '[data-part=fface]', pivot: [143, 97] },
+      { name: 'bshine', of: '[data-part=bshine]', pivot: [150, 92] },
+    ],
+  },
+  // Nerissa, Voice of the Deep (a legendary creature, an attacker: her song takes an enemy creature under her sway): her
+  // hair streaming back across the moon, her body (neck, torso, back arm), her head with its coral crown and pearls, the
+  // beckoning arm, her tail with its fluke, the rings of her song, and the knight wading toward her (his body, and the
+  // two arms he reaches out with); `emit`: her mouth, where the song leaves from, `hit`: her chest, `mouth`: her mouth,
+  // `neck`: where her head turns, `shoulder`: where the beckoning arm turns, `hand`: its fingertips, `hip`: where her body
+  // and tail bend, `feet`: where the knight stands in the water (the target when alone: `knight` is his chest)
+  'nerissa': {
+    role: 'attacker', element: 'water', facing: 'left', emit: [189, 71], hit: [205, 98],
+    mouth: [189, 71], neck: [199, 80], shoulder: [196, 90], hand: [151, 88], hip: [208, 120], feet: [84, 157], knight: [86, 136],
+    parts: [
+      { name: 'song', of: '[data-part=song]', pivot: [188, 74.5] },
+      { name: 'hair', of: 'fig:1 [data-part=hair]', pivot: [203, 64] },
+      { name: 'body', of: 'fig:1 [data-part=body]', pivot: [208, 120] },
+      { name: 'head', of: ['fig:1 [data-part=head]', '[data-part=head]'], pivot: [199, 80] },
+      { name: 'arm', of: 'fig:1 [data-part=arm]', pivot: [196, 90] },
+      { name: 'tail', of: 'fig:1 [data-part=tail]', pivot: [212, 122] },
+      { name: 'kbody', of: 'fig:2 [data-part=kbody]', pivot: [84, 157] },
+      { name: 'kreach', of: 'fig:2 [data-part=kreach]', pivot: [93, 130] },
+    ],
+  },
   // one more wave (a spell, a support: you take an extra turn, so the sea gives you another wave): the second, taller
   // wave behind (its body with the lit bands and streaks, the foam along its crest and round its curl, the spray torn
   // off the curl and the mist wisps over it), the nearer, lower wave the boat sits on (with its bright lip), the boat

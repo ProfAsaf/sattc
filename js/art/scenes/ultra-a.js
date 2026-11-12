@@ -1004,12 +1004,16 @@ export const ultra_a = {
     for (const [x, y] of [[118, 196], [134, 186], [154, 166], [142, 140], [114, 126], [100, 108], [118, 90], [146, 76], [176, 150], [86, 112]]) {
       leaves += leafAt(x, y, -40 + R() * 80 - 90 + (R() < 0.5 ? 70 : -70), 12 + R() * 5, 0.44) + leafAt(x, y, 90 + (R() - 0.5) * 120, 10 + R() * 4, 0.44);
     }
+    s.add('<g data-part="leaves">');
     s.path(leaves, '#3e5428');
+    s.add('</g>');
     const flower = (x, y, r, a) => U([0, 1, 2, 3, 4].map((i) => leafAt(x, y, a + i * 72, r, 0.62, 5)));
     const flowers = [[140, 182, 14, 10], [108, 132, 12, -20], [150, 92, 13, 30], [190, 154, 9, 0], [78, 102, 9, 20], [160, 170, 8, 40]];
     s.glow(130, 140, 70, '#fff3c0', 0.35, 'breathe');
+    s.add('<g data-part="flowers">');
     s.bloom(`<path d="${U(flowers.map(([x, y, r, a]) => flower(x, y, r, a)))}" fill="${s.radU(130, 140, 70, [[0, '#fffdf0'], [1, '#f6eec8']])}"/>` +
       `<path d="${dots(flowers.map(([x, y, r]) => [x, y, r * 0.24]))}" fill="#f0c95a"/>`, { sd: 1.8, k: 1.3, box: [60, 70, 150, 130] });
+    s.add('</g>');
     // fallen drums of a column, ferns and big leaves at our feet
     s.figure(`<path d="${U(poly([[8, 214], [10, 186], [36, 184], [38, 214]]), ell(23, 186, 14, 4), poly([[238, 214], [244, 196], [276, 200], [272, 214]]))}"/>`, { fill: '#3a4a28', rim: p.rim, offsets: [[-0.6, -1]], rimOp: 0.8, shade: 0.4 });
     s.path(U(frond(46, 214, -70, 50, { bend: 30, n: 7, w: 3 }), frond(60, 214, -110, 40, { bend: -24, n: 6, w: 2.6 }), frond(300, 214, -120, 56, { bend: -32, n: 7, w: 3.2 }),
@@ -1065,14 +1069,18 @@ export const ultra_a = {
     rose.push([bcx, 100, 4]);
     s.add(`<path d="M${ix0},${130}H${ix1}M${ix0},${152}H${ix1}M${ix0},${174}H${ix1}M${ix0},${108}H${ix1}" stroke="#082430" stroke-width="2.4"/>`);
     s.glow(bcx, 140, 50, '#f4f3d6', 0.3, 'breathe');
+    s.add('<g data-part="scrolls">');
     s.bloom(`<path d="${dots([...scrolls, ...rose])}" fill="#f6f2d4"/><path d="${dots([...scrolls, ...rose].map(([x, y, r]) => [x, y, r * 0.32]))}" fill="#9fb4ae"/>` +
       `<path d="${lit.map(([x, y, w, h]) => `M${f1(x)},${f1(y + h)}h${f1(w)}v${f1(-h)}h${f1(-w)}Z`).join('')}" fill="#d6f8f4"/>`, { sd: 1.6, k: 1.3, box: [100, 70, 100, 120] });
+    s.add('</g>');
     // scrolls drifting up out of it, silver fish between the stacks
     s.add([[86, 74, -24, 0.8, 6], [214, 58, 28, 0.75, 7.5], [176, 34, -12, 0.65, 8.5]].map(([x, y, a, k, t], i) =>
       `<g class="float" style="--t:${t}s;--d:-${i * 2}s"><g transform="translate(${x} ${y}) rotate(${a}) scale(${k})">` +
       '<rect x="-8" y="-3.2" width="16" height="6.4" rx="1" fill="#fbfaee"/><rect x="-10.6" y="-4.1" width="3.4" height="8.2" rx="1.5" fill="#d8dcc4"/><rect x="7.2" y="-4.1" width="3.4" height="8.2" rx="1.5" fill="#d8dcc4"/></g></g>').join(''));
     const shoal = [[44, 110, 11, 8], [58, 118, 9, 4], [34, 124, 8, 10], [50, 132, 9, 6], [236, 96, 10, 172], [252, 108, 9, 176], [226, 112, 8, 168], [120, 44, 8, 190], [108, 50, 7, 186]];
+    s.add('<g data-part="shoal">');
     s.path(U(shoal.map(([x, y, l, a]) => fish(x, y, l, a))), '#d4ecec', 'opacity=".85"');
+    s.add('</g>');
     s.add(particles({ seed: 11803, n: 16, x: [30, 270], y: [40, 200], r: [0.6, 1.6], stroke: '#d6f6f4', cls: 'rise', t: [5, 9], op: [0.4, 0.8] }));
     s.motes({ seed: 11804, n: 14, x: [40, 260], y: [20, 180], r: [0.4, 0.9], fill: '#c6f4f6', hot: '#ffffff', cls: 'float', t: [6, 10], op: [0.3, 0.8] });
     // kelp at the near corners
@@ -1100,10 +1108,12 @@ export const ultra_a = {
     const wave = poly([[312, 160], ...spline([...outer, ...inner.slice(1)], 6), [-12, 160]]);
     s.glow(120, 70, 120, '#c6f4f6', 0.35);
     s.figure(`<path d="${wave}"/>`, { fill: s.linU(0, 16, 0, 156, [[0, '#bfeee8'], [0.2, '#6ab8b8'], [0.5, '#24707a'], [1, '#0e3a48']]), rim: '#effaf3', offsets: [[0, -1.4], [1, -1]], rimOp: 0.9 });
+    s.add('<g data-part="wavefx">');
     s.add(`<path d="${poly(spline([[66, 120], [96, 100], [120, 90]], 4), false)}${poly(spline([[100, 132], [150, 110], [200, 98], [240, 104]], 4), false)}${poly(spline([[120, 60], [160, 52], [200, 72]], 4), false)}" fill="none" stroke="#c6f4f6" stroke-width="1" opacity=".3"/>`);
     s.add(`<path d="${poly(spline([[64, 60], [72, 66], [80, 80], [76, 98], [62, 116], [40, 132]], 4), false)}" fill="none" stroke="#0a2a36" stroke-width="7" opacity=".5"/>`);
     s.bloom(`<path d="${poly(spline([[230, 90], [190, 62], [150, 36], [118, 22], [92, 18], [70, 22], [54, 34], [48, 50], [54, 62]], 6), false)}" fill="none" stroke="#f4fcf6" stroke-width="2.2" stroke-linecap="round"/>` +
       `<path d="${dots([[50, 66, 2.2], [56, 68, 1.6], [46, 58, 1.6], [62, 64, 1.4], [86, 14, 1.6], [110, 16, 1.4], [134, 26, 1.4], [72, 16, 1.4]])}" fill="#f8fdf9"/>`, { sd: 1.6, k: 1.3, box: [30, 0, 220, 100] });
+    s.add('</g>');
     s.add([[48, 74], [58, 80], [42, 88], [66, 72]].map(([x, y], i) => `<ellipse class="fall" style="--d:${(-i * 0.4).toFixed(1)}s" cx="${x}" cy="${y}" rx="1.1" ry="1.7" fill="#eefaf6"/>`).join(''));
     // the beach: wet sand under the moon, foam along the edge
     s.path(ledge([[-10, 150], [60, 152], [140, 150], [220, 152], [310, 150]]), s.lin([[0, '#3e6a70'], [0.2, '#1c3c46'], [1, '#08161e']]));
@@ -1120,8 +1130,10 @@ export const ultra_a = {
     s.figure(ring.filter((f) => f.y < cy).map((f) => `<path d="${robe(f.x, f.y, f.k, f.dir)}"/>`).join(''), { fill: '#06151b', rim: p.rim, offsets: [[0.8, -1], [-0.8, -0.8]], rimOp: 0.9, shade: 0.4 });
     s.glow(cx, cy, 70, '#c6f4f6', 0.5, 'breathe');
     const marks = [[cx - 40, cy + 2], [cx + 40, cy + 2], [cx, cy + 8]].map(([x, y]) => `M${x - 3},${y}L${x},${y - 2.6}L${x + 3},${y}L${x},${y + 2.6}Z`).join('');
+    s.add('<g data-part="ring">');
     s.bloom(`<ellipse cx="${cx}" cy="${cy}" rx="42" ry="8.4" fill="none" stroke="#e2fbf8" stroke-width="1.6"/><ellipse cx="${cx}" cy="${cy}" rx="30" ry="5.8" fill="none" stroke="#c6f4f6" stroke-width=".8" opacity=".7"/>` +
       `<path d="${marks}" fill="#f4fcf6"/>`, { sd: 1.6, k: 1.4, box: [90, 160, 120, 30] });
+    s.add('</g>');
     s.figure(ring.filter((f) => f.y >= cy).map((f) => `<path d="${robe(f.x, f.y, f.k, f.dir)}"/>`).join(''), { fill: '#06151b', rim: p.rim, offsets: [[0.8, -1], [-0.8, -0.8]], rimOp: 0.9, shade: 0.4 });
     s.motes({ seed: 11902, n: 18, x: [90, 210], y: [120, 186], r: [0.4, 1], fill: '#c6f4f6', hot: '#ffffff', cls: 'rise', t: [4, 7], op: [0.4, 1] });
     return s.svg();

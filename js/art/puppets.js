@@ -85,6 +85,47 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Overgrowth: the great vine and tree-trunk (with the rim of light on them), its leaves and its
+  // flowers, each cut whole and swaying together from the vine's foot; the tower, the ruins and
+  // the canopy stay. `sun`: where the light pours in; `flowers`: each flower's heart, as drawn
+  overgrowth: {
+    role: 'aura', element: 'nature', facing: 'front', hit: [130, 140],
+    sun: [96, 30], foot: [127, 200],
+    flowers: [[140, 182], [108, 132], [150, 92], [190, 154], [78, 102], [160, 170]],
+    parts: [
+      { name: 'vine', of: 'fig:1', pivot: [127, 200] },
+      { name: 'leaves', of: '[data-part=leaves]', pivot: [127, 200] },
+      { name: 'flowers', of: '[data-part=flowers]', pivot: [127, 200] },
+    ],
+  },
+  // Tidecaller's Library: the glowing scrolls and books lit on the great bookcase (its three rows
+  // and the rose of lights above them) as one part, and the three shoals of silver fish, each on
+  // its own. `rows`: the y of each lit row; `rose`: the heart of the arc of lights; `top`: the
+  // bookcase's crown, where what rises from it leaves
+  'tidecallers-library': {
+    role: 'aura', element: 'water', facing: 'front', hit: [150, 150],
+    rows: [178, 147, 119], rose: [150, 102], top: [150, 62], shelf: [114, 186],
+    parts: [
+      { name: 'scrolls', of: '[data-part=scrolls]', pivot: [150, 145] },
+      { name: 'shoalL', of: '[data-part=shoal]', pivot: [46, 120], poly: [[0, 90], [80, 90], [80, 150], [0, 150]] },
+      { name: 'shoalR', of: '[data-part=shoal]', pivot: [238, 104], poly: [[210, 80], [300, 80], [300, 130], [210, 130]] },
+      { name: 'shoalT', of: '[data-part=shoal]', pivot: [114, 47], poly: [[95, 30], [135, 30], [135, 65], [95, 65]] },
+    ],
+  },
+  // Flood Rite: the great wave (its body, the moonlit lines and crest on it) cut from the sea
+  // below the beach's edge, and rising from there; the robed figures, the back three and the
+  // front four, each row from its feet; the ring of light on the sand. `guard`: where the wave
+  // takes blows (on its face); `ring`: the circle's centre
+  'flood-rite': {
+    role: 'defender', element: 'water', facing: 'front', hit: [150, 168], guard: [[110, 62], [160, 82], [215, 106]],
+    ring: [150, 178], crest: [92, 18],
+    parts: [
+      { name: 'wave', of: ['fig:0', '[data-part=wavefx]'], pivot: [150, 148], cut: true, poly: [[-20, -30], [320, -30], [320, 148], [-20, 148]] },
+      { name: 'back', of: 'fig:1', pivot: [150, 176] },
+      { name: 'front', of: 'fig:2', pivot: [150, 188] },
+      { name: 'ring', of: '[data-part=ring]', pivot: [150, 178] },
+    ],
+  },
   // Bark Graft: the warrior with his bark pauldron (the body, the lames over his shoulder, with their
   // grain; all left of the seam at x = 182, from his feet), his raised arm (the upper arm out from the
   // seam, the fist, the elbow plate and the scales up the forearm, with their seams; it turns about

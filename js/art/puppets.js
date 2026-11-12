@@ -89,6 +89,44 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Reed Lurker: the merfolk hunter (his whole figure, with his eyes just above the water; both turn about
+  // the middle of his coil) and the bone spear he holds (its shaft, its head and the pale line down it),
+  // which turns about his hand and thrusts along its own length. `emit`: the spear's head, where the
+  // thrown bone leaves from; `hand`: the joint; `tip`: the spear's point at rest; `surface`: the waterline
+  // where it breaks through; `alone`: the reeds at the right, where it strikes when nothing is aimed at
+  'reed-lurker': {
+    role: 'attacker', element: 'bone', facing: 'front', emit: [201, 24], hit: [150, 142], alone: [262, 58],
+    hand: [186.2, 128], tip: [201, 24], surface: [189.7, 104], coil: [150, 140],
+    parts: [
+      { name: 'mer', of: ['fig:0', '[data-part=eyes]'], pivot: [150, 140] },
+      { name: 'spear', of: ['fig:1', '[data-part=spearline]'], pivot: [186.2, 128] },
+    ],
+  },
+  // Bluff: the masked figure (with her mask and ribbons; from her feet), the small box behind her back
+  // (its body, and its lid on a hinge at its left edge) and the light leaking from under the lid. The
+  // box and its light ride with her. `emit`: the box's mouth, where the card of light leaves; `box`: its
+  // middle; `alone`: where the card goes when nothing is aimed at (toward the player, below the picture's foot)
+  'bluff': {
+    role: 'support', element: 'arcane', facing: 'front', emit: [181.6, 135], hit: [166, 150], alone: [196, 200],
+    feet: [166, 198], box: [181.6, 141.5], hinge: [175, 135.4], mouth: [181.6, 135.4],
+    parts: [
+      { name: 'figure', of: ['fig:1', '[data-part=mask]'], pivot: [166, 198] },
+      { name: 'box', of: '[data-part=box]', pivot: [181.6, 141.5] },
+      { name: 'lid', of: '[data-part=lid]', pivot: [175, 136] },
+      { name: 'leak', of: '[data-part=leak]', pivot: [181.6, 136] },
+    ],
+  },
+  // Turnabout: the swordsman (and his sword) turning over about his hips, and his double in the glass below
+  // (the sea's reflection of him) turning the other way. `emit`: the sword's tip; `alone`: the double's middle,
+  // where the swap lands when nothing is aimed at; `hips`/`mirror`: the two joints
+  'turnabout': {
+    role: 'support', element: 'water', facing: 'right', emit: [239.4, 36], hit: [176, 62], alone: [178, 168],
+    hips: [174, 56], mirror: [174, 176],
+    parts: [
+      { name: 'swordsman', of: ['fig:0', '[data-part=sword]'], pivot: [174, 56] },
+      { name: 'double', of: '[data-part=double]', pivot: [174, 176] },
+    ],
+  },
   // Morrow, the Bone Gardener: the arm that scatters the seed (cut from her figure left of x=131 between y=98 and
   // y=128; the rest of her stays in the picture). `hand`: the seed leaves it (`emit`); `shoulder`: the arm's joint
   // (where it meets her cloak); `lamp`: the lantern's heart on the spade; `hit`: her middle; `alone`: the grave

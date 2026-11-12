@@ -174,7 +174,7 @@ export const ultra_e = {
     // his double in the glass below, the right way up
     s.add(`<g transform="matrix(1 0 0 -1 0 ${2 * HY})" opacity=".85"><path d="${head}" fill="#2c6a72"/>` +
       `<circle cx="${mx}" cy="${my}" r="15" fill="#e2f6f2"/><path d="${body + lip}" fill="${wfill}"/>` +
-      `<path d="${man + sword}" fill="#0c2a32"/></g>`);
+      `<g data-part="double"><path d="${man + sword}" fill="#0c2a32"/></g></g>`);
     s.add(`<rect x="-5" y="${HY}" width="${W + 10}" height="${H - HY + 5}" fill="${s.lin([[0, '#4a9496', 0.1], [0.5, '#0e3442', 0.4], [1, '#04121a', 0.7]])}"/>`);
     const R = rng(15102);
     let rip = '';
@@ -196,8 +196,10 @@ export const ultra_e = {
     s.path(taper([[138, 58], [140, 38], [152, 22], [172, 13], [196, 16], [214, 30], [223, 50]], [0.4, 2.4, 3.6, 4, 3.6, 2.2, 0.4]), '#effdf9', 'opacity=".3"');
     s.figure(`<path d="${man}"/>`, { fill: p.fig, rim: '#e6fdfc', offsets: [[0, -1.3], [-1.1, -0.8], [1.1, -0.8], [0, 1]], rimOp: 0.95, shade: 0.4, edge: 0.3, light: [0, -1] });
     const [tx, ty] = ptsOf(place('M58,-1'))[0];
+    s.add('<g data-part="sword">');
     s.path(sword, '#cfe6ea');
     s.bloom(`<path d="${place('M27,12.6L57,-1')}" stroke="#ffffff" stroke-width=".9" stroke-linecap="round"/><path d="${glint(tx, ty, 6)}" fill="#ffffff"/>`, { sd: 1.2, k: 1.5, box: [150, 20, 90, 70] });
+    s.add('</g>');
     // spray thrown off the lip
     const spray = [];
     for (let i = 0; i < 22; i++) { const a = rad(-160 + R() * 150), d = 5 + R() * 26; spray.push([136 + Math.cos(a) * d * 1.2, 56 + Math.sin(a) * d, 0.5 + R() * 1.1]); }
@@ -274,19 +276,27 @@ export const ultra_e = {
     );
     s.figure(`<path d="${place(fig)}"/>`, { fill: p.fig, rim: p.rim, offsets: [[-1.1, -1], [0, -1.3], [0.8, -0.6]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [-0.6, -1] });
     // the half-mask, pale in the moonlight, its ribbons trailing
+    s.add('<g data-part="mask">');
     s.path(place('M-1,-109.4L-6,-109.4L-9.6,-106.6L-11,-104L-15,-101.2L-10.2,-100.4L-7,-100.8L-3.6,-101.6L-0.4,-103.2L0.6,-106.6Z'), '#ece4f8');
     s.path(place(lens(-6.6, -105.4, 3.2, -10, 0.5, 3)), '#0a0710');
     s.add(`<path d="${place('M0.6,-106Q8,-104 12,-98T20,-92M0.4,-104.4Q6,-100 8,-94')}" fill="none" stroke="#c9b8ec" stroke-width=".9" opacity=".8"/>`);
+    s.add('</g>');
     // the box, and the light leaking out of it
     const bx = fx + 9.6, by = fy - 63, bw = 12, bh = 9;
     s.glow(bx + bw / 2, by + 3, 60, '#b07cff', 0.7, 'breathe');
     s.add(`<ellipse cx="${bx + 4}" cy="${fy + 1}" rx="40" ry="6" fill="${s.rad([[0, '#c49cff', 0.4], [1, '#b07cff', 0]])}"/>`);
+    s.add('<g data-part="box">');
     s.path(`M${bx},${by + 2}h${bw}v${bh}h${-bw}Z`, '#1a1028');
+    s.add('</g><g data-part="lid">');
     s.path(`M${bx - 0.6},${by - 0.6}h${bw + 1.2}v2.6h${-bw - 1.2}Z`, '#2a1a40');
+    s.add('</g><g data-part="box">');
     s.add(`<path d="M${bx + 1},${by + 5}h${bw - 2}M${bx + 6},${by + 2}v${bh}" stroke="#4a3466" stroke-width=".6"/>`);
+    s.add('</g>');
     let leak = '';
     for (let i = 0; i < 7; i++) { const x = bx + 1 + i * (bw - 2) / 6, a = -90 + (i - 3) * 16; leak += taper([[x, by + 1.6], toward(x, by + 1.6, a, 9 + (i % 3) * 5)], [1.6, 0.2], { per: 2 }); }
+    s.add('<g data-part="leak">');
     s.bloom(`<path d="M${bx - 0.4},${by + 1.9}h${bw + 0.8}" stroke="#f2e6ff" stroke-width="1.1"/><path d="${leak}" fill="#d2b0ff" opacity=".8"/>`, { sd: 1.4, k: 1.5, box: [bx - 30, by - 40, bw + 60, 70] });
+    s.add('</g>');
     s.motes({ seed: 15202, n: 12, x: [bx - 6, bx + bw + 6], y: [by - 34, by], r: [0.4, 0.9], fill: '#c49cff', hot: '#ffffff', cls: 'rise', t: [3, 6], op: [0.4, 0.9] });
     s.motes({ seed: 15203, n: 10, x: [20, 280], y: [40, 190], r: [0.4, 0.9], fill: '#b8a6e2', cls: 'float', t: [6, 10], op: [0.25, 0.6] });
     return s.svg();
@@ -366,7 +376,9 @@ export const ultra_e = {
     const spear = U(taper([sp0, sp1], [2.6, 2.2], { per: 2 }), lens(sp1[0] + 1, sp1[1] - 7, 16, -82, 0.34),
       taper([[sp1[0] - 1, sp1[1] + 3], [sp1[0] - 6, sp1[1] + 8]], [1.6, 0.3], { per: 2 }), taper([[sp1[0] + 1.6, sp1[1] + 3], [sp1[0] + 6, sp1[1] + 6]], [1.6, 0.3], { per: 2 }));
     s.figure(`<path d="${spear}"/>`, { fill: s.linU(0, 30, 0, 180, [[0, '#ece6d0'], [0.4, '#d6ccb0'], [0.42, '#7a9a92'], [1, '#3a5a58']]), rim: '#ffffff', offsets: [[0, -0.8]], rimOp: 0.5 });
+    s.add('<g data-part="spearline">');
     s.add(`<path d="M${f1(sp0[0] + 0.6)},${sp0[1]}L${f1(sp1[0] + 0.6)},${sp1[1] + 6}" stroke="#7e7660" stroke-width=".5" opacity=".6"/>`);
+    s.add('</g>');
     // the murk over everything under the surface, then the surface itself
     s.add(`<rect x="-5" y="${SY}" width="${W + 10}" height="${H - SY + 5}" fill="${s.lin([[0, '#2a6a6a', 0.18], [1, '#04121a', 0.45]])}"/>`);
     s.add(`<rect x="-5" y="${SY - 0.5}" width="${W + 10}" height="4" fill="${s.lin([[0, '#e6fbf6', 0.7], [1, '#e6fbf6', 0]])}"/>`);
@@ -375,7 +387,9 @@ export const ultra_e = {
       `<ellipse cx="${f1(onSpear(SY)[0])}" cy="${SY}" rx="6" ry="1.2"/></g>`);
     // the eyes, just above the water
     s.glow(150, 100.6, 30, p.glow, 0.6, 'breathe');
+    s.add('<g data-part="eyes">');
     s.bloom(`<path d="${lens(145, 100.8, 6.6, 12, 0.46, 3) + lens(155, 100.8, 6.6, -12, 0.46, 3)}" fill="#f4f8c4"/><path d="${lens(145.4, 100.9, 2.6, 80, 0.5, 3) + lens(154.6, 100.9, 2.6, 100, 0.5, 3)}" fill="#0a1a10"/>`, { sd: 1.2, k: 1.6, box: [126, 86, 48, 28] });
+    s.add('</g>');
     s.fog(96, '#d8eee8', 0.34).fog(86, '#cfe8e2', 0.22);
     s.add(particles({ seed: 15304, n: 16, x: [20, 280], y: [112, 200], r: [0.5, 1.4], stroke: '#a6e4ec', cls: 'rise', t: [6, 10], op: [0.3, 0.7] }));
     s.motes({ seed: 15305, n: 10, x: [20, 280], y: [30, 100], r: [0.4, 0.9], fill: '#e8f6c0', cls: 'float', t: [5, 9], op: [0.3, 0.7] });

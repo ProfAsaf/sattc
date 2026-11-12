@@ -668,6 +668,7 @@ export const ultra_d = {
     const place = (d) => rot(mv(d, B[0], B[1]), B[0], B[1], ang);
     // the trail of ghostly light streaming out behind it, faces in it
     const tail = [0, 60, 130, 210].map((l) => [B[0] - ux * l, B[1] - uy * l]);
+    s.add('<g data-part="trail">');
     s.path(taper(tail, [12, 24, 34, 42]), s.linU(B[0], B[1], B[0] - ux * 170, B[1] - uy * 170, [[0, '#cdb6f4', 0.42], [0.45, '#a890e8', 0.16], [1, '#a890e8', 0]]));
     const R = rng(14703);
     let streaks = '';
@@ -680,6 +681,7 @@ export const ultra_d = {
     s.path(U(faces.map(([x, y, k]) => rot(U(ell(x, y, 5 * k, 6 * k, 0, 14), taper([[x + 4 * k, y + 2 * k], [x + 14 * k, y + 5 * k], [x + 26 * k, y + 3 * k]], [7 * k, 4 * k, 0.4])), x, y, ang + 180))), '#d8c8f6', 'opacity=".22"');
     s.path(dots(faces.flatMap(([x, y, k]) => [[...rp([x - 1.9 * k, y - 0.6 * k], x, y, ang), 1.2 * k], [...rp([x + 1.9 * k, y - 0.6 * k], x, y, ang), 1.2 * k], [...rp([x, y + 2.8 * k], x, y, ang), 1.1 * k]])), '#120a1e', 'opacity=".45"');
     s.add(`<path d="${line([B, T])}" stroke="#a46bff" stroke-width="20" stroke-linecap="round" opacity=".14"/>`);
+    s.add('</g>');
     // the violet fire streaming back off it
     const flames = [], cores = [];
     for (let i = 0; i < 12; i++) {
@@ -699,10 +701,12 @@ export const ultra_d = {
     );
     const boneFill = s.linU(B[0] - nx * 7, B[1] - ny * 7, B[0] + nx * 7, B[1] + ny * 7, [[0, '#ffffff'], [0.4, '#f2eaf8'], [0.7, '#cfc2e4'], [1, '#8a78ac']]);
     s.glow(T[0] - ux * 30, T[1] - uy * 30, 44, '#b07cff', 0.5, 'breathe');
+    s.add('<g data-part="lance">');
     s.bloom(`<path d="${place(U(flames))}" fill="#9a5cff" opacity=".8"/><path d="${place(U(cores))}" fill="#efe2ff" opacity=".75"/>` +
       `<path d="${place(boneD)}" fill="${boneFill}"/><path d="${place(boneD)}" fill="none" stroke="#4a3468" stroke-width=".6" opacity=".7"/>` +
       `<path d="${place('M50,-6.2L51.6,6.2M54,-6.2L55.6,6.2M102,-5.8L103.6,5.8M106,-5.8L107.6,5.8')}" stroke="#3a2850" stroke-width="1.4"/>` +
       `<path d="${place('M24,-1.2L32,1.2M74,-1.4L78,1.4L82,-1.4M128,1.2L134,-1.2L140,1.2')}" fill="none" stroke="#a46bff" stroke-width="1" stroke-linecap="round"/>`, { sd: 1.6, k: 1.4, box: [0, 20, 280, 140] });
+    s.add('</g>');
     s.motes({ seed: 14704, n: 18, x: [20, 250], y: [40, 150], r: [0.35, 0.9], fill: '#c9b0f4', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },

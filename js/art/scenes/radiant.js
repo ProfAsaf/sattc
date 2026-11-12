@@ -110,7 +110,7 @@ export const radiant = faction('radiant', {
     s.path('M-10,214L-10,187C60,182 120,184 160,186C220,188 262,185 310,188L310,214Z', s.lin([[0, '#3a2c1d'], [1, '#22190f']]));
     // arrows in flight
     const arrow = (x, y, a) => `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${a})"><path d="M0,0L22,0" stroke="#2a1f15" stroke-width="1.1"/><path d="M22,0L18,-2L18,2Z" fill="#2a1f15"/><path d="M0,0L-3,-2.4M0,0L-3,2.4M3,0L0,-2.4M3,0L0,2.4" stroke="#2a1f15" stroke-width=".7"/></g>`;
-    s.add(arrow(266, 56, 160), arrow(240, 32, 163), arrow(284, 90, 156));
+    s.add(`<g data-part="fly0">${arrow(266, 56, 160)}</g>`, `<g data-part="fly1">${arrow(240, 32, 163)}</g>`, `<g data-part="fly2">${arrow(284, 90, 156)}</g>`);
     // the shieldbearer: down on one knee in profile, braced behind a tall
     // shield that faces the arrows; a crested helm above its rim, spear upright
     const man = U(
@@ -134,10 +134,12 @@ export const radiant = faction('radiant', {
       taper([[121, 152], [106, 161]], [3, 2.4]),
     );
     const shield = blob([[153, 114], [166, 109], [181, 108], [186, 126], [186, 150], [183, 172], [170, 180], [156, 180], [152, 160], [150, 136]]);
-    s.figure(`<path d="${man}"/><path d="${shield}"/>`, { fill: p.fig, rim: p.rim, offsets: [[-1.3, -0.6], [1.3, -0.6], [0, -1.4]], rimOp: 0.95, shade: 0.4, edge: 0.3, halo: 0.35 });
+    s.figure(`<g data-part="man"><path d="${man}"/></g><g data-part="shield"><path d="${shield}"/></g>`, { fill: p.fig, rim: p.rim, offsets: [[-1.3, -0.6], [1.3, -0.6], [0, -1.4]], rimOp: 0.95, shade: 0.4, edge: 0.3, halo: 0.35 });
     // three already in the shield: tips buried in its face, shafts sticking out
     const stuck = (tx, ty, a) => { const r = (a * Math.PI) / 180; return arrow(tx - 22 * Math.cos(r), ty - 22 * Math.sin(r), a); };
+    s.add('<g data-part="stuck">');
     s.add(stuck(185, 127, 168), stuck(188, 145, 175), stuck(185, 163, 161));
+    s.add('</g>');
     s.add('<path d="M208,189L224,183" stroke="#2a1f15" stroke-width="1.2"/><path d="M228,187L238,189" stroke="#2a1f15" stroke-width="1.2"/>');
     s.motes({ seed: 54, n: 18, x: [40, 260], y: [50, 180], r: [0.4, 1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 0.9] });
     return s.svg();

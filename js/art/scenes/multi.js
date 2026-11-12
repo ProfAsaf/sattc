@@ -332,8 +332,10 @@ export const multi = {
     const strike = bolt([136, -4], [124, 40], 634, 8, 7);
     const forks = [bolt([122, 38], [104, 30], 635, 4, 3), bolt([128, 18], [146, 10], 636, 4, 3), bolt([104, 50], [92, 44], 637, 3, 2.5)];
     const all = [jag, strike, ...forks].map(polyline).join('');
+    s.add('<g data-part="arc">');
     s.bloom(`<path d="${all}" stroke="#ff9a3c" stroke-width="5" fill="none" opacity=".4" stroke-linejoin="round"/><path d="${all}" stroke="#fffaea" stroke-width="1.5" fill="none" stroke-linejoin="round"/>`,
       { sd: 2, k: 1.4, box: [66, -24, 110, 120] });
+    s.add('</g>');
     s.glow(95, 66, 16, '#ffd27a', 0.9, 'breathe').glow(149, 68, 16, '#ffd27a', 0.9, 'breathe');
     s.glow(123, 40, 22, '#fff1c8', 0.55);
     s.motes({ seed: 638, n: 16, x: [86, 160], y: [30, 90], r: [0.35, 0.9], fill: '#ffc870', hot: '#fffaea', cls: 'twinkle', t: [1.5, 3], op: [0.4, 1] });

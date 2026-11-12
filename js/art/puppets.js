@@ -44,4 +44,37 @@ export const PUPPETS = {
   'the-barrow-queen': {
     parts: COURT.map(([x, y, k, d], i) => ({ name: `ghost${i}`, of: '[data-part=court]', pivot: [x + k * d, y + 2 * k], poly: GHOST_POLYS[i] })),
   },
+  // the theorist: the arc held between her hands (and the bolt feeding it), and
+  // she herself, leaning from her feet; `hands`: where the arc springs from
+  'lightning-theorist': {
+    hands: [[95, 66], [149, 68]], feet: [120, 152], sea: [240, 142],
+    parts: [
+      { name: 'arc', of: '[data-part=arc]', pivot: [122, 66] },
+      { name: 'her', of: 'fig:3', pivot: [120, 152] },
+    ],
+  },
+  // the shieldbearer: he (with his spear) and his shield, each from the knee /
+  // the shield's foot; the three arrows already in the shield (they ride with it);
+  // and the three in flight, each turning about its own tip. `hits`: where
+  // each flying arrow strikes the shield's face, in the order they land.
+  shieldbearer: {
+    knee: [116, 186], hits: [[187.5, 137], [185.5, 117], [183, 110]],
+    parts: [
+      { name: 'man', of: 'fig:0 [data-part=man]', pivot: [118, 186] },
+      { name: 'shield', of: 'fig:0 [data-part=shield]', pivot: [168, 180] },
+      { name: 'stuck', of: '[data-part=stuck]', pivot: [168, 180] },
+      { name: 'fly0', of: '[data-part=fly0]', pivot: [245.3, 63.5] },
+      { name: 'fly1', of: '[data-part=fly1]', pivot: [219.0, 38.4] },
+      { name: 'fly2', of: '[data-part=fly2]', pivot: [263.9, 99.0] },
+    ],
+  },
+  // the lance (bone, violet fire) and the ghostly trail streaming behind it, both
+  // about the butt, B; they run along the axis B -> T (its point at T, +4)
+  'bone-lance': {
+    butt: [60, 72], point: [248, 120.5], axis: [0.9683, 0.2554], ground: [270, 128],
+    parts: [
+      { name: 'trail', of: '[data-part=trail]', pivot: [60, 72] },
+      { name: 'lance', of: '[data-part=lance]', pivot: [60, 72] },
+    ],
+  },
 };

@@ -10,6 +10,19 @@ The history, with Asaf's words at each step, is in README.md under "Home's fan a
 - **On hold for the other cards.** Asaf asked how hard it would be to have every card act like this: cards side by side would interact while untouched, following rules by role. Two attackers' attacks would bounce off each other, and defenders would block as Seraphine does. The decision was to hold off: "I'd only want to do it for the rest if we can make the hand-made puppets at this level and not worth it yet."
 - So extending it means hand-made puppets, card by card, at this level. The section "If we come back to it" has the plan and its cost.
 
+## Every card, in the game (2026-11-12)
+
+- **Every card is a puppet now.** Sonnet agents made all 193 from `bakeoff/recipe.md`, each with its own move (`bakeoff/moves/<id>.js`). Each also carries an interaction contract: role, element, facing, where its attack leaves (`emit`), where blows land (`hit`, `guard`) and its BEATS. That's in `js/art/puppets.js`.
+- **The kit is shared.** `js/puppet-kit.js` builds a move. Both the harness (`bakeoff/harness.js`) and the game use it.
+- **In the game** (`js/cards-alive.js`):
+  - **A card opened big** plays its move a moment after it opens, then every few seconds. It rests while turned over.
+  - **In Cards**, after 2 s untouched, one card acts at a time: an attacker or support aims its move at the card beside it (`k.aim` = that card's `hit`). A defender there takes the blow on its nearest guard point (`k.blows` at the attacker's impact); any other card jolts. Some scenes are a card on its own.
+  - Its picture is swapped to sprites for the scene only, and swapped back after. Any touch or scroll stops it. Nothing plays with Reduce Motion, and never inside a game.
+- **The foil.** Legendaries in grids lost the moving foil. It moved a background, which repainted every legendary on screen every frame: 270 style recalcs in 3 s on Cards at rest, now 0. Shown big, the foil still slides as a transform.
+- **Cost, measured in headless Chrome:**
+  - On its own, a move costs nothing on the main thread: 0 recalcs in the harness, and 0 on a page of 8 cards.
+  - On the full Cards page (97 card pictures), Chrome produces a main-thread frame every frame while anything moves, about 70 a second. Removing the pictures stops it. It looks like Chrome's image budget. It's the same for the zoom over that page, and it isn't measured on an iPhone.
+
 ## What plays
 
 A scene starts after a second without a touch, and the next one a second after it ends. Any touch, key, wheel or pointer stops it at once and snaps every card back. Between scenes, the wings beat slowly and the ghosts sway. With Reduce Motion on, nothing plays. The scene also stops while the page is hidden or a card is zoomed open.

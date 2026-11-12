@@ -6,6 +6,7 @@ import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin, livenArt } from 
 import { hold, sweep } from './sprites.js';
 import { gatherAlive } from './art/alive.js';
 import { startHomeAlive, stopHomeAlive } from './home-alive.js';
+import { actInZoom, canAct, startCardsAlive, stopCardsAlive } from './cards-alive.js';
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, autoResume, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
@@ -64,9 +65,11 @@ function matches(card, state) {
 // ── zoom overlay ────────────────────────────────────────────────────
 // Shows one card big, flippable, with its keywords explained. In the
 // deckbuilder it also carries the +/- controls.
-let zoomEl = null;
+let zoomEl = null, zoomAct = null; // (zoomAct: the card opened playing its move, js/cards-alive.js)
 function closeZoom() {
   if (!zoomEl) return;
+  zoomAct?.stop();
+  zoomAct = null;
   zoomEl.remove();
   zoomEl = null;
   document.body.style.overflow = '';
@@ -99,13 +102,14 @@ function openZoom(id, deckCtx = null) {
   if (/Fish/.test(card.text)) notes.push('<b>Fish</b> — it loses everything it had. If it leaves play it turns back into its old self.');
   if (/exhaust/i.test(card.text)) notes.push('<b>Exhausted</b> — tilted sideways: it can\u2019t attack or block until it readies at the start of its controller\u2019s turn.');
 
+  const acts = canAct(id); // (a puppet with a move: its picture in sprites, playing the move)
   const render = () => {
     const n = deckCtx ? deckCtx.counts[id] || 0 : 0;
     const can = deckCtx ? Decks.canAdd(deckCtx.counts, id) : null;
     zoomEl.innerHTML = `
       <button class="zoom-close" data-act="close" aria-label="Close">×</button>
       <div class="zoom-inner">
-        <div class="flipper"><div class="flip-inner">${cardHTML(card, { cls: 'anim' })}${cardBackHTML()}</div></div>
+        <div class="flipper"><div class="flip-inner">${cardHTML(card, { cls: 'anim', sprites: acts })}${cardBackHTML()}</div></div>
         <div class="zoom-bar">
           <button class="btn small ghost" data-act="flip">Flip card</button>
           ${deckCtx ? `<div class="r-ctl">
@@ -121,21 +125,29 @@ function openZoom(id, deckCtx = null) {
   };
   render();
   // its characters breathe (js/art/alive.js: found once the card is on the page)
-  const wake = () => zoomEl.querySelectorAll('.card .art-svg').forEach((svg) => gatherAlive(svg, id));
+  const wake = () => {
+    zoomEl.querySelectorAll('.card .art-svg').forEach((svg) => gatherAlive(svg, id));
+    // its move (a puppet), its picture's sprites set going first
+    zoomAct?.stop();
+    livenArt(zoomEl);
+    zoomAct = acts ? actInZoom(zoomEl, id) : null;
+  };
+  // turned over, it rests (its move's effects would hang in the air)
+  const flip = (on) => { const f = zoomEl.querySelector('.flipper'); f.classList.toggle('flipped', on ?? !f.classList.contains('flipped')); zoomAct?.pause(f.classList.contains('flipped')); };
 
   zoomEl.addEventListener('click', (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'close') return closeZoom();
-    if (act === 'flip') return zoomEl.querySelector('.flipper').classList.toggle('flipped');
+    if (act === 'flip') return flip();
     if (act === 'plus' || act === 'minus') {
       deckCtx.change(id, act === 'plus' ? 1 : -1);
       const flipped = zoomEl.querySelector('.flipper').classList.contains('flipped');
       render();
       wake();
-      if (flipped) zoomEl.querySelector('.flipper').classList.add('flipped');
+      if (flipped) flip(true);
       return;
     }
-    if (e.target.closest('.flipper')) return zoomEl.querySelector('.flipper').classList.toggle('flipped');
+    if (e.target.closest('.flipper')) return flip();
     if (!e.target.closest('.zoom-inner')) closeZoom();
   });
   document.body.appendChild(zoomEl);
@@ -216,6 +228,7 @@ function gallery() {
       ${chipsHTML(galleryState)}
       <p class="count-line">${list.length} card${list.length === 1 ? '' : 's'} · everyone owns two of each (one of a Legendary)</p>
       <div class="grid">${list.map((c) => cardHTML(c)).join('')}</div>`;
+    startCardsAlive(view); // (left be, now and then a card acts on the one beside it)
   };
   render();
   view.onclick = (e) => {
@@ -542,6 +555,7 @@ function route() {
   closeCampaignSheet();
   if (path !== 'campaign') leaveCampaign(); // (its moving parts stop with it)
   stopHomeAlive();
+  stopCardsAlive();
   document.body.dataset.page = path && ROUTES[path] ? path : 'home';
   // ('kept': the page changed in place, as the campaign does going into a place and out)
   const kept = (ROUTES[path] || home)(arg ? decodeURIComponent(arg) : undefined) === 'kept';

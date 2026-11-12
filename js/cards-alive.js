@@ -1,15 +1,18 @@
 // Cards acting out their moves in the game (each card's puppet and move, and
-// the kit that builds it: js/puppet-kit.js). Three places:
-//  - A card opened big (the zoom) plays its move, a moment after it opens and
-//    then every few seconds, and rests while it's turned over.
-//  - In a game, while nothing else happens (nobody touching, no move playing
-//    out, nothing open, nobody choosing), now and then a card on the table
-//    acts: an attacker's move goes to a card on another side, a support's to
-//    the card nearest it on its own side; a defender it reaches takes the
-//    blow on its guard, any other card jolts; often a card acts alone.
-//  - In Cards, while the page is left be, one card acts on the card beside it.
-// One scene at a time; any touch stops it, and so does any move of the game.
-// With Reduce Motion on, nothing plays.
+// the kit that builds it: js/puppet-kit.js), whenever nothing else happens:
+//  - A card opened big (the Cards zoom, a game's viewer) plays its move a
+//    moment after it shows, then every few seconds.
+//  - In a game at rest (nobody touching, no move playing out, nobody choosing
+//    a target), one card at a time acts: on the table an attacker's move goes
+//    to a card on another side, a support's to the card nearest it on its own
+//    (a defender it reaches blocks, any other card jolts); the card raised in
+//    your hand acts alone; full cards in sight (your opening hand, a sheet of
+//    cards) act on the card beside them; on an attack or block screen each
+//    card acts alone.
+//  - Everywhere else (Cards, the draft, the Rules), the cards in sight act on
+//    the card beside them.
+// Any touch ends a scene, and so does any move of the game. With Reduce
+// Motion on, nothing plays.
 
 import { LIVE } from './art-live.js';
 import { PUPPETS } from './art/puppets.js';
@@ -129,10 +132,11 @@ export function actBig(host, card, id) {
 }
 
 // ── a stage: one card acting at a time, while nothing else happens ──
-// A game's table and Cards are stages, each with its own cards, its own way of
-// choosing who acts on whom, and its own overlay. A scene starts once the stage
-// has been quiet (no touch, and its own quiet()) for `idle` ms.
+// A game and the rest of the app are stages, each with its own cards and its
+// own way of choosing who acts on whom. A scene starts once the stage has been
+// quiet (no touch, and its own quiet()) for `idle` ms.
 const GAP = 1000; // ms from one scene's end to the next
+const ART = '.tc-art, .c-art'; // (a card's picture: a table card's, or a full card's)
 const stages = new Map();
 
 function startStage(name, o) {
@@ -163,25 +167,10 @@ function tick(st) {
   scene(st).catch((e) => { console.warn('cards alive:', e); endScene(st); }).finally(() => { st.busy = false; });
 }
 
-// ── a game's table ───────────────────────────────────────────────────
-// `quiet()`: the game at rest (no move playing out, nothing open, nobody choosing).
+// ── a game ───────────────────────────────────────────────────────────
+// `quiet()`: the game at rest (no move playing out, nobody choosing a target).
 export function startTableAlive(root, quiet) {
-  startStage('table', {
-    root, quiet, idle: 1000, art: '.tc-art', overIn: root, overCls: 'pp-fx pp-game',
-    joltOf: (el) => el.querySelector('.tc-body') || el, // (the game's own shakes move .tc-body, never the tilted card)
-    pick: (st) => pickAcross(st, onScreen(root.querySelectorAll('.g-side .tcard.on-board[data-cid]'), (el) => el.dataset.cid), inHand(root)),
-  });
-}
-// The card raised in your hand (the fan's focus), if its picture shows: the
-// others lie partly under their neighbours.
-function inHand(root) {
-  const fan = [...root.querySelectorAll('.tc-hand > .tcard.in-hand[data-cid]')];
-  const z = (c) => Number(c.style.getPropertyValue('--z')) || 0;
-  const el = fan.find((c) => c.classList.contains('peek')) || fan.reduce((b, c) => (!b || z(c) > z(b) ? c : b), null);
-  const a = el?.querySelector('.tc-art')?.getBoundingClientRect();
-  if (!a || a.width < 24 || a.top < 0 || a.bottom > innerHeight || a.left < 0 || a.right > innerWidth) return [];
-  const top = document.elementFromPoint(a.left + a.width / 2, a.top + a.height / 2)?.closest('.tcard');
-  return top === el ? [{ el, id: el.dataset.cid, r: el.getBoundingClientRect(), side: null, hand: true }] : [];
+  startStage('table', { root, quiet, idle: 1000, pick: (st) => pickGame(st, root) });
 }
 export const stopTableAlive = () => stopStage('table');
 // a move is about to play out, or the table to be drawn again: any scene ends now
@@ -189,18 +178,34 @@ export function hushTable() {
   const st = stages.get('table');
   if (st) { st.last = Date.now(); endScene(st); }
 }
+// What the game shows, to act in: full cards in sight (your opening hand, a
+// sheet of cards to choose from) act on the card beside them; on a choice's own
+// screen (attack, block, tricks) each acts alone; else the table and the card
+// raised in your hand.
+function pickGame(st, root) {
+  const full = shown(root.querySelectorAll('.card[data-id]'), (el) => el.dataset.id);
+  if (full.length) return pickBeside(st, full);
+  const dec = shown(root.querySelectorAll('.g-dec .tcard[data-cid]'), (el) => el.dataset.cid);
+  if (dec.length) { const pool = actors(st, dec); return pool.length ? { actor: one(pool) } : null; }
+  return pickAcross(st, shown(root.querySelectorAll('.g-side .tcard.on-board[data-cid]'), (el) => el.dataset.cid), inHand(root));
+}
+// The card raised in your hand (the fan's focus), if its picture shows: the
+// others lie partly under their neighbours.
+function inHand(root) {
+  const fan = [...root.querySelectorAll('.tc-hand > .tcard.in-hand[data-cid]')];
+  const z = (c) => Number(c.style.getPropertyValue('--z')) || 0;
+  const el = fan.find((c) => c.classList.contains('peek')) || fan.reduce((b, c) => (!b || z(c) > z(b) ? c : b), null);
+  return el ? shown([el], (c) => c.dataset.cid).map((c) => ({ ...c, side: null, hand: true })) : [];
+}
 
-// ── Cards ────────────────────────────────────────────────────────────
-export function startCardsAlive(view) {
-  const grid = view.querySelector('.grid');
-  if (!grid) { stopStage('cards'); return; }
-  startStage('cards', {
-    root: grid, quiet: () => true, idle: 1000, art: '.c-art', overIn: document.body, overCls: 'pp-fx pp-screen',
-    joltOf: (el) => el,
-    pick: (st) => pickBeside(st, onScreen(grid.querySelectorAll('.card[data-id]'), (el) => el.dataset.id)),
+// ── everywhere else: any page's cards (Cards, the draft, the Rules...) ──
+// Home's fan has its own scene, and a card opened big its own loop.
+export function startScreenAlive() {
+  startStage('screen', {
+    root: document.body, idle: 1000, quiet: () => !document.body.classList.contains('in-game'),
+    pick: (st) => pickBeside(st, shown(document.querySelectorAll('.card[data-id]'), (el) => el.dataset.id)),
   });
 }
-export const stopCardsAlive = () => stopStage('cards');
 
 // ── who acts on whom ─────────────────────────────────────────────────
 // The cards wholly on screen: { el, id, r, side } (side: the table's side it's on).
@@ -208,6 +213,15 @@ function onScreen(els, idOf) {
   const vw = innerWidth, vh = innerHeight;
   return [...els].map((el) => ({ el, id: idOf(el), r: el.getBoundingClientRect(), side: el.closest('.g-side') }))
     .filter(({ r }) => r.width > 0 && r.top >= 0 && r.bottom <= vh && r.left >= 0 && r.right <= vw);
+}
+// ...and in sight: the middle of its picture not under anything else (a sheet,
+// a viewer, the card above it in a fan), and not Home's fan
+function shown(els, idOf) {
+  return onScreen(els, idOf).filter(({ el }) => {
+    if (el.closest('.fan')) return false;
+    const a = el.querySelector(ART)?.getBoundingClientRect();
+    return !!a && a.width >= 24 && document.elementFromPoint(a.left + a.width / 2, a.top + a.height / 2)?.closest('.card, .tcard') === el;
+  });
 }
 const one = (list) => list[Math.floor(Math.random() * list.length)];
 const mid = (c) => [c.r.left + c.r.width / 2, c.r.top + c.r.height / 2];
@@ -223,7 +237,7 @@ function actors(st, cards) {
 // being played); now and then a table card alone.
 function pickAcross(st, cards, hand = []) {
   const table = actors(st, cards);
-  const raised = hand.find((c) => c.el !== st.lastEl) || (table.length ? null : hand[0]);
+  const raised = hand.find((c) => c.el !== st.lastEl && canAct(c.id)) || (table.length ? null : hand.find((c) => canAct(c.id)));
   const foesOf = (a) => cards.filter((c) => c.side !== a.side), matesOf = (a) => cards.filter((c) => c.side === a.side && c !== a);
   const reach = table.filter((c) => (PUPPETS[c.id].role === 'attacker' && foesOf(c).length) || (PUPPETS[c.id].role === 'support' && matesOf(c).length));
   const r = Math.random();
@@ -235,7 +249,8 @@ function pickAcross(st, cards, hand = []) {
   }
   return table.length ? { actor: one(table) } : null;
 }
-// Cards: mostly an attacker or support on the card beside it in its row (either side), sometimes a card alone
+// cards in rows (Cards, an opening hand, the draft): mostly an attacker or
+// support on the card beside it in its row (either side), sometimes a card alone
 function pickBeside(st, cards) {
   for (const c of cards) {
     const row = cards.filter((o) => o !== c && Math.abs(o.r.top - c.r.top) < 6);
@@ -244,25 +259,31 @@ function pickBeside(st, cards) {
   }
   const pool = actors(st, cards);
   const reach = pool.filter((c) => ['attacker', 'support'].includes(PUPPETS[c.id].role) && (c.left || c.right));
-  if (reach.length && Math.random() < 0.75) {
+  if (reach.length && Math.random() < 0.8) {
     const a = one(reach), left = a.left && a.right ? Math.random() < 0.5 : !!a.left;
     return { actor: a, target: left ? a.left : a.right };
   }
   return pool.length ? { actor: one(pool) } : null;
 }
 
-// A card's picture (`sel`): its drawing's units <-> screen px (the drawing
-// cropped to fill the frame, as livenArt lays it).
-function artBox(card, sel) {
-  const f = card.querySelector(sel).getBoundingClientRect(), k = Math.max(f.width / W, f.height / H);
+// A card's picture: its drawing's units <-> screen px (the drawing cropped to
+// fill the frame, as livenArt lays it).
+function artBox(card) {
+  const f = card.querySelector(ART).getBoundingClientRect(), k = Math.max(f.width / W, f.height / H);
   const x0 = f.left + (f.width - W * k) / 2, y0 = f.top + (f.height - H * k) / 2;
   return { to: ([x, y]) => [x0 + x * k, y0 + y * k], from: ([X, Y]) => [(X - x0) / k, (Y - y0) / k] };
 }
 const nearestPt = (pts, p) => pts.reduce((b, q) => (Math.hypot(q[0] - p[0], q[1] - p[1]) < Math.hypot(b[0] - p[0], b[1] - p[1]) ? q : b));
+// The fixed layer a card is in (the game, a sheet, the draft): its scene's
+// effects go there, above it. Null: the page itself.
+function layerOf(el) {
+  for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) if (getComputedStyle(a).position === 'fixed') return a;
+  return null;
+}
 
-// A card's picture in sprites, laid over the picture it has (in `sel`), its
-// pictures loaded first so it shows whole at once; undo() takes it off again.
-function inSprites(card, id, sel) {
+// A card's picture in sprites, laid over the picture it has, its pictures
+// loaded first so it shows whole at once; undo() takes it off again.
+function inSprites(card, id) {
   const pp = document.createElement('div');
   pp.className = 'pp-art';
   pp.innerHTML = `<img class="art-img" src="${LIVE[id].src}" alt="" decoding="async"><div class="sp-art" data-live="${id}"></div>`;
@@ -271,7 +292,7 @@ function inSprites(card, id, sel) {
     const L = await fetchSprites(LIVE[id].live);
     const srcs = [LIVE[id].src, ...(L?.sprites || []).filter((s) => s.img).map((s) => s.img)];
     await Promise.all(srcs.map((src) => { const im = new Image(); im.src = src; return im.decode().catch(() => {}); }));
-    const art = card.querySelector(sel);
+    const art = card.querySelector(ART);
     if (undone || !card.isConnected || !art) return;
     card.classList.add('pp');
     art.append(pp);
@@ -281,8 +302,10 @@ function inSprites(card, id, sel) {
 }
 
 // A card taking a blow it doesn't block: a jolt along the blow (`dir`, a unit
-// vector from the one that struck), at `at` ms of an END ms scene.
-function jolt(el, END, at, [dx, dy]) {
+// vector from the one that struck), at `at` ms of an END ms scene. A table
+// card jolts its .tc-body (the game's own shakes do, never the tilted card).
+function jolt(card, END, at, [dx, dy]) {
+  const el = card.querySelector('.tc-body') || card;
   const t = (ms) => Math.min(1, Math.max(0, ms / END)), r = dx >= 0 ? 1 : -1;
   const by = (k, deg) => `translate(${(k * dx).toFixed(1)}px, ${(k * dy).toFixed(1)}px) rotate(${(deg * r).toFixed(1)}deg)`;
   return el.animate([
@@ -305,17 +328,18 @@ async function scene(st) {
   const gone = () => st.scene !== sc;
   const tspec = p.target ? PUPPETS[p.target.id] || {} : null;
   const blocks = !!(p.target && tspec.role === 'defender' && canAct(p.target.id));
-  sc.swaps.push(inSprites(p.actor.el, p.actor.id, st.art));
-  if (blocks) sc.swaps.push(inSprites(p.target.el, p.target.id, st.art));
+  sc.swaps.push(inSprites(p.actor.el, p.actor.id));
+  if (blocks) sc.swaps.push(inSprites(p.target.el, p.target.id));
   await Promise.all(sc.swaps.map((s) => s.ready));
   if (gone()) return;
+  const layer = layerOf(p.actor.el);
   sc.over = document.createElement('div');
-  sc.over.className = st.overCls;
-  st.overIn.append(sc.over);
+  sc.over.className = layer ? 'pp-fx pp-in' : 'pp-fx pp-screen';
+  (layer || document.body).append(sc.over);
   // where the other card is, in the actor's drawing (and the actor in the other's): measured once, first
   let aim = null, from = null, dir = [0, 0];
   if (p.target) {
-    const A = artBox(p.actor.el, st.art), T = artBox(p.target.el, st.art);
+    const A = artBox(p.actor.el), T = artBox(p.target.el);
     aim = A.from(T.to(tspec.hit || tspec.guard?.[0] || [W / 2, H / 2]));
     from = T.from(A.to([W / 2, H / 2]));
     const [ax, ay] = mid(p.actor), [tx, ty] = mid(p.target), d = Math.hypot(tx - ax, ty - ay) || 1;
@@ -335,7 +359,7 @@ async function scene(st) {
   if (gone()) return;
   // all from one start
   for (const m of sc.moves) play(m);
-  if (p.target && !b) sc.anims.push(jolt(st.joltOf(p.target.el), a.END, impact, dir));
+  if (p.target && !b) sc.anims.push(jolt(p.target.el, a.END, impact, dir));
   sc.timer = setTimeout(() => endScene(st), Math.max(...sc.moves.map((m) => m.END)) + 150);
 }
 

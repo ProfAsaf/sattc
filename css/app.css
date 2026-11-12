@@ -196,7 +196,7 @@ body[data-page="home"] main { display: flex; flex-direction: column; min-height:
    them (.lit adds up its light) */
 .pp-fx { position: absolute; inset: 0; z-index: 5; pointer-events: none; isolation: isolate; contain: strict; }
 .pp-fx.pp-screen { position: fixed; z-index: 12; }
-.pp-fx.pp-game { z-index: 6; } /* (in a game: over the table and the hand, under the coach, the sheets and the game's own effects) */
+.pp-fx.pp-in { z-index: 6; } /* (in a fixed layer, the game, a sheet, the draft: over its cards; in a game under the coach, the sheets and the game's own effects) */
 .pp-art { position: absolute; inset: 0; contain: strict; }
 .pp-art > .art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .pp .fx-in { position: absolute; inset: 0; pointer-events: none; contain: strict; } /* (sealed off: what's added inside doesn't lay the card out again) */

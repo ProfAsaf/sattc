@@ -17,13 +17,19 @@ The history, with Asaf's words at each step, is in README.md under "Home's fan a
 - **In the game** (`js/cards-alive.js`):
   - **A card opened big** plays its move a moment after it opens, then every few seconds. It rests while turned over.
   - **In a game**, after the table has been at rest for 1 s, one card acts at a time, with 1 s between scenes. Asaf asked for it: "I want it in games (and basically all the time somebody isn't touching the screen or another action isn't happening)". His notes on the first live try: "Time to have it happen is mabye too long. Can we just do 1 second of wait?", plus no interactions seen and partly hidden hand cards acting.
-    - At rest means nobody touching, nothing open, nobody aiming or choosing, no fight on, no lesson, and the game not over. That's `atRest()` in `js/game-ui.js`. A move playing out isn't at rest, but an opponent's move already shown and waiting for your tap (`gates`) is.
+    - At rest means nobody touching, no move playing out, nobody choosing a target (`G.flow`), no fight under way unless it waits on your choice, no lesson, and the game not over. That's `atRest()` in `js/game-ui.js`. An opponent's move already shown and waiting for your tap (`gates`) is at rest. So is a sheet, and so are the opening hand and the attack and block screens.
+    - What acts depends on what's in sight (`pickGame()`):
+      - Full cards (your opening hand, a sheet of cards to choose from) act on the card beside them; Asaf showed the opening hand with "Nothing happening here for example".
+      - On an attack, block or tricks screen, each card acts alone, so an idle strike isn't mistaken for the fight.
+      - Otherwise, the table and the card raised in your hand.
     - Most scenes, about 9 in 10 when one is possible, are one table card acting on another. An attacker aims its move at a card on another side (`k.aim` = that card's `hit`); a support aims at the card nearest it on its own side.
     - A defender it reaches takes the blow on its nearest guard point (`k.blows` at the attacker's impact). Any other card jolts along the blow; the jolt moves its `.tc-body`, as the game's own shakes do.
     - About one scene in five is the card raised in your hand (the fan's `.peek`), acting alone, since aimed at the table it would look like being played. The cards under it don't act. That's how spells act in a game.
     - A card opened big in the viewer (your hand, your opening hand, the table) plays its move a moment after it shows, then every few seconds. That's `actBig()`, restarted by `bigMove()` after each `draw()`.
     - Any touch, including the lift of a finger, ends a scene. `draw()`, `redraw()` and `present()` call `hushTable()` first, so the game's own moves never meet one.
-  - **In Cards**, after 1 s untouched, one card acts at a time: an attacker or support aims its move at the card beside it. A defender there takes the blow on its guard; any other card jolts. Some scenes are a card on its own.
+  - **Everywhere else** (Cards, the draft, the Rules page), one stage runs for the whole app (`startScreenAlive()`, started once in `app.js`). After 1 s untouched, one card in sight acts at a time: an attacker or support aims its move at the card beside it, a defender there blocks, and any other card jolts. Some scenes are a card on its own. Home's fan keeps its own scene, and the zoom its own loop.
+  - **In sight** means wholly on screen, with the middle of its picture the topmost thing there (`elementFromPoint`). That rules out cards under a sheet, a viewer, a sticky bar, or another card of a fan.
+  - A scene's effects go in the fixed layer its card is in (`layerOf()`: the game, a sheet, the draft) as `.pp-fx.pp-in`, so they draw above it. On a page, they go on a fixed overlay (`.pp-screen`).
   - A card's picture is swapped to sprites for its scene only, and swapped back after. Nothing plays with Reduce Motion. A test can set `window.__ppPicks = []` to note who acts on whom.
 - **The foil.** Legendaries in grids lost the moving foil. It moved a background, which repainted every legendary on screen every frame: 270 style recalcs in 3 s on Cards at rest, now 0. Shown big, the foil still slides as a transform.
 - **Cost, measured in headless Chrome:**

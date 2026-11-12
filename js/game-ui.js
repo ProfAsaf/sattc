@@ -600,13 +600,15 @@ function mount() {
   return root;
 }
 
-// The table at rest: no move playing out (one shown and waiting for your tap
-// is at rest), nothing open, nobody aiming or choosing, no fight on, no lesson.
-// Its cards then act now and then (js/cards-alive.js).
+// The game at rest: no move playing out (one shown and waiting for your tap is
+// at rest), nobody choosing a target, no fight under way unless it waits on
+// your choice, no lesson. Whatever cards are in sight then act now and then:
+// the table and your hand, your opening hand, a sheet of cards, an attack or
+// block screen (js/cards-alive.js). The viewer plays its own card (bigMove).
 function atRest() {
-  if (!G || (G.busy && !gates) || G.flow || G.sheet || G.atk || G.blk || G.viewer || G.skipping || G.stale || G.dirty) return false;
+  if (!G || (G.busy && !gates) || G.flow || G.viewer || G.skipping || G.stale || G.dirty) return false;
   const s = S();
-  return s.phase !== 'over' && s.phase !== 'mulligan' && !s.combat && !tutStep() && !decision();
+  return s.phase !== 'over' && !tutStep() && (!s.combat || !!decision());
 }
 
 function begin(rec) {

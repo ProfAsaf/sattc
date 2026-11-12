@@ -6,7 +6,7 @@ import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin, livenArt } from 
 import { hold, sweep } from './sprites.js';
 import { gatherAlive } from './art/alive.js';
 import { startHomeAlive, stopHomeAlive } from './home-alive.js';
-import { actInZoom, canAct, startCardsAlive, stopCardsAlive } from './cards-alive.js';
+import { actInZoom, canAct, startScreenAlive } from './cards-alive.js';
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, autoResume, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
@@ -228,7 +228,6 @@ function gallery() {
       ${chipsHTML(galleryState)}
       <p class="count-line">${list.length} card${list.length === 1 ? '' : 's'} · everyone owns two of each (one of a Legendary)</p>
       <div class="grid">${list.map((c) => cardHTML(c)).join('')}</div>`;
-    startCardsAlive(view); // (left be, now and then a card acts on the one beside it)
   };
   render();
   view.onclick = (e) => {
@@ -555,7 +554,6 @@ function route() {
   closeCampaignSheet();
   if (path !== 'campaign') leaveCampaign(); // (its moving parts stop with it)
   stopHomeAlive();
-  stopCardsAlive();
   document.body.dataset.page = path && ROUTES[path] ? path : 'home';
   // ('kept': the page changed in place, as the campaign does going into a place and out)
   const kept = (ROUTES[path] || home)(arg ? decodeURIComponent(arg) : undefined) === 'kept';
@@ -574,6 +572,7 @@ window.addEventListener('hashchange', route);
 // A page's title bar gets its backdrop once the page scrolls under it.
 window.addEventListener('scroll', () => document.body.classList.toggle('scrolled', window.scrollY > 4), { passive: true });
 route();
+startScreenAlive(); // (any page's cards act now and then while you leave them be: js/cards-alive.js)
 const params = new URLSearchParams(location.search);
 Push.start(); // (the service worker for turn alerts, once they are set up)
 if (params.has('demo')) demo(params);

@@ -752,6 +752,7 @@ export const ultra_d = {
     const carved = skullAt(150, 186, 1.2);
     s.add(`<path d="M66,160H234V204H66Z" fill="none" stroke="#0e0a18" stroke-width="1.4" opacity=".8"/><path d="${carved.d}" fill="none" stroke="#0e0a18" stroke-width="1.2" opacity=".8"/>`);
     // the heap of bones on it, and the coins already given
+    s.add('<g data-part="heap">');
     s.path(blob([[82, 145], [94, 135], [112, 127], [132, 121], [150, 119], [170, 121], [190, 128], [206, 136], [220, 145]], 4), '#120d1e');
     const boneFill = s.linU(0, 110, 0, 148, [[0, '#f2eafc'], [0.6, '#cfc1e4'], [1, '#8f7cae']]);
     const back = U(bone([90, 141], [128, 133], 3.4), bone([172, 131], [214, 141], 3.2), bone([118, 127], [146, 121], 2.8), bone([156, 121], [186, 128], 2.8), bone([100, 137], [116, 121], 2.6), bone([196, 121], [205, 139], 2.6));
@@ -762,8 +763,11 @@ export const ultra_d = {
     s.path(U(skulls.map((k) => k.d)), 'none', 'stroke="#140c20" stroke-width=".6"');
     s.path(dots(skulls.flatMap((k) => k.holes)), '#100a1a');
     s.path([[122, 139, 2.6, -10], [160, 137, 2.4, 14], [142, 126, 2.2, 0], [184, 134, 2.4, -16], [100, 130, 2, 20]].map(([x, y, r, a]) => oval(x, y, r, r * 0.42, a)).join(''), '#a8823a');
+    s.add('</g>');
     // the arm reaching out of its sleeve, and the hand with the coin
+    s.add('<g data-part="sleeve">');
     s.path(blob([[306, 18], [286, 26], [268, 40], [262, 56], [270, 70], [290, 66], [308, 58]], 4), '#09060f');
+    s.add('</g>');
     const C = [148, 112];
     const chains = [
       [[198, 99], [180, 102], [168, 104], [159, 107], [154, 110]],
@@ -774,16 +778,20 @@ export const ultra_d = {
     ];
     const fingers = chains.flatMap((c) => c.slice(0, -1).map((p, i) => bone(p, c[i + 1], [3, 2.8, 2.5, 2.2][i])));
     const hand = U(bone([274, 56], [206, 95], 3.8), bone([280, 63], [210, 100], 3.2), ell(203, 99, 5.4, 3.8, 30, 12), ell(198, 103, 3.6, 3, 30, 10), fingers);
-    s.figure(`<path d="${hand}"/>`, { fill: '#d8cceb', rim: '#ffffff', offsets: [[0, -0.8]], rimOp: 0.6 });
+    s.figure(`<g data-part="hand"><path d="${hand}"/></g>`, { fill: '#d8cceb', rim: '#ffffff', offsets: [[0, -0.8]], rimOp: 0.6 });
+    s.add('<g data-part="handline">');
     s.path(hand, 'none', 'stroke="#2a1c40" stroke-width=".55" opacity=".9"');
+    s.add('</g>');
     // the light: the coin, the candle flames, the watcher's eyes
     s.glow(C[0], C[1], 40, '#ffd77a', 0.5, 'breathe');
     for (const [x, b, h] of candles) s.glow(x, b - h - 5, 22, '#b07cff', 0.6);
+    s.add('<g data-part="glints">');
     s.bloom(`<circle cx="${C[0]}" cy="${C[1]}" r="7" fill="${s.radU(C[0] - 2, C[1] - 2.4, 9, [[0, '#fffbe6'], [0.45, '#ffe08a'], [1, '#c8902e']])}"/>` +
       `<circle cx="${C[0]}" cy="${C[1]}" r="4.6" fill="none" stroke="#b0781e" stroke-width=".8"/><path d="${glint(C[0] - 2.4, C[1] - 2.8, 5, 0.16)}" fill="#ffffff"/>` +
       `<path d="${candles.map(([x, b, h]) => lens(x, b - h - 4.6, 8, -90, 0.44, 3)).join('')}" fill="#e6d2ff"/>` +
       `<path d="${candles.map(([x, b, h]) => lens(x, b - h - 3.8, 4, -90, 0.5, 3)).join('')}" fill="#ffffff"/>` +
       '<path d="M144.6,70.4h2.6M152.8,70.4h2.6" stroke="#d9c4ff" stroke-width="1.3" stroke-linecap="round"/>', { sd: 1.5, k: 1.45, box: [40, 50, 220, 90] });
+    s.add('</g>');
     s.motes({ seed: 14802, n: 14, x: [40, 260], y: [30, 150], r: [0.35, 0.9], fill: '#c9b0f4', cls: 'float', t: [6, 10], op: [0.3, 0.8] });
     return s.svg();
   },
@@ -850,13 +858,12 @@ export const ultra_d = {
     s.path(caps.map((m) => m.gill).join(''), '#6a6a5a');
     // the will-o'-wisps
     const wisps = [[96, 118, 1.2], [116, 82, 1], [210, 70, 1.1], [228, 122, 1.3], [80, 72, 0.8], [252, 94, 0.9], [132, 142, 0.8]];
-    for (const [x, y, k] of wisps) s.glow(x, y, 13 * k, '#b07cff', 0.6, 'breathe');
+    wisps.forEach(([x, y, k], i) => { s.add(`<g data-part="wg${i}">`); s.glow(x, y, 13 * k, '#b07cff', 0.6); s.add('</g>'); });
     s.glow(lamp.c[0], lamp.c[1], 60, '#d8f08a', 0.55);
     s.glow(lamp.c[0], lamp.c[1], 18, '#f4ffc8', 0.7, 'breathe');
-    s.bloom(`<path d="${lamp.glass}" fill="${s.radU(lamp.c[0], lamp.c[1], 8, [[0, '#ffffff'], [0.5, '#f0ffb0'], [1, '#b8e060']])}"/>` +
-      `<path d="${[[-1.6, 2, 2.4, 1.6], [1.8, 0.4, 2, 1.4], [0, -2.8, 1.6, 1.1]].map(([dx, dy, rx, ry]) => oval(lamp.c[0] + dx, lamp.c[1] + dy, rx, ry)).join('')}" fill="#8aa83a"/>` +
-      `<path d="${wisps.map(([x, y, k]) => lens(x, y + 4 * k, 9 * k, 90, 0.4, 3)).join('')}" fill="#b07cff" opacity=".6"/>` +
-      `<path d="${dots(wisps.map(([x, y, k]) => [x, y, 1.8 * k]))}" fill="#f6eeff"/>`, { sd: 1.5, k: 1.5, box: [60, 50, 210, 110] });
+    s.bloom(`<g data-part="glass"><path d="${lamp.glass}" fill="${s.radU(lamp.c[0], lamp.c[1], 8, [[0, '#ffffff'], [0.5, '#f0ffb0'], [1, '#b8e060']])}"/>` +
+      `<path d="${[[-1.6, 2, 2.4, 1.6], [1.8, 0.4, 2, 1.4], [0, -2.8, 1.6, 1.1]].map(([dx, dy, rx, ry]) => oval(lamp.c[0] + dx, lamp.c[1] + dy, rx, ry)).join('')}" fill="#8aa83a"/></g>` +
+      wisps.map(([x, y, k], i) => `<g data-part="wf${i}"><path d="${lens(x, y + 4 * k, 9 * k, 90, 0.4, 3)}" fill="#b07cff" opacity=".6"/><path d="${dots([[x, y, 1.8 * k]])}" fill="#f6eeff"/></g>`).join(''), { sd: 1.5, k: 1.5, box: [60, 50, 210, 110] });
     // reeds and bulrushes in the near corners, mist on the water
     const Q = rng(14903), reeds = [];
     for (const [x0, x1] of [[-6, 40], [262, 306]]) {

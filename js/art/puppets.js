@@ -76,7 +76,11 @@ export const PUPPETS = {
   },
   // the lance (bone, violet fire) and the ghostly trail streaming behind it, both
   // about the butt, B; they run along the axis B -> T (its point at T, +4)
+  // role: attacker, element: bone; it faces right (its point is at the right); `emit`: its point, where the
+  // blow leaves from; `hit`: its middle; `alone`: the foot of the right-hand stones, where it strikes when
+  // nothing is aimed at
   'bone-lance': {
+    role: 'attacker', element: 'bone', facing: 'right', emit: [248, 120.5], hit: [154, 96], alone: [274, 127],
     butt: [60, 72], point: [248, 120.5], axis: [0.9683, 0.2554], ground: [270, 128],
     parts: [
       { name: 'trail', of: '[data-part=trail]', pivot: [60, 72] },
@@ -85,6 +89,48 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Mire Witch: the lantern arm (cut from her figure: right of x=155 between y=81 and y=110; the rest of her stays in
+  // the picture), the lantern's glass, and the seven will-o'-wisps (each a glowN, its violet glow, and a wispN, its
+  // flame). `lamp`: the lantern's glass, where the wisps gather and the attack leaves from (`emit`); `shoulder`: the
+  // arm's joint; `feet`: where she stands in the water; `hit`: her chest; `wisps`: each one's heart and size; `alone`:
+  // the open water before the dead tree, where the drain goes when nothing is aimed at
+  'mire-witch': {
+    role: 'attacker', element: 'spirit', facing: 'right', emit: [170, 98], hit: [146, 128], alone: [236, 128],
+    lamp: [170, 98], shoulder: [153, 92], feet: [146, 173],
+    wisps: [[96, 118, 1.2], [116, 82, 1], [210, 70, 1.1], [228, 122, 1.3], [80, 72, 0.8], [252, 94, 0.9], [132, 142, 0.8]],
+    parts: [
+      { name: 'arm', of: 'fig:0', pivot: [153, 92], cut: true, poly: [[155, 81], [182, 81], [182, 110], [155, 110]] },
+      { name: 'glass', of: '[data-part=glass]', pivot: [153, 92] },
+      { name: 'glow0', of: '[data-part=wg0]', pivot: [96, 121.6] },
+      { name: 'wisp0', of: '[data-part=wf0]', pivot: [96, 121.6] },
+      { name: 'glow1', of: '[data-part=wg1]', pivot: [116, 85] },
+      { name: 'wisp1', of: '[data-part=wf1]', pivot: [116, 85] },
+      { name: 'glow2', of: '[data-part=wg2]', pivot: [210, 73.3] },
+      { name: 'wisp2', of: '[data-part=wf2]', pivot: [210, 73.3] },
+      { name: 'glow3', of: '[data-part=wg3]', pivot: [228, 125.9] },
+      { name: 'wisp3', of: '[data-part=wf3]', pivot: [228, 125.9] },
+      { name: 'glow4', of: '[data-part=wg4]', pivot: [80, 74.4] },
+      { name: 'wisp4', of: '[data-part=wf4]', pivot: [80, 74.4] },
+      { name: 'glow5', of: '[data-part=wg5]', pivot: [252, 96.7] },
+      { name: 'wisp5', of: '[data-part=wf5]', pivot: [252, 96.7] },
+      { name: 'glow6', of: '[data-part=wg6]', pivot: [132, 144.4] },
+      { name: 'wisp6', of: '[data-part=wf6]', pivot: [132, 144.4] },
+    ],
+  },
+  // Bone Tithe: the skeletal hand (with its sleeve and its outline) holding the coin, the coin (the glints' bloom,
+  // cut round the coin), and the heap of bones and coins on the altar. `coin`: the coin's heart, where the hand
+  // holds it; `emit`: the coin, where the boon (the card drawn) leaves from; `heap`: the heap's top, where the
+  // coin is set down; `elbow`: where the arm turns; `eyes`: the watcher's eyes; `alone`: the dark of the arch
+  // above the watcher, where the drawn card goes when nothing is aimed at
+  'bone-tithe': {
+    role: 'support', element: 'bone', facing: 'left', emit: [148, 112], hit: [150, 96], alone: [150, 22],
+    coin: [148, 112], heap: [150, 121], elbow: [300, 40], eyes: [[145.9, 70.4], [154.1, 70.4]], candles: [[62, 117], [74, 126], [224, 124], [237, 114]],
+    parts: [
+      { name: 'heap', of: '[data-part=heap]', pivot: [150, 146] },
+      { name: 'hand', of: ['fig:3 [data-part=hand]', '[data-part=sleeve]', '[data-part=handline]'], pivot: [300, 40] },
+      { name: 'coin', of: '[data-part=glints]', pivot: [148, 112], cut: true, poly: [[148, 86], [166, 94], [174, 112], [166, 130], [148, 138], [130, 130], [122, 112], [130, 94]] },
+    ],
+  },
   // Grave Harvest: the gravedigger (cut from his figure in two: his arms, fists and the leaves in them, right of
   // x=96 between y=96 and y=134; and the rest of him from his feet), the pale roots trailing from the bulbs, the
   // three glowing bulbs and the glow on the grave's mouth. `hands`: his fists, where the bulbs hang from;

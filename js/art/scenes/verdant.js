@@ -105,15 +105,20 @@ export const verdant = faction('verdant', {
       <path d="${taper([[139, 148], [130, 142], [122, 136]], [4.4, 3.2, 2.4])}"/><circle cx="121" cy="135.5" r="3.2"/>
       <path d="M141,139C141,130 153,130 153,139" fill="none" stroke-width="2.4"/></g>`;
     const rabbit =
+      '<g data-part="body">' +
       `<path d="${blob([[166, 173], [165, 159], [168, 145], [174, 136], [184, 133], [192, 139], [196, 153], [200, 173]])}"/>` +
       '<circle cx="181" cy="126" r="11"/><ellipse cx="171" cy="129" rx="6.2" ry="4.8"/>' +
+      '</g><g data-part="ears">' +
       '<ellipse cx="176.5" cy="101" rx="4.2" ry="15" transform="rotate(-10 176.5 101)"/>' +
       '<ellipse cx="186.5" cy="103" rx="4.2" ry="14" transform="rotate(15 186.5 103)"/>' +
+      '</g><g data-part="body">' +
       '<path d="M186,117L198,124L188,131Z"/>' +
+      '</g><g data-part="arm">' +
       `<path d="${taper([[176, 142], [167, 146], [158, 146]], [5.5, 4.6, 4])}"/>` + can +
-      '<ellipse cx="170" cy="173" rx="5.5" ry="2.4"/><ellipse cx="193" cy="173" rx="5.5" ry="2.4"/>';
+      '</g><g data-part="body">' +
+      '<ellipse cx="170" cy="173" rx="5.5" ry="2.4"/><ellipse cx="193" cy="173" rx="5.5" ry="2.4"/></g>';
     s.figure(rabbit, { fill: p.fig, rim: p.rim, offsets: [[-1.2, -1.2]], shade: 0.45, halo: 0.35 });
-    s.add('<circle cx="168.5" cy="124.5" r="1.1" fill="#f1f6c8"/>'); // a glint of an eye
+    s.add('<circle data-part="eye" cx="168.5" cy="124.5" r="1.1" fill="#f1f6c8"/>'); // a glint of an eye
     // water arcing onto the sprout
     s.add([[117.5, 146, 1.9], [115, 151, 1.8], [112.5, 155.5, 1.7], [110, 159.5, 1.5]].map(([x, y, r], i) =>
       `<ellipse class="fall" style="--d:${(-i * 0.4).toFixed(2)}s" cx="${x}" cy="${y}" rx="${(r * 0.75).toFixed(2)}" ry="${r}" fill="#dff3ff" stroke="#7fb3c6" stroke-width=".45"/>`).join(''));

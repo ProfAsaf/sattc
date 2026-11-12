@@ -21,6 +21,42 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // the imp: each wing (membrane and its bones) at its shoulder, the tail at its
+  // root, and the imp himself (body, horns, glowing face) crouched from his feet
+  cinderling: {
+    role: 'attacker', element: 'fire', facing: 'front', emit: [150, 128], hit: [150, 148],
+    mouth: [150, 128], feet: [150, 168], shoulders: [[141, 138], [159, 138]],
+    parts: [
+      { name: 'wingL', of: ['fig:1 [data-part=wingL]', '[data-part=boneL]'], pivot: [141, 138] },
+      { name: 'wingR', of: ['fig:1 [data-part=wingR]', '[data-part=boneR]'], pivot: [159, 138] },
+      { name: 'tail', of: 'fig:2 [data-part=tail]', pivot: [166, 160] },
+      { name: 'imp', of: ['fig:2 [data-part=body]', '[data-part=face]'], pivot: [150, 168] },
+    ],
+  },
+  // the gardener: the rabbit (and the glint in his eye) from his feet, his ears
+  // from the top of his head, and his arm with the copper can from the shoulder;
+  // `spout`: the can's mouth as drawn, `sprout`: what he waters, `mid`: the line
+  // he turns about when he faces the other way
+  'little-gardener': {
+    role: 'support', element: 'nature', facing: 'left', emit: [117, 142], hit: [184, 150],
+    spout: [117, 142], sprout: [106, 160], shoulder: [177, 142], feet: [182, 173], mid: 183,
+    parts: [
+      { name: 'body', of: ['fig:0 [data-part=body]', '[data-part=eye]'], pivot: [182, 173] },
+      { name: 'ears', of: 'fig:0 [data-part=ears]', pivot: [181, 114] },
+      { name: 'arm', of: 'fig:0 [data-part=arm]', pivot: [177, 142] },
+    ],
+  },
+  // the kiln (an aura: the place itself acts): the white-hot arch of its mouth
+  // and the flames standing in it, each about its base;
+  // `mouth`: its mouth's middle, `vent`: the chimney's opening, souls rise from there
+  'the-kiln': {
+    role: 'aura', element: 'spirit', facing: 'front', hit: [150, 130],
+    mouth: [150, 175], base: [150, 187], vent: [150, 65],
+    parts: [
+      { name: 'mouth', of: '[data-part=mouth]', pivot: [150, 187] },
+      { name: 'flames', of: '[data-part=flames]', pivot: [150, 187] },
+    ],
+  },
   // ── end of lane A ──
 
   // the dragon's head and neck (its own pieces of the figure, and its eye),

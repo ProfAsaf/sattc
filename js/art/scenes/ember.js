@@ -70,14 +70,17 @@ export const ember = faction('ember', {
     s.add(`<path d="M118,178l6,8l-2,9M182,179l-5,7l3,9M150,186l2,7" stroke="#ff7a2e" stroke-width="1" fill="none" opacity=".75"/>`);
     // wings: thin membranes the lava light shines through, with dark bones
     const wingL = 'M141,138C128,121 108,101 79,91C85,99 87,105 87,112C95,110 101,112 105,118C111,115 117,117 121,123C127,122 133,127 137,148Z';
-    s.figure(`<path d="${wingL}"/><path d="${mirror(wingL)}"/>`, { fill: s.radU(150, 146, 74, [[0, '#a8401a'], [0.45, '#6a2010'], [1, '#3a0e07']]), rim: p.rim, offsets: [[0, -1]], rimOp: 0.6 });
+    s.figure(`<g data-part="wingL"><path d="${wingL}"/></g><g data-part="wingR"><path d="${mirror(wingL)}"/></g>`, { fill: s.radU(150, 146, 74, [[0, '#a8401a'], [0.45, '#6a2010'], [1, '#3a0e07']]), rim: p.rim, offsets: [[0, -1]], rimOp: 0.6 });
     const bones = [[79, 91], [87, 112], [105, 118], [121, 123]];
-    s.add(`<g stroke="${p.fig}" stroke-width="1.7" fill="none" stroke-linecap="round">${bones.map(([x, y]) =>
-      `<path d="M141,137Q${(141 + x) / 2},${(137 + y) / 2 - 6} ${x},${y}"/><path d="M159,137Q${(159 + W - x) / 2},${(137 + y) / 2 - 6} ${W - x},${y}"/>`).join('')}</g>`);
+    s.add(`<g stroke="${p.fig}" stroke-width="1.7" fill="none" stroke-linecap="round"><g data-part="boneL">${bones.map(([x, y]) =>
+      `<path d="M141,137Q${(141 + x) / 2},${(137 + y) / 2 - 6} ${x},${y}"/>`).join('')}</g><g data-part="boneR">${bones.map(([x, y]) =>
+      `<path d="M159,137Q${(159 + W - x) / 2},${(137 + y) / 2 - 6} ${W - x},${y}"/>`).join('')}</g></g>`);
     // the imp
-    const imp = [
+    const tail = [
       taper([[164, 160], [184, 171], [201, 163], [204, 147], [212, 140]], [4.2, 3.4, 2.6, 2, 1.4]),
       'M209,142L221,132L220,147Z',
+    ].map((d) => `<path d="${d}"/>`).join('');
+    const imp = [
       taper([[141, 113], [136, 104], [131, 97], [133, 87]], [5.5, 4, 2.4, 0.6]),
       taper([[159, 113], [164, 104], [169, 97], [167, 87]], [5.5, 4, 2.4, 0.6]),
       'M138,119L116,110L137,126Z', 'M162,119L184,110L163,126Z',
@@ -86,12 +89,14 @@ export const ember = faction('ember', {
     ].map((d) => `<path d="${d}"/>`).join('') +
       '<ellipse cx="150" cy="147" rx="16" ry="18"/><ellipse cx="140" cy="161" rx="10" ry="8"/><ellipse cx="160" cy="161" rx="10" ry="8"/>' +
       '<ellipse cx="150" cy="121" rx="14.5" ry="12.5"/><ellipse cx="134" cy="169" rx="6" ry="2.6"/><ellipse cx="166" cy="169" rx="6" ry="2.6"/>';
-    s.figure(imp, { fill: p.fig, rim: p.rim, offsets: [[-0.8, -0.9], [0.8, -0.9]], rimOp: 0.85, shade: 0.45, edge: 0.28, halo: 0.3 });
+    s.figure(`<g data-part="tail">${tail}</g><g data-part="body">${imp}</g>`, { fill: p.fig, rim: p.rim, offsets: [[-0.8, -0.9], [0.8, -0.9]], rimOp: 0.85, shade: 0.45, edge: 0.28, halo: 0.3 });
     // glowing eyes, grin and cracks
+    s.add('<g data-part="face">');
     s.glow(144, 121, 9, '#ffb347', 0.8).glow(156, 121, 9, '#ffb347', 0.8);
     s.bloom('<ellipse cx="144.5" cy="121" rx="2.7" ry="1.6" fill="#ffe7a3" transform="rotate(14 144.5 121)"/><ellipse cx="155.5" cy="121" rx="2.7" ry="1.6" fill="#ffe7a3" transform="rotate(-14 155.5 121)"/>' +
       '<path d="M144.5,127.5Q150,131 155.5,127.5" stroke="#ffb34a" stroke-width="1" fill="none"/>' +
       '<path d="M146,137l3,5l-2,5l4,6M154.5,140l-2,6l3,4" stroke="#ff9f4a" stroke-width="1.2" fill="none" stroke-linecap="round"/>', { sd: 1.2, k: 1.6, box: [120, 100, 60, 70] });
+    s.add('</g>');
     s.motes({ seed: 12, n: 28, x: [56, 244], y: [70, 205], r: [0.4, 1.2], fill: '#ff9a3a', hot: '#ffe2a0', cls: 'rise', t: [4, 8] });
     return s.svg();
   },

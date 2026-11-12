@@ -1062,9 +1062,11 @@ export const ultra_c = {
     ));
     s.glow(150, 186, 78, '#a46bff', 0.42, 'breathe');
     const bone = s.linU(0, 150, 0, 196, [[0, '#f6f0ff'], [0.6, '#dccbf6'], [1, '#a98bd8']]);
-    s.bloom(`<ellipse cx="150" cy="188" rx="64" ry="10" fill="none" stroke="#b98cff" stroke-width="1.1"/><ellipse cx="150" cy="188" rx="72" ry="12.6" fill="none" stroke="#b98cff" stroke-width=".6" opacity=".6"/>` +
-      `<path d="${runes}" fill="none" stroke="#e2c8ff" stroke-width=".9" stroke-linecap="round"/><path d="${cracks}" fill="#c9a6ff"/>` +
-      `<path d="${grip(175, 178, 1.15, 1) + grip(168, 180, 1.05, -1) + bones(124, 190, -18, 1.25, 0.6) + bones(198, 191, 16, 1.2, 0.8) + bones(140, 196, -4, 0.9, 0.3) + bones(104, 194, -30, 0.9, 1)}" fill="${bone}"/>`, { sd: 1.4, k: 1.45, box: [70, 140, 160, 70] });
+    s.bloom(`<g data-part="ring"><ellipse cx="150" cy="188" rx="64" ry="10" fill="none" stroke="#b98cff" stroke-width="1.1"/><ellipse cx="150" cy="188" rx="72" ry="12.6" fill="none" stroke="#b98cff" stroke-width=".6" opacity=".6"/>` +
+      `<path d="${runes}" fill="none" stroke="#e2c8ff" stroke-width=".9" stroke-linecap="round"/><path d="${cracks}" fill="#c9a6ff"/></g>` +
+      `<path data-part="grips" d="${grip(175, 178, 1.15, 1) + grip(168, 180, 1.05, -1)}" fill="${bone}"/>` +
+      `<path data-part="boneAC" d="${bones(124, 190, -18, 1.25, 0.6) + bones(140, 196, -4, 0.9, 0.3)}" fill="${bone}"/><path data-part="boneB" d="${bones(198, 191, 16, 1.2, 0.8)}" fill="${bone}"/>` +
+      `<path data-part="boneD" d="${bones(104, 194, -30, 0.9, 1)}" fill="${bone}"/>`, { sd: 1.4, k: 1.45, box: [70, 140, 160, 70] });
     s.path(dots([[170, 190, 2.4], [182, 189, 1.8], [150, 191, 2], [161, 192, 1.4], [120, 196, 1.8], [196, 197, 1.6], [134, 198, 1.4]]), '#120c1e');
     // mist over everything, motes; dark stones at the near corners
     s.fog(184, '#9a86c8', 0.22).fog(200, '#8f7fc8', 0.3);
@@ -1113,7 +1115,7 @@ export const ultra_c = {
     s.path(ledge([[-10, 196], [60, 194], [150, 196], [240, 194], [310, 196]]), s.lin([[0, '#1e0806'], [1, '#080202']]));
     // the blast: white-hot in the arch, tongues of fire bursting out of it
     // in every direction and rolling up the wall
-    s.path(poly(door), s.radU(150, 150, 40, [[0, '#ffffff'], [0.4, '#fff3c8'], [1, '#ffb04a']]));
+    s.path(poly(door), s.radU(150, 150, 40, [[0, '#ffffff'], [0.4, '#fff3c8'], [1, '#ffb04a']]), 'data-part="hot"');
     const fire = s.radU(150, 146, 150, [[0, '#ffffff'], [0.12, '#fff3c8'], [0.36, '#ffb04a', 0.95], [0.7, '#ff6a1f', 0.8], [1, '#c23a14', 0.3]]);
     const tongues = [
       plume(150, 120, -92, -86, 90, [26, 30, 24, 14, 6, 0.5]), plume(136, 126, -120, -150, 96, [20, 26, 20, 12, 4, 0.5]), plume(164, 126, -60, -30, 96, [20, 26, 20, 12, 4, 0.5]),
@@ -1123,7 +1125,7 @@ export const ultra_c = {
       plume(120, 112, -140, -110, 60, [10, 12, 8, 3, 0.4]), plume(180, 112, -40, -70, 60, [10, 12, 8, 3, 0.4]),
     ].join('');
     const core = [plume(150, 140, -92, -90, 50, [20, 18, 10, 0.5]), plume(144, 150, -160, -190, 50, [16, 12, 6, 0.4]), plume(156, 150, -20, 10, 50, [16, 12, 6, 0.4])].join('');
-    s.bloom(`<path d="${tongues}" fill="${fire}"/><path d="${core}" fill="#fff6dc" opacity=".9"/>`, { sd: 2.2, k: 1.4 });
+    s.bloom(`<g data-part="blast"><path d="${tongues}" fill="${fire}"/><path d="${core}" fill="#fff6dc" opacity=".9"/></g>`, { sd: 2.2, k: 1.4 });
     // smoke billowing up off it
     const R = rng(13602);
     const billow = [];
@@ -1162,8 +1164,9 @@ export const ultra_c = {
       at(62, 206, 1.14, 1)(brace), at(242, 206, 1.1, -1)(turn),
       at(104, 195, 0.86, 1)(kneel), at(200, 196, 0.84, -1)(brace),
     );
-    s.figure(`<path d="${crew}"/>`, { fill: p.fig, rim: '#ffb04a', offsets: [[0, -1.3], [-1.1, -0.6], [1.1, -0.6]], rimOp: 0.95, shade: 0.4, edge: 0.3, light: [0, -1] });
-    s.path(caught, '#120504');
+    // (the figure's shading is a gradient over each piece's own box, so the four men stay one piece)
+    s.figure(`<g data-part="crew"><path d="${crew}"/></g>`, { fill: p.fig, rim: '#ffb04a', offsets: [[0, -1.3], [-1.1, -0.6], [1.1, -0.6]], rimOp: 0.95, shade: 0.4, edge: 0.3, light: [0, -1] });
+    s.path(caught, '#120504', 'data-part="caught"');
     s.motes({ seed: 13603, n: 34, x: [40, 260], y: [10, 190], r: [0.4, 1.3], fill: '#ffc25a', hot: '#fff6d8', cls: 'rise', t: [3, 7] });
     s.motes({ seed: 13604, n: 12, x: [0, 300], y: [20, 200], r: [0.4, 1], fill: '#ff8a3a', cls: 'rise', t: [5, 9], op: [0.3, 0.8] });
     return s.svg();
@@ -1226,7 +1229,7 @@ export const ultra_c = {
     // the lance of sunlight, couched under his arm; the armour cracking like
     // glass where its light falls, splinters of it breaking off behind
     const beam = [[X, Y - 59 * K], [X + 22 * K, Y - 61 * K], [288, 100]];
-    s.add(`<ellipse cx="215" cy="107" rx="84" ry="9" transform="rotate(-5.8 215 107)" fill="${s.rad([[0, '#fff6dc', 0.5], [0.6, '#ffe6a0', 0.2], [1, '#ffe6a0', 0]])}"/>`);
+    s.add(`<ellipse data-part="haze" cx="215" cy="107" rx="84" ry="9" transform="rotate(-5.8 215 107)" fill="${s.rad([[0, '#fff6dc', 0.5], [0.6, '#ffe6a0', 0.2], [1, '#ffe6a0', 0]])}"/>`);
     s.glow(beam[1][0] + 6, beam[1][1] - 1, 26, '#fff4cc', 0.7, 'breathe');
     const [hx, hy] = place('M14,-64').slice(1).split(',').map(Number);
     const cracks = [jag(13704, hx, hy, -170, 22, 1.8, 4, 60), jag(13705, hx, hy, -120, 20, 1.7, 4, 60), jag(13706, hx, hy, 150, 18, 1.6, 4, 60),
@@ -1236,9 +1239,9 @@ export const ultra_c = {
       const x = 62 + R() * 54, y = 74 + R() * 44, z = 2.2 + R() * 3.4 * (1 - (116 - x) / 90);
       shards.push(rot(poly([[x, y - z], [x + z * 0.8, y + z * 0.5], [x - z * 0.6, y + z * 0.7]]), x, y, R() * 360));
     }
-    s.bloom(`<path d="${taper(beam, [9, 13, 2])}" fill="#ffe6a0" opacity=".45"/><path d="${taper(beam, [3.4, 5, 0.6])}" fill="#fffdf2"/>` +
-      `<path d="${glint(286, 100.2, 10, 0.14)}" fill="#ffffff"/>` +
-      `<path d="${cracks}" fill="#ffffff"/><path d="${shards.join('')}" fill="#dff4ff" stroke="#ffffff" stroke-width=".5" opacity=".9"/>`, { sd: 1.4, k: 1.45, box: [50, 50, 250, 100] });
+    s.bloom(`<g data-part="lance"><path d="${taper(beam, [9, 13, 2])}" fill="#ffe6a0" opacity=".45"/><path d="${taper(beam, [3.4, 5, 0.6])}" fill="#fffdf2"/>` +
+      `<path d="${glint(286, 100.2, 10, 0.14)}" fill="#ffffff"/></g>` +
+      `<g data-part="shards"><path d="${cracks}" fill="#ffffff"/><path d="${shards.join('')}" fill="#dff4ff" stroke="#ffffff" stroke-width=".5" opacity=".9"/></g>`, { sd: 1.4, k: 1.45, box: [50, 50, 250, 100] });
     s.motes({ seed: 13711, n: 16, x: [30, 290], y: [40, 180], r: [0.4, 1], fill: '#ffe39a', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },

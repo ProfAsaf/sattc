@@ -4,6 +4,7 @@
 export const LIVE = {
   "ambush-at-dawn": { src: 'art/live/ambush-at-dawn.webp?v=acf62e50', live: 'art/live/ambush-at-dawn.json?v=522c8b2b' },
   "ashmaw": { src: 'art/live/ashmaw.webp?v=16617e99', live: 'art/live/ashmaw.json?v=650b0640' },
+  "backdraft": { src: 'art/live/backdraft.webp?v=92fa0953', live: 'art/live/backdraft.json?v=032fe34a' },
   "banner-of-the-charge": { src: 'art/live/banner-of-the-charge.webp?v=18e29b0c', live: 'art/live/banner-of-the-charge.json?v=0d107f73' },
   "bark-graft": { src: 'art/live/bark-graft.webp?v=88fd4c24', live: 'art/live/bark-graft.json?v=8abb2db2' },
   "bastion": { src: 'art/live/bastion.webp?v=df3c6ce9', live: 'art/live/bastion.json?v=d31fb72d' },
@@ -24,6 +25,7 @@ export const LIVE = {
   "fog-bank": { src: 'art/live/fog-bank.webp?v=d407985c', live: 'art/live/fog-bank.json?v=2610cfb2' },
   "gloomweb-spider": { src: 'art/live/gloomweb-spider.webp?v=780296b2', live: 'art/live/gloomweb-spider.json?v=03f74ef2' },
   "grave-rite": { src: 'art/live/grave-rite.webp?v=2254b2d7', live: 'art/live/grave-rite.json?v=796203ec' },
+  "grave-snare": { src: 'art/live/grave-snare.webp?v=5e0f7b78', live: 'art/live/grave-snare.json?v=98023c16' },
   "gravewarden": { src: 'art/live/gravewarden.webp?v=85165e8f', live: 'art/live/gravewarden.json?v=93a2879d' },
   "kindling-heart": { src: 'art/live/kindling-heart.webp?v=5bef09ce', live: 'art/live/kindling-heart.json?v=3340f011' },
   "lantern-moth": { src: 'art/live/lantern-moth.webp?v=e071f49a', live: 'art/live/lantern-moth.json?v=17974715' },
@@ -50,6 +52,7 @@ export const LIVE = {
   "sky-warden": { src: 'art/live/sky-warden.webp?v=0be3669e', live: 'art/live/sky-warden.json?v=eff88479' },
   "sproutling": { src: 'art/live/sproutling.webp?v=eed772bf', live: 'art/live/sproutling.json?v=5ff3ddac' },
   "stoke-the-furnace": { src: 'art/live/stoke-the-furnace.webp?v=b98ce78a', live: 'art/live/stoke-the-furnace.json?v=496e6771' },
+  "sunglass-lancer": { src: 'art/live/sunglass-lancer.webp?v=508832b3', live: 'art/live/sunglass-lancer.json?v=ba28318a' },
   "the-barrow-queen": { src: 'art/live/the-barrow-queen.webp?v=6a8bcf18', live: 'art/live/the-barrow-queen.json?v=ac4ce372' },
   "the-pale-abbess": { src: 'art/live/the-pale-abbess.webp?v=8bdcdec7', live: 'art/live/the-pale-abbess.json?v=68fc7d71' },
   "thornback-archer": { src: 'art/live/thornback-archer.webp?v=ab1a1631', live: 'art/live/thornback-archer.json?v=f006ed2c' },

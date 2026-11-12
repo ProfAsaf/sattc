@@ -85,6 +85,58 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Sunglass Lancer: the horse at full stretch (cut into its body, with the tail and head, and its
+  // fore and hind legs, each from where it meets the belly), the rider in his mirrored armour (one
+  // piece, about his hips), the haze of light along the lance, the lance of sunlight itself (a
+  // glint at its tip), and the cracks and splinters of glass in his armour. `emit`: the lance's
+  // tip; `butt`: where it is couched under his arm; `hit`: his chest; `alone`: just beyond the
+  // picture, where the lance's light goes when nothing is aimed at; `hooves`: the horse's feet
+  'sunglass-lancer': {
+    role: 'attacker', element: 'light', facing: 'right', emit: [290, 100], hit: [120, 112], butt: [116, 117], tip: [290, 100], alone: [340, 110], hooves: [116, 188],
+    parts: [
+      { name: 'horse', of: 'fig:0', pivot: [116, 188], poly: [[-20, -20], [320, -20], [320, 230], [185, 230], [185, 152], [117, 152], [117, 230], [104, 230], [104, 152], [40, 152], [40, 230], [-20, 230]] },
+      { name: 'foreleg', of: 'fig:0', pivot: [128, 152], poly: [[117, 152], [185, 152], [185, 230], [117, 230]] },
+      { name: 'hindleg', of: 'fig:0', pivot: [94, 152], poly: [[40, 152], [104, 152], [104, 230], [40, 230]] },
+      { name: 'rider', of: 'fig:1', pivot: [122, 134] },
+      { name: 'haze', of: '[data-part=haze]', pivot: [116, 117] },
+      { name: 'lance', of: '[data-part=lance]', pivot: [116, 117] },
+      { name: 'shards', of: '[data-part=shards]', pivot: [95, 100] },
+    ],
+  },
+  // Backdraft: the white-hot door (the arch's fill), the blast of fire bursting out of it (tongues
+  // and core, one piece about the arch's heart), the four attackers (one figure: the shading is
+  // a gradient over its own box, so they move as a line) and the one caught black in the arch.
+  // `emit`: the arch's heart, where the blast leaves; `hit`: the blast's middle; `alone`: where its
+  // fire goes when nothing is aimed at (the attackers on the right, then those on the left: each
+  // attacking creature takes it); `feet`: where the line's feet stand
+  'backdraft': {
+    role: 'attacker', element: 'fire', facing: 'front', emit: [150, 140], hit: [150, 150],
+    alone: [[236, 160], [66, 160]], feet: [150, 196],
+    parts: [
+      { name: 'hot', of: '[data-part=hot]', pivot: [150, 150] },
+      { name: 'blast', of: '[data-part=blast]', pivot: [150, 150] },
+      { name: 'crew', of: 'fig:0', pivot: [150, 200] },
+      { name: 'caught', of: '[data-part=caught]', pivot: [150, 178] },
+    ],
+  },
+  // Grave Snare: the rearing horse and its rider (one figure, turning about its planted hind hooves),
+  // the rune ring cut in the turf with the cracks of light running out of it, and the bony hands:
+  // the two gripping its hind legs (one path), two clawing up on the left (one path), one on the
+  // right, one far left, each rising from its wrist. `emit`: the middle of the ring, where the
+  // snare's grip leaves; `hit`: the horse's chest; `alone`: its hind legs, where the snare closes
+  // when nothing is aimed at; `hooves`: where the hind hooves stand
+  'grave-snare': {
+    role: 'support', element: 'bone', facing: 'left', emit: [150, 188], hit: [160, 96], alone: [178, 160], hooves: [172, 185],
+    reach: [[170, 170], [128, 168], [200, 172]],
+    parts: [
+      { name: 'horse', of: 'fig:0', pivot: [172, 185] },
+      { name: 'ring', of: '[data-part=ring]', pivot: [150, 188] },
+      { name: 'grips', of: '[data-part=grips]', pivot: [171, 196] },
+      { name: 'boneAC', of: '[data-part=boneAC]', pivot: [132, 205] },
+      { name: 'boneB', of: '[data-part=boneB]', pivot: [200, 205] },
+      { name: 'boneD', of: '[data-part=boneD]', pivot: [108, 205] },
+    ],
+  },
   // Fog Bank: the towering bank of fog (its three rows of billows, rolling in about its far corner),
   // the shore, then the charging warriors, each in its depth with the sheets of fog drifting over
   // it: the two far ones, a veil, the third, a veil, the fourth, a veil, the two near ones, and the

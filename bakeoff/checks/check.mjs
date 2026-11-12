@@ -50,10 +50,10 @@ const report = { id, at: new Date().toISOString(), pass: {}, notes: [] };
 const want = words.length ? [...words] : ['a', 'b', 'c', 'd', 'e'];
 if (START || words[0] === 'ref' || words[0] === 'look') want.length = 0;
 
-// a picture of the drawing (still.html, 300 x 210 css px) at `k` x
-async function still(mode, file, k = 2) {
+// a picture of the drawing (still.html, 300 x 210 css px) at `k` x, from this folder's server (or `base`)
+async function still(mode, file, k = 2, base = B) {
   return withChrome({ width: 300, height: 210, scale: k, mobile: false, transparent: true }, async (pg) => {
-    await pg.goto(`${B}/bakeoff/still.html?id=${encodeURIComponent(id)}&mode=${mode}&nc=${Date.now()}`);
+    await pg.goto(`${base}/bakeoff/still.html?id=${encodeURIComponent(id)}&mode=${mode}&nc=${Date.now()}`);
     await pg.waitFor('window.ready || window.failed', 20000);
     const failed = await pg.ev('window.failed || null');
     if (failed) throw new Error(`still.html (${mode}): ${failed}`);
@@ -118,7 +118,13 @@ try {
   // (a) the still drawing, unchanged
   if (want.includes('a')) {
     const ref = join(REF, `${id}.png`);
-    if (!existsSync(ref)) throw new Error(`no reference picture bakeoff/ref/${id}.png`);
+    if (!existsSync(ref)) {
+      // (the drawing as it was: rendered once from the untouched copy named in bakeoff/local.json, { "refBase": "http://localhost:PORT" })
+      const lf = join(ROOT, 'bakeoff', 'local.json'), refBase = existsSync(lf) ? JSON.parse(readFileSync(lf, 'utf8')).refBase : null;
+      if (!refBase) throw new Error(`no reference picture bakeoff/ref/${id}.png`);
+      mkdirSync(REF, { recursive: true });
+      await still('draw', ref, 2, refBase);
+    }
     const now = join(OUT, `${id}-draw.png`);
     await still('draw', now);
     let d = py('diff', ref, now, join(OUT, `${id}-a-diff.png`));

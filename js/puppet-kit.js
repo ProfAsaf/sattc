@@ -62,7 +62,10 @@ export function frame(el, over) {
 // (`box`: its .sp-art) on the card's `face`, with what leaves the picture on
 // `over`; `aim` and `blows` when it acts on another card (null alone). Gives
 // the kit (`k`, for mod.build), what it made, and the motions it started.
-export function makeKit({ id, mod, art, box, face, over, aim = null, blows = null }) {
+// `lenient` (the game): a moment timed past the move's end, or before the
+// one listed ahead of it (a move aimed further off than it was made for, say),
+// is held in, not an error.
+export function makeKit({ id, mod, art, box, face, over, aim = null, blows = null, lenient = false }) {
   const END = mod.END ?? 4000, anims = [];
   if (!(END >= 1500 && END <= 6000)) throw new Error(`END must be 1500-6000 ms (is ${END})`);
   // measured once, first
@@ -73,6 +76,7 @@ export function makeKit({ id, mod, art, box, face, over, aim = null, blows = nul
   const K = (list) => {
     let last = -1;
     return list.map(([ms, f, e]) => {
+      if (lenient) ms = Math.min(END, Math.max(0, last, Number.isFinite(ms) ? ms : last));
       if (!(ms >= 0 && ms <= END)) throw new Error(`a keyframe at ${ms} ms is outside the move (0-${END} ms)`);
       if (ms < last) throw new Error(`keyframes out of order: ${ms} ms after ${last} ms`);
       last = ms;

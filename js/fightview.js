@@ -16,6 +16,7 @@ import { BY_ID } from './cards.js';
 import { hasKw, power, vitality } from './engine.js';
 import { esc } from './render.js';
 import * as FX from './fx.js';
+import { fight, readyToFight } from './cards-alive.js';
 
 const shortName = (n) => String(n ?? '').replace(/^Bot · /, '');
 const list = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
@@ -234,6 +235,7 @@ export function playStory(story, { stage = null, tap = false } = {}) {
       <div class="bf-hint">${tap ? 'Tap to go on' : 'Tap to go on · hold to pause'}</div>`;
     document.body.appendChild(box);
     FX.setStage(box);
+    readyToFight(Object.values(story.cards).map((x) => x.cid)); // (each striker's own move, fetched ahead)
     const $ = (sel) => box.querySelector(sel);
     const bars = [...box.querySelectorAll('.bf-bars b')];
     let i = -1, gen = 0, timer = 0, left = 0, since = 0, paused = false, closed = false;
@@ -294,12 +296,21 @@ export function playStory(story, { stage = null, tap = false } = {}) {
       await FX.wait(650);
       for (const st of b.steps) {
         if (g !== gen) return;
+        // each strikes with its own move, aimed at what it strikes (js/cards-alive.js); one that
+        // can't charges. A blow lands only while its step still shows.
+        const blow = (from, to, n, hit, color) => ({ from, to, land: () => { if (g !== gen) return; FX.impact(to, { strength: Math.max(1, n), color }); hit(); } });
         if (st.t === 'clash') {
-          await FX.clash(el(st.a), el(st.b), { strength: Math.max(st.na, st.nb, 1), onHit: () => { hurt(st.b, st.na); hurt(st.a, st.nb); } });
+          const a = el(st.a), c = el(st.b), s = Math.max(st.na, st.nb, 1);
+          const own = await fight([blow(a, c, s, () => hurt(st.b, st.na)), blow(c, a, s, () => hurt(st.a, st.nb))]);
+          if (!own && g === gen) await FX.clash(a, c, { strength: s, onHit: () => { hurt(st.b, st.na); hurt(st.a, st.nb); } });
         } else if (toPlayer(st.to)) {
-          await FX.lunge(el(st.from), plate(st.to.p), { strength: Math.max(1, st.n), color: '#ff6a3d', onHit: () => hurtPlate(st.to.p, st.n) });
+          const a = el(st.from), p = plate(st.to.p);
+          const own = await fight([blow(a, p, st.n, () => hurtPlate(st.to.p, st.n), '#ff6a3d')]);
+          if (!own && g === gen) await FX.lunge(a, p, { strength: Math.max(1, st.n), color: '#ff6a3d', onHit: () => hurtPlate(st.to.p, st.n) });
         } else {
-          await FX.lunge(el(st.from), el(st.to), { strength: Math.max(1, st.n), onHit: () => hurt(st.to, st.n) });
+          const a = el(st.from), t = el(st.to);
+          const own = await fight([blow(a, t, st.n, () => hurt(st.to, st.n))]);
+          if (!own && g === gen) await FX.lunge(a, t, { strength: Math.max(1, st.n), onHit: () => hurt(st.to, st.n) });
         }
         await FX.wait(260);
       }

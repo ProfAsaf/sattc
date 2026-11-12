@@ -21,7 +21,7 @@ import * as St from './stats.js';
 import * as Rating from './rating.js';
 import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
-import { actBig, hushTable, startTableAlive, stopTableAlive } from './cards-alive.js';
+import { actBig, fight, hushTable, readyToFight, startTableAlive, stopTableAlive } from './cards-alive.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
 import * as Camp from './campaign.js';
@@ -2584,6 +2584,8 @@ const DMG = new Set(['strike', 'dmg', 'hitPlayer', 'life', 'buff']);
 async function animateOld(root, events, after = G.state) {
   const s0 = S();
   let i = 0;
+  // the creatures that will strike here: their own moves fetched while the rest plays out
+  readyToFight(events.filter((e) => e.k === 'strike' || e.k === 'clash').flatMap((e) => [el(root, e.uid), typeof e.to === 'number' ? el(root, e.to) : null]).filter(Boolean));
   const lifeShown = new Set();
   while (i < events.length) {
     const e = events[i];
@@ -2723,7 +2725,12 @@ async function animateOld(root, events, after = G.state) {
         await FX.wave(side || root, { color: '#ff7a2e', dir: 'down' });
         break;
       }
-      case 'clash': await FX.clash(el(root, e.uid), el(root, e.to), { color: colorOf(s0.cards[e.uid]?.cid) }); break;
+      case 'clash': {
+        // two made to fight: each strikes with its own move (js/cards-alive.js), or they charge
+        const a = el(root, e.uid), b = el(root, e.to), color = colorOf(s0.cards[e.uid]?.cid);
+        if (!(await fight([{ from: a, to: b, land: () => FX.impact(b, { color }) }, { from: b, to: a, land: () => FX.impact(a, { color }) }]))) await FX.clash(a, b, { color });
+        break;
+      }
       case 'countered': await FX.banner('Canceled!', { sub: 'Countercurrent', tone: 'info' }); break;
       case 'bounce': case 'transform': case 'freeze': case 'steal': {
         const n = el(root, e.uid);
@@ -2859,8 +2866,19 @@ async function strikeAll(root, strikes) {
     const lit = [a, b, a.closest('.gb-col')].filter(Boolean);
     lit.forEach((x) => x.classList.add('focus'));
     await FX.wait(160);
-    if (back) await FX.clash(a, b, { strength: Math.max(sk.n, back.n), onHit: () => { hit(b, sk.n); hit(a, back.n); } });
-    else await FX.lunge(a, b, { strength: sk.n, color: toPlayer ? '#ff6a3d' : undefined, onHit: () => hit(b, sk.n) });
+    // each strikes with its own move, aimed at what it strikes (js/cards-alive.js); one that can't charges
+    if (back) {
+      const s = Math.max(sk.n, back.n);
+      const own = await fight([
+        { from: a, to: b, land: () => { FX.impact(b, { strength: s }); hit(b, sk.n); } },
+        { from: b, to: a, land: () => { FX.impact(a, { strength: s }); hit(a, back.n); } },
+      ]);
+      if (!own) await FX.clash(a, b, { strength: s, onHit: () => { hit(b, sk.n); hit(a, back.n); } });
+    } else {
+      const color = toPlayer ? '#ff6a3d' : undefined;
+      const own = await fight([{ from: a, to: b, land: () => { FX.impact(b, { strength: sk.n, color }); hit(b, sk.n); } }]);
+      if (!own) await FX.lunge(a, b, { strength: sk.n, color, onHit: () => hit(b, sk.n) });
+    }
     await FX.wait(420);
     lit.forEach((x) => x.classList.remove('focus'));
   }

@@ -203,6 +203,7 @@ body[data-page="home"] main { display: flex; flex-direction: column; min-height:
 .pp-fx .fx, .pp .fx, .pp .fx-copy { position: absolute; display: block; pointer-events: none; opacity: 0; max-width: none; }
 .pp-fx i.fx, .pp i.fx { border-radius: 50%; }
 .pp-fx .lit, .pp .lit { mix-blend-mode: plus-lighter; }
+.tcard.pp-up { z-index: 50; } /* (a card risen to strike: in front of the rest) */
 .fan .card:nth-child(1) { transform: translateX(-118%) rotate(-11deg) translateY(18px); }
 .fan .card:nth-child(2) { transform: translateX(-50%); z-index: 2; }
 .fan .card:nth-child(3) { transform: translateX(18%) rotate(11deg) translateY(18px); }

@@ -427,17 +427,19 @@ export const verdant = faction('verdant', {
       taper([[200, 138], [208, 154], [204, 168], [206, 185]], [16, 8, 5, 4]) + taper([[188, 140], [194, 156], [190, 170], [192, 185]], [14, 7, 4.5, 4]),
       taper([[212, 118], [218, 124]], [5, 2]),
     ].join('');
-    s.figure(P(legs, beams, leaves,
+    s.figure(P(legs) + `<g data-part="antlers">${P(beams, leaves)}</g>` + P(
       blob([[128, 116], [150, 110], [180, 110], [204, 114], [214, 124], [210, 140], [196, 146], [160, 146], [136, 144], [124, 134]]),
-      blob([[116, 82], [114, 92], [104, 98], [90, 100], [84, 96], [88, 90], [100, 84], [108, 78]])) +
+      ) + `<g data-part="head">${P(blob([[116, 82], [114, 92], [104, 98], [90, 100], [84, 96], [88, 90], [100, 84], [108, 78]]))}</g>` +
       E(130, 186, 3, 1.6) + E(150, 186, 3, 1.6) + E(192, 186, 3, 1.6) + E(206, 186, 3, 1.6),
     { fill: p.fig, rim: p.rim, offsets: [[-1.2, -1], [0, -1.2]], shade: 0.45, edge: 0.3, halo: 0.35 });
-    s.add('<circle cx="101" cy="88" r="1.2" fill="#f1f6c8"/>');
+    s.add('<circle data-part="eye" cx="101" cy="88" r="1.2" fill="#f1f6c8"/>');
     // blossoms glowing among the leaves
     const bl = s.rad([[0, '#fffbe2', 0.95], [0.35, '#fff3b8', 0.5], [1, '#fff3b8', 0]]);
     const blossoms = [[76, 20], [102, 16], [58, 22], [72, 48], [166, 28], [142, 14], [186, 26], [158, 48]];
-    s.add(blossoms.map(([x, y]) => `<circle class="breathe" cx="${x}" cy="${y}" r="6.5" fill="${bl}"/>`).join(''));
+    s.add('<g data-part="blossoms">');
+    s.add(blossoms.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="6.5" fill="${bl}"/>`).join(''));
     s.bloom(`<path d="${blossoms.map(([x, y]) => circ(x, y, 1.6)).join('')}" fill="#fffdf0"/>`, { sd: 1.4, k: 1.5, box: [40, 0, 160, 66] });
+    s.add('</g>');
     s.motes({ seed: 256, n: 18, x: [30, 270], y: [20, 180], r: [0.5, 1.2], fill: '#fff4c8', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 1] });
     return s.svg();
   },
@@ -462,19 +464,21 @@ export const verdant = faction('verdant', {
       // leaves hang in scallops from the underside
       for (let i = 0; i < 2; i++) { const a = Math.PI * (0.15 + R() * 0.7); crown += circ(x + Math.cos(a) * r * 0.85, y + Math.sin(a) * r * 0.85, r * (0.28 + R() * 0.14)); }
     }
-    const boughs = [
+    const bough = [
       taper([[150, 192], [149, 150], [150, 110], [152, 76], [150, 30]], [88, 74, 64, 50, 34]),
       taper([[146, 48], [128, 34], [108, 26], [92, 24]], [16, 11, 7, 4]) + taper([[154, 48], [172, 34], [192, 26], [210, 24]], [16, 11, 7, 4]),
       taper([[124, 100], [98, 94], [74, 84], [54, 70], [42, 58]], [26, 19, 13, 8, 4]),
       taper([[176, 96], [202, 88], [226, 78], [246, 64], [258, 54]], [26, 19, 13, 8, 4]),
       taper([[74, 84], [62, 92], [50, 94]], [6, 4, 1]) + taper([[98, 94], [92, 80], [86, 70]], [6, 4, 1]),
       taper([[226, 78], [238, 86], [250, 88]], [6, 4, 1]) + taper([[202, 88], [208, 74], [214, 64]], [6, 4, 1]),
-    ].join('');
-    let tufts = '';
-    for (const [x, y] of [[42, 56], [50, 94], [258, 52], [250, 88]]) {
-      for (let i = 0; i < 3; i++) { const a = R() * Math.PI * 2; tufts += leaf(x, y, a, 6 + R() * 3, 3.6); }
-    }
-    s.figure(P(crown, boughs, tufts), { fill: p.fig, rim: p.rim, offsets: [[-1.2, -0.8], [1.2, -0.8], [0, -1.3]], shade: 0.4, edge: 0.3, halo: 0.4 });
+    ];
+    const tuft = [[[42, 56], [50, 94]], [[258, 52], [250, 88]]].map((side) => {
+      let d = '';
+      for (const [x, y] of side) for (let i = 0; i < 3; i++) { const a = R() * Math.PI * 2; d += leaf(x, y, a, 6 + R() * 3, 3.6); }
+      return d;
+    });
+    // (its moving pieces tagged: the crown, the boughs with the trunk, and the leaves at the twigs)
+    s.figure(`<g data-part="crown">${P(crown)}</g><g data-part="boughs">${P(bough.join(''))}</g><g data-part="tufts">${P(tuft.join(''))}</g>`, { fill: p.fig, rim: p.rim, offsets: [[-1.2, -0.8], [1.2, -0.8], [0, -1.3]], shade: 0.4, edge: 0.3, halo: 0.4 });
     s.add('<path d="M118,140C121,152 116,164 119,178M182,140C179,152 184,164 181,178M128,60C125,70 129,80 126,88M172,60C175,70 171,80 174,88" stroke="#34482a" stroke-width="1.3" fill="none" opacity=".8"/>');
     // its face, lit by its own eyes: a heavy brow, a long nose, a closed mouth, a beard of moss
     s.add(`<ellipse cx="150" cy="112" rx="34" ry="30" fill="${s.rad([[0, '#3f552b', 0.95], [1, '#3f552b', 0]])}"/>`);

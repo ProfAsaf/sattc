@@ -56,7 +56,7 @@ export const tide = faction('tide', {
     // the diver in profile, plunging head-first for the page: one arm reaching
     // ahead, the other swept back, legs in a scissor kick, hair streaming back
     // (drawn lying along +x, head at the origin, back up; then turned into the dive)
-    const dv = parts([
+    const dl = [
       taper([[-9, 1.5], [-26, 2.5], [-42, 2.5]], [13, 12, 10]),
       taper([[-4, 1], [-10, 1.5]], [5.6, 6.6]),
       taper([[-8, 5], [3, 9], [15, 10], [26, 9]], [4.8, 4.2, 3.6, 3.2]),
@@ -64,13 +64,19 @@ export const tide = faction('tide', {
       taper([[-41, 0], [-58, -1.5], [-75, -5], [-82, -9]], [9, 7, 4.8, 1.8]),
       taper([[-41, 4.5], [-57, 8], [-70, 13], [-74, 19]], [8.5, 6.6, 4.6, 1.6]),
       taper([[-4, -3], [-14, -6.2], [-26, -6.8], [-37, -9]], [7.5, 4.6, 2.4, 0.4]),
-    ]) + '<circle cx="0" cy="0" r="6.6"/><ellipse cx="28.6" cy="8.6" rx="3" ry="2.2"/><ellipse cx="-31.5" cy="11.2" rx="2.6" ry="2"/>';
+    ];
+    // (its limbs tagged to move: the body, each arm with its hand, each leg, the hair, the head)
+    const dv = `<g data-part="body">${P(dl[0])}${P(dl[1])}</g><g data-part="armF">${P(dl[2])}<ellipse cx="28.6" cy="8.6" rx="3" ry="2.2"/></g>` +
+      `<g data-part="armB">${P(dl[3])}<ellipse cx="-31.5" cy="11.2" rx="2.6" ry="2"/></g><g data-part="legA">${P(dl[4])}</g><g data-part="legB">${P(dl[5])}</g>` +
+      `<g data-part="hair">${P(dl[6])}</g><g data-part="head"><circle cx="0" cy="0" r="6.6"/></g>`;
     s.figure(`<g transform="translate(190 106) rotate(35) scale(1.32)">${dv}</g>`,
       { fill: p.fig, rim: p.rim, offsets: [[0, -1.3], [0.7, -1]], rimOp: 0.9, shade: 0.5, edge: 0.3, halo: 0.35 });
     // the page it reaches for, lit like a lamp
     s.glow(224, 147, 34, '#e9fff4', 0.6, 'breathe');
+    s.add('<g data-part="page">');
     s.bloom('<g transform="translate(224 147) rotate(22)"><rect x="-5" y="-6.5" width="10" height="13" rx=".8" fill="#fdfbea"/><path d="M-3.4,-3.6h6.8M-3.4,-1.4h6.8M-3.4,.8h5M-3.4,3h6" stroke="#a7b7ac" stroke-width=".5"/></g>',
       { sd: 2, k: 1.3, box: [190, 110, 70, 70] });
+    s.add('</g>');
     s.motes({ seed: 36, n: 10, x: [196, 252], y: [118, 178], r: [0.4, 0.9], fill: '#e9fff4', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 1] });
     s.add(particles({ seed: 35, n: 22, x: [100, 250], y: [50, 205], r: [0.7, 2.1], stroke: '#cdf3f6', cls: 'rise', t: [6, 11], op: [0.4, 0.9] }));
     s.add(particles({ seed: 37, n: 7, x: [178, 196], y: [72, 102], r: [0.6, 1.3], stroke: '#e6fbfb', cls: 'rise', t: [4, 7], op: [0.5, 1] }));

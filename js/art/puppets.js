@@ -244,6 +244,58 @@ export const PUPPETS = {
       { name: 'eyes', of: '[data-part=eyes]', pivot: [155, 72] },
     ],
   },
+  // the worldtree stag (a creature, a support: it gives another creature +2/+2): its antlers
+  // with the blossoms among their leaves, split at the crown into the left and the right
+  // antler (each turning about the crown), and its head (with its eye), nodding from the neck's
+  // top; `emit`: the sun caught between the antlers, where its gift gathers and leaves from,
+  // `hit`: its flank, `crown`: where the antlers spring from the head, `neck`: where the head
+  // turns, `blossoms`: the eight blossoms among the leaves
+  'worldtree-stag': {
+    role: 'support', element: 'nature', facing: 'left', emit: [112, 40], hit: [168, 128],
+    crown: [112, 84], neck: [112, 92],
+    blossoms: [[76, 20], [102, 16], [58, 22], [72, 48], [166, 28], [142, 14], [186, 26], [158, 48]],
+    parts: [
+      { name: 'antlersL', of: ['fig:0 [data-part=antlers]', '[data-part=blossoms]'], pivot: [112, 84], poly: [[-20, -20], [113, -20], [113, 230], [-20, 230]] },
+      { name: 'antlersR', of: ['fig:0 [data-part=antlers]', '[data-part=blossoms]'], pivot: [112, 84], poly: [[113, -20], [320, -20], [320, 230], [113, 230]] },
+      { name: 'head', of: ['fig:0 [data-part=head]', '[data-part=eye]'], pivot: [112, 92] },
+    ],
+  },
+  // the forest remembers (a creature, an attacker: it overruns): the great crown, and each
+  // bough raised like an arm from the shoulder (cut from the trunk, with the leaves at its twigs),
+  // turning about its joint; `emit`: between its glowing eyes, where its attack gathers and
+  // leaves from, `hit`: its chest, `eyes`: the two eyes, `mouth`: its closed mouth, `crown`: where
+  // the crown rests on the trunk, `shoulders`: the boughs' joints
+  'the-forest-remembers': {
+    role: 'attacker', element: 'spirit', facing: 'front', emit: [150, 102], hit: [150, 130],
+    eyes: [[137, 101], [163, 101]], mouth: [150, 131], crown: [150, 60], shoulders: [[126, 100], [174, 100]],
+    parts: [
+      { name: 'crown', of: 'fig:0 [data-part=crown]', pivot: [150, 60] },
+      { name: 'armL', of: 'fig:0 [data-part=boughs]', pivot: [126, 100], poly: [[20, 50], [100, 52], [125, 54], [122, 76], [120, 88], [130, 100], [120, 112], [20, 118]], cut: true, joint: 14 },
+      { name: 'armR', of: 'fig:0 [data-part=boughs]', pivot: [174, 100], poly: [[280, 50], [200, 52], [175, 54], [178, 76], [180, 88], [170, 100], [180, 112], [280, 118]], cut: true, joint: 14 },
+      { name: 'tuftsL', of: 'fig:0 [data-part=tufts]', pivot: [126, 100], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
+      { name: 'tuftsR', of: 'fig:0 [data-part=tufts]', pivot: [174, 100], poly: [[150, -20], [320, -20], [320, 230], [150, 230]] },
+    ],
+  },
+  // the memory diver (a creature, a support: it looks at your top three cards and keeps one): the
+  // diver in pieces (body, the reaching arm and the swept-back arm each with its hand, the two
+  // legs, the streaming hair and the head), each about its joint, and the page it reaches for;
+  // `emit`: the page, where its gift leaves from, `hit`: its chest, `head`: where the kept
+  // memory goes in alone, `page`: the page's centre, `shoulders`: the reaching arm's and the
+  // back arm's, `hips`: the two legs' joints, `hands`: the two hands as drawn
+  'memory-diver': {
+    role: 'support', element: 'water', facing: 'right', emit: [224, 147], hit: [167, 93],
+    head: [190, 106], page: [224, 147], neck: [180, 102], shoulders: [[177.6, 105.3], [176.2, 102.8]], hips: [[145.7, 75], [142.3, 79.8]], hands: [[214.4, 137], [147.5, 94.3]],
+    parts: [
+      { name: 'body', of: 'fig:0 [data-part=body]', pivot: [170, 94] },
+      { name: 'armF', of: 'fig:0 [data-part=armF]', pivot: [177.6, 105.3] },
+      { name: 'armB', of: 'fig:0 [data-part=armB]', pivot: [176.2, 102.8] },
+      { name: 'legA', of: 'fig:0 [data-part=legA]', pivot: [145.7, 75] },
+      { name: 'legB', of: 'fig:0 [data-part=legB]', pivot: [142.3, 79.8] },
+      { name: 'hair', of: 'fig:0 [data-part=hair]', pivot: [187.9, 99.7] },
+      { name: 'head', of: 'fig:0 [data-part=head]', pivot: [180, 102] },
+      { name: 'page', of: '[data-part=page]', pivot: [224, 147] },
+    ],
+  },
   // ── end of lane A ──
 
   // the dragon's head and neck (its own pieces of the figure, and its eye),

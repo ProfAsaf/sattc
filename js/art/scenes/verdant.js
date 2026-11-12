@@ -256,8 +256,20 @@ export const verdant = faction('verdant', {
     s.defs.push(`<g id="${bid}">${P(shell, parts, blob([[220, 120], [232, 118], [242, 122], [246, 129], [240, 134], [226, 135], [219, 130]]), 'M244,126L250,131L242,133Z')}${E(136, 148, 72, 6)}` +
       `${C(82, 104, 5)}${C(96, 90, 6)}${C(114, 81, 6)}${C(152, 76, 6)}${C(170, 82, 6)}${C(186, 93, 5.5)}${C(197, 106, 4.5)}` +
       `${C(132, 52, 7)}${C(142, 46, 9)}${C(151, 52, 7)}${C(141, 57, 7)}</g>`);
-    s.figure(`<use href="#${bid}"/>`, { fill: p.fig, rim: p.rim, offsets: [[1, -1.2], [-0.6, -1.2]], shade: 0.45, edge: 0.3, halo: 0.35 });
-    s.add('<circle cx="234" cy="124" r="1.2" fill="#f1f6c8"/>');
+    // (the same shapes as the def above, with its moving pieces tagged: the head, and the little tree)
+    const neck = taper([[196, 134], [212, 128], [226, 128]], [18, 14, 12]), stem = taper([[140, 80], [141, 66], [139, 54]], [4, 3, 2]);
+    const rest = taper([[184, 146], [188, 160], [189, 176]], [20, 18, 19]) + taper([[90, 146], [86, 160], [85, 176]], [20, 18, 19]) + taper([[68, 140], [58, 146], [52, 150]], [7, 4, 0.5]) +
+      leaf(98, 90, -2.3, 12, 6) + leaf(100, 88, -1.7, 10, 5) + leaf(190, 96, -0.9, 12, 6) + leaf(188, 95, -1.5, 9, 5) + leaf(122, 80, -2, 9, 5) +
+      [[80, 152, 160], [96, 153, 163], [118, 154, 161], [156, 154, 163], [178, 153, 160], [194, 151, 158]].map(([x, y, y2]) => taper([[x, y], [x + 0.5, y2]], [3, 0.5])).join('');
+    // (a fill is shaded across each path's own box: so each piece carries two zero-size dots at the corners of the
+    // box `parts` had, and shades exactly as it did when they were one path)
+    const xy = [...parts.matchAll(/(-?[\d.]+),(-?[\d.]+)/g)].map((m) => [+m[1], +m[2]]);
+    const box = `M${Math.min(...xy.map((q) => q[0]))},${Math.min(...xy.map((q) => q[1]))}h0M${Math.max(...xy.map((q) => q[0]))},${Math.max(...xy.map((q) => q[1]))}h0`;
+    s.figure(P(shell, rest + box) + `<g data-part="head">${P(neck + box, blob([[220, 120], [232, 118], [242, 122], [246, 129], [240, 134], [226, 135], [219, 130]]), 'M244,126L250,131L242,133Z')}</g>` +
+      `${E(136, 148, 72, 6)}${C(82, 104, 5)}${C(96, 90, 6)}${C(114, 81, 6)}${C(152, 76, 6)}${C(170, 82, 6)}${C(186, 93, 5.5)}${C(197, 106, 4.5)}` +
+      `<g data-part="tree">${P(stem + box)}${C(132, 52, 7)}${C(142, 46, 9)}${C(151, 52, 7)}${C(141, 57, 7)}</g>`,
+    { fill: p.fig, rim: p.rim, offsets: [[1, -1.2], [-0.6, -1.2]], shade: 0.45, edge: 0.3, halo: 0.35 });
+    s.add('<circle data-part="head" cx="234" cy="124" r="1.2" fill="#f1f6c8"/>');
     // flowers on the shell
     const fl = s.rad([[0, '#fbffd8', 0.95], [0.35, '#eef9a8', 0.5], [1, '#eef9a8', 0]]);
     const flowers = [[106, 84], [166, 79], [190, 99], [146, 44]];
@@ -291,7 +303,7 @@ export const verdant = faction('verdant', {
     s.glow(150, 150, 120, '#d9f27a', 0.5, 'breathe');
     s.shafts({ cx: 150, cy: 152, from: -180, to: 180, n: 14, len: 150, spread: 3.2, color: '#eefaa8', op: 0.26, seed: 234, sd: 2.4, near: 0.22 });
     const st = s.rad([[0, '#fbffd8'], [0.55, '#e3f58c'], [1, '#a9c95a']], { cx: 0.42, cy: 0.38, r: 0.7 });
-    s.bloom(`<g fill="${st}"><path d="${blob([[128, 142], [140, 128], [160, 127], [174, 138], [176, 158], [164, 172], [142, 172], [128, 160]])}"/><path d="${blob([[108, 158], [116, 150], [124, 156], [122, 168], [111, 168]])}"/><path d="${blob([[176, 168], [186, 160], [194, 166], [190, 176], [180, 177]])}"/></g>`, { sd: 2.4, k: 1.2, box: [80, 100, 140, 100] });
+    s.bloom(`<g data-part="stones" fill="${st}"><path d="${blob([[128, 142], [140, 128], [160, 127], [174, 138], [176, 158], [164, 172], [142, 172], [128, 160]])}"/><path d="${blob([[108, 158], [116, 150], [124, 156], [122, 168], [111, 168]])}"/><path d="${blob([[176, 168], [186, 160], [194, 166], [190, 176], [180, 177]])}"/></g>`, { sd: 2.4, k: 1.2, box: [80, 100, 140, 100] });
     // the roots: two great ones coil around the stones, the rest spread and dive
     const rootA = [[126, 40], [112, 66], [102, 100], [104, 134], [116, 162], [138, 180], [164, 180], [184, 166], [190, 144], [182, 126], [168, 121]];
     const rootB = [[174, 40], [190, 66], [198, 100], [190, 124], [170, 134], [150, 146], [132, 160], [118, 176], [104, 186], [88, 190]];
@@ -347,23 +359,27 @@ export const verdant = faction('verdant', {
     ].join('');
     const trees = [tree(173, 75, 11, 6), tree(184.5, 82, 7, 4.4), tree(159, 43, 6, 3.4)];
     const grove = trees.map((t) => t[0]).join(''), crowns = trees.map((t) => t[1]).join('');
-    s.figure(P(body, grove, crowns,
-      blob([[146, 44], [156, 41], [164, 47], [166, 58], [161, 67], [151, 69], [144, 62], [142, 52]]),
-      blob([[124, 94], [130, 79], [142, 72], [156, 70], [170, 72], [182, 79], [188, 94], [188, 112], [182, 127], [170, 137], [142, 137], [130, 127], [124, 112]])) +
-      C(129, 81, 3.6) + C(135, 76.5, 4) + C(142, 73, 3.4) + C(170, 73, 3.6) + C(181, 78, 3.4) + E(137, 186, 11, 4) + E(180, 185, 11, 4),
+    // (the figure's pieces are tagged, each in the order it was drawn: the torso (arms, legs and all), the little
+    // trees on its shoulders, the head, and the torso's round middle with its mossy shoulders and feet)
+    s.figure(`<g data-part="torso">${P(body)}</g><g data-part="head">${P(grove, crowns)}</g>` +
+      `<g data-part="head">${P(blob([[146, 44], [156, 41], [164, 47], [166, 58], [161, 67], [151, 69], [144, 62], [142, 52]]))}</g>` +
+      `<g data-part="torso">${P(blob([[124, 94], [130, 79], [142, 72], [156, 70], [170, 72], [182, 79], [188, 94], [188, 112], [182, 127], [170, 137], [142, 137], [130, 127], [124, 112]]))}` +
+      `${C(129, 81, 3.6)}${C(135, 76.5, 4)}${C(142, 73, 3.4)}${C(170, 73, 3.6)}${C(181, 78, 3.4)}${E(137, 186, 11, 4)}${E(180, 185, 11, 4)}</g>`,
     { fill: p.fig, rim: p.rim, offsets: [[-1.2, -0.8], [1.2, -0.8], [0, -1.3]], shade: 0.4, edge: 0.3, halo: 0.4 });
     // bark: a few long seams, not ribs
-    s.add('<path d="M138,88C141,100 137,108 140,118M163,82C159,94 165,104 161,116C159,122 162,127 160,132M143,148C141,158 144,168 142,178M175,150C174,160 177,170 176,178M119,108C118,116 116,122 116,130M192,106C193,114 194,120 193,128" stroke="#33462a" stroke-width="1.1" fill="none" opacity=".75"/>');
+    s.add('<path data-part="bark" d="M138,88C141,100 137,108 140,118M163,82C159,94 165,104 161,116C159,122 162,127 160,132M143,148C141,158 144,168 142,178M175,150C174,160 177,170 176,178M119,108C118,116 116,122 116,130M192,106C193,114 194,120 193,128" stroke="#33462a" stroke-width="1.1" fill="none" opacity=".75"/>');
     // arrows it has not bothered to pull out
     const arrows = [[131, 79, -140, 32], [127, 85, -164, 30], [138, 75, -116, 30], [129, 82, -152, 23]].map(([x, y, deg, len]) => {
       const a = (deg * Math.PI) / 180, ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux;
       const q = (t, o) => pt([x + ux * t + nx * o, y + uy * t + ny * o]);
       return { shaft: `M${q(0, 0)}L${q(len, 0)}`, fletch: `M${q(len, 0)}L${q(len - 8, 3.2)}L${q(len - 4.5, 0)}L${q(len - 8, -3.2)}Z` };
     });
-    s.add(`<path d="${arrows.map((a) => a.shaft).join('')}" stroke="${p.fig}" stroke-width="2"/><path d="${arrows.map((a) => a.fletch).join('')}" fill="${p.fig}"/>`);
+    s.add(`<g data-part="arrows"><path d="${arrows.map((a) => a.shaft).join('')}" stroke="${p.fig}" stroke-width="2"/><path d="${arrows.map((a) => a.fletch).join('')}" fill="${p.fig}"/></g>`);
     // calm eyes, half closed
+    s.add('<g data-part="eyes">');
     s.glow(148.5, 55, 7, '#f7ffc8', 0.85).glow(159.5, 55.5, 7, '#f7ffc8', 0.85);
     s.bloom(`<g fill="#fbffd8">${E(148.5, 55, 2.8, 0.9, 6)}${E(159.5, 55.5, 2.8, 0.9, 6)}</g>`, { sd: 1.2, k: 1.6, box: [130, 40, 46, 30] });
+    s.add('</g>');
     // mist round its knees, and the near bank
     s.haze(146, 178, '#fbf8e2', 0.38, 10);
     s.path('M-10,214L-10,198C70,194 150,196 220,198C260,199 290,197 310,198L310,214Z', '#1c2913');

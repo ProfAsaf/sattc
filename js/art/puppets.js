@@ -21,6 +21,18 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // mossback (a creature, a support: it grows itself and gains life): its head and neck,
+  // lifting from the shoulder, and the little tree on its shell, swaying from its foot;
+  // `emit`: the tree's crown, where its gift gathers and leaves from, `hit`: the middle of
+  // the shell, `flowers`: the four blossoms (three on the shell, one in the tree)
+  'mossback': {
+    role: 'support', element: 'nature', facing: 'right', emit: [142, 50], hit: [136, 118],
+    neck: [196, 134], treeFoot: [140, 80], flowers: [[106, 84], [166, 79], [190, 99], [146, 44]],
+    parts: [
+      { name: 'head', of: ['fig:0 [data-part=head]', ':scope > [data-part=head]'], pivot: [196, 134] },
+      { name: 'tree', of: 'fig:0 [data-part=tree]', pivot: [140, 80] },
+    ],
+  },
   // wild growth (a spell, a support: a creature gets +2/+2): the vines whipping out from under
   // the wolf, the left three and the right three (split at the wolf's middle, behind it), the
   // wolf itself with the bark on its back, and the buds glowing at the vines' tips (left, right,
@@ -199,6 +211,37 @@ export const PUPPETS = {
       { name: 'wingR', of: ['fig:0 [data-part=wingR]', '[data-part=fireR]'], pivot: [158, 90] },
       { name: 'tail', of: ['fig:0 [data-part=tail]', '[data-part=fireT]'], pivot: [150, 124] },
       { name: 'body', of: ['fig:0 [data-part=body]', '[data-part=eye]'], pivot: [150, 128] },
+    ],
+  },
+  // ancient roots (a spell, a support: it raises the Energy ceiling): the glowing stones the
+  // roots coil round; `emit`: their heart, where the boon gathers and leaves from, `hit`: the
+  // middle of the picture, `up`: where the great roots meet the tree's foot, in daylight (where
+  // the boon goes alone), `veins`: the two glowing veins' control points, from the tree's foot
+  // down round the stones (the move runs light along them)
+  'ancient-roots': {
+    role: 'support', element: 'nature', facing: 'front', emit: [152, 150], hit: [150, 110],
+    up: [150, 40],
+    veinA: [[126, 40], [112, 66], [102, 100], [104, 134], [116, 162], [138, 180], [164, 180], [184, 166], [190, 144], [182, 126]],
+    veinB: [[174, 40], [190, 66], [198, 100], [190, 124], [170, 134], [150, 146], [132, 160], [118, 176]],
+    parts: [
+      { name: 'stones', of: '[data-part=stones]', pivot: [152, 152] },
+    ],
+  },
+  // the patient giant (a creature, a defender: it takes arrows and only grows): its torso (the
+  // arms and the round middle, cut at the waist so its legs stay planted), its head with the
+  // little trees on its head and shoulders, its two glowing eyes, the seams in its bark and the
+  // four arrows already stuck in its left shoulder; `guard`: where blows land on it, up its
+  // left side from the shoulder, `hit`: its chest, `waist`: where it turns, `neck`: where its
+  // head turns, `tips`: where the stuck arrows go in
+  'patient-giant': {
+    role: 'defender', element: 'nature', facing: 'front', hit: [155, 105], guard: [[130, 82], [125, 98], [131, 114]],
+    waist: [155, 146], neck: [155, 72], tips: [131, 80], eyes: [[148.5, 55], [159.5, 55.5]], crowns: [[173, 56], [184, 70], [159, 38]],
+    parts: [
+      { name: 'head', of: 'fig:0 [data-part=head]', pivot: [155, 72] },
+      { name: 'torso', of: 'fig:0 [data-part=torso]', pivot: [155, 146], poly: [[-20, -20], [320, -20], [320, 146], [-20, 146]], cut: true },
+      { name: 'bark', of: '[data-part=bark]', pivot: [155, 146] },
+      { name: 'arrows', of: '[data-part=arrows]', pivot: [155, 146] },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [155, 72] },
     ],
   },
   // ── end of lane A ──

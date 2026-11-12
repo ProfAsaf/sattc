@@ -2,6 +2,7 @@
 // baked picture without its moving parts or characters, with those as
 // sprites over it (js/sprites.js): nothing redrawn while they move.
 export const LIVE = {
+  "ancient-roots": { src: 'art/live/ancient-roots.webp?v=fa7a1887', live: 'art/live/ancient-roots.json?v=cf0e459b' },
   "ash-collector": { src: 'art/live/ash-collector.webp?v=27e26590', live: 'art/live/ash-collector.json?v=8db44a09' },
   "ashmaw": { src: 'art/live/ashmaw.webp?v=16617e99', live: 'art/live/ashmaw.json?v=650b0640' },
   "bone-lance": { src: 'art/live/bone-lance.webp?v=f4da7f4c', live: 'art/live/bone-lance.json?v=5df1067f' },
@@ -9,6 +10,8 @@ export const LIVE = {
   "feed-the-flame": { src: 'art/live/feed-the-flame.webp?v=47c84314', live: 'art/live/feed-the-flame.json?v=966a71f3' },
   "lightning-theorist": { src: 'art/live/lightning-theorist.webp?v=721e5fbf', live: 'art/live/lightning-theorist.json?v=4ae52a1f' },
   "little-gardener": { src: 'art/live/little-gardener.webp?v=c9ae332e', live: 'art/live/little-gardener.json?v=6bea9ed0' },
+  "mossback": { src: 'art/live/mossback.webp?v=72adeeee', live: 'art/live/mossback.json?v=04232281' },
+  "patient-giant": { src: 'art/live/patient-giant.webp?v=7bc11164', live: 'art/live/patient-giant.json?v=f17f6c0f' },
   "phoenix-of-the-last-spark": { src: 'art/live/phoenix-of-the-last-spark.webp?v=c36d264e', live: 'art/live/phoenix-of-the-last-spark.json?v=8bcd37e9' },
   "reckless-initiate": { src: 'art/live/reckless-initiate.webp?v=9ca29763', live: 'art/live/reckless-initiate.json?v=10a094c4' },
   "seedling": { src: 'art/live/seedling.webp?v=3f61d810', live: 'art/live/seedling.json?v=8651d7fb' },

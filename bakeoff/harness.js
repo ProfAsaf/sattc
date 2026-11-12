@@ -25,7 +25,7 @@
 //            ...&blows=ms,x,y;...   blows landing on it (a defender's block): k.blows
 //            ...&mark               draw a ring at the aim and at each blow (for checking)
 
-import { CARDS, ULTRA } from '../js/cards.js';
+import { CARDS, ULTRA, TOKENS, CHAMPIONS, LEGENDS } from '../js/cards.js';
 import { cardHTML, livenArt } from '../js/render.js';
 import { LIVE } from '../js/art-live.js';
 import { PUPPETS } from '../js/art/puppets.js';
@@ -34,7 +34,7 @@ import { fxArt } from '../js/fx-art.js';
 const W = 300, H = 210; // the drawing's units
 const q = new URLSearchParams(location.search);
 const id = q.get('id') || '';
-const card = [...CARDS, ...ULTRA].find((c) => c.id === id);
+const card = [...CARDS, ...ULTRA, ...Object.values(TOKENS), ...Object.values(CHAMPIONS), ...Object.values(LEGENDS)].find((c) => c.id === id);
 const stage = document.querySelector('.bk-stage'), over = stage.querySelector('.bk-fx');
 const info = document.getElementById('bk-info'), btn = document.getElementById('bk-play');
 const say = (t) => { info.textContent = t; };

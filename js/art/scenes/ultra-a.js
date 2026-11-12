@@ -278,6 +278,7 @@ export const ultra_a = {
     s.add(`<ellipse cx="${f1(tx)}" cy="${f1(ty + 1)}" rx="30" ry="5" fill="${s.rad([[0, '#ffd27a', 0.85], [0.5, '#ff8a32', 0.4], [1, '#ff8a32', 0]])}"/>`);
     s.add(`<ellipse cx="${ox}" cy="${f1(oy + 3 * k)}" rx="${f1(7 * k)}" ry="${f1(10 * k)}" transform="rotate(${tilt} ${hx} ${hy})" fill="${s.radU(ox, oy + 1 * k, 13 * k, [[0, '#fffbe8'], [0.25, '#ffe9a0'], [0.6, '#ffa040'], [1, '#d2401a']])}"/>`);
     const halves = half(-1) + half(1);
+    s.add('<g data-part="heart">');
     s.figure(`<path d="${halves}"/>`, { fill: '#1c0907', rim: '#ffa04a', offsets: [[0, -1.3], [-1, -0.7], [1, -0.7]], rimOp: 0.95, shade: 0.55, light: [0, -1] });
     // the stone red-hot along the split, cooling to black at its edges
     s.path(halves, s.radU(hx, hy + 2, 40, [[0, '#ff7a2e', 0.75], [0.45, '#c2401a', 0.35], [1, '#7a1e0c', 0]]));
@@ -296,6 +297,7 @@ export const ultra_a = {
     s.bloom(`<path d="${flame}" fill="${s.linU(0, fy + 8, 0, fy - 36, [[0, '#fff3c8'], [0.4, '#ffb04a', 0.95], [1, '#ff6a1f', 0.2]])}"/>` +
       `<path d="${T(place(poly(CRACK, false)), -1)}${T(place(poly(CRACK, false)), 1)}" fill="none" stroke="#ffd27a" stroke-width="1.6" stroke-linejoin="round"/>` +
       `<path d="${cracks}" fill="#ffc25a"/>`, { sd: 2, k: 1.45, box: [80, 10, 140, 160] });
+    s.add('</g>');
     s.add(shimmer(10104, 116, 180, 4, 52, 4, s.linU(0, 52, 0, 4, [[0, '#ffd8a0', 0.9], [1, '#ffd8a0', 0]]), 0.09));
     s.motes({ seed: 10105, n: 26, x: [104, 196], y: [14, 150], r: [0.4, 1.2], fill: '#ffb04a', hot: '#fff0c0', cls: 'rise', t: [3, 6] });
     s.motes({ seed: 10106, n: 12, x: [20, 280], y: [40, 200], r: [0.4, 0.9], fill: '#ff8a3a', cls: 'rise', t: [5, 9], op: [0.3, 0.7] });
@@ -339,10 +341,14 @@ export const ultra_a = {
     const edge = place(poly(spline([[17, 21], [9, 25.6], [2, 27.5], [-6, 26.4], [-17, 21]].map(([u, v]) => ax(u, v)), 4), false));
     // the fire streaming up off the blade, behind it
     const [bx, by] = place(`M${ax(0, 16).map(f1).join(',')}`).slice(1).split(',').map(Number);
+    s.add('<g data-part="glow">');
     s.glow(bx, by - 14, 80, '#ff9a3a', 0.5);
+    s.add('</g>');
+    s.add('<g data-part="fire">');
     const fire = s.radU(bx, by, 70, [[0, '#fff6d8'], [0.2, '#ffe08a'], [0.45, '#ffa040', 0.95], [0.8, '#ff6a1f', 0.7], [1, '#d23c14', 0.2]]);
     s.bloom(`<path d="${plume(bx + 4, by, -84, -120, 62, [16, 22, 18, 12, 5, 0.5]) + plume(bx - 6, by + 4, -116, -160, 46, [10, 14, 10, 5, 0.4]) +
       plume(bx + 10, by - 2, -60, -96, 42, [9, 12, 8, 3, 0.4]) + plume(bx - 10, by + 10, -150, -196, 34, [7, 9, 6, 2, 0.3])}" fill="${fire}"/>`, { sd: 2.4, k: 1.4, box: [60, -20, 170, 110] });
+    s.add('</g>');
     const man = place(U(
       taper([[-5, -50], [-12, -27], [-20, -3]], [11.5, 9, 7]),
       taper([[6, -50], [13, -28], [18, -3]], [11.5, 9, 7]),
@@ -363,11 +369,12 @@ export const ultra_a = {
     // his wounds, glowing like coals, and the hot edge of the blade
     const wounds = place(U(
       taper([[-8, -84], [-2, -79], [4, -74]], [0.6, 2, 0.6]), taper([[-4, -70], [1, -67], [6, -64]], [0.5, 1.6, 0.5]),
-      taper([[17, -92], [21, -96], [25, -100]], [0.5, 1.5, 0.5]), taper([[8, -44], [11, -38], [14, -31]], [0.5, 1.6, 0.5]),
+      taper([[8, -44], [11, -38], [14, -31]], [0.5, 1.6, 0.5]),
       taper([[-29, -67], [-32, -63], [-35, -58]], [0.5, 1.4, 0.5]), taper([[-9, -18], [-12, -12], [-14, -6]], [0.5, 1.3, 0.5]),
       taper([[-2, -112], [-5, -106]], [0.4, 1.2], { per: 2 }),
     ));
-    s.bloom(`<path d="${wounds}" fill="#ffc25a"/><path d="${edge}" fill="none" stroke="#ffd27a" stroke-width="1.4"/>`, { sd: 1.6, k: 1.5, box: [90, 20, 120, 170] });
+    const armWound = place(U(taper([[17, -92], [21, -96], [25, -100]], [0.5, 1.5, 0.5])));
+    s.bloom(`<g data-part="wounds"><path d="${wounds}" fill="#ffc25a"/></g><g data-part="edge"><path d="${armWound}" fill="#ffc25a"/><path d="${edge}" fill="none" stroke="#ffd27a" stroke-width="1.4"/></g>`, { sd: 1.6, k: 1.5, box: [90, 20, 120, 170] });
     s.motes({ seed: 10204, n: 30, x: [60, 260], y: [10, 180], r: [0.4, 1.3], fill: '#ffb04a', hot: '#fff0c0', cls: 'rise', t: [3, 7] });
     s.motes({ seed: 10205, n: 10, x: [100, 220], y: [20, 120], r: [0.5, 1.1], fill: '#ffd27a', cls: 'float', t: [3, 5], op: [0.5, 1] });
     return s.svg();
@@ -400,8 +407,10 @@ export const ultra_a = {
     for (let y = 130, i = 0; y < 198; y += 10, i++) for (let x = 160 + (i % 2) * 11; x < 258; x += 22) if (Math.abs(x - mx) > 24 || y < my - 40) courses += `M${x},${y}v10`;
     s.add(`<path d="${courses}" fill="none" stroke="#5a2414" stroke-width=".9" opacity=".75"/>`);
     // the mouth, white-hot
+    s.add('<g data-part="mouth">');
     s.bloom(`<path d="${mouth}" fill="${s.radU(mx, my - 6, 26, [[0, '#ffffff'], [0.35, '#fff0b0'], [0.7, '#ffb04a'], [1, '#ff6a1f']])}"/>` +
       `<path d="${lick(mx - 8, my, -96, 18, 7, 0.3) + lick(mx + 2, my, -86, 22, 8, -0.3) + lick(mx + 10, my, -80, 14, 6, 0.3)}" fill="#fffbe8" opacity=".85"/>`, { sd: 2.4, k: 1.5, box: [150, 120, 100, 90] });
+    s.add('</g>');
     s.add(`<ellipse cx="${mx - 20}" cy="${my + 8}" rx="70" ry="7" fill="${s.rad([[0, '#ffb04a', 0.7], [0.5, '#ff7a2e', 0.3], [1, '#ff7a2e', 0]])}"/>`);
     // the smith, lunging in, both hands on the poker
     const sx = 112, sy = 193, place = at(sx, sy, 1);
@@ -419,11 +428,15 @@ export const ultra_a = {
     ));
     s.figure(`<path d="${smith}"/>`, { fill: p.fig, rim: '#ffb04a', offsets: [[1.3, -0.2], [0.8, -1], [-0.6, -1]], rimOp: 0.95, shade: 0.5, edge: 0.3, light: [1, -0.4] });
     // the poker's tip, white in the fire; the fire roaring out of the stack
+    s.add('<g data-part="tip">');
     s.glow(sx + 86, sy - 22, 14, '#fff6d8', 0.9);
+    s.add('</g>');
     const fire = s.linU(0, 40, 0, -20, [[0, '#fffbe8'], [0.25, '#ffe08a'], [0.55, '#ffa040', 0.95], [1, '#e04a1a', 0.5]]);
     s.glow(204, 20, 60, '#ffd27a', 0.5, 'breathe');
+    s.add('<g data-part="stack">');
     s.bloom(`<path d="${plume(204, 36, -90, -64, 64, [26, 30, 24, 15, 6, 0.6]) + plume(194, 36, -100, -80, 44, [14, 16, 12, 6, 0.4]) +
       plume(214, 36, -76, -46, 52, [14, 16, 11, 5, 0.4]) + lick(186, 36, -120, 22, 8, -0.4) + lick(222, 36, -60, 24, 8, 0.4)}" fill="${fire}"/>`, { sd: 2.4, k: 1.4, box: [150, -20, 150, 70] });
+    s.add('</g>');
     s.motes({ seed: 10302, n: 30, x: [176, 290], y: [-4, 60], r: [0.4, 1.3], fill: '#ffc25a', hot: '#fff6d8', cls: 'rise', t: [3, 6] });
     s.motes({ seed: 10303, n: 12, x: [150, 250], y: [140, 196], r: [0.4, 1], fill: '#ffb04a', cls: 'rise', t: [3, 6], op: [0.5, 1] });
     return s.svg();

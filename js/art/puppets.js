@@ -85,6 +85,48 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Stoke the Furnace: the smith (from his feet) with the white-hot tip of his poker, the furnace's
+  // mouth (from its heart) and the fire roaring from the chimney (from its base).
+  // `emit`: the chimney's top, where the fire leaves; `mouth`: the furnace's white-hot mouth;
+  // `tip`: the poker's tip; `alone`: the sky to the left, where the fire goes when nothing is aimed at
+  'stoke-the-furnace': {
+    role: 'attacker', element: 'fire', facing: 'right', emit: [204, 34], hit: [205, 150],
+    mouth: [200, 176], tip: [198, 171], feet: [112, 193], stack: [204, 36], alone: [66, 60],
+    parts: [
+      { name: 'smith', of: 'fig:1', pivot: [112, 193] },
+      { name: 'mouth', of: '[data-part=mouth]', pivot: [200, 176] },
+      { name: 'tip', of: '[data-part=tip]', pivot: [112, 193] },
+      { name: 'stack', of: '[data-part=stack]', pivot: [204, 36] },
+    ],
+  },
+  // Bloodrage Berserker: he himself (from his feet), the arm that holds the axe, with the
+  // axe (from the shoulder), the fire streaming off the blade (from the shoulder too, so it
+  // swings with the axe), his wounds (with him) and the lit edge of the blade (with the axe).
+  // `shoulder`: the axe arm's joint; `blade`: the blade's heart, where the fire leaves;
+  // `mouth`: where he roars; `wounds`: the glowing wounds on him
+  'bloodrage-berserker': {
+    role: 'attacker', element: 'fire', facing: 'right', emit: [147, 44], hit: [146, 125],
+    feet: [146, 189], shoulder: [160, 113], blade: [147, 44], mouth: [143, 95], alone: [246, 150],
+    wounds: [[144, 121], [147, 131], [155, 156], [118, 135], [136, 179], [142, 98]],
+    parts: [
+      { name: 'glow', of: '[data-part=glow]', pivot: [147, 44] },
+      { name: 'fire', of: '[data-part=fire]', pivot: [160, 113] },
+      { name: 'man', of: 'fig:1', pivot: [146, 189], poly: [[-20, 81], [152, 81], [161.5, 86], [161.5, 106], [166, 109], [167, 113], [164, 118], [161, 123], [200, 123], [200, 240], [-20, 240]] },
+      { name: 'axe', of: 'fig:1', pivot: [160, 113], poly: [[125, 25], [170, 25], [172, 70], [175, 80], [178, 95], [177, 110], [172, 119], [165, 121], [158, 117], [154, 111], [158, 106], [161.5, 104], [161.5, 86], [154, 78], [138, 60], [125, 57]] },
+      { name: 'wounds', of: '[data-part=wounds]', pivot: [146, 189] },
+      { name: 'edge', of: '[data-part=edge]', pivot: [160, 113] },
+    ],
+  },
+  // Kindling Heart: the whole cracked heart (halves, the seams burning in them and the
+  // flame licking from the split) tipping about its point, where it sits in the rock.
+  // `crack`: the split's heart, where its fire gathers and leaves; `tip`: its point
+  'kindling-heart': {
+    role: 'attacker', element: 'fire', facing: 'front', emit: [150, 88], hit: [150, 100],
+    tip: [155, 133], crack: [150, 88], alone: [240, 150],
+    parts: [
+      { name: 'heart', of: '[data-part=heart]', pivot: [155, 133] },
+    ],
+  },
   // Gloomweb Spider: its eight legs (each from its root on the body), its fangs, the body
   // (abdomen and head, with the violet marks and its eyes), the silk it hangs by and the
   // web behind it. `thread`: where the silk is fixed (the spider swings about its lower

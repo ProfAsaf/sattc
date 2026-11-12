@@ -393,7 +393,7 @@ export const new_d = {
       taper([[30, -110], [30.5, -116]], [1.6, 0.6]), taper([[32, -109], [35, -114]], [1.6, 0.6]), taper([[28, -110], [26, -115]], [1.6, 0.6]),
     );
     s.figure(`<path d="${mv(mage, 150, 188)}"/>`, { fill: '#120504', rim: '#ffb04a', offsets: [[-1.2, -0.6], [1.2, -0.6], [0, -1.3]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [0, -1] });
-    s.bloom(runs.filter((r) => r.front).map(draw).join(''), { sd: 2.4, k: 1.4, box: [10, -16, 280, 216] });
+    s.bloom(`<g data-part="spiralF">${runs.filter((r) => r.front).map(draw).join('')}</g>`, { sd: 2.4, k: 1.4, box: [10, -16, 280, 216] });
     s.motes({ seed: 9302, n: 26, x: [30, 270], y: [10, 190], r: [0.4, 1.2], fill: '#ff9a3a', hot: '#ffe2a0', cls: 'rise', t: [3, 7] });
     return s.svg();
   },
@@ -430,9 +430,9 @@ export const new_d = {
     s.add(`<ellipse cx="${ix}" cy="${iy + 26}" rx="9" ry="30" fill="${s.rad([[0, '#c6f4f6', 0.3], [1, '#c6f4f6', 0]])}"/>`);
     s.glow(ix, iy - 10, 24, '#e9fffb', 0.8, 'breathe');
     const drop = (x, y) => `M${x},${y - 8}C${x + 1.4},${y - 4.6} ${x + 3.8},${y - 1.2} ${x + 3.8},${y + 1.4}A3.8,3.8 0 0 1 ${x - 3.8},${y + 1.4}C${x - 3.8},${y - 1.2} ${x - 1.4},${y - 4.6} ${x},${y - 8}Z`;
-    s.bloom(`<g fill="none" stroke="${ringFill}">${rings}</g>` +
+    s.bloom(`<g data-part="rings" fill="none" stroke="${ringFill}">${rings}</g><g data-part="drop">` +
       `<path d="${taper([[ix, 90], [ix, 110], [ix, 122]], [0.2, 1, 2])}" fill="${s.linU(0, 90, 0, 122, [[0, '#e9fffb', 0], [1, '#e9fffb', 0.7]])}"/>` +
-      `<path d="${drop(ix, 127)}" fill="#f6fffe"/><ellipse cx="${ix}" cy="${iy}" rx="5" ry="1.4" fill="#f4fffc"/>`, { sd: 1.6, k: 1.3, box: [0, 84, 300, 100] });
+      `<path d="${drop(ix, 127)}" fill="#f6fffe"/><ellipse cx="${ix}" cy="${iy}" rx="5" ry="1.4" fill="#f4fffc"/></g>`, { sd: 1.6, k: 1.3, box: [0, 84, 300, 100] });
     // lily pads riding the rings
     const pad = (x, y, rx, ry, a) => `<path d="M${x},${y}L${f1(x + rx * Math.cos(rad(a - 14)))},${f1(y + ry * Math.sin(rad(a - 14)))}A${rx},${ry} 0 1 1 ${f1(x + rx * Math.cos(rad(a + 14)))},${f1(y + ry * Math.sin(rad(a + 14)))}Z"/>`;
     s.figure(pad(84, 162, 14, 3.8, 60) + pad(212, 124, 10, 2.6, 120) + pad(236, 178, 17, 4.6, 110), { fill: '#0a2a2f', rim: '#7fc2c4', offsets: [[0, -0.8]], rimOp: 0.7 });

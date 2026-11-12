@@ -21,6 +21,51 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Ripple (a Spell that draws a card and discounts the next Spell: a boon, a support: the drop falls and the pond answers
+  // with rings of light that run out to the reeds): the eight rings on the water, the drop with the thread of light above
+  // it and the dot where it lands, the lily pads riding the rings, the reeds on each side (turning about their feet,
+  // each cut whole because they are drawn over the rings) and the branch with its leaves (the drop's source); `emit`: the
+  // leaf's tip where the drop forms, `hit`: where the drop lands, `pool`: the middle of the rings, `rim`: where the
+  // rings reach the reeds on the right (the target when alone)
+  'ripple': {
+    role: 'support', element: 'water', facing: 'front', emit: [150, 40], hit: [150, 142], pool: [150, 142], rim: [256, 150],
+    parts: [
+      { name: 'rings', of: '[data-part=rings]', pivot: [150, 142] },
+      { name: 'drop', of: '[data-part=drop]', pivot: [150, 127] },
+      { name: 'pads', of: 'fig:0', pivot: [150, 150] },
+      { name: 'reedsL', of: 'fig:1', pivot: [24, 166] },
+      { name: 'reedsR', of: 'fig:2', pivot: [285, 164] },
+      { name: 'branch', of: 'fig:3', pivot: [-4, 10] },
+    ],
+  },
+  // Crescendo (a Spell that deals damage by the Spells played this turn: the fire mage is the spell, an attacker: she
+  // conducts the spiral up and hurls its fire): her two raised arms (each cut from her figure, turning about its
+  // shoulder), the spiral's runs in front of her (with the white-hot ring at its end; the runs behind her stay in the picture, since parts lie over her);
+  // `emit`: the ring's end, where the fire gathers and leaves, `hit`: her chest, `ring`: the ring's middle, `feet`:
+  // the ground she stands on
+  'crescendo': {
+    role: 'attacker', element: 'fire', facing: 'front', emit: [150, 52], hit: [150, 140], ring: [150, 52], feet: [150, 188],
+    shoulderL: [140, 107], shoulderR: [160, 107],
+    parts: [
+      { name: 'armL', of: 'fig:0', pivot: [140, 107], poly: [[114, 66], [129, 66], [130, 82], [135, 92], [141, 102], [141, 113], [133, 113], [127, 103], [114, 90]], cut: true, joint: 4 },
+      { name: 'armR', of: 'fig:0', pivot: [160, 107], poly: [[171, 66], [190, 66], [190, 92], [172, 108], [160, 113], [158, 106], [166, 95], [171, 80]], cut: true, joint: 4 },
+      { name: 'spiralF', of: '[data-part=spiralF]', pivot: [150, 186] },
+    ],
+  },
+  // Dawnsinger (a 2/3 that drains a life whenever you make a Spirit; the picture is her song, a ribbon of light arcing from her
+  // mouth to the sunrise with tiny winged spirits riding it, so a support: her boon is the spirits): her head thrown back
+  // in song (with the streaming hair, nodding about the neck) and each open arm (turning about its shoulder), each cut
+  // from her one figure; `emit`: her mouth where the song leaves, `hit`: her chest, `sun`: the half-risen sun where the
+  // song ends (the target when alone)
+  'dawnsinger': {
+    role: 'support', element: 'spirit', facing: 'right', emit: [95, 66], hit: [100, 128], sun: [238, 128],
+    neck: [93, 89], shoulderL: [90, 93], shoulderR: [95, 93],
+    parts: [
+      { name: 'head', of: 'fig:0', pivot: [93, 89], poly: [[43, 58], [112, 58], [112, 88], [44, 88]], cut: true, joint: 4 },
+      { name: 'armL', of: 'fig:0', pivot: [90, 93], poly: [[54, 98], [88, 84], [93, 92], [92, 108], [70, 118], [54, 116]], cut: true, joint: 4 },
+      { name: 'armR', of: 'fig:0', pivot: [95, 93], poly: [[95, 86], [102, 88], [126, 102], [126, 118], [110, 118], [97, 105]], cut: true, joint: 4 },
+    ],
+  },
   // The Bright Choir (a Relic, an aura: the place itself acts; whenever you make Spirits, make that many more, so the spirits
   // its song wakes split in two as they climb): the pool of light on the floor, the column of song and the shafts of dawn
   // falling on the ring, and the four rows of spirits (one, two, four, eight: each row's glows, and for the upper three the

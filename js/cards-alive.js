@@ -14,7 +14,9 @@
 //  - In a real fight, a creature strikes with its own move, aimed at what it
 //    strikes (fight(), below).
 // Any touch ends every scene, and so does any move of the game. With Reduce
-// Motion on, nothing plays.
+// Motion on, nothing plays. What moves at once has a ceiling (a phone closes a
+// page that runs out of memory for it), lower after the phone has closed the
+// game today (js/steady.js).
 
 import { LIVE } from './art-live.js';
 import { PUPPETS } from './art/puppets.js';
@@ -23,6 +25,7 @@ import { H, W, loaded, makeKit, paint, sleep } from './puppet-kit.js';
 import { livenArt } from './render.js';
 import { drop, fetchSprites, still } from './sprites.js';
 import { getSpeed, isReduced } from './fx.js';
+import { calm } from './steady.js';
 
 const HOME_ONLY = new Set(['seraphine', 'the-barrow-queen']); // (they act in Home's own scene, js/home-alive.js)
 export const canAct = (id) => !!(LIVE[id] && PUPPETS[id] && !HOME_ONLY.has(id)) && !still();
@@ -113,6 +116,7 @@ export function actInZoom(zoomEl, id) {
     const m = await build(id, card, over);
     if (!st.on) { dropMove(m); return; }
     st.m = m;
+    if (m) fit([m], roomFor('big'), { idle: idleOf(card), what: 'zoom' });
     for (let first = true; st.on && m; first = false) {
       await nap(first ? 500 : 1500);
       if (!st.on) break;
@@ -146,7 +150,7 @@ export function actBig(host, card, id) {
     const m = st.on ? await build(id, card, over) : null;
     if (!st.on) { dropMove(m); return; }
     st.m = m;
-    if (m) await settle([over, card]);
+    if (m) { fit([m], roomFor('big'), { idle: idleOf(card), what: 'big' }); await settle([over, card]); }
     for (let first = true; st.on && m; first = false) {
       await nap(first ? 300 : 1200);
       if (!st.on) break;
@@ -157,6 +161,68 @@ export function actBig(host, card, id) {
     }
   })();
   return { stop() { st.on = false; st.wake?.(); dropMove(st.m); over.remove(); swap.undo(); } };
+}
+
+// ── how much moves at once: a ceiling ────────────────────────────────
+// On an iPhone every element in motion is a layer of its own, as big as
+// itself and drawn at the largest its motion scales it (a screen of layer is
+// ~12.6 MB at 3x), and a page that runs out of memory for them is closed: the
+// white flash. The game's own effects keep under ~220 moving at once
+// (.phone-tests/ui-busy.mjs); a move keeps every part and effect it has moving
+// for the whole move, often 150-250 of them. So before one plays, what it
+// would set moving (how many, and how much screen) is fitted to the room left:
+// its biggest effects (glows, bursts) go first, then every other one of the
+// rest (fewer sparks) until it fits; its body (the picture's parts) always
+// plays. A scene that can't fit even so doesn't play; a fight that can't
+// charges as it used to. There's less room after the phone has closed the game
+// today (calm(), js/steady.js), and at the calmest nothing acts by itself.
+const ROOM = { // by calm level: [screens, elements]
+  scenes: [[1.4, 220], [0.7, 110], [0, 0]], // the scenes together
+  fight: [[2.4, 280], [1.2, 140], [0, 0]], // a fight's moves (no scene plays meanwhile)
+  big: [[2, 240], [1.1, 130], [0.7, 80]], // a card opened big (nothing else acts meanwhile)
+};
+const used = { area: 0, n: 0 }; // what scenes and fights keep moving now
+function roomFor(kind) {
+  const [area, n] = ROOM[kind][calm()] || [0, 0];
+  return kind === 'scenes' ? { area: area - used.area, n: n - used.n } : { area, n };
+}
+// what an element moving costs: its box, at the most its motion scales it, in screens (4 at most)
+function costOf(el, anim = null) {
+  const r = el.getBoundingClientRect();
+  let k = 1;
+  for (const f of anim?.effect?.getKeyframes?.() || []) {
+    if (typeof f.transform !== 'string') continue;
+    for (const m of f.transform.matchAll(/scale(?:3d|X|Y)?\(([^)]*)\)/g)) for (const v of m[1].split(',')) k = Math.max(k, Math.abs(parseFloat(v)) || 0);
+  }
+  return Math.min(4, (r.width * r.height * k * k) / (innerWidth * innerHeight));
+}
+// The motions a card's picture has of its own while it's in sprites (its drawn
+// lights and motes: js/sprites.js), on the cards given.
+const idleOf = (...cards) => cards.flatMap((c) => (c?.querySelector('.sp-art')?.anims || []).filter((a) => a?.effect?.target));
+// Fits moves into `room` ({ area, n }), with `more`: other elements moving with
+// them, that stay; and `idle`: the pictures' own motions, which go first (the
+// lights stay, still). Gives what they keep moving after ({ area, n }) and
+// whether that fits. (A test may set window.__ppCosts = [] to note each fit.)
+function fit(moves, room, { more = [], idle = [], what = '' } = {}) {
+  const list = moves.flatMap((m) => m.anims.map((a) => ({ m, a, el: a.effect?.target })).filter((x) => x.el)).map((x) => ({ ...x, c: costOf(x.el, x.a) }));
+  const still = idle.map((a) => ({ a, el: a.effect.target, c: costOf(a.effect.target, a), idle: true }));
+  let area = [...list, ...still].reduce((s, x) => s + x.c, more.reduce((s, el) => s + costOf(el), 0)), n = list.length + still.length + more.length, cut = 0;
+  const was = { area, n };
+  const drop = (x) => {
+    x.a.cancel();
+    if (x.idle) x.el.dataset.still = '1'; // (and so it stays, js/sprites.js move())
+    else { x.m.anims.splice(x.m.anims.indexOf(x.a), 1); x.el.remove(); }
+    area -= x.c; n--; cut++; x.gone = true;
+  };
+  for (const x of still.sort((p, q) => q.c - p.c)) { if (area <= room.area && n <= room.n) break; drop(x); }
+  const fx = list.filter((y) => y.el.classList.contains('fx')).sort((p, q) => q.c - p.c);
+  for (const x of fx) { if (area <= room.area) break; drop(x); }
+  for (let left = fx.filter((x) => !x.gone); n > room.n && left.length; left = left.filter((x) => !x.gone)) {
+    left.forEach((x, k) => { if (k % 2 && n > room.n) drop(x); });
+    if (left.length === 1) drop(left[0]);
+  }
+  window.__ppCosts?.push({ what, ids: moves.map((m) => m.id), was: { area: +was.area.toFixed(2), n: was.n }, now: { area: +area.toFixed(2), n }, cut, room: { area: +room.area.toFixed(2), n: room.n } });
+  return { area, n, fits: area <= room.area + 1e-6 && n <= room.n };
 }
 
 // ── a stage: cards acting while nothing else happens ─────────────────
@@ -195,10 +261,11 @@ function tick(st) {
   const now = Date.now();
   if (DIAG && (st.name === 'table' || !document.body.classList.contains('in-game'))) {
     note('where', st.name === 'table' ? 'in a game' : 'on a page');
-    note('why', why || (st.scenes.size ? `at rest: ${st.scenes.size} acting` : now - st.last < st.idle ? 'touched just now' : 'at rest'));
+    note('why', (why || (st.scenes.size ? `at rest: ${st.scenes.size} acting, ${used.n} moving (${used.area.toFixed(1)} screens)` : now - st.last < st.idle ? 'touched just now' : 'at rest')) + (calm() ? ` · calm ${calm()} (the phone closed the game today)` : ''));
   }
   if (why) { st.last = now; endAll(st); return; }
-  if (now - st.last < st.idle || now < st.next || st.scenes.size >= st.max) return;
+  const most = [st.max, 1, 0][calm()] ?? 0;
+  if (now - st.last < st.idle || now < st.next || st.scenes.size >= most || roomFor('scenes').n < 30) return;
   st.next = now + NEXT[0] + Math.random() * (NEXT[1] - NEXT[0]);
   scene(st).catch((e) => { console.warn('cards alive:', e); note('last', `went wrong: ${e?.message || e}`); });
 }
@@ -327,12 +394,23 @@ function layerOf(el) {
   for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) if (getComputedStyle(a).position === 'fixed') return a;
   return null;
 }
-// an overlay for a scene's effects, in the layer its card is in
-function overlayFor(el) {
-  const layer = layerOf(el), over = document.createElement('div');
-  over.className = layer ? 'pp-fx pp-in' : 'pp-fx pp-screen';
-  (layer || document.body).append(over);
-  return over;
+// The overlay for scenes' effects in the layer a card is in, one for all the
+// scenes there (each is a screen of layer once a glow blends in it); given
+// back with letGo() when a scene ends. A fight has its own (`own`).
+const overlays = new Map(); // a layer (or the page) -> { el, users }
+function overlayFor(el, own = false) {
+  const layer = layerOf(el) || document.body;
+  const make = () => { const d = document.createElement('div'); d.className = layer === document.body ? 'pp-fx pp-screen' : 'pp-fx pp-in'; layer.append(d); return d; };
+  if (own) return make();
+  let o = overlays.get(layer);
+  if (!o?.el.isConnected) overlays.set(layer, (o = { el: make(), users: 0 }));
+  o.users++;
+  return o.el;
+}
+function letGo(over) {
+  if (!over) return;
+  for (const [layer, o] of overlays) if (o.el === over) { if (--o.users <= 0) { o.el.remove(); overlays.delete(layer); } return; }
+  over.remove();
 }
 // when a move's blow lands, in ms from its start
 const impactOf = (m) => m.BEATS?.impact ?? Math.round(m.END * 0.4);
@@ -413,6 +491,11 @@ async function scene(st) {
     }
     await settle([sc.over, p.actor.el, ...(b ? [p.target.el] : [])]);
     if (gone()) return;
+    // what it would set moving, fitted into the room the other scenes leave
+    const f = fit(sc.moves, roomFor('scenes'), { more: p.target && !b ? [p.target.el.querySelector('.tc-body') || p.target.el] : [], idle: idleOf(p.actor.el, b && p.target.el), what: 'scene' });
+    if (!f.fits) { note('last', `${who}: held back, no room (${used.n} moving already)`); endScene(st, sc); st.next = Date.now() + 1200; return; }
+    sc.cost = f;
+    used.area += f.area; used.n += f.n;
     // all from one start
     for (const m of sc.moves) play(m);
     if (p.target && !b) sc.anims.push(jolt(p.target.el, a.END, impact, dir));
@@ -423,10 +506,11 @@ async function scene(st) {
 
 function endScene(st, sc) {
   if (!st.scenes.delete(sc)) return;
+  if (sc.cost) { used.area = Math.max(0, used.area - sc.cost.area); used.n = Math.max(0, used.n - sc.cost.n); }
   clearTimeout(sc.timer);
   for (const m of sc.moves) dropMove(m);
   for (const x of sc.anims) x.cancel();
-  sc.over?.remove();
+  letGo(sc.over);
   for (const s of sc.swaps) s.undo();
   if (!st.scenes.size) st.next = Math.min(st.next, Date.now()); // (the next one straight away)
 }
@@ -479,7 +563,7 @@ export function readyToFight(cards) {
   }
 }
 export async function fight(blows, { wait = 1600 } = {}) {
-  if (isReduced() || !blows.length || blows.some(({ from, to }) => !from?.isConnected || !to?.isConnected || !from.querySelector(ART))) return false;
+  if (isReduced() || !ROOM.fight[calm()]?.[1] || !blows.length || blows.some(({ from, to }) => !from?.isConnected || !to?.isConnected || !from.querySelector(ART))) return false;
   const plan = blows.map((b) => {
     const id = idOf(b.from), back = blows.find((o) => o.from === b.to && o.to === b.from);
     if (aims(id)) return { ...b, id, how: 'aim' };
@@ -489,16 +573,17 @@ export async function fight(blows, { wait = 1600 } = {}) {
   hushTable();
   for (const b of plan) fighting.get(b.from)?.();
   const speed = getSpeed();
-  const over = overlayFor(plan[0].from);
+  const over = overlayFor(plan[0].from, true);
   over.classList.add('pp-fight');
   over.style.zIndex = '60'; // (over the two in the spotlight, and a card charging)
   const swaps = plan.map((b) => inSprites(b.from, b.id));
   // a small card (the table's) rises to strike, so its move shows
   const ups = plan.map((b) => rise(b.from, speed));
-  let moves = [], timer = 0, watch = 0, ended = false;
+  let moves = [], timer = 0, watch = 0, ended = false, cost = null;
   const end = () => {
     if (ended) return;
     ended = true;
+    if (cost) { used.area = Math.max(0, used.area - cost.area); used.n = Math.max(0, used.n - cost.n); }
     clearTimeout(timer); clearInterval(watch);
     for (const m of moves) dropMove(m);
     over.remove();
@@ -529,6 +614,11 @@ export async function fight(blows, { wait = 1600 } = {}) {
   moves = [...made.values()];
   await settle([over, ...plan.map((b) => b.from)]);
   if (ended) return false;
+  // fitted into a fight's room; too much moving even so: the old charge
+  const f = fit(moves, roomFor('fight'), { idle: idleOf(...plan.map((b) => b.from)), what: 'fight' });
+  if (!f.fits) { note('last', `a fight held back: ${f.n} would move`); end(); return false; }
+  cost = f;
+  used.area += f.area; used.n += f.n;
   for (const m of moves) { play(m); if (speed !== 1) for (const a of m.anims) a.playbackRate = speed; }
   timer = setTimeout(end, Math.max(...moves.map((m) => m.END)) / speed + 120);
   watch = setInterval(() => { if (plan.some((b) => !b.from.isConnected)) end(); }, 120);

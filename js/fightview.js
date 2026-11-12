@@ -413,14 +413,18 @@ export function playStory(story, { stage = null, tap = false } = {}) {
     };
     addEventListener('keydown', key, true);
 
-    // a tap goes on (the left edge goes back); holding pauses until you let go
+    // a tap goes on, wherever it lands, however long it's held (the left edge
+    // used to go back a step, and on the first step that played the same
+    // attack again: Asaf, 2026-11-12, "it seems to replay the same attack over
+    // and over again"; the arrow keys still go back). When the story runs by
+    // itself, holding pauses it until you let go.
     let downAt = 0, holdT = 0, held = false;
     box.addEventListener('pointerdown', (e) => {
       if (e.target.closest('.bf-skip')) return;
       downAt = performance.now();
       held = false;
       clearTimeout(holdT);
-      holdT = setTimeout(() => { held = true; pause(); }, 320);
+      if (!tap) holdT = setTimeout(() => { held = true; pause(); }, 320);
     });
     box.addEventListener('pointerup', (e) => {
       clearTimeout(holdT);
@@ -428,8 +432,7 @@ export function playStory(story, { stage = null, tap = false } = {}) {
       if (held) { held = false; resume(); return; }
       if (!downAt) return;
       downAt = 0;
-      const r = box.getBoundingClientRect();
-      if (e.clientX < r.left + r.width * 0.28) show(i - 1); else show(i + 1);
+      show(i + 1);
     });
     box.addEventListener('pointercancel', () => { clearTimeout(holdT); if (held) { held = false; resume(); } });
     box.addEventListener('click', (e) => { if (e.target.closest('.bf-skip')) close(); });

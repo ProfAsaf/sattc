@@ -7,6 +7,7 @@ import { hold, sweep } from './sprites.js';
 import { gatherAlive } from './art/alive.js';
 import { startHomeAlive, stopHomeAlive } from './home-alive.js';
 import { actInZoom, canAct, startScreenAlive } from './cards-alive.js';
+import { calm, startSteady } from './steady.js';
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, autoResume, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
@@ -23,14 +24,14 @@ const backLink = (href = '#/', label = 'Home') => `<a class="back" href="${href}
 const pageHead = (title, extra = '') => `<header class="pagehead">${backLink()}<h2>${title}</h2>${extra}</header>`;
 
 let toastTimer;
-function toast(msg) {
+function toast(msg, ms = 2600) {
   document.querySelector('.toast')?.remove();
   const el = document.createElement('div');
   el.className = 'toast';
   el.textContent = msg;
   document.body.appendChild(el);
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.remove(), 2600);
+  toastTimer = setTimeout(() => el.remove(), ms);
 }
 
 function factionSlots(fs) {
@@ -215,7 +216,7 @@ function home() {
     if (c) openZoom(c.dataset.id);
   };
   livenArt(view);
-  startHomeAlive(view); // (the fan stirs while it's left be)
+  if (calm() < 2) startHomeAlive(view); // (the fan stirs while it's left be; not after the phone has closed the game twice today: js/steady.js)
 }
 
 // ── gallery ─────────────────────────────────────────────────────────
@@ -571,8 +572,11 @@ if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 window.addEventListener('hashchange', route);
 // A page's title bar gets its backdrop once the page scrolls under it.
 window.addEventListener('scroll', () => document.body.classList.toggle('scrolled', window.scrollY > 4), { passive: true });
+// (the phone closed the last page under us, out of memory: the cards calm down for today, js/steady.js)
+const reopened = startSteady();
 route();
 startScreenAlive(); // (any page's cards act now and then while you leave them be: js/cards-alive.js)
+if (reopened) setTimeout(() => toast('Your phone closed the game (low on memory?). The cards will act less today to keep it steady.', 6000), 900);
 const params = new URLSearchParams(location.search);
 Push.start(); // (the service worker for turn alerts, once they are set up)
 if (params.has('demo')) demo(params);

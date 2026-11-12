@@ -69,9 +69,10 @@ export function move(box) {
   box.anims = [...box.querySelectorAll('.sp')].map((el, k) => {
     const s = L.sprites[el.dataset.i];
     if (!MOVES[s.a]) return null; // (a puppet's part: still until its scene moves it, js/home-alive.js)
+    if (el.dataset.still) return null; // (stilled to save the phone's memory: js/cards-alive.js fit())
     const [frames, t, alt, easing = 'ease-in-out'] = MOVES[s.a](u, s);
     const a = el.animate(frames, { duration: t * 1000, delay: (s.d || 0) * 1000, iterations: Infinity, direction: alt ? 'alternate' : 'normal', easing });
-    if (old[k]) { a.currentTime = old[k].currentTime; old[k].cancel(); }
+    if (old[k]) { if (old[k].currentTime != null) a.currentTime = old[k].currentTime; old[k].cancel(); }
     if (box.held) a.pause();
     return a;
   });

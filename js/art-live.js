@@ -4,9 +4,12 @@
 export const LIVE = {
   "ambush-at-dawn": { src: 'art/live/ambush-at-dawn.webp?v=acf62e50', live: 'art/live/ambush-at-dawn.json?v=522c8b2b' },
   "ashmaw": { src: 'art/live/ashmaw.webp?v=16617e99', live: 'art/live/ashmaw.json?v=650b0640' },
+  "banner-of-the-charge": { src: 'art/live/banner-of-the-charge.webp?v=18e29b0c', live: 'art/live/banner-of-the-charge.json?v=0d107f73' },
   "bastion": { src: 'art/live/bastion.webp?v=df3c6ce9', live: 'art/live/bastion.json?v=d31fb72d' },
   "beacon-of-hope": { src: 'art/live/beacon-of-hope.webp?v=a0c1825c', live: 'art/live/beacon-of-hope.json?v=b0a52832' },
   "bone-lance": { src: 'art/live/bone-lance.webp?v=f4da7f4c', live: 'art/live/bone-lance.json?v=5df1067f' },
+  "brook-hydra": { src: 'art/live/brook-hydra.webp?v=715d6c11', live: 'art/live/brook-hydra.json?v=02691267' },
+  "choirmother": { src: 'art/live/choirmother.webp?v=75cc3904', live: 'art/live/choirmother.json?v=d35e7a04' },
   "dawns-judgment": { src: 'art/live/dawns-judgment.webp?v=d545d2d8', live: 'art/live/dawns-judgment.json?v=df0e179d' },
   "dawnwatch-knight": { src: 'art/live/dawnwatch-knight.webp?v=cd62f808', live: 'art/live/dawnwatch-knight.json?v=8e64176a' },
   "lightning-theorist": { src: 'art/live/lightning-theorist.webp?v=721e5fbf', live: 'art/live/lightning-theorist.json?v=4ae52a1f' },

@@ -180,5 +180,58 @@ export const PUPPETS = {
       { name: 'spirit', of: '[data-part=spirit]', pivot: [212, 42] },
     ],
   },
+  // the Choirmother: her wings (each from its shoulder), she herself (from her feet),
+  // each raised arm (cut from her, from its shoulder) and her halo. `emit`: her halo,
+  // where the spirit of her song forms; `hands`: her raised hands; `alone`: the sky
+  // where her spirit flies when nothing is aimed at
+  choirmother: {
+    role: 'support', element: 'spirit', facing: 'front', emit: [152, 51], hit: [150, 112],
+    feet: [150, 186], shoulders: [[141, 86], [159, 86]], hands: [[123, 43], [177, 43]], mouth: [149, 63], alone: [236, 70],
+    parts: [
+      { name: 'wingL', of: '[data-part=wings]', pivot: [141, 86], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
+      { name: 'wingR', of: '[data-part=wings]', pivot: [159, 86], poly: [[150, -20], [320, -20], [320, 230], [150, 230]] },
+      { name: 'her', of: '[data-part=her]', pivot: [150, 186] },
+      { name: 'armL', of: '[data-part=her]', pivot: [141, 88], poly: [[100, 30], [139, 30], [139, 84], [144, 93], [130, 102], [100, 102]], cut: true },
+      { name: 'armR', of: '[data-part=her]', pivot: [159, 88], poly: [[200, 30], [161, 30], [161, 84], [156, 93], [170, 102], [200, 102]], cut: true },
+      { name: 'halo', of: '[data-part=halo]', pivot: [152, 51] },
+    ],
+  },
+  // the banner of the charge: the burning banner in four pieces (its cloth and its fire
+  // together), each from its own joint along it, chained from the pole, so a ripple can
+  // run out to the tail; the lead rider (with the pole) and the four behind him, each
+  // from its hooves. `joints`: the banner's joints from the pole; `riders`: their hooves;
+  // `heart`: the sun mark on the banner; `sun`: the sun on the horizon
+  'banner-of-the-charge': {
+    role: 'aura', element: 'fire', facing: 'right', hit: [150, 130],
+    joints: [[147, 56], [96, 56], [64, 56], [34, 56]], heart: [97, 56], sun: [252, 162],
+    riders: [[30, 186], [72, 191], [226, 190], [270, 185]], lead: [150, 196],
+    parts: [
+      { name: 'flag0', of: ['[data-part=flag]', '[data-part=flame]'], pivot: [147, 56], poly: [[96, -20], [150, -20], [150, 130], [96, 130]] },
+      { name: 'flag1', of: ['[data-part=flag]', '[data-part=flame]'], pivot: [96, 56], poly: [[64, -20], [96, -20], [96, 130], [64, 130]] },
+      { name: 'flag2', of: ['[data-part=flag]', '[data-part=flame]'], pivot: [64, 56], poly: [[34, -20], [64, -20], [64, 130], [34, 130]] },
+      { name: 'flag3', of: ['[data-part=flag]', '[data-part=flame]'], pivot: [34, 56], poly: [[-30, -20], [34, -20], [34, 130], [-30, 130]] },
+      { name: 'r0', of: 'fig:0 [data-part=r0]', pivot: [30, 186] },
+      { name: 'r1', of: 'fig:0 [data-part=r1]', pivot: [72, 191] },
+      { name: 'r2', of: 'fig:0 [data-part=r2]', pivot: [226, 190] },
+      { name: 'r3', of: 'fig:0 [data-part=r3]', pivot: [270, 185] },
+      { name: 'lead', of: 'fig:1 [data-part=lead]', pivot: [150, 196] },
+    ],
+  },
+  // the brook hydra: each of its five necks and heads (with the moss on it and the glow
+  // of its eye) cut from the figure about a joint a third of the way up it, so each can
+  // sway, bow and strike; the rest of the hydra stays in the water. `heads`: each snout's tip
+  // (left to right as drawn); `bases`: where each neck leaves the water; `emit`:
+  // the middle head (the move picks the head nearest its target); `alone`: its own target
+  'brook-hydra': {
+    role: 'support', element: 'nature', facing: 'front', emit: [170.2, 50.2], hit: [150, 140],
+    heads: [[66.8, 108.4], [93.3, 75.6], [170.2, 50.2], [223.7, 86.5], [251.4, 136.8]], bases: [[122, 172], [137, 172], [150, 172], [163, 172], [177, 172]], alone: [40, 96],
+    parts: [
+      { name: 'neck0', of: ['fig:0', '[data-part=moss]', '[data-part=eyes]'], pivot: [111.6, 155.4], cut: true, joint: 7, poly: [[104.0, 122.8], [106.0, 114.0], [104.5, 106.3], [102.8, 103.2], [93.7, 95.5], [86.0, 94.0], [78.3, 95.5], [71.9, 99.9], [67.5, 106.3], [66.4, 110.1], [66.1, 116.0], [67.5, 121.7], [69.4, 125.1], [73.3, 129.5], [76.6, 131.6], [85.0, 134.0], [90.8, 144.1], [102.5, 161.5], [120.8, 149.3], [109.4, 132.2]] },
+      { name: 'neck1', of: ['fig:0', '[data-part=moss]', '[data-part=eyes]'], pivot: [131.0, 141.7], cut: true, joint: 7, poly: [[128.5, 94.7], [130.9, 87.0], [130.1, 79.2], [126.5, 72.3], [120.4, 67.4], [113.0, 65.1], [105.2, 65.9], [98.3, 69.5], [93.4, 75.6], [91.4, 81.1], [91.0, 85.0], [91.9, 90.8], [94.2, 95.8], [102.8, 103.2], [108.8, 104.9], [110.6, 110.0], [141.0, 136.2], [136.3, 116.2]] },
+      { name: 'neck2', of: ['fig:0', '[data-part=moss]', '[data-part=eyes]'], pivot: [157.6, 133.6], cut: true, joint: 7, poly: [[161.2, 83.7], [161.8, 80.4], [168.1, 76.1], [172.5, 69.7], [173.9, 64.0], [173.1, 56.2], [169.5, 49.3], [163.4, 44.4], [156.0, 42.1], [148.2, 42.9], [142.9, 45.4], [137.4, 50.9], [134.9, 56.2], [134.0, 62.0], [135.5, 69.7], [140.2, 76.4], [139.1, 85.4], [145.1, 111.6], [146.6, 133.9], [165.2, 100.7]] },
+      { name: 'neck3', of: ['fig:0', '[data-part=moss]', '[data-part=eyes]'], pivot: [175.1, 143.2], cut: true, joint: 7, poly: [[201.4, 109.8], [209.8, 109.1], [216.7, 105.5], [221.6, 99.4], [223.9, 92.0], [223.1, 84.2], [219.5, 77.3], [213.4, 72.4], [206.0, 70.1], [200.1, 70.4], [194.6, 72.4], [189.9, 75.9], [186.4, 80.6], [184.1, 88.0], [184.5, 94.4], [173.7, 116.1], [164.8, 139.3], [185.3, 147.2], [194.1, 124.4]] },
+      { name: 'neck4', of: ['fig:0', '[data-part=moss]', '[data-part=eyes]'], pivot: [191.1, 159.2], cut: true, joint: 7, poly: [[222.2, 149.4], [230.0, 151.9], [237.8, 151.1], [244.7, 147.5], [249.6, 141.4], [251.9, 134.0], [251.1, 126.2], [247.5, 119.3], [241.4, 114.4], [235.9, 112.4], [230.0, 112.1], [224.3, 113.5], [220.9, 115.4], [215.4, 120.9], [213.5, 124.3], [212.2, 129.5], [184.3, 150.5], [197.8, 167.8]] },
+    ],
+  },
   // ── end of lane B ──
 };

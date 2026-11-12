@@ -2,6 +2,7 @@
 // baked picture without its moving parts or characters, with those as
 // sprites over it (js/sprites.js): nothing redrawn while they move.
 export const LIVE = {
+  "aegis-acolyte": { src: 'art/live/aegis-acolyte.webp?v=61c3a18d', live: 'art/live/aegis-acolyte.json?v=cb54e65c' },
   "ambush-at-dawn": { src: 'art/live/ambush-at-dawn.webp?v=acf62e50', live: 'art/live/ambush-at-dawn.json?v=522c8b2b' },
   "ashmaw": { src: 'art/live/ashmaw.webp?v=16617e99', live: 'art/live/ashmaw.json?v=650b0640' },
   "backdraft": { src: 'art/live/backdraft.webp?v=92fa0953', live: 'art/live/backdraft.json?v=032fe34a' },
@@ -42,6 +43,7 @@ export const LIVE = {
   "mycelium-bud": { src: 'art/live/mycelium-bud.webp?v=e82cfd38', live: 'art/live/mycelium-bud.json?v=3cfecd66' },
   "overgrowth": { src: 'art/live/overgrowth.webp?v=31279f7c', live: 'art/live/overgrowth.json?v=d344c107' },
   "pitfall": { src: 'art/live/pitfall.webp?v=90bbe057', live: 'art/live/pitfall.json?v=7367b0d3' },
+  "prism-duelist": { src: 'art/live/prism-duelist.webp?v=9793ff51', live: 'art/live/prism-duelist.json?v=1c4d883f' },
   "rootmother": { src: 'art/live/rootmother.webp?v=e304be07', live: 'art/live/rootmother.json?v=a79f0de0' },
   "sanctuary-spring": { src: 'art/live/sanctuary-spring.webp?v=116658fb', live: 'art/live/sanctuary-spring.json?v=f484511f' },
   "scorched-earth": { src: 'art/live/scorched-earth.webp?v=ca62ae4e', live: 'art/live/scorched-earth.json?v=ad599a44' },
@@ -60,6 +62,7 @@ export const LIVE = {
   "tidecallers-library": { src: 'art/live/tidecallers-library.webp?v=360eb821', live: 'art/live/tidecallers-library.json?v=3c8930bb' },
   "tithe-of-light": { src: 'art/live/tithe-of-light.webp?v=373a4aee', live: 'art/live/tithe-of-light.json?v=a8de19b9' },
   "venom-shard": { src: 'art/live/venom-shard.webp?v=b676165f', live: 'art/live/venom-shard.json?v=401560d3' },
+  "ward-of-dawn": { src: 'art/live/ward-of-dawn.webp?v=8819d9be', live: 'art/live/ward-of-dawn.json?v=3f3acf05' },
   "wavewarden": { src: 'art/live/wavewarden.webp?v=ee173b96', live: 'art/live/wavewarden.json?v=32fadb6f' },
   "wing-graft": { src: 'art/live/wing-graft.webp?v=91267e32', live: 'art/live/wing-graft.json?v=8fa55d1c' },
 };

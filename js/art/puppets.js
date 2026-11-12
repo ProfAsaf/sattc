@@ -85,6 +85,71 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Ward of Dawn: the huge claw out of the storm (its spined arm and talons, with the scales on it), the glow
+  // on each talon's tip and the sparks flying where they strike (both ride the claw, about the cloud it
+  // comes from), the soldier crouched under the dome (from his feet), the dome (its rim and rings, and its
+  // glassy fill, from the ground) and the rings of light on the ground at its foot. `hit`: the soldier's
+  // chest; `guard`: where blows land on the glass (the four talons' tips, high to low, then the same four on
+  // the dome's left); `tips`: where the talons strike as drawn; `shoulder`: the claw's joint in the cloud;
+  // `dome`: its centre at the ground and its two radii
+  'ward-of-dawn': {
+    role: 'defender', element: 'light', facing: 'left', hit: [144, 150],
+    guard: [[166, 112.4], [183, 120.7], [196.7, 133.4], [207.2, 150], [134, 112.4], [117, 120.7], [103.3, 133.4], [92.8, 150]],
+    tips: [[166, 112.4], [183, 120.7], [196.7, 133.4], [207.2, 150]], shoulder: [300, 8], dome: [150, 190, 66, 80], feet: [144, 190],
+    parts: [
+      { name: 'claw', of: ['fig:2', '[data-part=scales]'], pivot: [300, 8] },
+      { name: 'tipglow', of: '[data-part=tipglow]', pivot: [300, 8] },
+      { name: 'sparks', of: '[data-part=sparks]', pivot: [300, 8] },
+      { name: 'soldier', of: 'fig:1', pivot: [144, 190] },
+      { name: 'domefill', of: '[data-part=domefill]', pivot: [150, 190] },
+      { name: 'dome', of: '[data-part=dome]', pivot: [150, 190] },
+      { name: 'rings', of: '[data-part=rings]', pivot: [150, 190] },
+    ],
+  },
+  // Aegis Acolyte: the kneeling knight (one figure, from his knee), the acolyte (all but her two raised arms,
+  // from her feet), her arms (cut from her at the sleeves: what lies right of x=96 between y=100 and y=138),
+  // the orbs of light in her hands, the threads of light running from them to the dome, the dome (its rim and
+  // rings, and its glassy fill) and its four last panes, each flying in on its own. `emit`: between her
+  // raised hands, where her gift leaves; `hit`: her middle; `alone`: the dome's heart over the knight, where
+  // the gift goes when nothing is aimed at; `dome`: its centre at the ground and its two radii
+  'aegis-acolyte': {
+    role: 'support', element: 'light', facing: 'right', emit: [107, 106], hit: [86, 150], alone: [198, 150],
+    shoulder: [96, 120], feet: [84, 191], dome: [198, 191, 54, 76], seat: [200, 191],
+    parts: [
+      { name: 'knight', of: 'fig:0', pivot: [200, 191] },
+      { name: 'her', of: 'fig:1', pivot: [84, 191], poly: [[-20, -20], [320, -20], [320, 100], [96, 100], [96, 138], [320, 138], [320, 230], [-20, 230]] },
+      { name: 'arms', of: 'fig:1', pivot: [96, 120], poly: [[96, 100], [320, 100], [320, 138], [96, 138]] },
+      { name: 'orbs', of: '[data-part=orbs]', pivot: [96, 120] },
+      { name: 'threads', of: '[data-part=threads]', pivot: [107, 106] },
+      { name: 'domefill', of: '[data-part=domefill]', pivot: [198, 191] },
+      { name: 'dome', of: '[data-part=dome]', pivot: [198, 191] },
+      { name: 'pane0', of: '[data-part=pane0]', pivot: [198, 191] },
+      { name: 'pane1', of: '[data-part=pane1]', pivot: [198, 191] },
+      { name: 'pane2', of: '[data-part=pane2]', pivot: [198, 191] },
+      { name: 'pane3', of: '[data-part=pane3]', pivot: [198, 191] },
+    ],
+  },
+  // Prism Duelist: the sylph in her lunge (all but her sword arm, from her middle), her sword arm (from the
+  // shoulder; the hand with it), the rapier of light in it (about the same shoulder), her two pairs of glassy
+  // wings (from where they join her back), the bubble round her (its rim, rings and glint, about its middle),
+  // the flecks of colour in its skin, the fan of rainbow the blade throws beyond it and the rainbow at its foot.
+  // `emit`: the rapier's point at the skin; `hit`: her chest; `guard`: the bubble's skin (right side, high to
+  // low, then left); `centre`/`radius`: the bubble; `shoulder`: the sword arm's joint; `tip`: the point as drawn
+  'prism-duelist': {
+    role: 'defender', element: 'light', facing: 'right', emit: [206, 77], hit: [147, 100],
+    guard: [[197.5, 58.7], [208, 92], [200.2, 121.2], [102.5, 125.3], [92, 92], [102.5, 58.7]],
+    centre: [150, 92], radius: 58, shoulder: [153, 83], tip: [206, 77], roots: [145, 86], waist: [146, 106],
+    parts: [
+      { name: 'wings', of: '[data-part=wings]', pivot: [145, 86] },
+      { name: 'her', of: 'fig:0', pivot: [146, 106], poly: [[-20, -20], [320, -20], [320, 76], [157, 76], [157, 90], [320, 90], [320, 230], [-20, 230]] },
+      { name: 'arm', of: 'fig:0', pivot: [153, 83], poly: [[157, 76], [320, 76], [320, 90], [157, 90]] },
+      { name: 'blade', of: '[data-part=blade]', pivot: [153, 83] },
+      { name: 'bubble', of: '[data-part=bubble]', pivot: [150, 92] },
+      { name: 'sheen', of: '[data-part=sheen]', pivot: [150, 92] },
+      { name: 'fan', of: '[data-part=fan]', pivot: [206, 77] },
+      { name: 'foot', of: '[data-part=foot]', pivot: [150, 92] },
+    ],
+  },
   // Sunglass Lancer: the horse at full stretch (cut into its body, with the tail and head, and its
   // fore and hind legs, each from where it meets the belly), the rider in his mirrored armour (one
   // piece, about his hips), the haze of light along the lance, the lance of sunlight itself (a

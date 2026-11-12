@@ -1269,9 +1269,11 @@ export const ultra_c = {
     const fx = 146, fy = 106, K = 1.1, place = at(fx, fy, K);
     const wl = [[-160, 46], [-138, 40], [172, 36], [150, 30]];
     const wings = place(U(wl.map(([a, l]) => leafAt(-1, -18, a, l, 0.2, 4))));
+    s.add('<g data-part="wings">');
     s.path(wings, '#e6fbf8', 'opacity=".4"');
     s.add(`<path d="${wings}" fill="none" stroke="#c6f4f6" stroke-width=".6" opacity=".8"/>` +
       `<path d="${place(wl.map(([a, l]) => { const [x, y] = toward(-1, -18, a, l * 0.9); return `M-1,-18L${f1(x)},${f1(y)}`; }).join(''))}" stroke="#c6f4f6" stroke-width=".5" opacity=".7"/>`);
+    s.add('</g>');
     // the duelist: a lunge, her sword arm out straight, the other curled up
     // behind her head, hair tied back and streaming
     const duel = place(U(
@@ -1289,16 +1291,16 @@ export const ultra_c = {
     // the bubble round her: Shield light, a sheen of colour in its skin
     const rim = shieldLight(s, bx, by, br, br, { light: -130 });
     const arcAt = (r, a0, a1) => { const pts = []; for (let i = 0; i <= 14; i++) { const a = rad(a0 + ((a1 - a0) * i) / 14); pts.push([bx + Math.cos(a) * r, by + Math.sin(a) * r]); } return 'M' + pts.map(pt).join('L'); };
-    s.add([['#ff9ac2', 0.97, -74, -24], ['#9af0ff', 0.9, -64, -14], ['#fff09a', 0.86, 146, 196], ['#c8a6ff', 0.95, 156, 206]].map(([c, k, a0, a1]) =>
-      `<path d="${arcAt(br * k, a0, a1)}" fill="none" stroke="${c}" stroke-width="1.2" opacity=".4" stroke-linecap="round"/>`).join(''));
+    s.add('<g data-part="sheen">' + [['#ff9ac2', 0.97, -74, -24], ['#9af0ff', 0.9, -64, -14], ['#fff09a', 0.86, 146, 196], ['#c8a6ff', 0.95, 156, 206]].map(([c, k, a0, a1]) =>
+      `<path d="${arcAt(br * k, a0, a1)}" fill="none" stroke="${c}" stroke-width="1.2" opacity=".4" stroke-linecap="round"/>`).join('') + '</g>');
     // her rapier of light, its point at the skin; the light breaking into a
     // fan of colours beyond it, and a rainbow off the bubble's foot
     const hand = [fx + 34.4 * K, fy - 23.6 * K], tipP = [206, 77];
     const spectrum = ['#ff6a6a', '#ffb24a', '#fff06a', '#7cf09a', '#6ad0ff', '#a07aff'];
-    s.add(spectrum.map((c, i) => `<path d="${taper([tipP, toward(tipP[0], tipP[1], -16 + i * 4.4, 58 + i * 3)], [0.6, 4])}" fill="${c}" opacity=".42"/>`).join('') +
-      spectrum.map((c, i) => `<path d="${arcAt(br + 5 + i * 1.6, 100, 160)}" fill="none" stroke="${c}" stroke-width="1.6" opacity=".36"/>`).join(''));
+    s.add('<g data-part="fan">' + spectrum.map((c, i) => `<path d="${taper([tipP, toward(tipP[0], tipP[1], -16 + i * 4.4, 58 + i * 3)], [0.6, 4])}" fill="${c}" opacity=".42"/>`).join('') + '</g>' +
+      '<g data-part="foot">' + spectrum.map((c, i) => `<path d="${arcAt(br + 5 + i * 1.6, 100, 160)}" fill="none" stroke="${c}" stroke-width="1.6" opacity=".36"/>`).join('') + '</g>');
     s.glow(tipP[0], tipP[1], 14, '#ffffff', 0.7, 'breathe');
-    s.bloom(rim + `<path d="${taper([hand, tipP], [1.6, 0.4])}" fill="#ffffff"/><path d="${glint(tipP[0], tipP[1], 8, 0.16)}" fill="#ffffff"/>`, { sd: 1.4, k: 1.4, box: [80, 24, 200, 140] });
+    s.bloom(`<g data-part="bubble">${rim}</g><g data-part="blade"><path d="${taper([hand, tipP], [1.6, 0.4])}" fill="#ffffff"/><path d="${glint(tipP[0], tipP[1], 8, 0.16)}" fill="#ffffff"/></g>`, { sd: 1.4, k: 1.4, box: [80, 24, 200, 140] });
     s.motes({ seed: 13802, n: 14, x: [60, 260], y: [30, 160], r: [0.4, 1], fill: p.glow, hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },
@@ -1353,7 +1355,9 @@ export const ultra_c = {
     // the dome forming over him
     const dx = 198, dy = 191, drx = 54, dry = 76;
     s.glow(dx, dy - 40, 76, '#fff3cc', 0.45, 'breathe');
+    s.add('<g data-part="domefill">');
     const rim = shieldLight(s, dx, dy, drx, dry, { dome: true, light: -140 });
+    s.add('</g>');
     // threads of light from her hands to it, its last panes flying in
     const dp = (a, out = 0) => {
       const c = Math.cos(rad(a)), sn = Math.sin(rad(a)), nx = c / drx, ny = sn / dry, nl = Math.hypot(nx, ny);
@@ -1364,10 +1368,10 @@ export const ultra_c = {
     const panes = [[-58, 12], [-44, 20], [-30, 10], [-68, 24]].map(([a, d]) => {
       const [x, y] = dp(a, d), [x2, y2] = dp(a + 3, d), t = (Math.atan2(y2 - y, x2 - x) * 180) / Math.PI;
       return rot(poly([[x - 5, y - 1.6], [x + 5, y - 1.6], [x + 4, y + 1.6], [x - 4, y + 1.6]]), x, y, t);
-    }).join('');
-    s.bloom(rim + `<path d="${threads}" fill="none" stroke="#fff4d0" stroke-width="1.1" stroke-linecap="round" opacity=".85"/>` +
-      `<path d="${panes}" fill="#e6fffd" stroke="#ffffff" stroke-width=".6" opacity=".8"/>` +
-      `<path d="${dots(hands.map(([x, y]) => [x, y - 2, 2]))}" fill="#fff6dc"/>`, { sd: 1.4, k: 1.45, box: [70, 50, 200, 150] });
+    });
+    s.bloom(`<g data-part="dome">${rim}</g><g data-part="threads"><path d="${threads}" fill="none" stroke="#fff4d0" stroke-width="1.1" stroke-linecap="round" opacity=".85"/></g>` +
+      panes.map((d, i) => `<g data-part="pane${i}"><path d="${d}" fill="#e6fffd" stroke="#ffffff" stroke-width=".6" opacity=".8"/></g>`).join('') +
+      `<g data-part="orbs"><path d="${dots(hands.map(([x, y]) => [x, y - 2, 2]))}" fill="#fff6dc"/></g>`, { sd: 1.4, k: 1.45, box: [70, 50, 200, 150] });
     s.motes({ seed: 13904, n: 18, x: [90, 260], y: [60, 190], r: [0.4, 1], fill: '#ffe39a', hot: '#ffffff', cls: 'float', t: [4, 8], op: [0.5, 1] });
     return s.svg();
   },
@@ -1401,7 +1405,9 @@ export const ultra_c = {
     // the dome, just snapped shut over him
     const dx = 150, dy = 190, drx = 66, dry = 80;
     s.glow(dx, dy - 40, 84, '#fff3cc', 0.5);
+    s.add('<g data-part="domefill">');
     const rim = shieldLight(s, dx, dy, drx, dry, { dome: true, light: -145 });
+    s.add('</g>');
     // the claw: a spined, scaled arm out of the cloud, its talons hooked on
     // the glass
     const dp = (a) => [dx + Math.cos(rad(a)) * drx, dy + Math.sin(rad(a)) * dry];
@@ -1416,14 +1422,16 @@ export const ultra_c = {
       taper([[228, 86], [228, 104], [222, 120]], [10, 8, 7]), taper([[222, 120], [214, 136], tips[3]], [6, 4, 0.6]),
     );
     s.figure(`<path d="${claw}"/>`, { fill: '#120e0c', rim: '#e8fbff', offsets: [[-0.9, 0.9], [0, 1.2]], rimOp: 0.85, shade: 0.4, light: [-0.6, 0.8] });
-    s.add('<g fill="none" stroke="#3a3040" stroke-width=".9" opacity=".8"><path d="M292,4q6,6 12,2M276,18q6,6 12,2M262,32q6,6 12,2M248,46q6,6 12,2M300,24q6,6 12,2M284,38q6,6 12,2"/></g>');
+    s.add('<g data-part="scales" fill="none" stroke="#3a3040" stroke-width=".9" opacity=".8"><path d="M292,4q6,6 12,2M276,18q6,6 12,2M262,32q6,6 12,2M248,46q6,6 12,2M300,24q6,6 12,2M284,38q6,6 12,2"/></g>');
     // sparks where the talons strike, the ring of light at the dome's foot
     const R = rng(14003), sparks = [];
     for (const [x, y] of tips) for (let i = 0; i < 6; i++) { const a = rad(R() * 360), d = 4 + R() * 14; sparks.push([x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, 0.5 + R() * 0.8]); }
-    for (const [x, y] of tips) s.glow(x, y, 14, '#ffffff', 0.7, 'breathe');
-    s.bloom(rim + `<path d="${tips.map(([x, y], i) => glint(x, y, i % 2 ? 7 : 10, 0.14)).join('')}" fill="#ffffff"/><path d="${dots(sparks)}" fill="#fff4cc"/>` +
-      `<ellipse cx="${dx}" cy="${dy}" rx="${drx + 6}" ry="6" fill="none" stroke="#fff6dc" stroke-width="1.2"/>` +
-      `<ellipse cx="${dx}" cy="${dy + 1}" rx="${drx + 26}" ry="9" fill="none" stroke="#ffe6a0" stroke-width=".8" opacity=".5"/>`, { sd: 1.4, k: 1.5, box: [50, 70, 210, 140] });
+    s.add('<g data-part="tipglow">');
+    for (const [x, y] of tips) s.glow(x, y, 14, '#ffffff', 0.7);
+    s.add('</g>');
+    s.bloom(`<g data-part="dome">${rim}</g><g data-part="sparks"><path d="${tips.map(([x, y], i) => glint(x, y, i % 2 ? 7 : 10, 0.14)).join('')}" fill="#ffffff"/><path d="${dots(sparks)}" fill="#fff4cc"/></g>` +
+      `<g data-part="rings"><ellipse cx="${dx}" cy="${dy}" rx="${drx + 6}" ry="6" fill="none" stroke="#fff6dc" stroke-width="1.2"/>` +
+      `<ellipse cx="${dx}" cy="${dy + 1}" rx="${drx + 26}" ry="9" fill="none" stroke="#ffe6a0" stroke-width=".8" opacity=".5"/></g>`, { sd: 1.4, k: 1.5, box: [50, 70, 210, 140] });
     s.motes({ seed: 14004, n: 16, x: [60, 260], y: [60, 190], r: [0.4, 1], fill: '#ffe39a', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },

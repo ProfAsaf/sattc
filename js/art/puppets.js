@@ -21,6 +21,54 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Wild Bloom (a Trick that doubles a creature's Power and Vitality for the turn: a boon, a support: a little fern bursts in an
+  // instant into a towering flowering plant; its spring is the boon, so the plant crouches, the bloom closes to a bud and
+  // flings open, and the burst of petals and light goes out to the creature): the stalk with its leaves, tendrils and the ferns
+  // at its foot (the whole plant figure, turning about its foot) and the great flower with its two side buds (turning about its
+  // heart, riding the stalk's top); `emit`: the flower's heart where the burst leaves, `hit`: the stalk's middle, `foot`: where
+  // the plant stands, `ground`: the ground to the right (the target when alone)
+  'wild-bloom': {
+    role: 'support', element: 'nature', facing: 'front', emit: [150, 62], hit: [150, 140], foot: [150, 196], ground: [236, 168],
+    parts: [
+      { name: 'stalk', of: 'fig:0', pivot: [150, 196] },
+      { name: 'bloom', of: '[data-part=bloom]', pivot: [150, 62] },
+    ],
+  },
+  // Lantern Ferryman (a Shade creature, a support: a hooded ferryman poling a narrow boat across a dark river, a lantern at the bow and
+  // a pale spirit rising from the wake; whenever a friend dies he makes a spirit, so his gift is a spirit sent out from the lantern
+  // to a friend): the hull (with the line along its side), the ferryman with his arms (turning about his hips) and his glowing
+  // eyes, the pole (turning about its foot in the water) and the rings round that foot, the lantern (swinging from its hook,
+  // with its halo) and the spirit in the wake (rising from its tail); `emit`: the lantern, where the spirit leaves,
+  // `hit`: his chest, `hips`: where he leans about, `hook`: the lantern's hook, `foot`: the pole's foot, `wake`: the spirit's tail
+  // in the water, `river`: the water ahead of the bow (the target when alone)
+  'lantern-ferryman': {
+    role: 'support', element: 'spirit', facing: 'right', emit: [249, 126], hit: [116, 108],
+    hips: [112, 152], hook: [249, 112], foot: [98.6, 177], wake: [44, 172], river: [272, 172], boat: [150, 158],
+    parts: [
+      { name: 'hull', of: ['fig:0 [data-part=hull]', '[data-part=hullline]'], pivot: [150, 158] },
+      { name: 'man', of: 'fig:0 [data-part=man]', pivot: [112, 152] },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [112, 152] },
+      { name: 'pole', of: 'fig:0 [data-part=pole]', pivot: [98.6, 177] },
+      { name: 'footrings', of: '[data-part=footrings]', pivot: [99, 177] },
+      { name: 'lantern', of: '[data-part=lantern]', pivot: [249, 112] },
+      { name: 'ghost', of: '[data-part=ghost]', pivot: [44, 172] },
+    ],
+  },
+  // Season of Plenty (a Relic, an aura: the orchard itself acts; what has been strengthened keeps growing, so the young tree
+  // in the middle swells and its light spills out over the rows): the great low sun (disc and its inner glow) and the shafts
+  // fanning from it, the young tree (whole figure) and its crown of glowing leaves (both turning about the foot, so they grow
+  // together), and the fruit hanging on the two old trees; `emit`: the heart of the crown where the growth begins, `hit`: the
+  // young tree's middle, `sun`: the sun's middle, `foot`: where the young tree stands, `orchard`: the far rows (the target when alone)
+  'season-of-plenty': {
+    role: 'aura', element: 'nature', facing: 'front', emit: [150, 122], hit: [150, 150], sun: [150, 82], foot: [150, 184], orchard: [150, 120],
+    parts: [
+      { name: 'shafts', of: '[data-part=shafts]', pivot: [150, 82] },
+      { name: 'sun', of: '[data-part=sun]', pivot: [150, 82] },
+      { name: 'young', of: 'fig:0', pivot: [150, 184] },
+      { name: 'crown', of: '[data-part=crown]', pivot: [150, 184] },
+      { name: 'fruit', of: '[data-part=fruit]', pivot: [150, 40] },
+    ],
+  },
   // Ripple (a Spell that draws a card and discounts the next Spell: a boon, a support: the drop falls and the pond answers
   // with rings of light that run out to the reeds): the eight rings on the water, the drop with the thread of light above
   // it and the dot where it lands, the lily pads riding the rings, the reeds on each side (turning about their feet,

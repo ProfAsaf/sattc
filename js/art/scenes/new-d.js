@@ -457,9 +457,12 @@ export const new_d = {
     // the sun, sitting huge on the far hills
     const sx = 150, sy = 82;
     s.glow(sx, sy, 180, '#ffe9a8', 0.9);
+    s.add('<g data-part="shafts">');
     s.shafts({ cx: sx, cy: sy, n: 18, from: -180, to: 0, len: 300, spread: 2, color: '#fff6d4', op: 0.28, seed: 9501 });
+    s.add('</g><g data-part="sun">');
     s.glow(sx, sy, 72, '#fff3c4', 0.8);
     s.add(`<circle cx="${sx}" cy="${sy}" r="46" fill="${s.radU(sx, sy, 46, [[0, '#fffcec'], [0.6, '#fff3c6'], [1, '#ffe08e']])}"/>`);
+    s.add('</g>');
     s.layer(ridge({ seed: 9502, base: 92, amp: 9, freq: 2.2 }), '#d3c389', { blur: 0.6 });
     s.haze(74, 98, '#fff3cc', 0.5);
     // the orchard falling away below us, row on row
@@ -489,8 +492,10 @@ export const new_d = {
     for (const [x, y, n, a0] of [[130, 139, 5, 185], [171, 129, 5, -8], [134, 111, 5, -150], [163, 106, 5, -36], [150, 110, 5, -90], [140, 146, 3, 150], [160, 136, 3, 20], [144, 124, 3, -170], [156, 120, 3, -10]]) {
       for (let i = 0; i < n; i++) leaves += leafAt(x, y, a0 + (i - (n - 1) / 2) * 30 + (R() - 0.5) * 16, 10 + R() * 4, 0.44);
     }
+    s.add('<g data-part="crown">');
     s.bloom(`<path d="${leaves}" fill="${s.radU(150, 122, 44, [[0, '#fbffd8'], [0.6, '#eefaa8'], [1, '#cfe97a']])}"/>` +
       `<path d="${dots([[150, 97, 2], [134, 103, 1.5], [165, 98, 1.5], [125, 137, 1.5], [176, 126, 1.5]])}" fill="#ffffff"/>`, { sd: 1.6, k: 1.35, box: [100, 76, 100, 92] });
+    s.add('</g>');
     // the old trees at either hand, their boughs bowed down under the fruit
     const crown = (list) => list.map(([x, y, r]) => ell(x, y, r * 1.1, r, 0, 16));
     const fringe = (list) => list.flatMap(([x, y], i) => [leafAt(x, y, 70 - (i % 2) * 8, 10, 0.42), leafAt(x, y, 116 + (i % 2) * 8, 9, 0.42)]);
@@ -509,6 +514,7 @@ export const new_d = {
     const bunches = [[60, 58, 3], [84, 66, 2], [99, 84, 2], [107, 102, 1], [46, 102, 2], [64, 110, 2], [74, 126, 1], [28, 50, 1], [90, 16, 2], [50, 34, 1], [70, 26, 1]];
     const fruit = [];
     let stalks = '';
+    s.add('<g data-part="fruit">');
     for (const [x, y, n] of bunches) {
       for (const side of [1, -1]) {
         for (let i = 0; i < n; i++) {
@@ -522,6 +528,7 @@ export const new_d = {
     s.path(stalks, 'none', 'stroke="#24301a" stroke-width="1.1"');
     s.path(dots(fruit), '#d98a2e');
     s.path(dots(fruit.map(([x, y, r, side]) => [x + side * r * 0.3, y - r * 0.32, r * 0.5])), '#ffd27a', 'opacity=".9"');
+    s.add('</g>');
     // a basket of the harvest at our feet
     s.figure(`<path d="${U(poly([[30, 216], [27, 196], [80, 196], [77, 216]]), ell(53.5, 196, 27, 3.6))}"/><path d="M32,196C34,174 72,174 75,196" fill="none" stroke-width="2.6"/>`,
       { fill: '#1e2612', rim: '#fff0b8', offsets: [[0.8, -0.8]], rimOp: 0.8 });
@@ -561,8 +568,10 @@ export const new_d = {
       taper([[51, 121], [60, 120], [69, 116], [78, 111]], [5, 4, 2.6, 0.4]),
       taper([[49, 127], [58, 131], [67, 131], [74, 128]], [4.6, 3.6, 2.2, 0.4]));
     s.glow(50, 132, 46, '#b8a6e2', 0.42, 'breathe');
+    s.add('<g data-part="ghost">');
     s.blur(`<path d="${ghost}" fill="#c9b8f2" opacity=".8"/>`, 3);
     s.path(ghost, s.linU(0, 104, 0, 174, [[0, '#f6f1ff', 0.95], [0.4, '#e2d6fa', 0.8], [1, '#b8a6e2', 0]]));
+    s.add('</g>');
     // the wake behind the boat, and the rings where the spirit breaks the water
     s.add('<g fill="none" stroke="#a898d8" stroke-width=".9" opacity=".5"><path d="M62,158C46,154 26,152 -6,154M62,162C46,166 28,174 -4,182"/>' +
       '<ellipse cx="40" cy="172" rx="16" ry="3"/><ellipse cx="40" cy="173" rx="27" ry="5" opacity=".5"/></g>');
@@ -580,19 +589,23 @@ export const new_d = {
       taper([[115, 84], [128, 91], [137, 96]], [7, 5.6, 4.4]), ell(138.5, 97, 3.4, 2.8, -30),
       taper([[118, 87], [131, 104], [129, 112]], [7.4, 6, 4.6]), ell(129, 114, 3.4, 2.8, -30),
     );
-    s.figure(`<path d="${hull}"/><path d="${man}"/><path d="${pole}"/>`, { fill: '#0b0812', rim: '#cdb6f4', offsets: [[-1, -0.8], [1, -0.8], [0, -1.2]], rimOp: 0.85, shade: 0.45, edge: 0.3, light: [0.3, -1] });
-    s.add('<path d="M70,152.5C110,157 170,157 222,150" fill="none" stroke="#3a2c58" stroke-width="1" opacity=".8"/>');
-    s.add('<g fill="none" stroke="#a898d8" stroke-width=".8" opacity=".55"><ellipse cx="99" cy="177" rx="8" ry="1.6"/><ellipse cx="99" cy="177.5" rx="15" ry="2.8" opacity=".5"/></g>');
+    s.figure(`<g data-part="hull"><path d="${hull}"/></g><g data-part="man"><path d="${man}"/></g><g data-part="pole"><path d="${pole}"/></g>`, { fill: '#0b0812', rim: '#cdb6f4', offsets: [[-1, -0.8], [1, -0.8], [0, -1.2]], rimOp: 0.85, shade: 0.45, edge: 0.3, light: [0.3, -1] });
+    s.add('<path data-part="hullline" d="M70,152.5C110,157 170,157 222,150" fill="none" stroke="#3a2c58" stroke-width="1" opacity=".8"/>');
+    s.add('<g data-part="footrings" fill="none" stroke="#a898d8" stroke-width=".8" opacity=".55"><ellipse cx="99" cy="177" rx="8" ry="1.6"/><ellipse cx="99" cy="177.5" rx="15" ry="2.8" opacity=".5"/></g>');
+    s.add('<g data-part="eyes">');
     s.glow(123, 67, 9, '#b07cff', 0.75);
     s.add('<g fill="#efe2ff"><circle cx="121.6" cy="67" r=".9"/><circle cx="125" cy="67.4" r=".8"/></g>');
+    s.add('</g>');
     // the lantern
     const lx = 249, ly = 124;
     s.glow(lx, ly, 70, '#b98cff', 0.5);
     s.glow(lx, ly, 26, '#efe2ff', 0.8, 'breathe');
     s.add(`<g fill="#e9dcff">${[[lx, 158, 14, 0.5], [lx + 1, 164, 10, 0.4], [lx - 1, 171, 16, 0.3], [lx, 180, 8, 0.24], [lx + 1, 190, 12, 0.16]].map(([x, y, w, o]) =>
       `<rect x="${x - w / 2}" y="${y}" width="${w}" height="1.1" rx=".5" opacity="${o}"/>`).join('')}</g>`);
+    s.add('<g data-part="lantern">');
     s.bloom(`<path d="M${lx},112V117" stroke="#0b0812" stroke-width="1.2"/><path d="M${lx - 5},117H${lx + 5}L${lx + 3.6},120H${lx - 3.6}ZM${lx - 3.6},131H${lx + 3.6}L${lx + 5},134H${lx - 5}Z" fill="#0b0812"/>` +
       `<rect x="${lx - 3.6}" y="120" width="7.2" height="11" rx="1" fill="#f6eeff"/><path d="M${lx},120V131" stroke="#6a4fa8" stroke-width=".8"/>`, { sd: 2, k: 1.5, box: [lx - 30, 96, 60, 60] });
+    s.add('</g>');
     // mist over the water, reeds at the near corners
     s.fog(166, '#9a86c8', 0.28).fog(186, '#8c78b8', 0.34);
     s.path(U(reeds(9604, -12, 22, 218, [30, 64], { gap: [3, 5], lean: 0.1, heads: 0.3, w: [2, 3.2] }), reeds(9605, 278, 312, 218, [34, 70], { gap: [3, 5], lean: -0.1, heads: 0.3, w: [2, 3.2] })), '#06040a');
@@ -647,9 +660,11 @@ export const new_d = {
     s.glow(100, 100, 18, '#f2ffb8', 0.6).glow(199, 88, 18, '#f2ffb8', 0.6);
     const pid = s.uid('pt');
     s.defs.push(`<path id="${pid}" d="${U(petals)}"/>`);
+    s.add('<g data-part="bloom">');
     s.bloom(`<use href="#${pid}" fill="${pf}"/><use href="#${pid}" fill="none" stroke="#b8ad66" stroke-width=".7" opacity=".7"/>` +
       `<path d="${U(inner)}" fill="#fffef2"/><path d="${U(buds)}" fill="#fbf6d6"/>` +
       `<circle cx="${hx}" cy="${hy}" r="9" fill="#fbffe0"/><circle cx="${hx}" cy="${hy}" r="4.4" fill="#ffffff"/><path d="${dots([[100, 100, 2.4], [199, 88, 2.4]])}" fill="#ffffff"/>`, { sd: 2, k: 1.35, box: [70, 0, 160, 130] });
+    s.add('</g>');
     // petals flung out by the burst
     const R = rng(9704);
     let flung = '';

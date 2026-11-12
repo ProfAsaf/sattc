@@ -21,6 +21,67 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Old Root, Grove Warden (a Champion creature, a defender: a tree-giant standing guard with a shield of woven roots on his
+  // arm; Reach and a great deal of Vitality, so he is the wall: he plants himself and takes the blows on the shield): the
+  // body (everything of him from the crown's base down: trunk, arms, legs, staff, and the bark seams and the carved
+  // face that ride on it, with the glow of his eyes), the crown of branches and leaves (cut at the head's top), the shield
+  // (its disc, the woven roots over it and the green bud at its boss); `hit`: his chest, `guard`: the shield's face and
+  // rim, where blows land when he blocks, `shield`: the shield's centre (it jolts about it), `feet`: where he stands
+  // (his body leans and settles about them), `crown`: where the crown turns, `eyes`: his eyes, `bud`: the bud on the
+  // shield's boss
+  'champion-verdant': {
+    role: 'defender', element: 'nature', facing: 'front', hit: [150, 120],
+    guard: [[199, 128], [192, 108], [192, 148], [172, 101], [172, 155], [172, 128]],
+    shield: [172, 128], feet: [150, 197], crown: [150, 72], eyes: [[144.5, 82], [155.5, 82]], bud: [172, 130],
+    parts: [
+      { name: 'body', of: 'fig:0', pivot: [150, 197], poly: [[-10, 70], [310, 70], [310, 220], [-10, 220]] },
+      { name: 'crown', of: 'fig:0', pivot: [150, 72], poly: [[-10, -10], [310, -10], [310, 73], [-10, 73]] },
+      { name: 'face', of: '[data-part=face]', pivot: [150, 197] },
+      { name: 'eyeglow', of: '[data-part=eyeglow]', pivot: [150, 197] },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [150, 197] },
+      { name: 'shield', of: 'fig:1', pivot: [172, 128] },
+      { name: 'weave', of: '[data-part=weave]', pivot: [172, 128] },
+      { name: 'bud', of: '[data-part=bud]', pivot: [172, 128] },
+    ],
+  },
+
+  // Pyra, Herald of Ash (a Champion creature, an attacker: she blows her long horn and fire pours from its bell; her text is
+  // Spells that damage, so the blast is the attack: a roar of fire thrown from the bell at a target): the horn with her
+  // forearm (cut from her figure past the hands), the plume of fire pouring from the bell, her head with the fallen hood,
+  // the hood's tail streaming back and the left flare of her robe; `emit`: the horn's bell, where the fire leaves from,
+  // `hit`: her chest, `hands`: where the horn is held (it turns about them), `neck`: where the head turns, `bell`: the
+  // bell, `ground`: the crag's far end, where the fire lands when she is alone (the target: the lava valley)
+  'champion-ember': {
+    role: 'attacker', element: 'fire', facing: 'right', emit: [191, 65], hit: [106, 126],
+    hands: [127, 87], elbow: [117, 98], neck: [102, 93], bell: [191, 65], ground: [248, 172],
+    parts: [
+      { name: 'plume', of: '[data-part=plume]', pivot: [127, 87] },
+      { name: 'horn', of: 'fig:1', pivot: [117, 98], poly: [[116, 40], [212, 40], [212, 112], [116, 112]], cut: true, joint: 4 },
+      { name: 'head', of: 'fig:1', pivot: [102, 93], poly: [[92, 60], [116, 60], [116, 92], [92, 92]], cut: true, joint: 4 },
+      { name: 'hood', of: 'fig:1', pivot: [94, 86], poly: [[56, 66], [92, 66], [92, 94], [56, 94]], cut: true, joint: 3 },
+      { name: 'robe', of: 'fig:1', pivot: [88, 140], poly: [[56, 134], [86, 134], [86, 170], [56, 170]], cut: true, joint: 3 },
+    ],
+  },
+
+  // Aurelia, the Lightkeeper (a Champion creature, a support: she raises a lantern of pure light and Spirits gather at it; her
+  // text is Spirits and boosting them, so her move is the gift: she gathers the Spirits into the lantern, throws her arm out
+  // and sends them streaming to a friend): her lantern arm (cut from her figure at the shoulder), the lantern with its glint,
+  // the halo round it (no longer a breathing ambient glow: it rides the lantern) and the left flare of her cloak; `emit`:
+  // the lantern's heart, where the Spirits leave from, `hit`: her breastplate, `shoulder`: where the arm turns, `hand`: the
+  // lantern's hand, `cloak`: where the cloak's flare turns, `spirits`: where the Spirits hover round the lantern (they gather
+  // from here)
+  'champion-radiant': {
+    role: 'support', element: 'spirit', facing: 'right', emit: [161, 50], hit: [138, 126],
+    shoulder: [148, 102], hand: [161, 65], cloak: [108, 124],
+    spirits: [[123, 44], [133, 20], [165, 13], [195, 26], [204, 54], [191, 80], [119, 72], [103, 26], [219, 38]],
+    parts: [
+      { name: 'arm', of: 'fig:0', pivot: [148, 102], poly: [[146, 99], [172, 99], [172, 52], [149, 52], [149, 94]], cut: true, joint: 4 },
+      { name: 'halo', of: '[data-part=halo]', pivot: [148, 102] },
+      { name: 'lantern', of: '[data-part=lantern]', pivot: [148, 102] },
+      { name: 'cloak', of: 'fig:0', pivot: [108, 124], poly: [[70, 96], [107, 96], [107, 172], [70, 172]], cut: true, joint: 3 },
+    ],
+  },
+
   // Carrion Wyrm (a creature, an attacker: a skeletal wyrm circling low over the battlefield, violet light in its ribs; it
   // soars and its bite is venom, so its attack is a volley of bone shards spat from the jaws): the two torn wings (the
   // skin, and the arm with its finger-bones, each side), the spine cut in three (the neck with its vertebrae, the body's

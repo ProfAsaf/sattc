@@ -69,7 +69,7 @@ export const PUPPETS = {
   // the halo round it (no longer a breathing ambient glow: it rides the lantern) and the left flare of her cloak; `emit`:
   // the lantern's heart, where the Spirits leave from, `hit`: her breastplate, `shoulder`: where the arm turns, `hand`: the
   // lantern's hand, `cloak`: where the cloak's flare turns, `spirits`: where the Spirits hover round the lantern (they gather
-  // from here)
+  // from here; each is its own part, spirit0-8, which leaves its place when it gathers and returns as the move ends)
   'champion-radiant': {
     role: 'support', element: 'spirit', facing: 'right', emit: [161, 50], hit: [138, 126],
     shoulder: [148, 102], hand: [161, 65], cloak: [108, 124],
@@ -79,6 +79,15 @@ export const PUPPETS = {
       { name: 'halo', of: '[data-part=halo]', pivot: [148, 102] },
       { name: 'lantern', of: '[data-part=lantern]', pivot: [148, 102] },
       { name: 'cloak', of: 'fig:0', pivot: [108, 124], poly: [[70, 96], [107, 96], [107, 172], [70, 172]], cut: true, joint: 3 },
+      { name: 'spirit0', of: '[data-part=spirit0]', pivot: [123, 44] },
+      { name: 'spirit1', of: '[data-part=spirit1]', pivot: [133, 20] },
+      { name: 'spirit2', of: '[data-part=spirit2]', pivot: [165, 13] },
+      { name: 'spirit3', of: '[data-part=spirit3]', pivot: [195, 26] },
+      { name: 'spirit4', of: '[data-part=spirit4]', pivot: [204, 54] },
+      { name: 'spirit5', of: '[data-part=spirit5]', pivot: [191, 80] },
+      { name: 'spirit6', of: '[data-part=spirit6]', pivot: [119, 72] },
+      { name: 'spirit7', of: '[data-part=spirit7]', pivot: [103, 26] },
+      { name: 'spirit8', of: '[data-part=spirit8]', pivot: [219, 38] },
     ],
   },
 

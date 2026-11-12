@@ -201,10 +201,8 @@ export const champions = {
       `<path d="${glint(lx, lb - 12, 16, 0.12)}" fill="#ffffff"/></g>`, { sd: 2.4, k: 1.6, box: [lx - 50, lb - 70, 100, 96] });
     // the spirits, gathering
     const sp = [[123, 44, 0.5], [133, 20, 0.42], [165, 13, 0.46], [195, 26, 0.5], [204, 54, 0.44], [191, 80, 0.38], [119, 72, 0.36], [103, 26, 0.34], [219, 38, 0.3]];
-    for (const [x, y, k] of sp) s.glow(x, y - 2, 6 + 15 * k, '#fff1c4', 0.7);
-    for (let g = 0; g < 3; g++) {
-      s.path(U(sp.filter((_, i) => i % 3 === g).map(([x, y, k]) => sprite(x, y, k))), '#fffcf0', `class="float" style="--t:${5 + g * 1.5}s;--d:-${g * 2}s"`);
-    }
+    // each Spirit is its own part (glow and figure): it leaves its place when it gathers into the lantern
+    sp.forEach(([x, y, k], i) => { s.add(`<g data-part="spirit${i}">`); s.glow(x, y - 2, 6 + 15 * k, '#fff1c4', 0.7); s.path(sprite(x, y, k), '#fffcf0'); s.add('</g>'); });
     s.motes({ seed: 9805, n: 18, x: [96, 220], y: [10, 110], r: [0.4, 1], fill: '#ffe39a', cls: 'float', t: [4, 8], op: [0.5, 1] });
     s.add(particles({ seed: 9806, n: 10, x: [30, 270], y: [90, 190], r: [0.5, 1.1], fill: '#fff6d8', cls: 'float', t: [5, 9], op: [0.3, 0.7] }));
     return s.svg();

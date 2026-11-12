@@ -77,10 +77,13 @@ export function build(k) {
   const lerp = (A, B) => (f) => [A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f];
 
   // ── gather: Spirits peel off from round the lantern and stream into it
-  S.spirits.slice(0, 7).forEach((P, i) => {
-    const t0 = 150 + i * 95, t1 = 860 + i * 20, sz = [17, 14, 16, 18, 15, 14, 13][i];
+  S.spirits.forEach((P, i) => {
+    const t0 = 150 + i * 85, t1 = 860 + i * 18, sz = [17, 14, 16, 18, 15, 14, 13, 11, 10][i];
+    // the drawn Spirit leaves its place the moment its copy takes off, and is back in it as the move ends
+    const orig = k.part('spirit' + i), tb = 3000 + i * 40;
+    k.act(orig, [[0, { opacity: 1 }], [t0, { opacity: 1 }], [t0 + 1, { opacity: 0 }], [tb, { opacity: 0 }, eio], [3500, { opacity: 1 }]]);
     const swirl = (f) => { const q = lerp(P, L(t0 + (t1 - t0) * f))(f); const b = Math.sin(f * Math.PI) * (i % 2 ? 7 : -7); return [q[0] + b * 0.6, q[1] - b * 0.4]; };
-    flight(k.picIn(spirit, P, sz, sz * 0.8), P, swirl, t0, t1, (f) => 0.9 - 0.55 * f * f, (f) => (f < 0.15 ? f / 0.15 : f > 0.8 ? (1 - f) / 0.2 : 1), (f) => f * f * (3 - 2 * f));
+    flight(k.picIn(spirit, P, sz, sz * 0.8), P, swirl, t0, t1, (f) => 0.9 - 0.55 * f * f, (f) => (f > 0.8 ? (1 - f) / 0.2 : 1), (f) => f * f * (3 - 2 * f));
     h.fly(k.picIn('mote', P, 5, 5), P, (f) => swirl(Math.max(0, f - 0.12)), t0 + 60, t1 + 30, (f) => 1 - 0.5 * f, (f) => (f < 0.1 ? f * 8 : 0.9 * (1 - f * 0.6)), 0, 0, 50, (f) => f * f * (3 - 2 * f));
   });
   // motes drawn in from all round
@@ -108,11 +111,11 @@ export function build(k) {
       const f = (t - t0) / (t1 - t0), pace = f * f * 0.5 + f * 0.5, [x, y] = bz(pace), s = (0.35 + 0.7 * Math.min(1, f * 1.6)) * (sz / 17);
       ks.push([t, { transform: `${k.T(x - E1[0], y - E1[1])} scale(${(s * flap(t)).toFixed(3)}, ${s.toFixed(3)})`, opacity: f < 0.08 ? f / 0.08 : 1 }, 'linear']);
     }
-    const lap = 1500 + i * 40, ci = 0.7 + 0.6 * ((i * 37) % 10) / 10;
+    const lap = 1150 + i * 20, ci = 0.7 + 0.6 * ((i * 37) % 10) / 10;
     for (let t = t1 + 40; t <= t1 + lap; t += 40) {
       const f = (t - t1) / lap, an = i * 0.7 + f * Math.PI * 2 * (i % 2 ? 1 : -1) * 0.9, rr = (10 + (i % 3) * 6) * (0.6 + 0.6 * f);
       const x = T[0] + Math.cos(an) * rr, y = T[1] + Math.sin(an) * rr * 0.55 - 6 - f * 20 - 4 * Math.sin(f * 9 + i), s = (sz / 17) * (1.05 - 0.2 * f) * ci * 1.1;
-      ks.push([t, { transform: `${k.T(x - E1[0], y - E1[1])} scale(${(s * flap(t)).toFixed(3)}, ${s.toFixed(3)})`, opacity: f > 0.6 ? Math.max(0, 1 - (f - 0.6) / 0.4) : 1 }, 'linear']);
+      ks.push([t, { transform: `${k.T(x - E1[0], y - E1[1])} scale(${(s * flap(t)).toFixed(3)}, ${s.toFixed(3)})`, opacity: f > 0.55 ? Math.max(0, 1 - (f - 0.55) / 0.45) : 1 }, 'linear']);
     }
     fx(k.pic(spirit, E1, sz, sz * 0.8), ks);
     // each Spirit's own small light, riding with it

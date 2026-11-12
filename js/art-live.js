@@ -14,7 +14,7 @@ export const LIVE = {
   "canopy-archer": { src: 'art/live/canopy-archer.webp?v=9f2614ed', live: 'art/live/canopy-archer.json?v=5f26720a' },
   "carrion-wyrm": { src: 'art/live/carrion-wyrm.webp?v=cb17e708', live: 'art/live/carrion-wyrm.json?v=b91f7e83' },
   "champion-ember": { src: 'art/live/champion-ember.webp?v=4a81db52', live: 'art/live/champion-ember.json?v=0f6667e9' },
-  "champion-radiant": { src: 'art/live/champion-radiant.webp?v=b110e571', live: 'art/live/champion-radiant.json?v=3355ab90' },
+  "champion-radiant": { src: 'art/live/champion-radiant.webp?v=064d6543', live: 'art/live/champion-radiant.json?v=1c8e8896' },
   "champion-verdant": { src: 'art/live/champion-verdant.webp?v=519c4fa9', live: 'art/live/champion-verdant.json?v=e77e1ba7' },
   "cinderling": { src: 'art/live/cinderling.webp?v=6d89b188', live: 'art/live/cinderling.json?v=87aced68' },
   "cloud-ray": { src: 'art/live/cloud-ray.webp?v=759313be', live: 'art/live/cloud-ray.json?v=f30998a8' },

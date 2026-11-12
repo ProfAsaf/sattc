@@ -85,5 +85,46 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // the dark knight (rearing in the pillar) and the two halves of the torn storm
+  // above it; `tear`: where the pillar leaves the clouds; `ground`: where it lands
+  'dawns-judgment': {
+    role: 'attacker', element: 'light', facing: 'front', emit: [150, 4], hit: [150, 118],
+    tear: [150, 8], ground: [150, 183], feet: [157, 182],
+    parts: [
+      { name: 'cloudL', of: 'fig:0', pivot: [0, -10] },
+      { name: 'cloudR', of: 'fig:1', pivot: [300, -10] },
+      { name: 'knight', of: 'fig:2', pivot: [157, 182] },
+    ],
+  },
+  // the knight (spear grounded, from his feet), the shield with the arm that holds
+  // it (from the shoulder), and the long banner in four pieces, each from its own
+  // joint along it, so a ripple can run down it. `guard`: where blows land on the
+  // shield's face, high to low; `joints`: the banner's joints, from the spear
+  'dawnwatch-knight': {
+    role: 'defender', element: 'light', facing: 'right', hit: [120, 118], guard: [[151, 110], [151.5, 121], [147.5, 133]],
+    feet: [120, 178], shoulder: [131, 108],
+    joints: [[104, 40], [150, 40], [196, 40], [232, 40]],
+    parts: [
+      { name: 'banner0', of: '[data-part=banner]', pivot: [104, 40], poly: [[98, -20], [150, -20], [150, 100], [98, 100]] },
+      { name: 'banner1', of: '[data-part=banner]', pivot: [150, 40], poly: [[150, -20], [196, -20], [196, 100], [150, 100]] },
+      { name: 'banner2', of: '[data-part=banner]', pivot: [196, 40], poly: [[196, -20], [232, -20], [232, 100], [196, 100]] },
+      { name: 'banner3', of: '[data-part=banner]', pivot: [232, 40], poly: [[232, -20], [300, -20], [300, 100], [232, 100]] },
+      { name: 'man', of: 'fig:1 [data-part=man]', pivot: [120, 178] },
+      { name: 'shield', of: ['fig:1 [data-part=shield]', ':scope > [data-part=shield]'], pivot: [131, 108] },
+    ],
+  },
+  // the beacon: its great flame (from the tower's top, where it burns) and the
+  // spirit forming in the beam (about its heart); `heart`: the flame's heart,
+  // where the beam leaves; `windows`: the tower's lit slits and door, low to high;
+  // `village`: the lit windows in the valley
+  'beacon-of-hope': {
+    role: 'aura', element: 'light', facing: 'front',
+    heart: [96, 34], spirit: [212, 42], base: [96, 54],
+    windows: [[96, 172], [96, 138], [96, 114]], village: [[196, 191], [209, 189], [222, 192], [249, 191]],
+    parts: [
+      { name: 'fire', of: '[data-part=fire]', pivot: [96, 54] },
+      { name: 'spirit', of: '[data-part=spirit]', pivot: [212, 42] },
+    ],
+  },
   // ── end of lane B ──
 };

@@ -345,10 +345,12 @@ export const new_c = {
     const topE = spline([[104, 28], [130, 21], [158, 29], [186, 23], [214, 31], [240, 27]], 5);
     const botE = spline([[104, 54], [130, 50], [158, 58], [186, 52], [212, 59]], 5);
     const flag = poly([...topE, [264, 33], [236, 42], [258, 51], [226, 56], ...botE.reverse()]);
+    s.add('<g data-part="banner">');
     s.path(flag, s.lin([[0, '#df9f4e'], [0.5, '#f5cb78'], [1, '#fff0c8']], { x1: 0, y1: 0, x2: 1, y2: 0 }), 'opacity=".97"');
     s.add(`<path d="${taper([[158, 30], [158, 44], [158, 57]], [7, 10, 7])}" fill="#9b5c22" opacity=".18"/>` +
       `<path d="${taper([[214, 32], [213, 45], [212, 58]], [6, 9, 6])}" fill="#9b5c22" opacity=".14"/>`);
     s.add(`<path d="${sunMark(126, 37, 5)}" fill="none" stroke="#9a6326" stroke-width="1.4" opacity=".55"/>`);
+    s.add('</g>');
     // the wall: a tower at the left, merlons either side of him
     let wall = 'M-10,214L-10,178L310,178L310,214Z';
     for (const [a, b] of [[52, 80], [160, 190], [228, 258], [296, 316]]) wall += `M${a},178L${a},157L${b},157L${b},178Z`;
@@ -373,11 +375,15 @@ export const new_c = {
       ell(102.5, 118.5, 3, 3),
       taper([[102.5, 178], [102.5, 100], [102.5, 30]], [2.6, 2.4, 2.2]),
       poly([[100, 31], [102.5, 17], [105, 31]]),
-      taper([[128, 106], [133, 118], [136, 126]], [6, 5, 4.6]),
-      kite(139, 105, 12.5, 44),
     );
-    s.figure(`<path d="${knight}"/>`, { fill: p.fig, rim: p.rim, offsets: [[1.3, -0.6], [0.4, -1.3], [-0.8, -0.8]], rimOp: 0.95, shade: 0.45, edge: 0.35, light: [1, -0.5] });
-    s.add(`<path d="${sunMark(139, 122, 4)}" fill="none" stroke="#e7b860" stroke-width="1.1" opacity=".8"/>`);
+    // (the shield, with the arm that holds it, is a moving piece of his own)
+    const shield = U(taper([[128, 106], [133, 118], [136, 126]], [6, 5, 4.6]), kite(139, 105, 12.5, 44));
+    // (its shading gradient follows each shape's own box, so each piece carries two dots at the corners of the whole's box: it shades as before)
+    const xs = (knight + shield).match(/-?\d+(\.\d+)?,-?\d+(\.\d+)?/g).map((q) => q.split(',').map(Number));
+    const box = [Math.min(...xs.map((q) => q[0])), Math.min(...xs.map((q) => q[1])), Math.max(...xs.map((q) => q[0])), Math.max(...xs.map((q) => q[1]))];
+    const pin = `M${box[0]},${box[1]}L${box[0]},${box[1]}ZM${box[2]},${box[3]}L${box[2]},${box[3]}Z`;
+    s.figure(`<g data-part="man"><path d="${knight}${pin}"/></g><g data-part="shield"><path d="${shield}${pin}"/></g>`, { fill: p.fig, rim: p.rim, offsets: [[1.3, -0.6], [0.4, -1.3], [-0.8, -0.8]], rimOp: 0.95, shade: 0.45, edge: 0.35, light: [1, -0.5] });
+    s.add(`<path data-part="shield" d="${sunMark(139, 122, 4)}" fill="none" stroke="#e7b860" stroke-width="1.1" opacity=".8"/>`);
     s.bloom(`<path d="${glint(102.5, 18, 6, 0.16)}" fill="#fffbea"/>`, { sd: 1.2, k: 1.4, box: [90, 6, 26, 26] });
     s.add(particles({ seed: 8104, n: 16, x: [40, 270], y: [40, 170], r: [0.5, 1.2], fill: '#fff6d8', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
     return s.svg();
@@ -522,9 +528,13 @@ export const new_c = {
     const sx = 212, sy = 42;
     s.blur(`<path d="M96,25L320,-34L320,122L96,37Z" fill="${linU(s, 96, 0, 320, 0, [[0, '#fff3cc', 0.8], [0.45, '#ffe6a6', 0.36], [1, '#ffe6a6', 0.04]])}"/>` +
       `<path d="M96,29L320,10L320,74L96,33Z" fill="${linU(s, 96, 0, 320, 0, [[0, '#fffbea', 0.8], [0.5, '#fff3cc', 0.3], [1, '#fff3cc', 0]])}"/>`, 2.6);
+    s.add('<g data-part="spirit">');
     s.glow(sx, sy, 40, '#fff1c4', 0.75);
+    s.add('</g>');
     s.glow(sx, sy, 16, '#fffaf0', 0.9, 'breathe');
+    s.add('<g data-part="spirit">');
     s.path(sprite(sx, sy, 1.3), '#fffdf2', 'opacity=".9"');
+    s.add('</g>');
     const R = rng(8403), ring = [];
     for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2 + R() * 0.3, rr = 14 + R() * 8; ring.push([sx + Math.cos(a) * rr, sy + Math.sin(a) * rr * 0.6, 0.5 + R() * 0.7]); }
     s.add(`<path class="twinkle" style="--t:2.6s" d="${dots(ring)}" fill="#fff6d8"/>`);
@@ -548,8 +558,10 @@ export const new_c = {
     s.glow(96, 34, 110, '#ffd27a', 0.55);
     s.glow(96, 36, 40, '#fff1c4', 0.8, 'breathe');
     const fire = U(flame(96, 54, 50, -3, 26), flame(86, 54, 34, -11, 15, -0.14), flame(106, 54, 38, 9, 17), flame(92, 52, 42, 6, 12, -0.16), flame(101, 52, 30, -8, 11));
+    s.add('<g data-part="fire">');
     s.bloom(`<path d="${fire}" fill="${linU(s, 0, 4, 0, 56, [[0, '#ffb347', 0.2], [0.35, '#ffcf6a', 0.95], [1, '#ffe7a8']])}"/>` +
       `<path d="${U(flame(96, 53, 28, 0, 14, 0.06), flame(90.5, 53, 18, -4, 8, -0.06), flame(101.5, 53, 20, 4, 8, 0.06))}" fill="#fff8e2"/>`, { sd: 2.4, k: 1.4, box: [50, -14, 92, 80] });
+    s.add('</g>');
     s.add(particles({ seed: 8405, n: 18, x: [78, 116], y: [6, 50], r: [0.5, 1.2], fill: '#ffd27a', cls: 'rise', t: [3, 6], op: [0.5, 1] }));
     return s.svg();
   },

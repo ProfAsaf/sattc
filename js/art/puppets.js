@@ -85,6 +85,60 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Ambush at Dawn: the three spirit soldiers (each its body and its glow, from its
+  // feet), the mist they rise from, and the three dark riders (each from its hooves).
+  // `guard`: where blows land on the soldiers (their spear points, then their chests),
+  // right to left; `soldiers`/`riders`: their feet / hooves
+  'ambush-at-dawn': {
+    role: 'defender', element: 'spirit', facing: 'right', hit: [114, 128],
+    guard: [[187.6, 117.1], [170.4, 111.1], [150, 128.6], [114, 128.4], [89.6, 112.8], [56, 123]],
+    soldiers: [[37, 156.6], [129, 166], [83, 184.6]], riders: [[278, 150], [254, 154.5], [230, 160]],
+    parts: [
+      { name: 'sol0', of: '[data-part=sol0]', pivot: [37, 156.6] },
+      { name: 'sol1', of: '[data-part=sol1]', pivot: [129, 166] },
+      { name: 'sol2', of: '[data-part=sol2]', pivot: [83, 184.6] },
+      { name: 'mist', of: '[data-part=mist]', pivot: [150, 196] },
+      { name: 'rider0', of: 'fig:0 [data-part=rider0]', pivot: [278, 150] },
+      { name: 'rider1', of: 'fig:0 [data-part=rider1]', pivot: [254, 154.5] },
+      { name: 'rider2', of: 'fig:0 [data-part=rider2]', pivot: [230, 160] },
+    ],
+  },
+  // the Lightweaver: she (from her feet; the low sun's light on her robe goes with her),
+  // each arm from its shoulder, the threads between her hands, and the spirit forming
+  // (its glow, and its body). `hands`: where each arm ends; `emit`: where the spirit
+  // leaves from; `follower`: the faint spirit behind her (the move's own target alone)
+  lightweaver: {
+    role: 'support', element: 'spirit', facing: 'right', emit: [183, 84], hit: [118, 130],
+    hands: [[154, 75], [156.4, 102]], shoulders: [[124, 98], [118, 100]], feet: [120, 186], follower: [52, 72], weave: [153, 89],
+    parts: [
+      { name: 'her', of: 'fig:0 [data-part=body]', pivot: [120, 186] },
+      { name: 'armU', of: 'fig:0 [data-part=armU]', pivot: [124, 98] },
+      { name: 'armL', of: 'fig:0 [data-part=armL]', pivot: [118, 100] },
+      { name: 'sun', of: '[data-part=sun]', pivot: [120, 186] },
+      { name: 'halo', of: '[data-part=halo]', pivot: [183, 84] },
+      { name: 'threads', of: '[data-part=threads]', pivot: [153, 89] },
+      { name: 'spirit', of: '[data-part=spirit]', pivot: [183, 84] },
+    ],
+  },
+  // Bastion: the dome of light (its fill and base, and its skin of lines), the boy
+  // braced behind it (with his shield's boss), and the spear breaking on its shoulder:
+  // the flash and cracks, the shaft, the shards, the glint. `guard`: points on the
+  // dome's skin (an ellipse, centre `dome`, radii 94 x 122), right to left, where
+  // blows land; `tip`: where the drawn shaft stops, `axis`: the way it flies
+  bastion: {
+    role: 'defender', element: 'light', facing: 'right', hit: [112, 140],
+    guard: [[218.6, 164.8], [203.9, 117.8], [173, 80.3], [129.3, 64.1], [81.9, 78.3], [48.1, 117.8], [33.4, 164.8]],
+    dome: [126, 186], feet: [104, 184], tip: [214.9, 110.8], axis: [-0.845, 0.535],
+    parts: [
+      { name: 'dome', of: '[data-part=dome]', pivot: [126, 186] },
+      { name: 'kid', of: ['fig:0', '[data-part=boss]'], pivot: [104, 184] },
+      { name: 'skin', of: '[data-part=skin]', pivot: [126, 186] },
+      { name: 'strike', of: '[data-part=strike]', pivot: [203.9, 117.8] },
+      { name: 'shaft', of: 'fig:1 [data-part=shaft]', pivot: [214.9, 110.8] },
+      { name: 'shards', of: 'fig:1 [data-part=shards]', pivot: [203.9, 117.8] },
+      { name: 'flare', of: '[data-part=flare]', pivot: [203.9, 117.8] },
+    ],
+  },
   // the dark knight (rearing in the pillar) and the two halves of the torn storm
   // above it; `tear`: where the pillar leaves the clouds; `ground`: where it lands
   'dawns-judgment': {

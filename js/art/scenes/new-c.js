@@ -152,9 +152,11 @@ export const new_c = {
     s.path('M-10,214L-10,185C60,182 140,181 200,183C250,184 282,182 310,184L310,214Z', s.lin([[0, '#4c3b28'], [1, '#1f160d']]));
     // the dome: faint inside, bright at its skin
     const cx = 126, cy = 186, rx = 94, ry = 122;
+    s.add('<g data-part="dome">');
     s.path(`M${cx - rx},${cy}A${rx},${ry} 0 0 1 ${cx + rx},${cy}Z`,
       radE(s, cx, cy, rx, ry, [[0, '#fff6d8', 0.62], [0.55, '#ffe6a6', 0.36], [0.86, '#ffd77a', 0.38], [0.965, '#fff2c8', 0.85], [1, '#fff2c8', 0]]));
     s.add(`<ellipse cx="${cx}" cy="${cy}" rx="${rx + 4}" ry="6" fill="#ffe39a" opacity=".55"/>`);
+    s.add('</g>');
     // the boy, braced behind his little shield
     const kid = sc(U(
       taper([[100, 152], [93, 167], [86, 181]], [8.4, 6.6, 5.4]),
@@ -174,9 +176,9 @@ export const new_c = {
       taper([[95, 148.5], [86, 157], [77, 164]], [2.6, 2.2, 0.6]),
     ), 104, 184, 1.3);
     s.figure(`<path d="${kid}"/>`, { fill: p.fig, rim: p.rim, offsets: [[1.2, -0.7], [0.5, -1.3]], rimOp: 0.95, shade: 0.5, edge: 0.32, light: [1, -0.6] });
-    s.add('<circle cx="143.4" cy="115.1" r="2.8" fill="#ffd77a"/>');
+    s.add('<circle data-part="boss" cx="143.4" cy="115.1" r="2.8" fill="#ffd77a"/>');
     // the dome's skin in front of him: a meridian, two latitudes, the lit rim
-    s.add(`<g fill="none" stroke="#fff3cc">` +
+    s.add(`<g data-part="skin" fill="none" stroke="#fff3cc">` +
       `<path d="M${cx - 58},${cy}A58,${ry} 0 0 1 ${cx + 58},${cy}" stroke-width=".8" opacity=".32"/>` +
       `<path d="M${cx - 81},125A81,7.5 0 0 0 ${cx + 81},125" stroke-width=".8" opacity=".32"/>` +
       `<path d="M${cx - 50},83A50,4.8 0 0 0 ${cx + 50},83" stroke-width=".7" opacity=".28"/>` +
@@ -184,6 +186,7 @@ export const new_c = {
     // the impact on the dome's shoulder
     const th = (34 * Math.PI) / 180, ix = cx + rx * Math.cos(th), iy = cy - ry * Math.sin(th);
     const ta = (Math.atan2(-ry * Math.cos(th), -rx * Math.sin(th)) * 180) / Math.PI + 180;
+    s.add('<g data-part="strike">');
     s.glow(ix, iy, 74, '#fff3cc', 0.8);
     s.shafts({ cx: ix, cy: iy, n: 11, from: -105, to: 70, len: 120, spread: 3, color: '#fff6d8', op: 0.3, seed: 7803, sd: 1.6 });
     s.add(`<g fill="none" stroke="#fff6dc">${[[9, 3.4, 1.3, 0.95], [17, 6.2, 1, 0.65], [27, 9.4, 0.8, 0.38]].map(([a, b, w, o]) =>
@@ -193,6 +196,7 @@ export const new_c = {
       return polyline(bolt([ix, iy], [ix + Math.cos(r) * l, iy + Math.sin(r) * l], 7804 + i, 4, 2.4));
     }).join('');
     s.add(`<path d="${cracks}" fill="none" stroke="#fffbe8" stroke-width=".8" opacity=".85"/>`);
+    s.add('</g>');
     // the spear, snapped short of the dome, its head in pieces
     const bx = 330, by = 38, ux = (ix - bx) / Math.hypot(ix - bx, iy - by), uy = (iy - by) / Math.hypot(ix - bx, iy - by);
     const ex = ix - ux * 13, ey = iy - uy * 13;
@@ -201,8 +205,10 @@ export const new_c = {
     const shard = (x, y, r, a) => rot(poly([[x - r, y - r * 0.3], [x + r, y], [x - r * 0.5, y + r * 0.5]]), x, y, a);
     const shards = U(shard(ix + 18, iy - 22, 4.6, -30), shard(ix + 24, iy + 6, 3.6, 40), shard(ix + 8, iy + 20, 3, 110),
       shard(ix + 32, iy - 8, 2.6, 10), shard(ix - 4, iy - 18, 2.4, -80), shard(ix + 40, iy - 30, 2, -20));
-    s.figure(`<path d="${shaft}"/><path d="${shards}"/>`, { fill: '#0f0a07', rim: '#ffe6a6', offsets: [[-0.7, 0.8], [-0.8, -0.4]], rimOp: 0.8 });
+    s.figure(`<g data-part="shaft"><path d="${shaft}"/></g><g data-part="shards"><path d="${shards}"/></g>`, { fill: '#0f0a07', rim: '#ffe6a6', offsets: [[-0.7, 0.8], [-0.8, -0.4]], rimOp: 0.8 });
+    s.add('<g data-part="flare">');
     s.bloom(`<path d="${glint(ix, iy, 15, 0.12)}" fill="#fffbea"/><path d="${rot(glint(ix, iy, 7, 0.2), ix, iy, 45)}" fill="#fff3cc"/><circle cx="${f1(ix)}" cy="${f1(iy)}" r="3.4" fill="#fff"/>`, { sd: 2, k: 1.5 });
+    s.add('</g>');
     // grass at the corners
     const R = rng(7805), blades = [];
     for (const [x0, x1] of [[-8, 40], [262, 310]]) {
@@ -245,23 +251,40 @@ export const new_c = {
       ell(118.4, 94.8, 6.6, 5.8),
       taper([[115.5, 92], [112.5, 100], [110, 110], [105.5, 120], [99, 127]], [9, 8.6, 7, 4.6, 0.6]),
       taper([[114, 97], [108, 106], [101, 112], [94, 114]], [4, 3.4, 2.4, 0.4]),
+    ), 118, 188, K);
+    const armU = sc(U(
       taper([[123, 114], [135, 110], [146, 97]], [4.6, 3.8, 3.2]), ell(147.5, 95.5, 2.6, 2.4),
-      taper([[118, 116], [132, 122], [148, 118]], [4.6, 3.8, 3.2]), ell(149.5, 117.5, 2.6, 2.4),
       blob([[127, 112], [137, 109.5], [138, 116], [133, 127], [127, 121]], 4),
+    ), 118, 188, K);
+    const armL = sc(U(
+      taper([[118, 116], [132, 122], [148, 118]], [4.6, 3.8, 3.2]), ell(149.5, 117.5, 2.6, 2.4),
       blob([[124, 119], [136, 123], [134, 133], [126, 130]], 4),
     ), 118, 188, K);
-    s.figure(`<path d="${girl}"/>`, { fill: '#433629', rim: '#fff3d0', offsets: [[-1.2, -0.4], [1.1, -0.6]], rimOp: 0.95, shade: 0.55, edge: 0.35, light: [1, -0.4] });
+    // (the figure is drawn from three pieces, and its shading gradient follows each shape's own box: each piece
+    // carries the whole figure's four extreme points as zero-length marks, which paint nothing, so the box is as it was)
+    const pts = [...(girl + armU + armL).matchAll(NUM)].map((m) => [+m[1], +m[2]]);
+    const ext = [(a, b) => a[0] - b[0], (a, b) => b[0] - a[0], (a, b) => a[1] - b[1], (a, b) => b[1] - a[1]].map((c) => pts.reduce((m, q) => (c(q, m) < 0 ? q : m)));
+    const pin = ext.map(([x, y]) => `M${x},${y}L${x},${y}`).join('');
+    s.figure(`<g data-part="body"><path d="${girl}${pin}"/></g><g data-part="armU"><path d="${armU}${pin}"/></g><g data-part="armL"><path d="${armL}${pin}"/></g>`, { fill: '#433629', rim: '#fff3d0', offsets: [[-1.2, -0.4], [1.1, -0.6]], rimOp: 0.95, shade: 0.55, edge: 0.35, light: [1, -0.4] });
     // the low sun through her pale robe
+    s.add('<g data-part="sun">');
     s.path(sc(robe, 118, 188, K), radE(s, 70, 196, 110, 90, [[0, '#ffe9b8', 0.75], [0.4, '#f6d79a', 0.4], [1, '#f6d79a', 0]]));
+    s.add('</g>');
     // the spirit she is weaving
     const sx = 182.7, sy = 84.3;
+    s.add('<g data-part="halo">');
     s.glow(sx, sy, 66, '#ffe6a6', 0.45);
+    s.add('</g>');
     s.glow(sx, sy, 26, '#fff1c2', 0.95, 'breathe');
     const threads = sc('M148,95C156,84 165,86 170,97M150,118C158,127 167,122 171,110M148,95C156,104 141,110 150,118M147,97C162,106 160,113 150,118' +
       'M146,96C150,88 158,90 168,100M151,117C160,112 164,110 169,106M150,118C140,110 151,102 148,95', 118, 188, K);
+    s.add('<g data-part="threads">');
     s.bloom(`<path d="${threads}" fill="none" stroke="#ffd77a" stroke-width="3" opacity=".4"/><path d="${threads}" fill="none" stroke="#fff4d0" stroke-width=".9"/>` +
       `<ellipse cx="${sx}" cy="${sy}" rx="21" ry="6" fill="none" stroke="#fff4d0" stroke-width=".7" opacity=".7" transform="rotate(-20 ${sx} ${sy})"/>`, { sd: 1.4, k: 1.4, box: [136, 50, 80, 80] });
+    s.add('</g>');
+    s.add('<g data-part="spirit">');
     s.path(sprite(sx, sy, 1.4), '#fffdf2');
+    s.add('</g>');
     s.motes({ seed: 7902, n: 18, x: [140, 214], y: [54, 118], r: [0.4, 1], fill: '#ffe39a', cls: 'float', t: [4, 8], op: [0.5, 1] });
     s.add(particles({ seed: 7903, n: 14, x: [30, 270], y: [40, 170], r: [0.5, 1.1], fill: '#fff6d8', cls: 'float', t: [5, 9], op: [0.3, 0.7] }));
     // meadow grass and flowers at the front
@@ -290,8 +313,8 @@ export const new_c = {
     s.path('M-10,214L-10,186C60,174 150,160 228,150L262,147L272,148C200,160 120,184 64,214Z', s.lin([[0, '#c9b38a'], [1, '#8a7656']], { x1: 1, y1: 0, x2: 0, y2: 1 }));
     // the riders, coming on
     const rd = horseman();
-    const riders = [[278, 150, 0.56], [254, 154.5, 0.76], [230, 160, 0.98]].map(([x, y, k]) =>
-      `<g transform="translate(${x} ${y}) scale(${-k} ${k})"><path d="${rd}"/></g>`).join('');
+    const riders = [[278, 150, 0.56], [254, 154.5, 0.76], [230, 160, 0.98]].map(([x, y, k], i) =>
+      `<g data-part="rider${i}" transform="translate(${x} ${y}) scale(${-k} ${k})"><path d="${rd}"/></g>`).join('');
     s.figure(riders, { fill: '#1a1310', rim: '#ffe6ad', offsets: [[1, -0.6], [0, -1.1]], rimOp: 0.85 });
     s.add('<ellipse cx="250" cy="161" rx="42" ry="2.6" fill="#2a2018" opacity=".35"/>');
     // dust kicked up behind them
@@ -311,14 +334,16 @@ export const new_c = {
       taper([[-22, -16], [52, -26]], [2, 1.6]),
       poly([[51, -28.4], [60, -27.2], [52, -23.6]]),
     );
-    const troop = [[38, 136, 0.86], [130, 143, 0.96], [84, 150, 1.44]].map(([x, y, k]) =>
-      `<g transform="translate(${x} ${y}) scale(${k})"><path d="${sol}"/></g>`).join('');
+    const troop = [[38, 136, 0.86], [130, 143, 0.96], [84, 150, 1.44]].map(([x, y, k], i) =>
+      `<g data-part="sol${i}" transform="translate(${x} ${y}) scale(${k})"><path d="${sol}"/></g>`).join('');
     s.glow(88, 118, 80, '#fff0c2', 0.5, 'breathe');
     s.blur(`<g fill="#ffcf6a" opacity=".9">${troop}</g>`, 3.6);
     const ghost = linU(s, 0, 70, 0, 178, [[0, '#fff9e2', 0.95], [0.35, '#ffe6a2', 0.85], [0.7, '#ffd77a', 0.45], [1, '#ffd77a', 0]]);
     s.add(`<g fill="${ghost}">${troop}</g>`);
     // the mist they come out of
+    s.add('<g data-part="mist">');
     s.haze(150, 196, '#f0e2c0', 0.4, 20);
+    s.add('</g>');
     s.fog(170, '#fff1cf', 0.55).fog(184, '#f6e4bf', 0.6).fog(198, '#e9d6b0', 0.5);
     s.add(`<g fill="#fff1cf" opacity=".5">${[[40, 176, 30], [96, 186, 38], [150, 178, 26], [70, 196, 30]].map(([x, y, r]) =>
       `<ellipse class="drift" cx="${x}" cy="${y}" rx="${r * 1.5}" ry="${r * 0.32}"/>`).join('')}</g>`);

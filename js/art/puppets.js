@@ -21,6 +21,74 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Carrion Wyrm (a creature, an attacker: a skeletal wyrm circling low over the battlefield, violet light in its ribs; it
+  // soars and its bite is venom, so its attack is a volley of bone shards spat from the jaws): the two torn wings (the
+  // skin, and the arm with its finger-bones, each side), the spine cut in three (the neck with its vertebrae, the body's
+  // middle, and the tail curling up at the right), the skull with its horns, the hanging jaw, its single eye with its glow,
+  // the ribs, the two legs and the heart of light in the ribs; `emit`: the skull's mouth, where the shards leave from,
+  // `hit`: the ribcage, where blows land, `neck`: where the neck bends from, `head`: where the skull turns on the neck,
+  // `hinge`: where the jaw turns, `shoulderL`/`shoulderR`: where the wings turn, `body`: the body's middle (it tilts and
+  // banks about it), `tail`: where the tail turns, `eye`: the eye, `ground`: the battlefield below its jaws (the target when
+  // alone)
+  'carrion-wyrm': {
+    role: 'attacker', element: 'bone', facing: 'left', emit: [66, 115], hit: [160, 98],
+    neck: [120, 93], head: [96, 106], hinge: [92, 113], shoulderL: [146, 82], shoulderR: [156, 80], body: [150, 92], tail: [204, 106], eye: [80, 104], heart: [166, 100], ground: [56, 160],
+    parts: [
+      { name: 'memL', of: '[data-part=memL]', pivot: [146, 82] },
+      { name: 'memR', of: '[data-part=memR]', pivot: [156, 80] },
+      { name: 'neck', of: 'fig:0 [data-part=spine]', pivot: [120, 93], poly: [[-10, -10], [120, -10], [120, 220], [-10, 220]] },
+      { name: 'trunk', of: 'fig:0 [data-part=spine]', pivot: [150, 92], poly: [[120, -10], [204, -10], [204, 220], [120, 220]] },
+      { name: 'tail', of: 'fig:0 [data-part=spine]', pivot: [204, 106], poly: [[204, -10], [310, -10], [310, 220], [204, 220]] },
+      { name: 'ribs', of: 'fig:0 [data-part=ribs]', pivot: [150, 92] },
+      { name: 'skull', of: 'fig:0 [data-part=skull]', pivot: [96, 106] },
+      { name: 'jaw', of: 'fig:0 [data-part=jaw]', pivot: [92, 113] },
+      { name: 'armL', of: 'fig:0 [data-part=armL]', pivot: [146, 82] },
+      { name: 'armR', of: 'fig:0 [data-part=armR]', pivot: [156, 80] },
+      { name: 'legs', of: 'fig:0 [data-part=legs]', pivot: [150, 92] },
+      { name: 'eye', of: '[data-part=eye]', pivot: [96, 106] },
+      { name: 'heart', of: '[data-part=heart]', pivot: [150, 92] },
+    ],
+  },
+  // The Culling (a spell, an attacker: it destroys every creature with 2 or less Power, so the spell is the scythe and the
+  // sweep itself): the giant scythe of violet light (its handle, the grip's peg and the blade, with the glow they throw),
+  // the three small people at the left, still whole and standing ahead of the blade (folk0-folk2), the faint ghosts of the
+  // people it has already cut, standing in the swath, and the wisps curling up from them; `emit`: the blade's tip, where the
+  // reaping wave leaves from, `hit`: the middle of the swath, where creatures fall, `grip`: where the scythe turns (its
+  // peg on the handle), `blade`: the middle of the blade, `folk`: where the three people stand (their feet), `swath`: the
+  // middle of the cut swath, `giant`: the tall one that was spared, `stand`: where the people stand, a point among the three
+  // (the target when alone)
+  'the-culling': {
+    role: 'attacker', element: 'spirit', facing: 'left', emit: [64, 145], hit: [150, 140],
+    grip: [262, 56], blade: [140, 126], folk: [[26, 177], [44, 176], [58, 177]], swath: [150, 140], giant: [198, 130], stand: [44, 162],
+    parts: [
+      { name: 'folk0', of: 'fig:0 [data-part=folk0]', pivot: [26, 177] },
+      { name: 'folk1', of: 'fig:0 [data-part=folk1]', pivot: [44, 176] },
+      { name: 'folk2', of: 'fig:0 [data-part=folk2]', pivot: [58, 177] },
+      { name: 'ghosts', of: '[data-part=ghosts]', pivot: [170, 150] },
+      { name: 'wisps', of: '[data-part=wisps]', pivot: [170, 150] },
+      { name: 'scythe', of: '[data-part=scythe]', pivot: [262, 56] },
+    ],
+  },
+  // Hungry Ghoul (a creature, a support: it feeds on the dead and grows, +1/+1 whenever another creature dies, and it can
+  // eat one of yours): its head (the long skull with its horn), its jaw, its three glowing eyes (with the violet light they
+  // throw), the long arm hanging over the gravestone's edge (armA) and the arm gripping the stone's top (armB), the rest of
+  // the crouched body (the arched back, haunches, legs, neck) and the faint ribs along its flank; `emit`: its open mouth,
+  // where the hunger reaches out from, `hit`: the middle of its back, `neck`: where the head turns, `hinge`: where the jaw
+  // turns, `shoulderA`/`shoulderB`: where the arms turn, `feet`: where it crouches on the stone (it swells about it),
+  // `cross`: the little cross at the left of the foreground (the target when alone)
+  'hungry-ghoul': {
+    role: 'support', element: 'shadow', facing: 'left', emit: [109, 69], hit: [172, 74],
+    neck: [135, 57], hinge: [127, 65], shoulderA: [158, 50], shoulderB: [168, 53], feet: [174, 98], cross: [66, 140],
+    parts: [
+      { name: 'body', of: 'fig:1 [data-part=body]', pivot: [174, 98] },
+      { name: 'ribs', of: '[data-part=ribs]', pivot: [174, 98] },
+      { name: 'armB', of: 'fig:1 [data-part=armB]', pivot: [168, 53] },
+      { name: 'armA', of: 'fig:1 [data-part=armA]', pivot: [158, 50] },
+      { name: 'head', of: 'fig:1 [data-part=head]', pivot: [135, 57] },
+      { name: 'jaw', of: 'fig:1 [data-part=jaw]', pivot: [127, 65] },
+      { name: 'eyes', of: '[data-part=eyefire]', pivot: [135, 57] },
+    ],
+  },
   // Bone Altar (a relic, an aura: once each turn a creature is sacrificed to draw a card, so the place itself acts): the cold
   // violet flame on the altar (its tongues, and the glow they throw), the little flames of the four candles on the altar and
   // the two on the floor (candA-candD are the altar's, left to right, candE and candF the floor's), and the three skulls in

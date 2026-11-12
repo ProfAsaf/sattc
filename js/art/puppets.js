@@ -21,6 +21,63 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // one more wave (a spell, a support: you take an extra turn, so the sea gives you another wave): the second, taller
+  // wave behind (its body with the lit bands and streaks, the foam along its crest and round its curl, the spray torn
+  // off the curl and the mist wisps over it), the nearer, lower wave the boat sits on (with its bright lip), the boat
+  // (hull, mast and sail), the sailor in it (looking up) and the lantern in the bow; `emit`: the great wave's crest,
+  // where the gift (a surge of lit water) leaves from, `hit`: the boat, where it lands (the target when alone),
+  // `crest`: the wave's highest point, `curl`: the tip of its curl, `base`: where the wave stands on the sea (it rears
+  // about it), `boat`: the hull's middle, `waist` and `head`: the sailor's waist (it leans about it) and head,
+  // `lantern`: the light in the bow, `sea`: the nearer wave's foot it rises from
+  'one-more-wave': {
+    role: 'support', element: 'water', facing: 'left', emit: [236, 24], hit: [100, 112],
+    crest: [212, 15], curl: [262, 66], base: [240, 214], boat: [100, 118], waist: [92.7, 116.2], head: [93, 98.6], lantern: [84, 112.5], sea: [150, 214],
+    parts: [
+      { name: 'wave', of: ['fig:0', '[data-part=wave]'], pivot: [240, 214] },
+      { name: 'foam', of: '[data-part=foam]', pivot: [240, 214] },
+      { name: 'spray', of: '[data-part=spray]', pivot: [262, 70] },
+      { name: 'mist', of: '[data-part=mist]', pivot: [240, 214] },
+      { name: 'near', of: ['fig:1', '[data-part=nearline]'], pivot: [150, 214] },
+      { name: 'hull', of: 'fig:2 [data-part=hull]', pivot: [100, 120] },
+      { name: 'sailor', of: 'fig:2 [data-part=sailor]', pivot: [92.7, 116.2] },
+      { name: 'lantern', of: '[data-part=lantern]', pivot: [84, 112.5] },
+    ],
+  },
+  // the drowned clock (a Relic, an aura: it chimes at the start of your turn, and on the third chime each opponent loses 6
+  // Life): the rings of light the bell sends out over the sky, the leaning tower (its stonework, weed and barnacles, with
+  // the lines of its courses), the bell in its belfry, the glowing face (disc and dial), the hour hand and the minute hand
+  // (cut from the one drawn stroke), the tower's reflection on the water and the rings spreading on the sea; `bell`: the
+  // belfry, where the chime and its rings come from, `face`: the clock face's centre (the hands turn about it), `peak`:
+  // the spire's tip, `base`: where the tower stands in the sea (the water's rings spread from it)
+  'the-drowned-clock': {
+    role: 'aura', element: 'water', facing: 'front', hit: [143, 108],
+    bell: [141.5, 55], face: [144.2, 83.3], peak: [138, 12], base: [149, 142],
+    parts: [
+      { name: 'rings', of: '[data-part=rings]', pivot: [141.3, 50.4] },
+      { name: 'tower', of: ['fig:0 [data-part=tower]', '[data-part=tower]'], pivot: [148, 150] },
+      { name: 'bell', of: 'fig:0 [data-part=bell]', pivot: [140.8, 44.4] },
+      { name: 'face', of: '[data-part=face]', pivot: [144.2, 83.3] },
+      { name: 'hour', of: '[data-part=hands]', pivot: [144.2, 83.3], poly: [[133, 70], [140.6, 68], [142.8, 83.6], [147, 85.5], [147, 89], [133, 89]] },
+      { name: 'minute', of: '[data-part=hands]', pivot: [144.2, 83.3], poly: [[140.6, 68], [147, 68], [147, 85.5], [142.9, 85.5], [142.8, 83.6]] },
+      { name: 'reflect', of: '[data-part=reflect]', pivot: [146, 146] },
+      { name: 'ripples', of: '[data-part=ripples]', pivot: [149, 142] },
+    ],
+  },
+  // the tidal mimic (a creature, an attacker: a tide-pool water-thing half-formed into a knight, its sword raised): the
+  // knight's body (helm, torso, far arm, visor and the lines drawn on it), the plume streaming from its helm, the sword
+  // arm (shoulder and hand) and the sword in it (the drops hanging round it fall on their own); `emit`: the sword's tip (where the
+  // slash of water leaves from), `hit`: its chest, `shoulder`: where the sword arm turns, `hand`: the hand on the hilt,
+  // `feet`: where it stands in the pool (it sways about them), `mid`: the axis it mirrors about to face a target
+  'tidal-mimic': {
+    role: 'attacker', element: 'water', facing: 'left', emit: [115, 45], hit: [152, 112],
+    shoulder: [130, 95], hand: [116, 96], feet: [150, 176], mid: 150,
+    parts: [
+      { name: 'body', of: '[data-part=body]', pivot: [150, 176] },
+      { name: 'plume', of: '[data-part=plume]', pivot: [153, 53] },
+      { name: 'arm', of: '[data-part=arm]', pivot: [130, 95] },
+      { name: 'sword', of: '[data-part=sword]', pivot: [116, 96] },
+    ],
+  },
   // the windborne sage (a creature, a support: when played she draws a card): her hair and her scarf
   // streaming on the wind, her billowing robe, her book-arm (sleeve and hand), her far sleeve, the
   // open glowing book, and the five gulls (each its own); the rest of her (head, body, legs) stays;

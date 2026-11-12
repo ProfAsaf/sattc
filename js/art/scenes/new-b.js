@@ -344,20 +344,23 @@ const tide = faction('tide', {
     // the mimic: crisp where it has learned the shape (helm, pauldron, sword
     // arm), still loose water where it has not
     s.glow(150, 104, 74, '#c6f4f6', 0.42, 'breathe');
-    const body = parts([
+    const body = '<g data-part="body">' + parts([
       taper([[150, 176], [147, 158], [152, 140], [150, 120]], [34, 18, 15, 22]),
       blob([[132, 88], [168, 88], [167, 104], [160, 118], [140, 118], [133, 104]]),
       blob([[160, 86], [172, 88], [179, 96], [177, 104], [168, 102]]),
       taper([[168, 96], [180, 110], [183, 128], [177, 146], [168, 166]], [10, 8, 7, 6, 4]),
+    ]) + '<path d="M139,82V64Q139,51 150,49Q161,51 161,64V82Z"/><ellipse cx="133" cy="90" rx="10" ry="7"/></g>' +
+      '<g data-part="plume">' + parts([
       taper([[150, 51], [153, 41], [160, 33]], [4.4, 2.8, 0.4]), taper([[153, 52], [162, 45], [172, 43]], [3.8, 2.4, 0.4]), taper([[156, 54], [167, 53], [177, 56]], [3.2, 2, 0.4]),
+    ]) + '</g><g data-part="arm">' + parts([
       taper([[131, 95], [124, 103], [120, 110]], [8, 7, 6]),
       taper([[120, 110], [117, 103], [116, 96]], [6, 5.5, 5]),
-    ]) + '<path d="M139,82V64Q139,51 150,49Q161,51 161,64V82Z"/><ellipse cx="133" cy="90" rx="10" ry="7"/><circle cx="116" cy="94" r="3.6"/>';
+    ]) + '<circle cx="116" cy="94" r="3.6"/></g>';
     s.bloom(`<g fill="${s.linU(0, 44, 0, 176, [[0, '#f2fffd'], [0.4, '#a9e3e3'], [1, '#3f8c96']])}" opacity=".84">${body}</g>`, { sd: 2.6, k: 0.7 });
-    s.add('<g fill="none" stroke="#ffffff" stroke-width=".8" opacity=".45" stroke-linecap="round"><path d="M146,170C150,160 146,150 151,140M154,166C157,154 152,146 155,132M138,98C144,102 152,100 160,106M168,112C174,120 179,128 177,140"/></g>');
-    s.add('<g fill="none" stroke="#f4fffd" stroke-width="1" opacity=".9"><path d="M139,82V64Q139,51 150,49Q161,51 161,64V82Z"/><ellipse cx="133" cy="90" rx="10" ry="7"/><path d="M150,88V117M140,100H150"/></g>');
-    s.add(`<g fill="#effdfc" stroke="#ffffff" stroke-width=".5">${parts([taper([[116, 90], [115, 64], [114, 44]], [4, 3.4, 0.4]), taper([[109, 91], [123, 91]], [2.4, 2.4])])}<circle cx="116" cy="101" r="2"/></g>`);
-    s.add('<path d="M142.5,66H157.5" stroke="#06151b" stroke-width="2.6" stroke-linecap="round"/><path d="M150,61.5V71" stroke="#06151b" stroke-width="1.1"/>');
+    s.add('<g data-part="body" fill="none" stroke="#ffffff" stroke-width=".8" opacity=".45" stroke-linecap="round"><path d="M146,170C150,160 146,150 151,140M154,166C157,154 152,146 155,132M138,98C144,102 152,100 160,106M168,112C174,120 179,128 177,140"/></g>');
+    s.add('<g data-part="body" fill="none" stroke="#f4fffd" stroke-width="1" opacity=".9"><path d="M139,82V64Q139,51 150,49Q161,51 161,64V82Z"/><ellipse cx="133" cy="90" rx="10" ry="7"/><path d="M150,88V117M140,100H150"/></g>');
+    s.add(`<g data-part="sword" fill="#effdfc" stroke="#ffffff" stroke-width=".5">${parts([taper([[116, 90], [115, 64], [114, 44]], [4, 3.4, 0.4]), taper([[109, 91], [123, 91]], [2.4, 2.4])])}<circle cx="116" cy="101" r="2"/></g>`);
+    s.add('<g data-part="body"><path d="M142.5,66H157.5" stroke="#06151b" stroke-width="2.6" stroke-linecap="round"/><path d="M150,61.5V71" stroke="#06151b" stroke-width="1.1"/></g>');
     s.add(drops([[178, 150], [171, 160], [184, 132], [176, 108], [163, 36], [176, 50]], '#d9f7f6'));
     s.add(particles({ seed: 674, n: 16, x: [110, 196], y: [40, 176], r: [0.6, 1.7], stroke: '#cdf3f6', cls: 'rise', t: [6, 10], op: [0.4, 0.9] }));
     return s.svg();
@@ -371,38 +374,38 @@ const tide = faction('tide', {
     s.rect(s.lin([[0, '#040c13'], [0.45, '#0c2632'], [0.67, '#1d4a58']]));
     s.add(particles({ seed: 681, n: 36, x: [0, W], y: [0, 110], r: [0.25, 0.8], fill: '#e4fbfb', cls: 'twinkle', op: [0.2, 0.85], t: [2.5, 6] }));
     // the rings the bells send out, and the light in the belfry
-    s.add(`<g transform="${g}" fill="none" stroke="#f4ecc8">${[[34, 0.42], [50, 0.3], [68, 0.2], [90, 0.12], [116, 0.07]].map(([r, o]) =>
+    s.add(`<g data-part="rings" transform="${g}" fill="none" stroke="#f4ecc8">${[[34, 0.42], [50, 0.3], [68, 0.2], [90, 0.12], [116, 0.07]].map(([r, o]) =>
       `<circle cx="150" cy="50" r="${r}" stroke-width="${f1(1.7 - r / 110)}" opacity="${o}"/>`).join('')}</g>`);
     s.glow(141, 54, 20, '#f6e8b8', 0.9);
     // a drowned town far off
     s.blur('<path d="M28,141V128L34,119L40,128V141ZM50,141V133L62,126L74,133V141ZM236,141V122L242,110L248,122V141ZM258,141V134L271,128L284,134V141Z" fill="#244f5c"/>', 0.7);
     s.path(`M-10,${hz}H${W + 10}V${H + 10}H-10Z`, s.lin([[0, '#1f4d5a'], [0.4, '#0c2a35'], [1, '#03101a']]));
     // the tower, leaning, crusted with barnacles and hung with weed
-    const tower = parts([
+    const tower = `<g data-part="tower" transform="${g}">` + parts([
       'M128,156V100H172V156Z', 'M124,101V66H176V101Z', 'M121,104V98H179V104Z', 'M120,68V62H180V68Z', 'M128,39V34H172V39Z',
       'M131,35L147,9L150,12L153,6L169,35Z',
-      'M144,60Q144,50.5 150,49.5Q156,50.5 156,60L158,61.5H142Z', 'M149.2,49.5V44H150.8V49.5Z',
       taper([[123, 104], [122, 113], [124, 122]], [2.2, 1.6, 0.4]), taper([[133, 104], [134, 110]], [1.8, 0.4]),
       taper([[177, 104], [178, 114], [176, 121]], [2.2, 1.6, 0.4]), taper([[170, 104], [169, 109]], [1.6, 0.4]),
     ]) + P('M131,62V38H169V62ZM139,60V48A11,11 0 0 1 161,48V60Z', 'fill-rule="evenodd"') +
       circ([[128, 138, 2.2], [129, 130, 1.6], [127.5, 146, 1.8], [172, 134, 2.2], [171.5, 126, 1.4], [172.5, 143, 1.9], [124, 66, 1.4], [176, 66, 1.6],
-        [121, 99, 1.6], [179, 99, 1.8], [138, 156, 2.2], [146, 155, 1.6], [163, 156, 2]]);
-    s.figure(`<g transform="${g}">${tower}</g>`, { fill: '#0b1e26', rim: '#e6efd6', offsets: [[0, -1.2], [-1, -0.5], [1, -0.5]], rimOp: 0.8, halo: 0.25 });
-    s.add(`<g transform="${g}" stroke="#2b4750" stroke-width=".8"><path d="M129,112H171M129,124H171M129,136H171M125,76H175M125,90H131M169,90H175M132,50H138M162,50H168"/></g>`);
+        [121, 99, 1.6], [179, 99, 1.8], [138, 156, 2.2], [146, 155, 1.6], [163, 156, 2]]) +
+      `</g><g data-part="bell" transform="${g}">` + parts(['M144,60Q144,50.5 150,49.5Q156,50.5 156,60L158,61.5H142Z', 'M149.2,49.5V44H150.8V49.5Z']) + '</g>';
+    s.figure(tower, { fill: '#0b1e26', rim: '#e6efd6', offsets: [[0, -1.2], [-1, -0.5], [1, -0.5]], rimOp: 0.8, halo: 0.25 });
+    s.add(`<g data-part="tower" transform="${g}" stroke="#2b4750" stroke-width=".8"><path d="M129,112H171M129,124H171M129,136H171M125,76H175M125,90H131M169,90H175M132,50H138M162,50H168"/></g>`);
     // the face, glowing: nearly midnight
     s.glow(144, 83, 64, '#f6e8b8', 0.5, 'breathe');
-    s.bloom(`<circle cx="150" cy="83" r="15" fill="${s.rad([[0, '#fffbe8'], [0.75, '#fbefc6'], [1, '#e9d49a']])}" transform="${g}"/>`, { sd: 2.4, k: 1.2, box: [110, 50, 70, 70] });
-    s.add(`<g transform="${g}"><circle cx="150" cy="83" r="15" fill="none" stroke="#3a3424" stroke-width="1.6"/>` +
+    s.bloom(`<g data-part="face"><circle cx="150" cy="83" r="15" fill="${s.rad([[0, '#fffbe8'], [0.75, '#fbefc6'], [1, '#e9d49a']])}" transform="${g}"/></g>`, { sd: 2.4, k: 1.2, box: [110, 50, 70, 70] });
+    s.add(`<g transform="${g}"><g data-part="face"><circle cx="150" cy="83" r="15" fill="none" stroke="#3a3424" stroke-width="1.6"/>` +
       `<g stroke="#5c5236" stroke-width="1.1">${Array.from({ length: 12 }, (_, i) => {
         const a = (i * Math.PI) / 6;
         return `<path d="M${f1(150 + Math.sin(a) * 10.8)},${f1(83 - Math.cos(a) * 10.8)}L${f1(150 + Math.sin(a) * 13)},${f1(83 - Math.cos(a) * 13)}"/>`;
-      }).join('')}</g>` +
-      '<path d="M150,83L143.4,79.2M150,83L149.2,71.4" stroke="#2a2618" stroke-width="1.7" stroke-linecap="round"/><circle cx="150" cy="83" r="1.6" fill="#2a2618"/></g>');
+      }).join('')}</g></g>` +
+      '<path data-part="hands" d="M150,83L143.4,79.2M150,83L149.2,71.4" stroke="#2a2618" stroke-width="1.7" stroke-linecap="round"/><circle cx="150" cy="83" r="1.6" fill="#2a2618"/></g>');
     // the sea closes over its feet; rings of light spread on the water
     s.add(`<rect x="-5" y="${hz}" width="${W + 10}" height="${H - hz + 10}" fill="${s.lin([[0, '#1f4d5a', 0.86], [0.2, '#0e2e39', 0.92], [1, '#03101a', 0.97]])}"/>`);
-    s.add(`<g fill="none" stroke="#f4ecc8">${[[40, 4, 0.5], [62, 6.5, 0.36], [88, 9, 0.24], [118, 12, 0.14]].map(([rx, ry, o]) =>
+    s.add(`<g data-part="ripples" fill="none" stroke="#f4ecc8">${[[40, 4, 0.5], [62, 6.5, 0.36], [88, 9, 0.24], [118, 12, 0.14]].map(([rx, ry, o]) =>
       `<ellipse cx="149" cy="142" rx="${rx}" ry="${ry}" stroke-width="1.2" opacity="${o}"/>`).join('')}</g>`);
-    s.add(glints([[146, 146, 22, 0.6], [147, 151, 16, 0.45], [145, 157, 20, 0.35], [147, 164, 12, 0.26], [146, 172, 16, 0.18]], '#f6e8b8'));
+    s.add('<g data-part="reflect">' + glints([[146, 146, 22, 0.6], [147, 151, 16, 0.45], [145, 157, 20, 0.35], [147, 164, 12, 0.26], [146, 172, 16, 0.18]], '#f6e8b8') + '</g>');
     s.path(ridge({ seed: 684, base: 214, amp: 24, freq: 3, peaks: true }), '#03101a');
     s.add(particles({ seed: 685, n: 12, x: [90, 210], y: [20, 130], r: [0.4, 1.1], fill: '#f6e8b8', cls: 'float', t: [6, 10], op: [0.3, 0.8] }));
     return s.svg();
@@ -422,35 +425,39 @@ const tide = faction('tide', {
     const face = [[246, 63], [244, 55], [237, 50], [229, 53], [226, 63], [229, 78], [240, 90], [262, 98], [290, 102], [312, 104]];
     s.figure(P(poly([...spline(top, 6), ...spline(face, 6).slice(1), [312, 214], [-10, 214]])),
       { fill: s.linU(0, 30, 0, 190, [[0, '#2f7580'], [0.35, '#1a5560'], [1, '#0b303b']]), rim: '#f4fcf6', offsets: [[-0.8, -1.2], [0, -1.4]], rimOp: 0.9 });
+    s.add('<g data-part="wave">');
     const lit = top.slice(0, 11).map(([x, y]) => [x, y + 12]);
     s.path(taper(top.slice(0, 11).map(([x, y]) => [x, y + 18]), [24, 30, 34, 36, 36, 36, 34, 30, 24, 14, 2]), '#5fa8a8', 'opacity=".3"');
     s.path(taper(lit, [16, 20, 22, 24, 24, 24, 22, 20, 16, 10, 2]), '#7fc4bc', 'opacity=".38"');
     s.path(taper(top.slice(0, 11).map(([x, y]) => [x, y + 5]), [6, 8, 9, 10, 10, 10, 9, 8, 6, 4, 1]), '#cdf0e6', 'opacity=".45"');
     s.add(`<g fill="none" stroke="#a9dcd6" stroke-width="1.1" stroke-linecap="round">${[[60, 0.14], [110, 0.2], [160, 0.18], [200, 0.2]].map(([x, o]) =>
       `<path d="${line([[x - 30, 190], [x - 14, 140], [x - 2, 96], [x + 6, 60]])}" opacity="${o}"/>`).join('')}</g>`);
+    s.add('</g>');
     // ragged foam along the crest and round the curl, spray torn off it
     const r = rng(696), ridgeLine = spline(top, 6);
     let foam = '';
     for (let i = 6; i < ridgeLine.length; i++) foam += disc(ridgeLine[i][0] + (r() - 0.5) * 2, ridgeLine[i][1] + 0.4 + r() * 1.4, 0.9 + r() * (i > 56 ? 2.6 : 1.7));
+    s.add('<g data-part="foam">');
     s.add(`<path d="${line(top.slice(1))}" fill="none" stroke="#f4fcf6" stroke-width="2" opacity=".9"/>`);
     s.path(foam, '#f4fcf6', 'opacity=".9"');
-    s.add(`<g fill="#f4fcf6">${parts([[262, 68, 0], [254, 70, 1], [270, 58, 2]].map(([x, y, k]) =>
+    s.add('</g>');
+    s.add(`<g data-part="spray" fill="#f4fcf6">${parts([[262, 68, 0], [254, 70, 1], [270, 58, 2]].map(([x, y, k]) =>
       taper([[x, y], [x - 4 + k, y + 7], [x - 9 + k * 2, y + 11 + k * 2]], [3.6, 2, 0.3])))}</g>`);
-    s.add(`<g fill="#e9f7f2" opacity=".2">${parts([[128, 38], [176, 21], [214, 15], [252, 26]].map(([x, y]) =>
+    s.add(`<g data-part="mist" fill="#e9f7f2" opacity=".2">${parts([[128, 38], [176, 21], [214, 15], [252, 26]].map(([x, y]) =>
       taper([[x, y], [x - 12, y - 7], [x - 30, y - 10]], [7, 4.4, 0.4])))}</g>`);
     // light off the face of it, behind the boat
     s.glow(104, 98, 54, '#bfe8e0', 0.3);
     // the first wave, nearer and lower, and the boat on its crest
     const near = [[-10, 148], [30, 136], [70, 126], [98, 121], [122, 124], [150, 134], [184, 142], [218, 140], [252, 132], [284, 136], [312, 144]];
     s.figure(P(ledge(near)), { fill: s.lin([[0, '#2f6f78'], [0.25, '#123e47'], [1, '#04131a']]), rim: '#dff5ee', offsets: [[0, -1.2]], rimOp: 0.8 });
-    s.add(`<path d="${line(near.slice(1, 8))}" fill="none" stroke="#eef9f4" stroke-width="1.6" opacity=".7"/>`);
+    s.add(`<path data-part="nearline" d="${line(near.slice(1, 8))}" fill="none" stroke="#eef9f4" stroke-width="1.6" opacity=".7"/>`);
     const bt = 'translate(100 118) rotate(-8) scale(1.4)';
-    const boat = '<path d="M-13,-2L12,-2L8,4L-9,4Z"/><path d="M-.6,-2V-23H.6V-2Z"/><path d="M1.2,-21.5L1.2,-7L10,-8.5Z"/>' +
-      `<path d="${taper([[-5, -2], [-5.4, -11]], [4, 3.4])}"/><circle cx="-3" cy="-14.4" r="2.3"/>` +
-      `<path d="${taper([[-4.4, -10], [-1.2, -15.5]], [1.6, 1.1])}"/><path d="${taper([[-6, -10], [-4.8, -13.8]], [1.4, 1])}"/>`;
-    s.figure(`<g transform="${bt}">${boat}</g>`, { fill: '#04121a', rim: '#e6f4ec', offsets: [[-0.8, -0.8], [0.6, -0.8]], rimOp: 0.9 });
+    const boat = `<g data-part="hull" transform="${bt}"><path d="M-13,-2L12,-2L8,4L-9,4Z"/><path d="M-.6,-2V-23H.6V-2Z"/><path d="M1.2,-21.5L1.2,-7L10,-8.5Z"/></g>` +
+      `<g data-part="sailor" transform="${bt}"><path d="${taper([[-5, -2], [-5.4, -11]], [4, 3.4])}"/><circle cx="-3" cy="-14.4" r="2.3"/>` +
+      `<path d="${taper([[-4.4, -10], [-1.2, -15.5]], [1.6, 1.1])}"/><path d="${taper([[-6, -10], [-4.8, -13.8]], [1.4, 1])}"/></g>`;
+    s.figure(boat, { fill: '#04121a', rim: '#e6f4ec', offsets: [[-0.8, -0.8], [0.6, -0.8]], rimOp: 0.9 });
     s.glow(84, 112.5, 13, '#f6e7b4', 0.9, 'breathe');
-    s.bloom(`<circle cx="0" cy="0" r="1.4" fill="#fff7d8" transform="${bt} translate(-11 -5.5)"/>`, { sd: 1.2, k: 1.4, box: [66, 94, 36, 34] });
+    s.bloom(`<g data-part="lantern"><circle cx="0" cy="0" r="1.4" fill="#fff7d8" transform="${bt} translate(-11 -5.5)"/></g>`, { sd: 1.2, k: 1.4, box: [66, 94, 36, 34] });
     s.add(drops([[256, 82], [264, 76], [248, 86], [272, 70]], '#eef9f4'));
     // the near swell
     s.path(ridge({ seed: 694, base: 214, amp: 30, peaks: true, freq: 3.2 }), '#04141b');

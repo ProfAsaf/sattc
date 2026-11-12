@@ -204,15 +204,21 @@ export const radiant = faction('radiant', {
       ell(102.5, 129, 6, 6.2),
       ell(103.5, 122.5, 9, 7.6, -10),
       ell(105.5, 126.5, 13.5, 2.3, -10),
-      ell(124, 152, 16.5, 20.5),
     ));
-    s.figure(`<path d="${kid}"/>`, { fill: p.fig, rim: p.rim, offsets: [[1.3, -0.7], [0.5, -1.3]], rimOp: 1, shade: 0.45, edge: 0.32, halo: 0.4 });
+    const kidShield = place(U(ell(124, 152, 16.5, 20.5)));
+    // (each piece carries the whole silhouette's two extreme corners as dots, so its gradient fill spans the same box as before)
+    const xs = [], ys = [];
+    (kid + kidShield).replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_, x, y) => { xs.push(+x); ys.push(+y); return ''; });
+    const box = `M${Math.min(...xs)},${Math.min(...ys)}ZM${Math.max(...xs)},${Math.max(...ys)}Z`;
+    s.figure(`<g data-part="kid"><path d="${kid}${box}"/></g><g data-part="shield"><path d="${kidShield}${box}"/></g>`, { fill: p.fig, rim: p.rim, offsets: [[1.3, -0.7], [0.5, -1.3]], rimOp: 1, shade: 0.45, edge: 0.32, halo: 0.4 });
     // a sun painted on the shield, its boss catching the light
     const [bx, by] = [kx(124), ky(152)];
+    s.add('<g data-part="sun">');
     s.add(`<g stroke="#6b5233" stroke-width="1.4" fill="none" opacity=".9"><ellipse cx="${f1(bx)}" cy="${f1(by)}" rx="${f1(11.5 * K)}" ry="${f1(14.5 * K)}"/>${
       Array.from({ length: 8 }, (_, i) => { const a = (i * Math.PI) / 4; return `<path d="M${f1(bx + Math.cos(a) * 4.5 * K)},${f1(by + Math.sin(a) * 5.6 * K)}L${f1(bx + Math.cos(a) * 8.5 * K)},${f1(by + Math.sin(a) * 10.6 * K)}"/>`; }).join('')}</g>`);
-    s.glow(bx, by, 16, '#ffd77a', 0.8, 'breathe');
+    s.glow(bx, by, 16, '#ffd77a', 0.8);
     s.bloom(`<circle cx="${f1(bx)}" cy="${f1(by)}" r="${f1(2.8 * K)}" fill="#ffefb8"/><path d="${glint(bx, by, 9)}" fill="#fffbea"/>`, { sd: 1.6, k: 1.5, box: [bx - 40, by - 40, 80, 80] });
+    s.add('</g>');
     s.motes({ seed: 502, n: 20, x: [40, 280], y: [40, 190], r: [0.4, 1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 0.9] });
     return s.svg();
   },
@@ -248,13 +254,16 @@ export const radiant = faction('radiant', {
     const heads = [];
     for (const [ph, t1] of [[Math.PI, 0.93], [0, 1]]) {
       const pts = strand(ph, t1);
-      spirits += `<path d="${taper(pts, [0.5, 3, 7, 11], { per: 3 })}" fill="${halo}"/><path d="${taper(pts, [0.3, 1.2, 2.6, 4.2], { per: 3 })}" fill="${trail}"/>`;
+      spirits += `<g data-part="helix"><path d="${taper(pts, [0.5, 3, 7, 11], { per: 3 })}" fill="${halo}"/><path d="${taper(pts, [0.3, 1.2, 2.6, 4.2], { per: 3 })}" fill="${trail}"/></g>`;
       heads.push(pts[pts.length - 1]);
     }
     for (const [x, y] of heads) {
-      s.glow(x, y, 24, '#fff1c2', 0.95, 'breathe');
+      const n = heads.findIndex((h) => h === heads.find((q) => q[0] === x && q[1] === y));
+      s.add(`<g data-part="soul${n}">`);
+      s.glow(x, y, 24, '#fff1c2', 0.95);
+      s.add('</g>');
       const wing = (d) => taper([[x + d * 1.5, y - 1], [x + d * 6, y - 6], [x + d * 11, y - 9.5], [x + d * 14, y - 9]], [3.4, 4.4, 2.6, 0.4]);
-      spirits += `<path d="${U(ell(x, y - 4.5, 2.9, 3), taper([[x, y - 1.5], [x, y + 4], [x, y + 10]], [4.4, 3.2, 0.4]), wing(-1), wing(1))}" fill="#fffbea"/>`;
+      spirits += `<g data-part="soul${n}"><path d="${U(ell(x, y - 4.5, 2.9, 3), taper([[x, y - 1.5], [x, y + 4], [x, y + 10]], [4.4, 3.2, 0.4]), wing(-1), wing(1))}" fill="#fffbea"/></g>`;
     }
     s.bloom(spirits, { sd: 1.8, k: 1.3, box: [96, 20, 132, 180] });
     // wheat in the foreground, taller at the edges

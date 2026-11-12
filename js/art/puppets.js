@@ -21,6 +21,27 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // twin souls: the two spirits at the helix's tips (each with its glow, from where it is), and the
+  // helix of light they rise on (about its foot, in the field); `heads`: where each spirit is, `pool`: where they were born
+  'twin-souls': {
+    role: 'support', element: 'spirit', facing: 'front', emit: [165, 55],
+    heads: [[139.5, 58.8], [190, 50]], pool: [162, 177],
+    parts: [
+      { name: 'helix', of: '[data-part=helix]', pivot: [162, 177] },
+      { name: 'soul0', of: '[data-part=soul0]', pivot: [139.5, 58.8] },
+      { name: 'soul1', of: '[data-part=soul1]', pivot: [190, 50] },
+    ],
+  },
+  // the street recruit: the kid and his shield (with the sun painted on it, and its glint)
+  // both lean from his feet; `boss`: the shield's centre, where his light leaves from
+  'street-recruit': {
+    role: 'attacker', element: 'light', facing: 'right', emit: [124, 147], hit: [93, 138],
+    boss: [124, 147], feet: [100, 194],
+    parts: [
+      { name: 'kid', of: 'fig:1 [data-part=kid]', pivot: [100, 194] },
+      { name: 'shield', of: ['fig:1 [data-part=shield]', '[data-part=sun]'], pivot: [100, 194] },
+    ],
+  },
   // the one who came back (a creature, an attacker: a towering revenant striding out of its barrow,
   // chains trailing): its body (legs, torso, helm and crown), the ragged cloak streaming behind
   // it, the two long arms (each with its claws, turning from its shoulder), the two chains that
@@ -619,6 +640,8 @@ export const PUPPETS = {
   // and the three in flight, each turning about its own tip. `hits`: where
   // each flying arrow strikes the shield's face, in the order they land.
   shieldbearer: {
+    role: 'defender', element: 'light', facing: 'right', hit: [135, 138],
+    guard: [[186, 122], [187, 142], [184, 164]],
     knee: [116, 186], hits: [[187.5, 137], [185.5, 117], [183, 110]],
     parts: [
       { name: 'man', of: 'fig:0 [data-part=man]', pivot: [118, 186] },

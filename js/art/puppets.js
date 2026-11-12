@@ -21,6 +21,48 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // ember duelist (an attacker: Swift, Hunt, and 2 Energy to deal 1 damage): the fencer in two pieces (all of her
+  // but the saluting arm, leaning and lunging from her hips; and the arm, turning from the shoulder, its
+  // slice overlapping the torso by a little so the seam never opens) and the red-hot rapier it holds
+  // (its glow, flame and core as one, turning with the arm about the shoulder); `emit`: the rapier's tip where
+  // the fire leaves, `hit`: her chest, `hips`: where she leans from, `shoulder`: the arm's joint,
+  // `hand`: where the hilt is held, `blade`: the rapier's middle
+  'ember-duelist': {
+    role: 'attacker', element: 'fire', facing: 'left', emit: [153, 13], hit: [172, 100],
+    hips: [172, 140], shoulder: [166, 84], hand: [157, 79], blade: [155, 44],
+    parts: [
+      { name: 'body', of: 'fig:1', pivot: [172, 140], poly: [[-10, -10], [310, -10], [310, 220], [-10, 220], [-10, 103], [146, 103], [164, 103], [164.5, 96], [164.5, 78], [162.5, 71.5], [146, 71.5], [-10, 71.5]] },
+      { name: 'arm', of: 'fig:1', pivot: [166, 84], poly: [[146, 71.5], [162.5, 71.5], [166, 78], [166, 96], [165.5, 103], [146, 103]] },
+      { name: 'rapier', of: '[data-part=rapier]', pivot: [166, 84] },
+    ],
+  },
+  // kindle (a buff spell, a support: +2 Power and Swift to a creature): the warrior (the whole figure, leaning and
+  // lunging from her hips), her blade burning white and the arc of fire it left behind (turning about its
+  // centre); body and blade share one pivot so they move as one, x = 150 so all three mirror about it;
+  // `emit`: the blade's tip where the gift leaves from, `hit`: her chest, `hips`: where she turns from,
+  // `hand`: where the sword is held, `mid`: the arc's centre
+  'kindle': {
+    role: 'support', element: 'fire', facing: 'right', emit: [246, 126], hit: [158, 104],
+    hips: [150, 130], hand: [195, 117], mid: [150, 114],
+    parts: [
+      { name: 'arc', of: '[data-part=arc]', pivot: [150, 114] },
+      { name: 'body', of: 'fig:0', pivot: [150, 130] },
+      { name: 'blade', of: '[data-part=blade]', pivot: [150, 130] },
+    ],
+  },
+  // scorch (a damage spell, an attacker): the outstretched hand (turning from its wrist), the bolt of white-hot
+  // fire it flicked (its glow, flame and core as one, turning about its tail at the fingertips) and the snarling
+  // wolf mid-leap (with its eye) it is thrown at; `emit`: the bolt's tail where it leaves the fingers,
+  // `hit`: the wolf's chest, `wrist`: where the hand turns from, `tip`: the bolt's head as drawn
+  'scorch': {
+    role: 'attacker', element: 'fire', facing: 'right', emit: [94, 152], hit: [208, 77],
+    wrist: [56, 180], tip: [152, 110],
+    parts: [
+      { name: 'hand', of: 'fig:2', pivot: [56, 180] },
+      { name: 'bolt', of: '[data-part=bolt]', pivot: [94, 152] },
+      { name: 'wolf', of: ['fig:1', '[data-part=eye]'], pivot: [208, 80] },
+    ],
+  },
   // spark: the open hand (cupping and lifting from its wrist) and the spark above it (its glint,
   // core and the bright glow round it, turning about its heart); `emit`: the spark's heart
   // where the gift leaves from, `hit`: the palm, `wrist`: where the hand turns from, `palm`: its hollow

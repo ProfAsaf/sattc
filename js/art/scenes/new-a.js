@@ -208,9 +208,10 @@ const emberScenes = {
     ].join('');
     s.figure(G('translate(194 82) scale(.9)', P(wolf) + E(-20, -19, 9.5, 8, -10)),
       { fill: '#0e0403', rim: '#ffb04a', offsets: [[-1.1, 0.9], [0, -1.2], [1.1, 0]], rimOp: 0.95, shade: 0.5, light: [-1, 1], halo: { op: 0.45, sd: 2.6 } });
-    s.add('<ellipse cx="173.3" cy="62.7" rx="1.8" ry="1" fill="#ffd27a" transform="rotate(-20 173.3 62.7)"/>');
+    s.add('<ellipse data-part="eye" cx="173.3" cy="62.7" rx="1.8" ry="1" fill="#ffd27a" transform="rotate(-20 173.3 62.7)"/>');
     // the bolt: white-hot, the brightest thing in the ravine
     const A = [94, 152], B = [152, 110];
+    s.add('<g data-part="bolt">');
     const ang = (Math.atan2(B[1] - A[1], B[0] - A[0]) * 180) / Math.PI;
     const path = (w) => taper([A, [A[0] + (B[0] - A[0]) * 0.35 - 1.5, A[1] + (B[1] - A[1]) * 0.35 - 2], [A[0] + (B[0] - A[0]) * 0.7 + 1, A[1] + (B[1] - A[1]) * 0.7 + 1.5], B], w);
     s.glow(B[0], B[1], 52, '#ffb04a', 0.55);
@@ -220,6 +221,7 @@ const emberScenes = {
       `<path d="${path([1.2, 4, 7.5, 10.5])}" fill="#ffb04a"/>${E(B[0], B[1], 11, 8, ang).replace('/>', ' fill="#ffb04a"/>')}` +
       `<path d="${path([0.5, 1.8, 3.6, 5.5])}" fill="#fff2cc"/>${E(B[0] + 1, B[1] - 0.5, 7, 4.6, ang).replace('/>', ' fill="#fffaf0"/>')}`,
     { sd: 2.2, k: 1.5, box: [60, 70, 130, 110] });
+    s.add('</g>');
     // the hand that flicked it, fingers still spread
     const hand = P(
       blob([[0, -8], [10, -10], [22, -9], [25, -2], [24, 6], [14, 10], [2, 9], [-2, 2]]),
@@ -256,6 +258,7 @@ const emberScenes = {
     const cx = 150, cy = 114, rx = 98, ry = 82, a0 = -200, a1 = 9;
     const arcFill = s.linU(50, 0, 250, 0, [[0, '#ff5a1a', 0.15], [0.45, '#ff7a2e', 0.75], [1, '#ffb04a']]);
     // tongues streaming off the outer edge, back along the stroke
+    s.add('<g data-part="arc">');
     let licks = '';
     for (let i = 0; i < 8; i++) {
       const t = 0.3 + i * 0.09, ar = rad(a0 + (a1 - a0) * t);
@@ -269,6 +272,7 @@ const emberScenes = {
       `<path d="${crescent(cx, cy, rx * 0.985, ry * 0.985, a0 + 120, a1, 0.995, 0.86, { ease: 2 })}" fill="#fff4d8" opacity=".9"/>`,
     { sd: 2.4, k: 1.3, box: [20, 0, 270, 170] });
     s.glow(236, 112, 44, '#ffd27a', 0.6);
+    s.add('</g>');
     // the warrior, lunging into the stroke
     const body = [
       limb([154, 131], [178, 150], [186, 182], 14, 8.5, 6),
@@ -286,7 +290,7 @@ const emberScenes = {
     s.figure(P(body, skirt, cape) + C(168, 81, 7) + E(171.5, 85, 4, 3, 20) + C(193, 116.5, 4) + C(183, 115.5, 2.4),
       { fill: '#0e0403', rim: '#ffb04a', offsets: [[1.2, -0.6], [0.2, -1.3], [-1, -0.6]], rimOp: 0.95, shade: 0.55, light: [1, -0.5] });
     // the blade itself, burning white
-    s.add(`<path d="${taper([[197, 118.5], [222, 122.5], [246, 126.5]], [3.4, 2.6, 0.6])}" fill="#fff4d8"/>`);
+    s.add(`<path data-part="blade" d="${taper([[197, 118.5], [222, 122.5], [246, 126.5]], [3.4, 2.6, 0.6])}" fill="#fff4d8"/>`);
     s.add(trail(313, [120, 30], [250, 120], 22, { spread: 14, fill: '#ffc46a', t: [2, 4] }));
     s.motes({ seed: 314, n: 12, x: [40, 270], y: [40, 200], r: [0.4, 1], fill: '#ff9a3a', hot: '#ffe2a0', cls: 'rise', t: [5, 9], op: [0.3, 0.7] });
     return s.svg();
@@ -333,9 +337,11 @@ const emberScenes = {
     // the scorched hem still smoulders
     s.add(`<path d="${poly(hem, false)}" stroke="#ff8a3a" stroke-width="1.2" fill="none" stroke-linejoin="round" opacity=".85"/>`);
     // the rapier, red-hot
+    s.add('<g data-part="rapier">');
     s.add(`<ellipse cx="155" cy="44" rx="9" ry="36" fill="${s.rad([[0, '#ff6a1f', 0.45], [0.6, '#ff6a1f', 0.12], [1, '#ff6a1f', 0]])}"/>`);
     s.bloom(`<path d="${taper([[157, 73], [155, 40], [153, 12]], [2.6, 2, 0.5])}" fill="#ff7a2e"/><path d="${taper([[157, 72], [155, 40], [153.3, 16]], [1.1, 0.9, 0.3])}" fill="#fff0c4"/>`,
       { sd: 1.6, k: 1.6, box: [130, -5, 50, 100] });
+    s.add('</g>');
     s.add(particles({ seed: 324, n: 22, x: [0, W], y: [70, 200], r: [0.5, 1.3], fill: '#ffb05a', cls: 'rise', t: [4, 8], op: [0.4, 0.9] }));
     return s.svg();
   },

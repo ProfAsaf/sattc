@@ -270,7 +270,7 @@ try {
       if (!g) e.notes.push('a defender needs guard points in js/art/puppets.js');
       else query = `blows=${[[900, g[0]], [1350, g.at(-1)]].map(([t, [x, y]]) => `${t},${x},${y}`).join(';')}`;
     } else if (!ROLES.includes(spec.role)) e.notes.push('the puppet needs a role (js/art/puppets.js)');
-    else query = `aim=${(spec.facing === 'left' ? [-28, 45] : spec.facing === 'front' ? [150, -22] : [328, 45]).join(',')}`;
+    else query = `aim=${(spec.facing === 'left' ? [-28, 45] : [328, 45]).join(',')}`; // (in front of it; a front-facing card at its right, where a neighbour would be)
     if (query) {
       await withChrome({}, async (pg) => {
         await pg.send('Performance.enable');

@@ -22,7 +22,7 @@ import * as Rating from './rating.js';
 import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
 import { actBig, endFights, fight, hushTable, readyToFight, startTableAlive, stopTableAlive } from './cards-alive.js';
-import { CHOICES, choose, chosen, dayLevel } from './steady.js';
+import { CHOICES, choose, chosen, dayLevel, startFresh } from './steady.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
 import * as Camp from './campaign.js';
@@ -3464,6 +3464,7 @@ function menuSheet() {
     <button class="btn" data-act="speed">${fastOn() ? 'Animations: fast (tap for normal)' : 'Animations: normal (tap for fast)'}</button>
     <button class="btn" data-act="pace">${tapThrough() ? 'Others’ moves: wait for your tap (tap for automatic)' : 'Others’ moves: automatic (tap to wait for your tap)'}</button>
     <button class="btn" data-act="cards-mode">${cardsModeLabel()}</button>
+    <button class="btn" data-act="fresh">Start fresh (reloads the game's files; this game comes back)</button>
     ${G.mode === 'online' && ['on', 'off'].includes(Push.status()) ? `<button class="btn" data-act="alerts">${Push.status() === 'on' ? '🔔 Turn alerts: on (tap to turn off)' : '🔔 Turn alerts: off (tap to turn on)'}</button>` : ''}
     <button class="btn" data-act="fixes">Fix something</button>
     <button class="btn" data-act="rules">All the rules (leaves the table)</button>
@@ -3928,6 +3929,7 @@ function onAct(act, el) {
     case 'tax-no': G.flow.a.payTax = false; G.flow.i++; nextChoice(); break;
     case 'discards': G.sheet = discardSheet(Number(el.dataset.of)); redraw(); break;
     case 'menu': G.sheet = menuSheet(); redraw(); break;
+    case 'fresh': if (G.mode === 'practice') save(); startFresh(); break;
     case 'cards-mode': {
       choose(CHOICES[(CHOICES.indexOf(chosen()) + 1) % CHOICES.length]);
       hushTable(); // (what's acting stops now; the stage keeps to the new choice)

@@ -7,7 +7,7 @@ import { hold, sweep } from './sprites.js';
 import { gatherAlive } from './art/alive.js';
 import { startHomeAlive, stopHomeAlive } from './home-alive.js';
 import { actInZoom, canAct, startScreenAlive } from './cards-alive.js';
-import { calm, startSteady } from './steady.js';
+import { calm, startFresh, startSteady } from './steady.js';
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, autoResume, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
@@ -205,11 +205,13 @@ function home() {
         <a href="#/decks">${ICONS.decks}Decks</a>
         <a href="#/rules">${ICONS.rules}Rules</a>
         <a href="#/insights">${ICONS.insights}Insights</a>
+        <a href="#/" data-act="fresh">↻ Start fresh (reload the game's files)</a>
       </nav>
     </div>`;
   view.onclick = (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'menu') { homeMenu(document.getElementById('home-menu').hidden); return; }
+    if (act === 'fresh') { e.preventDefault(); startFresh(); return; }
     if (e.target.closest('#home-menu')) { if (!e.target.closest('a')) homeMenu(false); return; } // a tap beside the menu closes it
     if (act === 'tutorial') { startTutorial(); return; }
     const c = e.target.closest('.card[data-id]');

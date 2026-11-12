@@ -69,6 +69,18 @@ export function choose(c) { try { localStorage.setItem(CHOICE, c); } catch { /* 
 export function calm() { return Math.max(level, FLOOR[chosen()] || 0); }
 export const dayLevel = () => level;
 export const closingsToday = () => closings;
+
+// Start fresh: the copy of the game's files kept on the phone (sw.js) and the
+// worker that keeps it go, and the page loads anew from the network, where it
+// was (a game under way comes straight back: it's saved after every move).
+// Games, decks, the campaign and settings stay. Home's menu and the game's
+// menu have it; ?fresh=1 does the first half (js/app.js).
+export async function startFresh() {
+  try { for (const r of (await navigator.serviceWorker?.getRegistrations?.()) || []) await r.unregister(); } catch { /* (none) */ }
+  try { await caches.delete('collective-files'); } catch { /* (none) */ }
+  if (location.search) location.replace(location.pathname + location.hash);
+  else location.reload();
+}
 try {
   const q = new URLSearchParams(location.search).get('calm');
   if (q === '0' || q === '1' || q === '2') { level = Number(q); write(CALM, { level, at: Date.now(), n: 0 }); }

@@ -387,20 +387,26 @@ const emberScenes = {
       taper([[193, 71], [202, 66], [212, 68], [221, 75], [225, 86]], [3, 6, 6, 4, 1]),
       limb([199, 96], [189, 110], [180, 120], 8.5, 6.2, 5.4),
       limb([211, 96], [222, 106], [218, 116], 8.5, 6.2, 5.4),
-      taper([[256, 110], [190, 118.5], [128, 126.3]], [3, 2.8, 2.4]),
       taper([[194, 82], [189, 84]], [3, 2]) + taper([[205, 83], [211, 88]], [6, 3]),
     ].join('');
     const skirt = poly([[196, 121], [217, 121], [221, 137], [216, 134], [213, 141], [208, 135], [203, 142], [199, 135], [193, 139]]);
     const cloak = blob([[207, 89], [224, 91], [239, 99], [251, 113], [259, 130], [251, 128], [245, 136], [237, 130], [229, 138], [223, 127], [215, 110]]);
-    s.figure(P(body, skirt, cloak) + C(200, 80, 8.2) + C(180, 120, 4) + C(218, 116, 4),
+    const spear = taper([[256, 110], [190, 118.5], [128, 126.3]], [3, 2.8, 2.4]);
+    // (each piece is shaded by a gradient across its own box, which the spear and body used to share:
+    // two zero-length marks at the old box's corners keep both exactly as they were)
+    const nums = (body + spear).match(/-?\d+\.?\d*/g).map(Number), xs = nums.filter((_, n) => n % 2 === 0), ys = nums.filter((_, n) => n % 2), bx0 = Math.min(...xs), bx1 = Math.max(...xs), by0 = Math.min(...ys), by1 = Math.max(...ys);
+    const reach = `M${bx0},${by0}L${bx0},${by0}M${bx1},${by1}L${bx1},${by1}`;
+    s.figure(`<g data-part="body">${P(body + reach, skirt)}</g><g data-part="spear">${P(spear + reach)}</g><g data-part="cloak">${P(cloak)}</g><g data-part="trim">${C(200, 80, 8.2)}${C(180, 120, 4)}${C(218, 116, 4)}</g>`,
       { fill: '#0c0403', rim: p.rim, offsets: [[-1.2, -0.3], [-0.4, -1.2], [0.8, -0.8]], rimOp: 0.9, shade: 0.55, light: [-1, -0.2], halo: { op: 0.35, sd: 2.4 } });
     // eyes gone to embers
     s.glow(195, 80, 10, '#ff3a1a', 0.85);
     s.add('<ellipse cx="195" cy="80" rx="2.2" ry="1.2" fill="#ffcf6a"/>');
     // the spear's burning head
-    s.glow(126, 124, 40, '#ffb04a', 0.6, 'breathe');
+    s.add('<g data-part="flame">');
+    s.glow(126, 124, 40, '#ffb04a', 0.6);
     s.bloom(`<path d="${lick(132, 126, 168, 30, 12, 0.6)}${lick(130, 124, 190, 22, 8, -0.5)}" fill="${s.lin([[0, '#ff6a1f', 0.6], [1, '#ffb04a']], { x1: 1, y1: 0, x2: 0, y2: 0 })}"/>` +
       `<path d="M118,126.5L132,123.6L131,129Z" fill="#ffe7a3"/><path d="${lick(130, 126, 175, 14, 5, 0.4)}" fill="#fff0c4"/>`, { sd: 1.8, k: 1.4, box: [80, 90, 80, 70] });
+    s.add('</g>');
     s.add(trail(334, [104, 110], [132, 124], 12, { spread: 6, fill: '#ffc46a', t: [1.6, 3] }));
     s.motes({ seed: 335, n: 14, x: [0, W], y: [60, 200], r: [0.4, 1], fill: '#ff9a3a', hot: '#ffe2a0', cls: 'rise', t: [5, 9], op: [0.3, 0.7] });
     return s.svg();
@@ -424,25 +430,32 @@ const emberScenes = {
     const cracks = 'M106,189L86,195L72,193M106,189L95,201L91,212M106,189L122,199L132,212M106,189L128,191L144,187M106,189L80,187L66,182M226,180L240,187L254,186M226,180L230,192L226,202M226,180L212,186L204,195';
     s.add(`<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${cracks}" stroke="#ff6a1f" stroke-width="2.6" opacity=".55"/><path d="${cracks}" stroke="#ffd88a" stroke-width=".9"/></g>`);
     // the brute, pitched forward into the charge: all shoulder and fist, head down
+    const armD = limb([130, 86], [106, 84], [84, 78], 24, 15, 14);
     const body = [
       taper([[160, 70], [160, 56]], [11, 0.5]) + taper([[176, 70], [181, 57]], [11, 0.5]) + taper([[189, 79], [197, 69]], [10, 0.5]) + taper([[195, 93], [205, 88]], [8, 0.5]),
       taper([[96, 104], [112, 100]], [6, 4]),
-      limb([130, 86], [106, 84], [84, 78], 24, 15, 14),
       limb([184, 90], [204, 114], [214, 138], 22, 14, 13),
       limb([146, 126], [126, 150], [110, 180], 26, 16, 15),
       limb([176, 124], [196, 148], [222, 168], 24, 15, 13),
     ].join('');
     const torso = blob([[112, 104], [118, 88], [134, 76], [154, 68], [174, 67], [190, 77], [197, 96], [191, 114], [177, 128], [156, 134], [136, 130], [120, 120]]);
-    s.figure(P(body, torso) + E(104, 110, 10, 9) + E(100, 116, 8, 5) + C(76, 77, 13) + C(218, 143, 12) + E(106, 185, 15, 6) + E(229, 171, 12, 5, 35),
+    // (each piece is shaded by a gradient across its own box, which the arm and the rest of the body used to share:
+    // two zero-length marks at the old box's corners keep both exactly as they were)
+    const nums = (body + armD).match(/-?\d+\.?\d*/g).map(Number), xs = nums.filter((_, n) => n % 2 === 0), ys = nums.filter((_, n) => n % 2), bx0 = Math.min(...xs), bx1 = Math.max(...xs), by0 = Math.min(...ys), by1 = Math.max(...ys);
+    const reach = `M${bx0},${by0}L${bx0},${by0}M${bx1},${by1}L${bx1},${by1}`;
+    s.figure(`<g data-part="arm">${P(armD + reach)}${C(76, 77, 13)}</g><g data-part="body">${P(body + reach, torso)}${E(104, 110, 10, 9)}${E(100, 116, 8, 5)}${C(218, 143, 12)}${E(106, 185, 15, 6)}${E(229, 171, 12, 5, 35)}</g>`,
       { fill: '#120504', rim: '#ff9a4a', offsets: [[0, -1.3], [1.1, -0.6], [-1, -0.6]], rimOp: 0.9, shade: 0.5, light: [0.3, -1], edge: 0.35 });
     // molten all the way through: cracks, knuckles, and drops flung off the fists
-    const veins = 'M114,112L126,113L137,105L148,113L160,107L172,115L186,110M160,74L156,88L164,95L159,106M178,72L180,86L190,93M100,82L92,78M116,86L108,84M134,150L128,160L132,170M196,146L206,155L212,163M198,110L208,120M160,122L155,129L162,133';
+    const veins = 'M114,112L126,113L137,105L148,113L160,107L172,115L186,110M160,74L156,88L164,95L159,106M178,72L180,86L190,93M196,146L206,155L212,163M198,110L208,120M160,122L155,129L162,133M134,150L128,160L132,170';
+    const armVeins = 'M100,82L92,78M116,86L108,84';
     const fling = [[[62, 70], [50, 64], 2.8], [[60, 84], [46, 88], 2.6], [[68, 92], [58, 102], 2.2], [[52, 76], [38, 76], 1.8], [[232, 148], [246, 154], 2.4], [[230, 138], [246, 132], 2], [[226, 156], [236, 168], 1.8]];
-    s.bloom(`<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${veins}" stroke="#ff6a1f" stroke-width="2.8" opacity=".6"/><path d="${veins}" stroke="#ffe08a" stroke-width="1"/></g>` +
-      `<ellipse cx="69" cy="78" rx="6" ry="9" fill="${s.rad([[0, '#ffe7a3'], [0.5, '#ff9a3a', 0.8], [1, '#ff6a1f', 0]])}"/><ellipse cx="225" cy="148" rx="5" ry="8" transform="rotate(-30 225 148)" fill="${s.rad([[0, '#ffe7a3'], [0.5, '#ff9a3a', 0.8], [1, '#ff6a1f', 0]])}"/>` +
-      `<path d="${fling.map(([a, b, r]) => taper([a, lerp(a, b, 0.6), b], [0.4, r * 1.3, r * 1.9])).join('')}" fill="#ff9a3a"/><path d="${fling.map(([, b, r]) => circ(b[0], b[1], r)).join('')}" fill="#ffe7a3"/>`,
-    { sd: 1.6, k: 1.4, box: [20, 40, 250, 170] });
-    s.add('<g fill="#ffe7a3"><ellipse cx="98" cy="109" rx="2.2" ry="1.1" transform="rotate(12 98 109)"/><ellipse cx="106" cy="108" rx="2" ry="1" transform="rotate(12 106 108)"/></g>');
+    const drops = (l) => `<path d="${l.map(([a, b, r]) => taper([a, lerp(a, b, 0.6), b], [0.4, r * 1.3, r * 1.9])).join('')}" fill="#ff9a3a"/><path d="${l.map(([, b, r]) => circ(b[0], b[1], r)).join('')}" fill="#ffe7a3"/>`;
+    const seams = (d) => `<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${d}" stroke="#ff6a1f" stroke-width="2.8" opacity=".6"/><path d="${d}" stroke="#ffe08a" stroke-width="1"/></g>`;
+    // (the left fist's glow, drops and seams are one tagged piece inside the bloom, so the arm carries its light)
+    s.bloom(seams(veins) + `<ellipse cx="225" cy="148" rx="5" ry="8" transform="rotate(-30 225 148)" fill="${s.rad([[0, '#ffe7a3'], [0.5, '#ff9a3a', 0.8], [1, '#ff6a1f', 0]])}"/>` + drops(fling.slice(4)) +
+      `<g data-part="fistfx">${seams(armVeins)}<ellipse cx="69" cy="78" rx="6" ry="9" fill="${s.rad([[0, '#ffe7a3'], [0.5, '#ff9a3a', 0.8], [1, '#ff6a1f', 0]])}"/>${drops(fling.slice(0, 4))}</g>`,
+      { sd: 1.6, k: 1.4, box: [20, 40, 250, 170] });
+    s.add('<g data-part="eyes" fill="#ffe7a3"><ellipse cx="98" cy="109" rx="2.2" ry="1.1" transform="rotate(12 98 109)"/><ellipse cx="106" cy="108" rx="2" ry="1" transform="rotate(12 106 108)"/></g>');
     s.add(particles({ seed: 342, n: 22, x: [50, 280], y: [60, 200], r: [0.5, 1.4], fill: '#ffb05a', cls: 'rise', t: [3, 7] }));
     s.add(particles({ seed: 343, n: 10, x: [0, W], y: [20, 160], r: [0.6, 1.4], fill: '#3a1a12', cls: 'float', t: [6, 10], op: [0.5, 0.9] }));
     return s.svg();
@@ -534,14 +547,16 @@ const emberScenes = {
       lgL: stone(131, 165, 14, 12, 370), lgR: stone(169, 165, 14, 12, 371),
       ftL: stone(126, 184, 17, 7, 372), ftR: stone(174, 184, 17, 7, 373),
     };
-    s.figure(P(...Object.values(st).map((q) => q.d)),
+    // (the stones are tagged in groups so each moves as one: the torso, the head, each arm (shoulder, arm and fist),
+    // and the legs with their feet; the left and right arms never overlap each other, nor the head or legs)
+    const pp = (...ks) => P(...ks.map((q) => st[q].d));
+    s.figure(`<g data-part="body">${pp('torso')}</g><g data-part="head">${pp('head')}</g><g data-part="armL">${pp('shL', 'arL', 'fiL')}</g><g data-part="armR">${pp('shR', 'arR', 'fiR')}</g><g data-part="legs">${pp('lgL', 'lgR', 'ftL', 'ftR')}</g>`,
       { fill: '#140605', rim: '#ffb04a', offsets: [[0, -1.3], [-1.1, -0.5], [1.1, -0.5]], rimOp: 0.9, shade: 0.45, light: [0, -1], halo: { op: 0.28, sd: 2.6 } });
-    // the seams between the stones glow, and the cracks across them
-    const seams = st.head.arc(30, 150) + st.shL.arc(-60, 70) + st.shR.arc(110, 240) + st.arL.arc(215, 330) + st.arR.arc(210, 325) +
-      st.fiL.arc(215, 325) + st.fiR.arc(215, 325) + st.lgL.arc(215, 325) + st.lgR.arc(215, 325) + st.ftL.arc(210, 330) + st.ftR.arc(210, 330) +
-      'M126,118L136,124L132,134L142,141M164,108L169,120L180,125M150,146L156,155M112,98L106,106';
-    s.bloom(`<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${seams}" stroke="#ff6a1f" stroke-width="2.8" opacity=".65"/><path d="${seams}" stroke="#ffd88a" stroke-width="1"/></g>` +
-      '<g fill="#ffe7a3"><ellipse cx="145" cy="90" rx="3" ry="1.1" transform="rotate(10 145 90)"/><ellipse cx="157" cy="90" rx="3" ry="1.1" transform="rotate(-10 157 90)"/></g>',
+    // the seams between the stones glow, and the cracks across them (each stone's seams go with it)
+    const sm = (d, part) => `<g data-part="${part}" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${d}" stroke="#ff6a1f" stroke-width="2.8" opacity=".65"/><path d="${d}" stroke="#ffd88a" stroke-width="1"/></g>`;
+    s.bloom(sm(st.head.arc(30, 150), 'headseams') + sm(st.shL.arc(-60, 70) + st.arL.arc(215, 330) + st.fiL.arc(215, 325) + 'M112,98L106,106', 'armLseams') + sm(st.shR.arc(110, 240) + st.arR.arc(210, 325) + st.fiR.arc(215, 325), 'armRseams') +
+      sm(st.lgL.arc(215, 325) + st.lgR.arc(215, 325) + st.ftL.arc(210, 330) + st.ftR.arc(210, 330), 'legsseams') + sm('M126,118L136,124L132,134L142,141M164,108L169,120L180,125M150,146L156,155', 'cracks') +
+      '<g data-part="eyes" fill="#ffe7a3"><ellipse cx="145" cy="90" rx="3" ry="1.1" transform="rotate(10 145 90)"/><ellipse cx="157" cy="90" rx="3" ry="1.1" transform="rotate(-10 157 90)"/></g>',
     { sd: 1.6, k: 1.4, box: [70, 60, 160, 140] });
     // steam venting from the seams
     const steam = (x, y, dx, n, r0) => { let d = ''; for (let i = 0; i < n; i++) d += circ(x + dx * i + (i % 2) * 2, y - i * 8, r0 + i * 2.2); return d; };

@@ -21,6 +21,55 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // smoldering golem (an attacker that deals its damage as it falls: 3 Power, 4 Vitality): the hot stones stacked into
+  // a body, in six pieces: the torso (squashing and stretching from its feet), the head with its eyes and seams,
+  // each arm (shoulder, arm and fist, with their glowing seams: turning from the shoulder, raised overhead and
+  // slammed down) and the legs with their feet and seams, the cracks across the torso; `emit`: the floor between its fists where the slam lands and its
+  // shockwave leaves, `hit`: the torso's middle, `feet`: where it squashes from, `shoulders`: the arms' joints,
+  // `neck`: the head's joint
+  'smoldering-golem': {
+    role: 'attacker', element: 'fire', facing: 'front', emit: [150, 178], hit: [150, 128],
+    feet: [150, 190], shoulders: [[110, 106], [190, 106]], neck: [151, 102],
+    parts: [
+      { name: 'body', of: 'fig:1 [data-part=body]', pivot: [150, 190] },
+      { name: 'head', of: ['fig:1 [data-part=head]', '[data-part=headseams]', '[data-part=eyes]'], pivot: [151, 102] },
+      { name: 'armL', of: ['fig:1 [data-part=armL]', '[data-part=armLseams]'], pivot: [112, 108] },
+      { name: 'armR', of: ['fig:1 [data-part=armR]', '[data-part=armRseams]'], pivot: [188, 108] },
+      { name: 'legs', of: ['fig:1 [data-part=legs]', '[data-part=legsseams]'], pivot: [150, 190] },
+      { name: 'cracks', of: '[data-part=cracks]', pivot: [150, 190] },
+    ],
+  },
+  // molten berserker (a charging attacker that can't block, 5 Power): the front arm and fist (swinging from the
+  // shoulder, drawn first so the torso covers its root), the rest of the brute (legs, torso, the other fist: leaning
+  // and lunging from the hips), his two white-hot eyes (with the body) and the fist's glow, flung drops and
+  // seams (with the arm); `emit`: the front fist where the blow and the molten drops leave from,
+  // `hit`: his chest, `hips`: where he leans from, `shoulder`: the arm's joint, `fist`: the other, back fist
+  'molten-berserker': {
+    role: 'attacker', element: 'fire', facing: 'left', emit: [74, 77], hit: [160, 100],
+    hips: [150, 128], shoulder: [135, 88], fist: [218, 143],
+    parts: [
+      { name: 'arm', of: 'fig:0 [data-part=arm]', pivot: [135, 88] },
+      { name: 'body', of: 'fig:0 [data-part=body]', pivot: [150, 128] },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [150, 128] },
+      { name: 'fistfx', of: '[data-part=fistfx]', pivot: [135, 88] },
+    ],
+  },
+  // mutiny (a spell that takes an enemy creature, a support: its boon is the command): the soldier turned on his own
+  // (his body, his cloak, and the round trim of his head and hands) and the spear he levels, its burning head
+  // (flame, glow and core as one); all share one pivot, his hips, so they lean and mirror as one; `emit`: the
+  // spear's burning head where the command leaves from, `hit`: his chest, `hips`: where he leans from,
+  // `hand`: the front hand holding the spear, `eye`: his ember-red eye
+  'mutiny': {
+    role: 'support', element: 'fire', facing: 'left', emit: [121, 125.5], hit: [207, 108],
+    hips: [207, 128], hand: [180, 120], eye: [195, 80],
+    parts: [
+      { name: 'body', of: 'fig:0 [data-part=body]', pivot: [207, 128] },
+      { name: 'trim', of: 'fig:0 [data-part=trim]', pivot: [207, 128] },
+      { name: 'cloak', of: 'fig:0 [data-part=cloak]', pivot: [207, 128] },
+      { name: 'spear', of: 'fig:0 [data-part=spear]', pivot: [207, 128] },
+      { name: 'flame', of: '[data-part=flame]', pivot: [207, 128] },
+    ],
+  },
   // ember duelist (an attacker: Swift, Hunt, and 2 Energy to deal 1 damage): the fencer in two pieces (all of her
   // but the saluting arm, leaning and lunging from her hips; and the arm, turning from the shoulder, its
   // slice overlapping the torso by a little so the seam never opens) and the red-hot rapier it holds

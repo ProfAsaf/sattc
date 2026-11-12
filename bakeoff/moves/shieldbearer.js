@@ -19,6 +19,7 @@
 //   2900-3450 the three arrows fade back in, in flight, where they are drawn.
 //   3500      at rest as drawn.
 export const END = 4000;
+export const BEATS = { release: 450, impact: 1000, settle: 3500 };
 export const STILLS = [300, 800, 990, 1090, 1520, 2020, 2700, 3700];
 
 export const textures = {
@@ -35,7 +36,13 @@ export function build(k) {
   const AR = [[266, 56, 160], [240, 32, 163], [284, 90, 156]];
   const tip = ([x, y, a]) => [x + 22 * Math.cos(a * Math.PI / 180), y + 22 * Math.sin(a * Math.PI / 180)];
   // order they land: low one (fly2) first, then the middle (fly0), then the high (fly1)
-  const VOLLEY = [{ i: 2, t: 1000, hit: H[0], kind: 'glance', s: 1 }, { i: 0, t: 1500, hit: H[1], kind: 'shatter', s: 1.15 }, { i: 1, t: 2000, hit: H[2], kind: 'glance', s: 1.3 }];
+  const own = [{ i: 2, t: 1000, hit: H[0], kind: 'glance', s: 1 }, { i: 0, t: 1500, hit: H[1], kind: 'shatter', s: 1.15 }, { i: 1, t: 2000, hit: H[2], kind: 'glance', s: 1.3 }];
+  // blows from another card (k.blows): each is taken on the nearest guard point of the shield; the drawn arrows stand down
+  const G = k.spec.guard;
+  const snap = ([x, y]) => G.reduce((b, g) => (Math.hypot(g[0] - x, g[1] - y) < Math.hypot(b[0] - x, b[1] - y) ? g : b), G[0]);
+  const VOLLEY = k.blows ? [...k.blows].sort((a, b) => a.at - b.at).slice(0, 5).map((b, n) => ({ i: -1, t: Math.max(520 + n * 30, Math.min(2000, Math.round(b.at))), hit: snap(b.to), kind: n % 2 ? 'shatter' : 'glance', s: 1 + 0.12 * (n % 3) }))
+    .filter((v, n, a) => n === 0 || v.t >= a[n - 1].t + 120) : own;
+  if (k.blows) for (const q of [0, 1, 2]) act(fly[q], [[0, { transform: 'none', opacity: 1 }, 'ease-out'], [260, { transform: `${k.T(-3, 1)}`, opacity: 0 }], [2950, { transform: 'none', opacity: 0 }, 'linear'], [3450, { transform: 'none', opacity: 1 }]]);
 
   k.css(`.g-gold { border-radius: 50%; background: radial-gradient(closest-side, rgba(255,246,214,.95), rgba(255,208,130,.5) 25%, rgba(255,170,70,.14) 55%, rgba(255,150,40,0) 100%); }`);
 
@@ -52,11 +59,13 @@ export function build(k) {
   // he holds, then sags and settles
   shieldPoses.push([2500, ...Bs, eio], [2850, -0.5, 0.5, -0.3, eio], [3250, 0, 0, 0]);
   manPoses.push([2500, ...Bm, eio], [2900, -0.3, 1.0, 0.2, eio], [3300, 0.2, 0, -0.1, eio], [3600, 0, 0, 0]);
+  const clean = (L) => { L.sort((a, b) => a[0] - b[0]); return L.filter((x, i, a) => i === 0 || x[0] > a[i - 1][0]); };
+  const sP = clean(shieldPoses), mP = clean(manPoses);
   const pose = (p, extra = '') => ({ transform: `${k.T(p[1], p[2])} rotate(${p[3].toFixed(2)}deg)${extra}` });
-  act(shield, shieldPoses.map((p) => [p[0], pose(p), p[4]]));
-  act(man, manPoses.map((p) => [p[0], pose(p), p[4]]));
+  act(shield, sP.map((p) => [p[0], pose(p), p[4]]));
+  act(man, mP.map((p) => [p[0], pose(p), p[4]]));
   // the arrows stuck in the shield ride with it, and quiver after each blow
-  const stuckK = shieldPoses.map((p) => [p[0], pose(p), p[4]]);
+  const stuckK = sP.map((p) => [p[0], pose(p), p[4]]);
   for (const v of VOLLEY) for (let j = 0; j < 5; j++) stuckK.push([v.t + 40 + j * 38, pose([0, Bs[0] + 0.2, Bs[1], Bs[2] + (j % 2 ? 1 : -1) * (1.5 - j * 0.28) * v.s]), eio]);
   stuckK.sort((a, b) => a[0] - b[0]);
   // (drop any moment that comes at the same ms as an earlier one)
@@ -64,8 +73,7 @@ export function build(k) {
 
   // ── the gold edge of the shield: a gold copy, 7% larger, behind it, lit at each blow
   const rim = k.copy('shield', 'fx-rim', { behind: true });
-  const rimK = shieldPoses.map((p) => ({ ms: p[0], p }));
-  const op = (ms) => {
+    const op = (ms) => {
     let o = 0.04;
     for (const v of VOLLEY) { const d = ms - v.t; if (d >= 0 && d < 520) o = Math.max(o, 0.95 * Math.pow(1 - d / 520, 1.6)); }
     if (ms > 2050 && ms < 3100) o = Math.max(o, 0.22 * (1 - (ms - 2050) / 1050));
@@ -74,7 +82,7 @@ export function build(k) {
   const rimList = []; const times = new Set([0, 3300]);
   for (const v of VOLLEY) [v.t - 1, v.t, v.t + 28, v.t + 80, v.t + 160, v.t + 280, v.t + 420, v.t + 520].forEach((t) => times.add(t));
   [450, 2050, 2500, 2850].forEach((t) => times.add(t));
-  const posAt = (ms) => { const L = shieldPoses; let i = L.length - 1; while (i > 0 && L[i][0] > ms) i--; const a = L[i], b = L[Math.min(i + 1, L.length - 1)]; const f = b[0] === a[0] ? 0 : Math.min(1, Math.max(0, (ms - a[0]) / (b[0] - a[0]))); return [0, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f, a[3] + (b[3] - a[3]) * f]; };
+  const posAt = (ms) => { const L = sP; let i = L.length - 1; while (i > 0 && L[i][0] > ms) i--; const a = L[i], b = L[Math.min(i + 1, L.length - 1)]; const f = b[0] === a[0] ? 0 : Math.min(1, Math.max(0, (ms - a[0]) / (b[0] - a[0]))); return [0, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f, a[3] + (b[3] - a[3]) * f]; };
   for (const t of [...times].sort((a, b) => a - b)) {
     const o = op(t); // (the pulse is held at the moment of the blow, then dies away)
     rimList.push([t, { ...pose(posAt(t), ' scale(1.07)'), opacity: +o.toFixed(2) }, 'ease-out']);
@@ -83,7 +91,7 @@ export function build(k) {
 
   // ── the arrows: hang and tremble, come on along a falling arc, strike, then glance off or shatter; fade back in at the end
   const ang = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
-  for (const v of VOLLEY) {
+  for (const v of VOLLEY.filter((v) => v.i >= 0)) {
     const A = AR[v.i], T0 = tip(A), a0 = A[2], E = v.hit, ts = v.t - 400;
     const dir = [Math.cos(a0 * Math.PI / 180), Math.sin(a0 * Math.PI / 180)], d = Math.hypot(E[0] - T0[0], E[1] - T0[1]);
     const ctrl = [T0[0] + dir[0] * d * 0.5, T0[1] + dir[1] * d * 0.5];

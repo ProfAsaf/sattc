@@ -208,9 +208,10 @@ const emberScenes = {
     ].join('');
     s.figure(G('translate(194 82) scale(.9)', P(wolf) + E(-20, -19, 9.5, 8, -10)),
       { fill: '#0e0403', rim: '#ffb04a', offsets: [[-1.1, 0.9], [0, -1.2], [1.1, 0]], rimOp: 0.95, shade: 0.5, light: [-1, 1], halo: { op: 0.45, sd: 2.6 } });
-    s.add('<ellipse cx="173.3" cy="62.7" rx="1.8" ry="1" fill="#ffd27a" transform="rotate(-20 173.3 62.7)"/>');
+    s.add('<ellipse data-part="eye" cx="173.3" cy="62.7" rx="1.8" ry="1" fill="#ffd27a" transform="rotate(-20 173.3 62.7)"/>');
     // the bolt: white-hot, the brightest thing in the ravine
     const A = [94, 152], B = [152, 110];
+    s.add('<g data-part="bolt">');
     const ang = (Math.atan2(B[1] - A[1], B[0] - A[0]) * 180) / Math.PI;
     const path = (w) => taper([A, [A[0] + (B[0] - A[0]) * 0.35 - 1.5, A[1] + (B[1] - A[1]) * 0.35 - 2], [A[0] + (B[0] - A[0]) * 0.7 + 1, A[1] + (B[1] - A[1]) * 0.7 + 1.5], B], w);
     s.glow(B[0], B[1], 52, '#ffb04a', 0.55);
@@ -220,6 +221,7 @@ const emberScenes = {
       `<path d="${path([1.2, 4, 7.5, 10.5])}" fill="#ffb04a"/>${E(B[0], B[1], 11, 8, ang).replace('/>', ' fill="#ffb04a"/>')}` +
       `<path d="${path([0.5, 1.8, 3.6, 5.5])}" fill="#fff2cc"/>${E(B[0] + 1, B[1] - 0.5, 7, 4.6, ang).replace('/>', ' fill="#fffaf0"/>')}`,
     { sd: 2.2, k: 1.5, box: [60, 70, 130, 110] });
+    s.add('</g>');
     // the hand that flicked it, fingers still spread
     const hand = P(
       blob([[0, -8], [10, -10], [22, -9], [25, -2], [24, 6], [14, 10], [2, 9], [-2, 2]]),
@@ -256,6 +258,7 @@ const emberScenes = {
     const cx = 150, cy = 114, rx = 98, ry = 82, a0 = -200, a1 = 9;
     const arcFill = s.linU(50, 0, 250, 0, [[0, '#ff5a1a', 0.15], [0.45, '#ff7a2e', 0.75], [1, '#ffb04a']]);
     // tongues streaming off the outer edge, back along the stroke
+    s.add('<g data-part="arc">');
     let licks = '';
     for (let i = 0; i < 8; i++) {
       const t = 0.3 + i * 0.09, ar = rad(a0 + (a1 - a0) * t);
@@ -269,6 +272,7 @@ const emberScenes = {
       `<path d="${crescent(cx, cy, rx * 0.985, ry * 0.985, a0 + 120, a1, 0.995, 0.86, { ease: 2 })}" fill="#fff4d8" opacity=".9"/>`,
     { sd: 2.4, k: 1.3, box: [20, 0, 270, 170] });
     s.glow(236, 112, 44, '#ffd27a', 0.6);
+    s.add('</g>');
     // the warrior, lunging into the stroke
     const body = [
       limb([154, 131], [178, 150], [186, 182], 14, 8.5, 6),
@@ -286,7 +290,7 @@ const emberScenes = {
     s.figure(P(body, skirt, cape) + C(168, 81, 7) + E(171.5, 85, 4, 3, 20) + C(193, 116.5, 4) + C(183, 115.5, 2.4),
       { fill: '#0e0403', rim: '#ffb04a', offsets: [[1.2, -0.6], [0.2, -1.3], [-1, -0.6]], rimOp: 0.95, shade: 0.55, light: [1, -0.5] });
     // the blade itself, burning white
-    s.add(`<path d="${taper([[197, 118.5], [222, 122.5], [246, 126.5]], [3.4, 2.6, 0.6])}" fill="#fff4d8"/>`);
+    s.add(`<path data-part="blade" d="${taper([[197, 118.5], [222, 122.5], [246, 126.5]], [3.4, 2.6, 0.6])}" fill="#fff4d8"/>`);
     s.add(trail(313, [120, 30], [250, 120], 22, { spread: 14, fill: '#ffc46a', t: [2, 4] }));
     s.motes({ seed: 314, n: 12, x: [40, 270], y: [40, 200], r: [0.4, 1], fill: '#ff9a3a', hot: '#ffe2a0', cls: 'rise', t: [5, 9], op: [0.3, 0.7] });
     return s.svg();
@@ -333,9 +337,11 @@ const emberScenes = {
     // the scorched hem still smoulders
     s.add(`<path d="${poly(hem, false)}" stroke="#ff8a3a" stroke-width="1.2" fill="none" stroke-linejoin="round" opacity=".85"/>`);
     // the rapier, red-hot
+    s.add('<g data-part="rapier">');
     s.add(`<ellipse cx="155" cy="44" rx="9" ry="36" fill="${s.rad([[0, '#ff6a1f', 0.45], [0.6, '#ff6a1f', 0.12], [1, '#ff6a1f', 0]])}"/>`);
     s.bloom(`<path d="${taper([[157, 73], [155, 40], [153, 12]], [2.6, 2, 0.5])}" fill="#ff7a2e"/><path d="${taper([[157, 72], [155, 40], [153.3, 16]], [1.1, 0.9, 0.3])}" fill="#fff0c4"/>`,
       { sd: 1.6, k: 1.6, box: [130, -5, 50, 100] });
+    s.add('</g>');
     s.add(particles({ seed: 324, n: 22, x: [0, W], y: [70, 200], r: [0.5, 1.3], fill: '#ffb05a', cls: 'rise', t: [4, 8], op: [0.4, 0.9] }));
     return s.svg();
   },
@@ -381,20 +387,26 @@ const emberScenes = {
       taper([[193, 71], [202, 66], [212, 68], [221, 75], [225, 86]], [3, 6, 6, 4, 1]),
       limb([199, 96], [189, 110], [180, 120], 8.5, 6.2, 5.4),
       limb([211, 96], [222, 106], [218, 116], 8.5, 6.2, 5.4),
-      taper([[256, 110], [190, 118.5], [128, 126.3]], [3, 2.8, 2.4]),
       taper([[194, 82], [189, 84]], [3, 2]) + taper([[205, 83], [211, 88]], [6, 3]),
     ].join('');
     const skirt = poly([[196, 121], [217, 121], [221, 137], [216, 134], [213, 141], [208, 135], [203, 142], [199, 135], [193, 139]]);
     const cloak = blob([[207, 89], [224, 91], [239, 99], [251, 113], [259, 130], [251, 128], [245, 136], [237, 130], [229, 138], [223, 127], [215, 110]]);
-    s.figure(P(body, skirt, cloak) + C(200, 80, 8.2) + C(180, 120, 4) + C(218, 116, 4),
+    const spear = taper([[256, 110], [190, 118.5], [128, 126.3]], [3, 2.8, 2.4]);
+    // (each piece is shaded by a gradient across its own box, which the spear and body used to share:
+    // two zero-length marks at the old box's corners keep both exactly as they were)
+    const nums = (body + spear).match(/-?\d+\.?\d*/g).map(Number), xs = nums.filter((_, n) => n % 2 === 0), ys = nums.filter((_, n) => n % 2), bx0 = Math.min(...xs), bx1 = Math.max(...xs), by0 = Math.min(...ys), by1 = Math.max(...ys);
+    const reach = `M${bx0},${by0}L${bx0},${by0}M${bx1},${by1}L${bx1},${by1}`;
+    s.figure(`<g data-part="body">${P(body + reach, skirt)}</g><g data-part="spear">${P(spear + reach)}</g><g data-part="cloak">${P(cloak)}</g><g data-part="trim">${C(200, 80, 8.2)}${C(180, 120, 4)}${C(218, 116, 4)}</g>`,
       { fill: '#0c0403', rim: p.rim, offsets: [[-1.2, -0.3], [-0.4, -1.2], [0.8, -0.8]], rimOp: 0.9, shade: 0.55, light: [-1, -0.2], halo: { op: 0.35, sd: 2.4 } });
     // eyes gone to embers
     s.glow(195, 80, 10, '#ff3a1a', 0.85);
     s.add('<ellipse cx="195" cy="80" rx="2.2" ry="1.2" fill="#ffcf6a"/>');
     // the spear's burning head
-    s.glow(126, 124, 40, '#ffb04a', 0.6, 'breathe');
+    s.add('<g data-part="flame">');
+    s.glow(126, 124, 40, '#ffb04a', 0.6);
     s.bloom(`<path d="${lick(132, 126, 168, 30, 12, 0.6)}${lick(130, 124, 190, 22, 8, -0.5)}" fill="${s.lin([[0, '#ff6a1f', 0.6], [1, '#ffb04a']], { x1: 1, y1: 0, x2: 0, y2: 0 })}"/>` +
       `<path d="M118,126.5L132,123.6L131,129Z" fill="#ffe7a3"/><path d="${lick(130, 126, 175, 14, 5, 0.4)}" fill="#fff0c4"/>`, { sd: 1.8, k: 1.4, box: [80, 90, 80, 70] });
+    s.add('</g>');
     s.add(trail(334, [104, 110], [132, 124], 12, { spread: 6, fill: '#ffc46a', t: [1.6, 3] }));
     s.motes({ seed: 335, n: 14, x: [0, W], y: [60, 200], r: [0.4, 1], fill: '#ff9a3a', hot: '#ffe2a0', cls: 'rise', t: [5, 9], op: [0.3, 0.7] });
     return s.svg();
@@ -418,25 +430,32 @@ const emberScenes = {
     const cracks = 'M106,189L86,195L72,193M106,189L95,201L91,212M106,189L122,199L132,212M106,189L128,191L144,187M106,189L80,187L66,182M226,180L240,187L254,186M226,180L230,192L226,202M226,180L212,186L204,195';
     s.add(`<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${cracks}" stroke="#ff6a1f" stroke-width="2.6" opacity=".55"/><path d="${cracks}" stroke="#ffd88a" stroke-width=".9"/></g>`);
     // the brute, pitched forward into the charge: all shoulder and fist, head down
+    const armD = limb([130, 86], [106, 84], [84, 78], 24, 15, 14);
     const body = [
       taper([[160, 70], [160, 56]], [11, 0.5]) + taper([[176, 70], [181, 57]], [11, 0.5]) + taper([[189, 79], [197, 69]], [10, 0.5]) + taper([[195, 93], [205, 88]], [8, 0.5]),
       taper([[96, 104], [112, 100]], [6, 4]),
-      limb([130, 86], [106, 84], [84, 78], 24, 15, 14),
       limb([184, 90], [204, 114], [214, 138], 22, 14, 13),
       limb([146, 126], [126, 150], [110, 180], 26, 16, 15),
       limb([176, 124], [196, 148], [222, 168], 24, 15, 13),
     ].join('');
     const torso = blob([[112, 104], [118, 88], [134, 76], [154, 68], [174, 67], [190, 77], [197, 96], [191, 114], [177, 128], [156, 134], [136, 130], [120, 120]]);
-    s.figure(P(body, torso) + E(104, 110, 10, 9) + E(100, 116, 8, 5) + C(76, 77, 13) + C(218, 143, 12) + E(106, 185, 15, 6) + E(229, 171, 12, 5, 35),
+    // (each piece is shaded by a gradient across its own box, which the arm and the rest of the body used to share:
+    // two zero-length marks at the old box's corners keep both exactly as they were)
+    const nums = (body + armD).match(/-?\d+\.?\d*/g).map(Number), xs = nums.filter((_, n) => n % 2 === 0), ys = nums.filter((_, n) => n % 2), bx0 = Math.min(...xs), bx1 = Math.max(...xs), by0 = Math.min(...ys), by1 = Math.max(...ys);
+    const reach = `M${bx0},${by0}L${bx0},${by0}M${bx1},${by1}L${bx1},${by1}`;
+    s.figure(`<g data-part="arm">${P(armD + reach)}${C(76, 77, 13)}</g><g data-part="body">${P(body + reach, torso)}${E(104, 110, 10, 9)}${E(100, 116, 8, 5)}${C(218, 143, 12)}${E(106, 185, 15, 6)}${E(229, 171, 12, 5, 35)}</g>`,
       { fill: '#120504', rim: '#ff9a4a', offsets: [[0, -1.3], [1.1, -0.6], [-1, -0.6]], rimOp: 0.9, shade: 0.5, light: [0.3, -1], edge: 0.35 });
     // molten all the way through: cracks, knuckles, and drops flung off the fists
-    const veins = 'M114,112L126,113L137,105L148,113L160,107L172,115L186,110M160,74L156,88L164,95L159,106M178,72L180,86L190,93M100,82L92,78M116,86L108,84M134,150L128,160L132,170M196,146L206,155L212,163M198,110L208,120M160,122L155,129L162,133';
+    const veins = 'M114,112L126,113L137,105L148,113L160,107L172,115L186,110M160,74L156,88L164,95L159,106M178,72L180,86L190,93M196,146L206,155L212,163M198,110L208,120M160,122L155,129L162,133M134,150L128,160L132,170';
+    const armVeins = 'M100,82L92,78M116,86L108,84';
     const fling = [[[62, 70], [50, 64], 2.8], [[60, 84], [46, 88], 2.6], [[68, 92], [58, 102], 2.2], [[52, 76], [38, 76], 1.8], [[232, 148], [246, 154], 2.4], [[230, 138], [246, 132], 2], [[226, 156], [236, 168], 1.8]];
-    s.bloom(`<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${veins}" stroke="#ff6a1f" stroke-width="2.8" opacity=".6"/><path d="${veins}" stroke="#ffe08a" stroke-width="1"/></g>` +
-      `<ellipse cx="69" cy="78" rx="6" ry="9" fill="${s.rad([[0, '#ffe7a3'], [0.5, '#ff9a3a', 0.8], [1, '#ff6a1f', 0]])}"/><ellipse cx="225" cy="148" rx="5" ry="8" transform="rotate(-30 225 148)" fill="${s.rad([[0, '#ffe7a3'], [0.5, '#ff9a3a', 0.8], [1, '#ff6a1f', 0]])}"/>` +
-      `<path d="${fling.map(([a, b, r]) => taper([a, lerp(a, b, 0.6), b], [0.4, r * 1.3, r * 1.9])).join('')}" fill="#ff9a3a"/><path d="${fling.map(([, b, r]) => circ(b[0], b[1], r)).join('')}" fill="#ffe7a3"/>`,
-    { sd: 1.6, k: 1.4, box: [20, 40, 250, 170] });
-    s.add('<g fill="#ffe7a3"><ellipse cx="98" cy="109" rx="2.2" ry="1.1" transform="rotate(12 98 109)"/><ellipse cx="106" cy="108" rx="2" ry="1" transform="rotate(12 106 108)"/></g>');
+    const drops = (l) => `<path d="${l.map(([a, b, r]) => taper([a, lerp(a, b, 0.6), b], [0.4, r * 1.3, r * 1.9])).join('')}" fill="#ff9a3a"/><path d="${l.map(([, b, r]) => circ(b[0], b[1], r)).join('')}" fill="#ffe7a3"/>`;
+    const seams = (d) => `<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${d}" stroke="#ff6a1f" stroke-width="2.8" opacity=".6"/><path d="${d}" stroke="#ffe08a" stroke-width="1"/></g>`;
+    // (the left fist's glow, drops and seams are one tagged piece inside the bloom, so the arm carries its light)
+    s.bloom(seams(veins) + `<ellipse cx="225" cy="148" rx="5" ry="8" transform="rotate(-30 225 148)" fill="${s.rad([[0, '#ffe7a3'], [0.5, '#ff9a3a', 0.8], [1, '#ff6a1f', 0]])}"/>` + drops(fling.slice(4)) +
+      `<g data-part="fistfx">${seams(armVeins)}<ellipse cx="69" cy="78" rx="6" ry="9" fill="${s.rad([[0, '#ffe7a3'], [0.5, '#ff9a3a', 0.8], [1, '#ff6a1f', 0]])}"/>${drops(fling.slice(0, 4))}</g>`,
+      { sd: 1.6, k: 1.4, box: [20, 40, 250, 170] });
+    s.add('<g data-part="eyes" fill="#ffe7a3"><ellipse cx="98" cy="109" rx="2.2" ry="1.1" transform="rotate(12 98 109)"/><ellipse cx="106" cy="108" rx="2" ry="1" transform="rotate(12 106 108)"/></g>');
     s.add(particles({ seed: 342, n: 22, x: [50, 280], y: [60, 200], r: [0.5, 1.4], fill: '#ffb05a', cls: 'rise', t: [3, 7] }));
     s.add(particles({ seed: 343, n: 10, x: [0, W], y: [20, 160], r: [0.6, 1.4], fill: '#3a1a12', cls: 'float', t: [6, 10], op: [0.5, 0.9] }));
     return s.svg();
@@ -486,9 +505,9 @@ const emberScenes = {
     s.glow(150, 166, 70, '#ffb04a', 0.6, 'breathe');
     s.add('<path d="M120,187L120,160A30,30 0 0 1 180,160L180,187" fill="none" stroke="#140504" stroke-width="7"/>');
     s.add('<path d="M120,160L127,160M180,160L173,160M124.5,145L130.5,148.5M175.5,145L169.5,148.5M136,133L139,139M164,133L161,139M150,129.5V136" stroke="#3a140b" stroke-width="1.2"/>');
-    s.bloom(`<path d="M126,187L126,160A24,24 0 0 1 174,160L174,187Z" fill="${s.radU(150, 180, 34, [[0, '#fff4d0'], [0.35, '#ffd27a'], [0.7, '#ff8a2e'], [1, '#c4401a']])}"/>` +
-      `<path d="${tongue(136, 187, 26, 9, -3, 2)}${tongue(146, 187, 36, 12, 2, -2)}${tongue(157, 187, 31, 10, -3, 2)}${tongue(166, 187, 24, 8, 3, -1)}" fill="${s.lin([[0, '#ff6a1f', 0.5], [0.6, '#ffb04a'], [1, '#ffe7a3']])}"/>` +
-      `<path d="${tongue(150, 187, 22, 14, 0, 0)}" fill="#fff4d8"/>`, { sd: 2.2, k: 1.4, box: [100, 120, 100, 80] });
+    s.bloom(`<path data-part="mouth" d="M126,187L126,160A24,24 0 0 1 174,160L174,187Z" fill="${s.radU(150, 180, 34, [[0, '#fff4d0'], [0.35, '#ffd27a'], [0.7, '#ff8a2e'], [1, '#c4401a']])}"/>` +
+      `<g data-part="flames"><path d="${tongue(136, 187, 26, 9, -3, 2)}${tongue(146, 187, 36, 12, 2, -2)}${tongue(157, 187, 31, 10, -3, 2)}${tongue(166, 187, 24, 8, 3, -1)}" fill="${s.lin([[0, '#ff6a1f', 0.5], [0.6, '#ffb04a'], [1, '#ffe7a3']])}"/>` +
+      `<path d="${tongue(150, 187, 22, 14, 0, 0)}" fill="#fff4d8"/></g>`, { sd: 2.2, k: 1.4, box: [100, 120, 100, 80] });
     s.glow(150, 64, 24, '#ffb04a', 0.7, 'breathe');
     s.add('<ellipse cx="150" cy="65" rx="9" ry="2" fill="#ffd27a"/>');
     s.add(particles({ seed: 353, n: 16, x: [130, 180], y: [10, 64], r: [0.5, 1.3], fill: '#ffc46a', cls: 'rise', t: [3, 6] }));
@@ -528,14 +547,16 @@ const emberScenes = {
       lgL: stone(131, 165, 14, 12, 370), lgR: stone(169, 165, 14, 12, 371),
       ftL: stone(126, 184, 17, 7, 372), ftR: stone(174, 184, 17, 7, 373),
     };
-    s.figure(P(...Object.values(st).map((q) => q.d)),
+    // (the stones are tagged in groups so each moves as one: the torso, the head, each arm (shoulder, arm and fist),
+    // and the legs with their feet; the left and right arms never overlap each other, nor the head or legs)
+    const pp = (...ks) => P(...ks.map((q) => st[q].d));
+    s.figure(`<g data-part="body">${pp('torso')}</g><g data-part="head">${pp('head')}</g><g data-part="armL">${pp('shL', 'arL', 'fiL')}</g><g data-part="armR">${pp('shR', 'arR', 'fiR')}</g><g data-part="legs">${pp('lgL', 'lgR', 'ftL', 'ftR')}</g>`,
       { fill: '#140605', rim: '#ffb04a', offsets: [[0, -1.3], [-1.1, -0.5], [1.1, -0.5]], rimOp: 0.9, shade: 0.45, light: [0, -1], halo: { op: 0.28, sd: 2.6 } });
-    // the seams between the stones glow, and the cracks across them
-    const seams = st.head.arc(30, 150) + st.shL.arc(-60, 70) + st.shR.arc(110, 240) + st.arL.arc(215, 330) + st.arR.arc(210, 325) +
-      st.fiL.arc(215, 325) + st.fiR.arc(215, 325) + st.lgL.arc(215, 325) + st.lgR.arc(215, 325) + st.ftL.arc(210, 330) + st.ftR.arc(210, 330) +
-      'M126,118L136,124L132,134L142,141M164,108L169,120L180,125M150,146L156,155M112,98L106,106';
-    s.bloom(`<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${seams}" stroke="#ff6a1f" stroke-width="2.8" opacity=".65"/><path d="${seams}" stroke="#ffd88a" stroke-width="1"/></g>` +
-      '<g fill="#ffe7a3"><ellipse cx="145" cy="90" rx="3" ry="1.1" transform="rotate(10 145 90)"/><ellipse cx="157" cy="90" rx="3" ry="1.1" transform="rotate(-10 157 90)"/></g>',
+    // the seams between the stones glow, and the cracks across them (each stone's seams go with it)
+    const sm = (d, part) => `<g data-part="${part}" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${d}" stroke="#ff6a1f" stroke-width="2.8" opacity=".65"/><path d="${d}" stroke="#ffd88a" stroke-width="1"/></g>`;
+    s.bloom(sm(st.head.arc(30, 150), 'headseams') + sm(st.shL.arc(-60, 70) + st.arL.arc(215, 330) + st.fiL.arc(215, 325) + 'M112,98L106,106', 'armLseams') + sm(st.shR.arc(110, 240) + st.arR.arc(210, 325) + st.fiR.arc(215, 325), 'armRseams') +
+      sm(st.lgL.arc(215, 325) + st.lgR.arc(215, 325) + st.ftL.arc(210, 330) + st.ftR.arc(210, 330), 'legsseams') + sm('M126,118L136,124L132,134L142,141M164,108L169,120L180,125M150,146L156,155', 'cracks') +
+      '<g data-part="eyes" fill="#ffe7a3"><ellipse cx="145" cy="90" rx="3" ry="1.1" transform="rotate(10 145 90)"/><ellipse cx="157" cy="90" rx="3" ry="1.1" transform="rotate(-10 157 90)"/></g>',
     { sd: 1.6, k: 1.4, box: [70, 60, 160, 140] });
     // steam venting from the seams
     const steam = (x, y, dx, n, r0) => { let d = ''; for (let i = 0; i < n; i++) d += circ(x + dx * i + (i % 2) * 2, y - i * 8, r0 + i * 2.2); return d; };
@@ -676,11 +697,15 @@ const verdantScenes = {
     s.path(pines({ seed: 403, base: 186, h: [12, 24], gap: [5, 10] }), '#7f9a63');
     s.path('M-10,214L-10,184C50,181 110,182 160,183C220,184 260,181 310,183L310,214Z', '#3a5029');
     // roots heaving up out of the ground behind it
-    const roots = taper([[36, 196], [44, 168], [62, 154], [80, 162], [88, 188]], [9, 8, 7, 7, 8]) +
-      taper([[212, 196], [222, 166], [244, 150], [266, 160], [272, 190]], [10, 9, 8, 7, 8]) +
-      vine([70, 186], [36, 92], { side: 1, curl: 9, w: 7 }) + vine([94, 188], [70, 44], { side: -1, curl: 8, w: 6 }) +
+    const rootsL = taper([[36, 196], [44, 168], [62, 154], [80, 162], [88, 188]], [9, 8, 7, 7, 8]) +
+      vine([70, 186], [36, 92], { side: 1, curl: 9, w: 7 }) + vine([94, 188], [70, 44], { side: -1, curl: 8, w: 6 });
+    const rootsR = taper([[212, 196], [222, 166], [244, 150], [266, 160], [272, 190]], [10, 9, 8, 7, 8]) +
       vine([216, 186], [246, 52], { side: 1, curl: 9, w: 6 }) + vine([240, 188], [280, 104], { side: -1, curl: 9, w: 7 });
-    s.path(roots, '#4a6a33');
+    s.add('<g data-part="rootsL">');
+    s.path(rootsL, '#4a6a33');
+    s.add('</g><g data-part="rootsR">');
+    s.path(rootsR, '#4a6a33');
+    s.add('</g>');
     // the fox, sitting up suddenly enormous, tail flung high
     const fox = [
       taper([[178, 162], [160, 130], [148, 102]], [58, 46, 32]),
@@ -690,16 +715,22 @@ const verdantScenes = {
       taper([[146, 84], [153, 94], [152, 100]], [12, 7, 0.5]) + taper([[138, 88], [140, 98], [137, 104]], [10, 6, 0.5]),
       taper([[147, 100], [132, 110], [129, 126], [136, 140]], [16, 20, 15, 3]),
       limb([140, 128], [138, 156], [136, 182], 14, 9, 8), limb([153, 132], [152, 158], [151, 182], 13, 8.5, 7.5),
-      taper([[204, 172], [226, 156], [242, 128], [242, 98], [232, 74]], [16, 28, 32, 24, 5]),
     ].join('');
-    s.figure(P(fox) + E(142, 78, 15, 13, -12) + E(176, 160, 34, 24, -24) + E(132, 183, 8, 3) + E(149, 183, 7.5, 3) + E(198, 182, 14, 4.4),
+    const foxTail = taper([[204, 172], [226, 156], [242, 128], [242, 98], [232, 74]], [16, 28, 32, 24, 5]);
+    s.figure(P(fox + foxTail) + E(142, 78, 15, 13, -12) + E(176, 160, 34, 24, -24) + E(132, 183, 8, 3) + E(149, 183, 7.5, 3) + E(198, 182, 14, 4.4),
       { fill: p.fig, rim: p.rim, offsets: [[-1.1, -1], [1.1, -1], [0, -1.3], [-1.2, 0.4], [1.2, 0.4]], rimOp: 0.95, shade: 0.35, light: [0, -1], halo: { op: 0.5, sd: 3 } });
-    s.add('<ellipse cx="134" cy="77" rx="2" ry="1.3" fill="#f7ffc8" transform="rotate(-12 134 77)"/>');
+    s.add('<ellipse data-part="eye" cx="134" cy="77" rx="2" ry="1.3" fill="#f7ffc8" transform="rotate(-12 134 77)"/>');
     // buds blazing at every tip, vines whipping across the front
     const bud = s.rad([[0, '#fbffd0', 0.95], [0.35, '#e6f78f', 0.5], [1, '#e6f78f', 0]]);
-    s.add([[36, 92], [70, 44], [246, 52], [280, 104]].map(([x, y]) => `<circle class="breathe" cx="${x}" cy="${y}" r="8" fill="${bud}"/>`).join(''));
-    s.path(vine([-12, 206], [54, 176], { side: -1, curl: 7, w: 8, leaves: 2, lr: 12 }) + vine([312, 208], [244, 182], { side: 1, curl: 7, w: 8, leaves: 2, lr: 12 }), '#1c2913');
-    s.path([[28, 172, 3.4], [62, 160, 2.6], [244, 166, 3], [270, 150, 2.4], [90, 150, 2]].map(([x, y, r]) => circ(x, y, r)).join(''), '#2c2416');
+    const budAt = ([x, y]) => `<circle cx="${x}" cy="${y}" r="8" fill="${bud}"/>`;
+    s.add(`<g data-part="budsL">${[[36, 92], [70, 44]].map(budAt).join('')}</g><g data-part="budsR">${[[246, 52], [280, 104]].map(budAt).join('')}</g>`);
+    s.add('<g data-part="frontL">');
+    s.path(vine([-12, 206], [54, 176], { side: -1, curl: 7, w: 8, leaves: 2, lr: 12 }), '#1c2913');
+    s.path([[28, 172, 3.4], [62, 160, 2.6], [90, 150, 2]].map(([x, y, r]) => circ(x, y, r)).join(''), '#2c2416');
+    s.add('</g><g data-part="frontR">');
+    s.path(vine([312, 208], [244, 182], { side: 1, curl: 7, w: 8, leaves: 2, lr: 12 }), '#1c2913');
+    s.path([[244, 166, 3], [270, 150, 2.4]].map(([x, y, r]) => circ(x, y, r)).join(''), '#2c2416');
+    s.add('</g>');
     s.add(flyingLeaves(404, 16, [20, 280], [20, 170], '#5f7f3e', { len: [6, 10] }));
     s.add(flyingLeaves(405, 10, [40, 260], [30, 150], '#d6e89a', { len: [5, 8] }));
     s.add(particles({ seed: 406, n: 14, x: [40, 260], y: [30, 170], r: [0.6, 1.4], fill: '#fffbd0', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
@@ -717,9 +748,11 @@ const verdantScenes = {
     s.haze(150, 188, '#f8f6dc', 0.55);
     s.path(woods({ seed: 413, base: 206, top: 184, r0: 10, r1: 16 }), '#a8bc89');
     // the dark winged thing, crossing the sun
+    s.add('<g data-part="bird">');
     s.path(taper([[214, 31], [230, 29]], [5, 3]) + taper([[214, 31], [207, 33]], [4, 1.6]) + taper([[230, 29], [240, 33], [249, 29]], [2.6, 1.4, 0.3]) +
       taper([[219, 30], [209, 20], [197, 14]], [5, 3, 0.5]) + taper([[225, 29], [233, 15], [242, 8]], [5, 3, 0.5]), '#262a1c');
     s.path(poly([[219, 30], [197, 14], [201, 23], [195, 26], [207, 29]]) + poly([[225, 29], [242, 8], [240, 18], [246, 21], [231, 31]]), '#262a1c');
+    s.add('</g>');
     // the great tree: trunk at the left, the branch she is perched on
     const tree = taper([[14, 222], [20, 150], [17, 80], [24, 0], [22, -12]], [58, 46, 40, 36, 36]) +
       taper([[10, 192], [70, 190], [130, 185], [190, 178], [250, 170], [304, 166]], [32, 22, 18, 14, 9, 4]) +
@@ -744,12 +777,14 @@ const verdantScenes = {
     const hood = blob([[6, -64], [12, -68], [18, -64], [19, -56], [15, -52], [8, -52], [4, -58]]);
     const string = `M${pt(tip1)}L${pt(draw)}L${pt(tip2)}`;
     const arrow = `M${pt(draw)}L${pt([hand[0] + 7 * u[0], hand[1] + 7 * u[1]])}`;
-    s.figure(G('translate(96 177) scale(1.45)', P(archer, cloak, hood) + C(hand[0], hand[1], 2.4) + C(draw[0], draw[1], 2.2) +
-      `<path d="${string}" fill="none" stroke-width=".5"/><path d="${arrow}" fill="none" stroke-width=".8"/>`),
+    s.figure(G('translate(96 177) scale(1.45)', `<g data-part="abody">${P(archer, cloak, hood)}</g><g data-part="ahand">${C(hand[0], hand[1], 2.4)}</g>` +
+      `<g data-part="adraw">${C(draw[0], draw[1], 2.2)}</g><g data-part="astring"><path d="${string}" fill="none" stroke-width=".5"/></g><g data-part="aarrow"><path d="${arrow}" fill="none" stroke-width=".8"/></g>`),
     { fill: p.fig, rim: p.rim, offsets: [[0.9, -1.1], [-0.6, -1]], rimOp: 0.95, shade: 0.35, light: [1, -1], halo: { op: 0.4, sd: 2.4 } });
     const ah = [96 + (hand[0] + 7 * u[0]) * 1.45, 177 + (hand[1] + 7 * u[1]) * 1.45];
+    s.add('<g data-part="atip">');
     s.glow(ah[0], ah[1], 8, '#fbffd0', 0.9);
     s.add(`<path d="M${pt(ah)}l${f1(-5 * u[0] + 2 * n[0])},${f1(-5 * u[1] + 2 * n[1])}l${f1(-4 * n[0])},${f1(-4 * n[1])}Z" fill="#f7ffd8"/>`);
+    s.add('</g>');
     s.add(flyingLeaves(415, 6, [60, 280], [40, 160], '#4f6b38', { len: [5, 8] }));
     s.add(particles({ seed: 416, n: 14, x: [40, 280], y: [20, 170], r: [0.6, 1.4], fill: '#fffbd6', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
     return s.svg();
@@ -783,8 +818,8 @@ const verdantScenes = {
       taper([[164, 108], [156, 118], [152, 132], [150, 142]], [9, 10, 6, 1.5]),
     ].join('');
     const robe = blob([[112, 150], [124, 140], [140, 146], [152, 160], [162, 172], [158, 179], [130, 180], [100, 180], [96, 172], [102, 160]]);
-    s.figure(G('translate(168 114) rotate(28)', P(antlers) + `<path d="M-8,-3Q0,-9 8,-3" fill="none" stroke-width="3"/>`) + P(body, robe) + C(168, 114, 7) +
-      E(178, 164, 4, 2.8, 20) + E(172.5, 165, 3.6, 2.6, 20),
+    s.figure(`<g data-part="head">${G('translate(168 114) rotate(28)', P(antlers) + `<path d="M-8,-3Q0,-9 8,-3" fill="none" stroke-width="3"/>`)}</g><g data-part="body">${P(body, robe)}</g><g data-part="head">${C(168, 114, 7)}</g>` +
+      `<g data-part="body">${E(178, 164, 4, 2.8, 20) + E(172.5, 165, 3.6, 2.6, 20)}</g>`,
     { fill: p.fig, rim: p.rim, offsets: [[-1.1, -1], [0.6, -1.2]], rimOp: 0.9, shade: 0.35, light: [-0.5, -1], halo: { op: 0.35, sd: 2.4 } });
     // the seed, and the light and roots spreading out of it through the earth
     const roots = 'M182,173C168,178 152,180 136,184C116,188 96,190 74,194C52,197 30,196 6,194M136,184C130,192 128,200 122,212M98,190C92,198 84,204 76,212' +
@@ -834,8 +869,8 @@ const verdantScenes = {
       [[174, 104, 166, 102], [178, 120, 172, 132], [184, 126, 182, 140], [190, 130, 192, 142]].map(([x, y, tx, ty]) => taper([[x, y], [tx, ty]], [8, 0.5])).join(''),
     ].join('');
     const hulk = blob([[176, 110], [179, 92], [190, 78], [206, 73], [222, 78], [238, 90], [254, 98], [264, 110], [262, 127], [250, 136], [232, 137], [212, 135], [194, 138], [182, 132]]);
-    s.figure(P(bear, beast, hulk) + E(112, 106, 14, 11, -30) + C(130, 87, 4.4) + C(138, 85, 4) + E(166, 111, 13, 12) + E(266, 143, 3.6, 6.5) +
-      E(84, 185, 9, 3) + E(104, 185, 9, 3) + E(170, 183, 6, 2.4) + E(196, 183, 6, 2.4) + E(256, 183, 6, 2.4) + E(232, 183, 6, 2.4),
+    s.figure(`<g data-part="bear">${P(bear)}${E(112, 106, 14, 11, -30)}${C(130, 87, 4.4)}${C(138, 85, 4)}${E(84, 185, 9, 3)}${E(104, 185, 9, 3)}</g>` +
+      `<g data-part="beast">${P(beast, hulk)}${E(166, 111, 13, 12)}${E(266, 143, 3.6, 6.5)}${E(170, 183, 6, 2.4)}${E(196, 183, 6, 2.4)}${E(256, 183, 6, 2.4)}${E(232, 183, 6, 2.4)}</g>`,
     { fill: p.fig, rim: p.rim, offsets: [[-1, -1], [1, -1], [0, -1.3]], rimOp: 0.95, shade: 0.35, light: [0, -1], halo: { op: 0.45, sd: 2.8 } });
     s.add('<circle cx="142" cy="93" r="1.2" fill="#f1f6c8"/><circle cx="170" cy="106" r="1.2" fill="#f1f6c8"/>');
     // leaves and dust bursting off the impact
@@ -872,7 +907,7 @@ const verdantScenes = {
       leaf(120, 132, -2.1, 10, 5) + leaf(121, 135, -2.9, 9, 4.6) + leaf(92, 55, -2.8, 9, 4.6) + leaf(208, 55, -0.35, 9, 4.6));
     s.figure(totem, { fill: '#253420', rim: p.rim, offsets: [[-1, -1], [0.6, -1.2]], rimOp: 0.95, shade: 0.5, light: [-0.6, -1], halo: { op: 0.35, sd: 2.6 } });
     // its carving: the owl's face, feathered wings, bands, a stern face at the foot
-    s.add('<g fill="none" stroke="#5f7a44" stroke-width="1.3" opacity=".9" stroke-linecap="round">' +
+    s.add('<g data-part="carving" fill="none" stroke="#5f7a44" stroke-width="1.3" opacity=".9" stroke-linecap="round">' +
       '<circle cx="143" cy="44" r="4.2"/><circle cx="157" cy="44" r="4.2"/><path d="M150,47L147,53L150,57L153,53Z"/>' +
       '<path d="M133,84H167M133,88H167M133,150H167M133,154H167M104,59L128,62M100,66L128,67M110,72L130,72M196,59L172,62M200,66L172,67M190,72L170,72"/>' +
       '<path d="M139,163L146,166M161,163L154,166M140,176Q150,182 160,176M150,166V172"/></g>');
@@ -881,14 +916,16 @@ const verdantScenes = {
     s.glow(150, 119, 54, '#e6f78f', 0.7, 'breathe');
     const heart = 'M150,134C139,126 134,118 136,112C138,105 146,104 150,111C154,104 162,105 164,112C166,118 161,126 150,134Z';
     s.path(heart, '#1a2412');
+    s.add('<g data-part="heart">');
     s.bloom(`<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${heart}" stroke="#e6f78f" stroke-width="3.2"/>` +
       '<path d="M141,111C146,118 154,118 159,111M150,111V130M143,121C147,125 153,125 157,121" stroke="#f4ffc2" stroke-width="1.6"/></g>',
     { sd: 1.8, k: 1.6, box: [110, 90, 80, 60] });
+    s.add('</g>');
     // ferns at the edges; a very small visitor at its foot
     const fern = (pts, w) => taper(pts, w);
     s.path(fern([[-6, 214], [8, 194], [26, 182], [46, 178]], [8, 4, 2, 0.4]) + fern([[-4, 214], [2, 186], [8, 166], [20, 152]], [7, 4, 2, 0.4]) +
       fern([[306, 214], [292, 192], [276, 182], [258, 180]], [8, 4, 2, 0.4]) + fern([[304, 214], [298, 186], [300, 164], [290, 150]], [7, 4, 2, 0.4]), '#1b2714');
-    s.figure(`<path d="${blob([[198, 186], [197, 179], [200, 174], [205, 174], [208, 179], [209, 186]])}"/>${E(201, 171, 3.6, 3.2)}${E(199.5, 163, 1.3, 4.2, -14)}${E(203, 163.5, 1.3, 4, 12)}`,
+    s.figure(`<path d="${blob([[198, 186], [197, 179], [200, 174], [205, 174], [208, 179], [209, 186]])}"/>${E(201, 171, 3.6, 3.2)}<g data-part="ears">${E(199.5, 163, 1.3, 4.2, -14)}${E(203, 163.5, 1.3, 4, 12)}</g>`,
       { fill: p.fig, rim: p.rim, offsets: [[-0.8, -0.8]] });
     s.motes({ seed: 443, n: 14, x: [110, 190], y: [60, 170], r: [0.5, 1], fill: '#e6f78f', hot: '#fbffe0', cls: 'float', t: [5, 9], op: [0.5, 1] });
     s.add(particles({ seed: 444, n: 10, x: [20, 280], y: [20, 160], r: [0.6, 1.4], fill: '#fffbd6', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
@@ -936,7 +973,9 @@ const verdantScenes = {
     s.add('<path d="M143,91Q146,93.5 149,91M147,104Q151,106 154,104" stroke="#f7ffc8" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".9"/>');
     // the chicks, beaks wide open: "Eat. You're growing."
     const beak = (x, y, a) => taper([[x, y], [x + Math.cos(rad(a - 14)) * 5, y + Math.sin(rad(a - 14)) * 5]], [1.8, 0.3]) + taper([[x, y], [x + Math.cos(rad(a + 14)) * 5, y + Math.sin(rad(a + 14)) * 5]], [1.8, 0.3]);
+    s.add('<g data-part="beaks">');
     s.path(beak(80, 77.5, -110) + beak(88, 79, -70) + beak(160, 41.5, -90), p.fig);
+    s.add('</g>');
     // brambles curling in at the corners
     const thorns = (pts) => pts.map(([x, y, a]) => taper([[x, y], [x + Math.cos(rad(a)) * 5, y + Math.sin(rad(a)) * 5]], [2.4, 0.3])).join('');
     s.path(vine([-14, 196], [40, 168], { side: -1, curl: 8, w: 6, leaves: 2, lr: 10 }) + vine([-10, 170], [22, 132], { side: 1, curl: 6, w: 4.4, leaves: 1, lr: 8 }) +
@@ -944,9 +983,13 @@ const verdantScenes = {
     // the row of saplings she is feeding, glowing
     const sap = [[188, 13], [212, 17], [236, 21], [260, 25]];
     for (const [x, h] of sap) s.glow(x, 189 - h * 0.7, 13 + h * 0.3, '#e6f78f', 0.7, 'breathe');
+    s.add('<g data-part="saplings">');
     s.bloom(sap.map(([x, h]) => `<path d="${taper([[x, 190], [x + 1, 190 - h]], [2.4, 1.2])}" fill="#c9e070"/><path d="${leaf(x + 1, 190 - h, -2.3, 7 + h * 0.2, 3.6 + h * 0.08) + leaf(x + 1, 190 - h, -0.85, 7 + h * 0.2, 3.6 + h * 0.08) + leaf(x + 0.5, 192 - h * 0.5, -0.4, 5 + h * 0.1, 2.8)}" fill="#f2ffbc"/>`).join(''),
       { sd: 1.6, k: 1.5, box: [170, 150, 110, 50] });
+    s.add('</g>');
+    s.add('<g data-part="birds">');
     s.path(bird(196, 46, 1.1) + bird(214, 36, 0.9) + bird(232, 50, 0.8), p.fig);
+    s.add('</g>');
     s.motes({ seed: 454, n: 14, x: [176, 276], y: [120, 186], r: [0.5, 1], fill: '#e6f78f', hot: '#fbffe0', cls: 'rise', t: [4, 8], op: [0.5, 1] });
     s.add(particles({ seed: 455, n: 14, x: [20, 280], y: [10, 170], r: [0.6, 1.4], fill: '#fffbd6', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
     return s.svg();
@@ -983,11 +1026,13 @@ const verdantScenes = {
     const X = (x) => 118 + x * k, Y = (y) => 186 + y * k;
     const plateEdge = (x0, x1) => `M${f1(X(x0))},${f1(Y(-69))}Q${f1(X(x0 + 9))},${f1(Y(-46))} ${f1(X(x1))},${f1(Y(-23))}`;
     const edges = plateEdge(-14, -18) + plateEdge(10, 6) + plateEdge(34, 30) + plateEdge(58, 56) + `M${f1(X(-28))},${f1(Y(-50))}Q${f1(X(-20))},${f1(Y(-37))} ${f1(X(-30))},${f1(Y(-26))}`;
+    s.add('<g data-part="plates">');
     s.add(`<path d="${edges}" transform="translate(${f1(-2.2)} 0)" stroke="#0e150a" stroke-width="2.6" fill="none" opacity=".8"/><path d="${edges}" stroke="#d6e2a0" stroke-width="1.2" fill="none" opacity=".7"/>`);
     let studs = '';
     for (const x0 of [-14, 10, 34]) for (const t of [0.25, 0.5, 0.75]) studs += circ(X(x0 + 5 + 9 * Math.sin(Math.PI * t) * 0.6), Y(-69 + 46 * t), 1.1);
     s.path(studs, '#a9be7a');
-    s.add(`<circle cx="${f1(X(-52))}" cy="${f1(Y(-32))}" r="1.4" fill="#f1f6c8"/>`);
+    s.add('</g>');
+    s.add(`<g data-part="eye"><circle cx="${f1(X(-52))}" cy="${f1(Y(-32))}" r="1.4" fill="#f1f6c8"/></g>`);
     // clods kicked up, dust boiling round its feet
     s.path([[52, 168, 3], [40, 158, 2.2], [66, 154, 2], [186, 168, 2.6], [200, 158, 2]].map(([x, y, r]) => circ(x, y, r)).join(''), '#2c3a1e');
     let puffs = '';
@@ -1007,7 +1052,7 @@ const verdantScenes = {
     const R = rng(471);
     for (let x = -30; x < 330; x += 22 + R() * 16) storm += circ(x, 14 + R() * 30, 26 + R() * 18);
     s.blur(`<path d="${storm}" fill="${s.linU(0, -20, 0, 80, [[0, '#262f20'], [0.6, '#3c4732'], [1, '#7d8660']])}"/>`, 3.2);
-    s.add('<path d="M244,34L238,56L247,58L236,90" stroke="#fbffe0" stroke-width="1.6" fill="none" stroke-linejoin="round" opacity=".9"/>');
+    s.add('<path data-part="bolt" d="M244,34L238,56L247,58L236,90" stroke="#fbffe0" stroke-width="1.6" fill="none" stroke-linejoin="round" opacity=".9"/>');
     // the wall of dust the herd raises, towering behind it
     let wall = '';
     for (let x = -20; x < 330; x += 16 + R() * 12) wall += circ(x, 128 + R() * 20, 22 + R() * 18);
@@ -1030,13 +1075,13 @@ const verdantScenes = {
       };
     };
     const far = [beast(206, 158, 0.4), beast(244, 156, 0.44), beast(284, 160, 0.46), beast(162, 160, 0.38)];
-    s.add(`<g fill="#8a9668">${far.map((b) => `<path d="${b.d}"/><path d="${b.b}"/>${b.h}`).join('')}</g>`);
+    s.add(`<g data-part="far" fill="#8a9668">${far.map((b) => `<path d="${b.d}"/><path d="${b.b}"/>${b.h}`).join('')}</g>`);
     s.haze(130, 168, '#f2e8c0', 0.35);
     const mid = [beast(270, 184, 0.72), beast(186, 176, 0.58), beast(226, 180, 0.64), beast(306, 178, 0.6)];
     s.figure(mid.map((b) => P(b.d, b.b) + b.h).join(''), { fill: '#3a4c2c', rim: p.rim, offsets: [[0, -1.1], [-0.8, -0.6]], rimOp: 0.8 });
     const lead = beast(118, 198, 1.16);
     s.figure(P(lead.d, lead.b) + lead.h, { fill: p.fig, rim: p.rim, offsets: [[1.1, -0.9], [0, -1.3], [-0.8, -1]], rimOp: 0.95, shade: 0.4, light: [0.6, -1], halo: { op: 0.45, sd: 2.8 } });
-    s.add('<circle cx="62.5" cy="150.5" r="1.2" fill="#f1f6c8"/>');
+    s.add('<circle data-part="eye" cx="62.5" cy="150.5" r="1.2" fill="#f1f6c8"/>');
     // dust thrown up at the front, rain in the storm light
     let puffs = '';
     for (const [x, y, r] of [[46, 204, 15], [96, 208, 13], [150, 206, 15], [204, 198, 13], [256, 200, 15], [300, 196, 12]]) puffs += circ(x, y, r);

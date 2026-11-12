@@ -46,18 +46,28 @@ export const umbral = faction('umbral', {
     s.haze(118, 151, '#6a5494', 0.4, 4);
     s.layer(ruins({ seed: 42, base: 151, x0: -4, x1: 74, h: [16, 50], w: [7, 13] }) + ruins({ seed: 43, base: 151, x0: 228, x1: 304, h: [14, 42], w: [7, 12] }), '#140e1f', { blur: 0.6 });
     s.glow(152, 104, 100, '#7a4fd0', 0.28);
-    const horror = [
+    const horror = `<g data-part="body">${[
       blob([[92, 160], [94, 124], [106, 92], [124, 68], [146, 55], [168, 58], [188, 76], [202, 106], [208, 160]]),
       taper([[134, 66], [128, 54], [122, 46]], [6, 2.6, 0.4]),
       taper([[160, 60], [166, 47], [174, 40]], [7, 3, 0.4]),
       taper([[148, 57], [146, 44]], [4, 0.4]),
       taper([[180, 70], [188, 60]], [4, 0.4]),
+    ].map((d) => `<path d="${d}"/>`).join('')}</g>` +
+      `<g data-part="armL">${[
       taper([[102, 162], [82, 122], [67, 86], [72, 60], [88, 53], [95, 64]], [19, 15, 11, 7, 4, 1.4], { per: 10 }),
+    ].map((d) => `<path d="${d}"/>`).join('')}</g>` +
+      `<g data-part="armR">${[
       taper([[198, 162], [220, 126], [235, 93], [230, 67], [216, 62], [211, 74]], [19, 15, 11, 7, 4, 1.4], { per: 10 }),
+    ].map((d) => `<path d="${d}"/>`).join('')}</g>` +
+      `<g data-part="tipL">${[
       taper([[36, 166], [41, 141], [56, 131], [69, 139], [72, 166]], [8, 6.5, 5, 4, 3.5]),
+    ].map((d) => `<path d="${d}"/>`).join('')}</g>` +
+      `<g data-part="tipR">${[
       taper([[252, 166], [256, 146], [268, 139], [279, 151], [283, 168]], [6.5, 5, 4, 3, 2.4]),
+    ].map((d) => `<path d="${d}"/>`).join('')}</g>` +
+      `<g data-part="body">${[
       taper([[118, 162], [111, 141], [117, 125], [126, 122]], [6.5, 4.5, 2.2, 0.8]),
-    ].map((d) => `<path d="${d}"/>`).join('');
+    ].map((d) => `<path d="${d}"/>`).join('')}</g>`;
     s.figure(horror, { fill: p.fig, rim: p.rim, offsets: [[-1.2, -1]], rimOp: 0.75, shade: 0.5, edge: 0.3, halo: 0.3 });
     // suckers along the inside of the two great arms
     s.add(`<g fill="${p.rim}" opacity=".28">${[[86, 128, 2.2], [78, 112, 2], [73, 96, 1.7], [74, 80, 1.4], [80, 68, 1.1],
@@ -66,9 +76,11 @@ export const umbral = faction('umbral', {
     // no face, just too many eyes, unevenly spaced, and a seam of light
     s.glow(148, 126, 30, '#a46bff', 0.55, 'breathe');
     const eyes = [[131, 94, 2.9], [160, 88, 3.4], [146, 78, 1.9], [119, 107, 1.5], [176, 101, 2.2], [139, 104, 1.3], [167, 109, 1.2], [153, 70, 1.1]];
+    s.add('<g data-part="eyeglow">');
     for (const [x, y, rx] of eyes) s.glow(x, y, rx * 3.4, '#b07cff', 0.7);
-    s.bloom('<path d="M146,112C144,121 145,131 148,142C151,131 152,121 150,112Z" fill="#b48af2"/>' +
-      eyes.map(([x, y, rx]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${(rx * 0.55).toFixed(2)}" fill="#f4ecff"/>`).join(''), { sd: 1.4, k: 1.5, box: [100, 50, 100, 110] });
+    s.add('</g>');
+    s.bloom('<path data-part="seam" d="M146,112C144,121 145,131 148,142C151,131 152,121 150,112Z" fill="#b48af2"/>' +
+      '<g data-part="eyes">' + eyes.map(([x, y, rx]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${(rx * 0.55).toFixed(2)}" fill="#f4ecff"/>`).join('') + '</g>', { sd: 1.4, k: 1.5, box: [100, 50, 100, 110] });
     // the black lake hides everything below the waterline
     s.path(`M-10,151L${W + 10},151L${W + 10},${H + 10}L-10,${H + 10}Z`, s.lin([[0, '#1d1530'], [1, '#06040a']]));
     s.add(`<g stroke="#9a86c4" fill="none" opacity=".4">${[[54, 153, 22], [150, 154, 64], [268, 153, 20], [116, 154, 12]].map(([x, y, r]) =>
@@ -108,27 +120,32 @@ export const umbral = faction('umbral', {
     s.add('<ellipse cx="132" cy="187" rx="32" ry="6.5" fill="#050308"/>');
     s.figure(P(blob([[146, 190], [158, 172], [176, 160], [198, 155], [222, 157], [244, 165], [262, 178], [266, 190]])), { fill: '#1a1424', rim: '#6e5a96', offsets: [[0.8, -1]], rimOp: 0.8, shade: 0.5 });
     const bone = '#a497bd';
-    s.add(`<g fill="${bone}"><ellipse cx="56" cy="184" rx="8" ry="6.6"/><rect x="51" y="186" width="10" height="5.4" rx="2"/>` +
-      '<circle cx="231" cy="176.5" r="2.4"/><circle cx="232.5" cy="180" r="2.4"/><circle cx="252" cy="168.4" r="2.4"/><circle cx="253.6" cy="171.8" r="2.4"/></g>' +
-      `<path d="M232,178L253,170" stroke="${bone}" stroke-width="3"/>` +
+    s.add(`<g fill="${bone}"><ellipse cx="56" cy="184" rx="8" ry="6.6"/><rect x="51" y="186" width="10" height="5.4" rx="2"/></g>` +
+      `<g fill="${bone}" data-part="bone"><circle cx="231" cy="176.5" r="2.4"/><circle cx="232.5" cy="180" r="2.4"/><circle cx="252" cy="168.4" r="2.4"/><circle cx="253.6" cy="171.8" r="2.4"/>` +
+      `<path d="M232,178L253,170" stroke="${bone}" stroke-width="3"/></g>` +
       '<g fill="#0e0a14"><ellipse cx="53" cy="184.5" rx="2.2" ry="2"/><ellipse cx="59.5" cy="184.5" rx="2.2" ry="2"/><path d="M56,187.6l-1.2,2h2.4Z"/></g>' +
       `<path d="M186,168q2,-9 10,-12M192,170q2,-9 10,-12M198,172q2,-8 9,-11" stroke="${bone}" stroke-width="1.7" fill="none" stroke-linecap="round"/>`);
     // the rat: lean, its backbone showing, nose down in the dirt, tail up
-    const rat = parts([
+    const G = (name, inner) => `<g data-part="${name}">${inner}</g>`;
+    const rat = G('body', parts([
       blob([[154, 147], [160, 137], [174, 129], [192, 126], [210, 128], [224, 136], [230, 146], [222, 153], [204, 152], [182, 150], [164, 151]]),
-      taper([[163, 141], [152, 147], [142, 157], [136, 167]], [18, 13.5, 7.5, 1.6]),
+    ])) + G('head', parts([taper([[163, 141], [152, 147], [142, 157], [136, 167]], [18, 13.5, 7.5, 1.6])])) + G('forelegs', parts([
       taper([[158, 150], [150, 162], [143, 173]], [4.4, 3, 2.2]),
       taper([[167, 151], [163, 163], [157, 176]], [4.4, 3, 2.2]),
       taper([[143, 173], [138, 178]], [2.2, 0.4]), taper([[157, 176], [152, 180]], [2.2, 0.4]),
+    ])) + G('hind', parts([
       taper([[222, 150], [230, 160], [227, 168]], [4.4, 3.2, 2.4]),
       taper([[227, 168], [241, 169]], [3, 0.6]),
+    ])) + G('tail', parts([
       taper([[229, 143], [246, 136], [258, 122], [264, 104], [260, 90], [252, 84]], [4.4, 3.6, 3, 2.2, 1.3, 0.4], { per: 10 }),
-    ]) + '<ellipse cx="163" cy="128" rx="4.4" ry="6.4" transform="rotate(-28 163 128)"/><ellipse cx="218" cy="145" rx="9" ry="8"/>' +
-      [[184, 126.8], [194, 125.6], [204, 125.8], [213, 128]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4"/>`).join('');
+    ])) + G('head', '<ellipse cx="163" cy="128" rx="4.4" ry="6.4" transform="rotate(-28 163 128)"/>') +
+      G('body', '<ellipse cx="218" cy="145" rx="9" ry="8"/>' +
+      [[184, 126.8], [194, 125.6], [204, 125.8], [213, 128]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4"/>`).join(''));
     s.figure(rat, { fill: p.fig, rim: p.rim, offsets: [[1, -1], [0.4, -1.2]], rimOp: 0.9, shade: 0.5, edge: 0.3, halo: 0.35 });
-    s.add(`<path d="M184,134q-3,8 0,14M192,133q-3,8 0,14M200,133q-3,8 0,14" stroke="${p.rim}" stroke-width=".8" opacity=".35" fill="none"/>`);
-    s.glow(154, 146, 11, '#b07cff', 0.85, 'breathe');
-    s.add('<ellipse cx="154" cy="146" rx="2.2" ry="1.4" fill="#efe2ff" transform="rotate(32 154 146)"/>');
+    s.add(`<path data-part="ribs" d="M184,134q-3,8 0,14M192,133q-3,8 0,14M200,133q-3,8 0,14" stroke="${p.rim}" stroke-width=".8" opacity=".35" fill="none"/>`);
+    s.add('<g data-part="eye">');
+    s.glow(154, 146, 11, '#b07cff', 0.85);
+    s.add('<ellipse cx="154" cy="146" rx="2.2" ry="1.4" fill="#efe2ff" transform="rotate(32 154 146)"/></g>');
     s.add([[128, 172, 2.2], [122, 165, 1.6], [134, 162, 1.4]].map(([x, y, r], i) =>
       `<circle class="fall" style="--d:${(-i * 0.5).toFixed(1)}s" cx="${x}" cy="${y}" r="${r}" fill="#2a2038"/>`).join(''));
     s.add(`<g fill="#07050b">${tufts([[8, 214, 22], [30, 214, 16], [286, 214, 20], [304, 214, 14]])}</g>`);
@@ -157,23 +174,23 @@ export const umbral = faction('umbral', {
     // the undertaker: top hat, frock coat, a gentle stoop
     s.glow(110, 131, 52, '#d9b8ff', 0.6, 'breathe');
     s.add('<ellipse cx="112" cy="187" rx="46" ry="6" fill="#d9b8ff" opacity=".14"/>');
+    const G = (n, x) => `<g data-part="${n}">${x}</g>`;
     const man = parts([
       taper([[134, 140], [127, 162], [123, 182]], [7, 6, 5]),
       taper([[141, 140], [145, 162], [147, 182]], [7, 6, 5]),
       taper([[140, 90], [139, 108], [139, 126], [141, 146]], [19, 20, 22, 22]),
       taper([[146, 128], [152, 146], [155, 158]], [10, 8, 2]),
       taper([[136, 91], [130, 84]], [6, 5]),
-      taper([[119, 79], [115.5, 82]], [3, 0.6]),
-      taper([[134, 94], [124, 108], [112, 116]], [5.6, 4.8, 4]),
-      taper([[144, 94], [152, 110], [155, 124]], [5.4, 4.6, 4]),
-    ]) + '<circle cx="126" cy="79" r="7.5"/><ellipse cx="127" cy="72" rx="11.5" ry="2.4" transform="rotate(-6 127 72)"/>' +
-      '<path d="M119.5,72L120.5,49L134,48L135.5,71Z"/><circle cx="110.5" cy="117" r="2.8"/><circle cx="155" cy="126" r="2.6"/>' +
-      '<ellipse cx="119" cy="183.5" rx="6.4" ry="2.2"/><ellipse cx="150" cy="183.5" rx="6" ry="2.2"/>' +
-      '<path d="M108.5,117.5V121M104,125L116,125L113,121L107,121Z"/><path d="M103.5,138h13v2.6h-13Z"/><path d="M104,125h1.3v13h-1.3ZM114.7,125h1.3v13h-1.3Z"/>';
+    ]) + G('head', parts([taper([[119, 79], [115.5, 82]], [3, 0.6])]) + '<circle cx="126" cy="79" r="7.5"/><ellipse cx="127" cy="72" rx="11.5" ry="2.4" transform="rotate(-6 127 72)"/>' +
+      '<path d="M119.5,72L120.5,49L134,48L135.5,71Z"/>') +
+      G('lamparm', parts([taper([[134, 94], [124, 108], [112, 116]], [5.6, 4.8, 4])]) + '<circle cx="110.5" cy="117" r="2.8"/>' +
+      '<path d="M108.5,117.5V121M104,125L116,125L113,121L107,121Z"/><path d="M103.5,138h13v2.6h-13Z"/><path d="M104,125h1.3v13h-1.3ZM114.7,125h1.3v13h-1.3Z"/>') +
+      G('tapearm', parts([taper([[144, 94], [152, 110], [155, 124]], [5.4, 4.6, 4])]) + '<circle cx="155" cy="126" r="2.6"/>') +
+      '<ellipse cx="119" cy="183.5" rx="6.4" ry="2.2"/><ellipse cx="150" cy="183.5" rx="6" ry="2.2"/>';
     s.figure(man, { fill: p.fig, rim: '#e2d4f6', offsets: [[-1.2, 0.3], [-0.6, -1.1]], rimOp: 0.9, shade: 0.5, edge: 0.3, halo: 0.35 });
-    s.bloom('<rect x="105.3" y="125" width="9.4" height="13" fill="#faf4ff"/><circle cx="121.5" cy="78" r="1.1" fill="#efe2ff"/>', { sd: 1.8, k: 1.3, box: [86, 60, 56, 96] });
+    s.bloom('<g data-part="lamp"><rect x="105.3" y="125" width="9.4" height="13" fill="#faf4ff"/></g><g data-part="eyeglint"><circle cx="121.5" cy="78" r="1.1" fill="#efe2ff"/></g>', { sd: 1.8, k: 1.3, box: [86, 60, 56, 96] });
     const tape = 'M155,128C159,146 151,160 156,174C159,182 166,185 172,184';
-    s.add(`<path d="${tape}" fill="none" stroke="#e9e0f6" stroke-width="2.2"/><path d="${tape}" fill="none" stroke="#3d2f5c" stroke-width="2.2" stroke-dasharray=".8 4.2"/>`);
+    s.add(`<g data-part="tape"><path d="${tape}" fill="none" stroke="#e9e0f6" stroke-width="2.2"/><path d="${tape}" fill="none" stroke="#3d2f5c" stroke-width="2.2" stroke-dasharray=".8 4.2"/></g>`);
     s.motes({ seed: 413, n: 14, x: [76, 150], y: [96, 176], r: [0.35, 0.9], fill: '#d9b8ff', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },
@@ -194,28 +211,24 @@ export const umbral = faction('umbral', {
     s.glow(150, 100, 90, '#7a5cb8', 0.34);
     s.glow(150, 170, 70, '#a46bff', 0.6, 'breathe');
     s.shafts({ cx: 150, cy: 168, from: -158, to: -22, n: 9, len: 190, spread: 3, color: '#c9a6ff', op: 0.26, seed: 425, sd: 2.4 });
-    const knuckles = [[127, 101, 3], [141, 88, 3], [151, 86, 3], [161, 89, 3], [170, 97, 2.8], [121, 91, 2.4], [137, 74, 2.5], [150, 70, 2.5], [164, 75, 2.4], [176, 87, 2.2],
-      [145, 121, 4.6], [151, 118.5, 4.6], [157, 122, 4.2], [151, 124, 4]];
-    const hand = parts([
+    const G = (n, x) => `<g data-part="${n}">${x}</g>`;
+    const C = ([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`;
+    const hand = G('arm', parts([
       taper([[143, 178], [145, 150], [146, 126]], [7.5, 5.5, 7]),
       taper([[157, 178], [157, 150], [157, 128]], [7, 5, 6.5]),
-      taper([[142, 118], [134, 110], [127, 101]], [4.4, 3.6, 3.2]),
-      taper([[146, 114], [143, 100], [141, 88]], [4, 3.4, 3.2]),
-      taper([[151, 113], [151, 98], [151, 86]], [4.2, 3.4, 3.2]),
-      taper([[156, 114], [159, 100], [161, 89]], [4, 3.4, 3.2]),
-      taper([[160, 118], [166, 106], [170, 97]], [3.8, 3.2, 3]),
-      taper([[127, 101], [121, 91], [119, 82], [120, 75]], [3.2, 2.8, 2, 0.4]),
-      taper([[141, 88], [137, 74], [137, 62], [140, 54], [145, 50]], [3.2, 2.8, 2.6, 1.8, 0.4]),
-      taper([[151, 86], [150, 70], [151, 57], [154, 49], [159, 45]], [3.2, 2.8, 2.6, 1.8, 0.4]),
-      taper([[161, 89], [164, 75], [166, 64], [170, 57], [174, 54]], [3, 2.7, 2.5, 1.7, 0.4]),
-      taper([[170, 97], [176, 87], [179, 78], [182, 72], [185, 70]], [2.8, 2.4, 2.2, 1.4, 0.4]),
-    ]) + knuckles.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('');
+    ])) +
+      G('f1', parts([taper([[142, 118], [134, 110], [127, 101]], [4.4, 3.6, 3.2]), taper([[127, 101], [121, 91], [119, 82], [120, 75]], [3.2, 2.8, 2, 0.4])]) + [[127, 101, 3], [121, 91, 2.4]].map(C).join('')) +
+      G('f2', parts([taper([[146, 114], [143, 100], [141, 88]], [4, 3.4, 3.2]), taper([[141, 88], [137, 74], [137, 62], [140, 54], [145, 50]], [3.2, 2.8, 2.6, 1.8, 0.4])]) + [[141, 88, 3], [137, 74, 2.5]].map(C).join('')) +
+      G('f3', parts([taper([[151, 113], [151, 98], [151, 86]], [4.2, 3.4, 3.2]), taper([[151, 86], [150, 70], [151, 57], [154, 49], [159, 45]], [3.2, 2.8, 2.6, 1.8, 0.4])]) + [[151, 86, 3], [150, 70, 2.5]].map(C).join('')) +
+      G('f4', parts([taper([[156, 114], [159, 100], [161, 89]], [4, 3.4, 3.2]), taper([[161, 89], [164, 75], [166, 64], [170, 57], [174, 54]], [3, 2.7, 2.5, 1.7, 0.4])]) + [[161, 89, 3], [164, 75, 2.4]].map(C).join('')) +
+      G('f5', parts([taper([[160, 118], [166, 106], [170, 97]], [3.8, 3.2, 3]), taper([[170, 97], [176, 87], [179, 78], [182, 72], [185, 70]], [2.8, 2.4, 2.2, 1.4, 0.4])]) + [[170, 97, 2.8], [176, 87, 2.2]].map(C).join('')) +
+      G('palm', [[145, 121, 4.6], [151, 118.5, 4.6], [157, 122, 4.2], [151, 124, 4]].map(C).join(''));
     s.figure(hand, { fill: p.fig, rim: '#c9a6ff', offsets: [[-1, 0.8], [1, 0.8], [0, 1.3], [0, -0.8]], rimOp: 0.85, shade: 0.5, edge: 0.3, halo: 0.4 });
     // the fresh earth, cracked with light, clods thrown up
     s.figure(P(ledge([[-10, 188], [30, 182], [70, 176], [110, 170], [150, 166], [190, 168], [230, 174], [270, 181], [310, 187]])),
       { fill: s.lin([[0, '#1d1429'], [1, '#08060c']]), rim: '#b07cff', offsets: [[0, -1.2]], rimOp: 0.7 });
-    s.bloom('<g stroke="#d2a8ff" stroke-width="1.3" fill="none" stroke-linecap="round"><path d="M146,170l-8,7l-6,3l-10,10l-8,4M156,170l7,8l10,5l6,9M150,172l-2,10l3,8l-2,12M166,169l14,3l12,-2l14,6"/></g>', { sd: 1.4, k: 1.5, box: [96, 150, 120, 70] });
-    s.add('<g fill="#1c1428"><ellipse cx="126" cy="168" rx="7" ry="3.4"/><ellipse cx="176" cy="166.5" rx="8" ry="3.6"/><ellipse cx="108" cy="173" rx="5" ry="2.6"/><ellipse cx="196" cy="171" rx="5.5" ry="2.6"/></g>');
+    s.bloom('<g data-part="cracks" stroke="#d2a8ff" stroke-width="1.3" fill="none" stroke-linecap="round"><path d="M146,170l-8,7l-6,3l-10,10l-8,4M156,170l7,8l10,5l6,9M150,172l-2,10l3,8l-2,12M166,169l14,3l12,-2l14,6"/></g>', { sd: 1.4, k: 1.5, box: [96, 150, 120, 70] });
+    s.add('<g data-part="clods" fill="#1c1428"><ellipse cx="126" cy="168" rx="7" ry="3.4"/><ellipse cx="176" cy="166.5" rx="8" ry="3.6"/><ellipse cx="108" cy="173" rx="5" ry="2.6"/><ellipse cx="196" cy="171" rx="5.5" ry="2.6"/></g>');
     s.add([[128, 150, 2.4], [174, 144, 2], [136, 136, 1.6], [168, 128, 1.4]].map(([x, y, r], i) =>
       `<circle class="fall" style="--d:${(-i * 0.4).toFixed(1)}s" cx="${x}" cy="${y}" r="${r}" fill="#1c1428"/>`).join(''));
     s.motes({ seed: 424, n: 20, x: [96, 204], y: [96, 200], r: [0.4, 1.1], fill: '#b48cff', hot: '#f4ecff', cls: 'rise', t: [5, 9], op: [0.4, 0.9] });
@@ -248,24 +261,28 @@ export const umbral = faction('umbral', {
     s.add('<g stroke="#1a1428" stroke-width="1" fill="none" opacity=".8"><path d="M40,166H120M128,150H212M44,180H96M108,170H224M38,196H140M150,188H228M80,166V180M150,150V170M190,150V170M110,180V196M70,196V210M180,188V210"/></g>');
     // the bonepicker in profile: hunched, one ragged wing raised, a bald head
     // hanging on a long neck, and more legs than a bird should have
-    const beast = parts([
+    const G = (n, x) => `<g data-part="${n}">${x}</g>`;
+    const beast = G('body', parts([
       blob([[140, 112], [146, 96], [160, 86], [178, 86], [192, 96], [198, 112], [194, 126], [180, 132], [160, 130], [146, 124]]),
+      taper([[160, 128], [158, 134]], [4.4, 2.8]), taper([[176, 130], [178, 134]], [4.4, 2.8]),
+      taper([[158, 133], [151, 132]], [2, 0.4]), taper([[158, 133], [163, 134]], [2, 0.4]), taper([[178, 133], [171, 133]], [2, 0.4]), taper([[178, 133], [184, 134]], [2, 0.4]),
+    ])) + G('tail', parts([
       poly([[150, 94], [170, 86], [190, 90], [202, 102], [210, 118], [216, 134], [222, 150], [214, 143], [212, 154], [206, 141], [200, 150], [196, 134], [184, 124], [164, 116]]),
+    ])) + G('wing', parts([
       poly([[164, 92], [170, 72], [182, 52], [196, 38], [214, 28], [208, 41], [221, 41], [206, 51], [217, 57], [200, 61], [209, 69], [192, 71], [196, 81], [180, 84]]),
+    ])) + G('head', parts([
       poly([[152, 92], [143, 95], [137, 90], [135, 99], [128, 97], [133, 105], [141, 106], [149, 108]]),
       taper([[148, 100], [134, 95], [122, 99], [114, 109], [111, 119]], [10, 7, 6, 5.5, 5]),
       taper([[106, 127], [100, 132], [98, 140], [101, 146]], [5.6, 3.8, 2, 0.4]),
-      taper([[160, 128], [158, 134]], [4.4, 2.8]), taper([[176, 130], [178, 134]], [4.4, 2.8]),
-      taper([[158, 133], [151, 132]], [2, 0.4]), taper([[158, 133], [163, 134]], [2, 0.4]), taper([[178, 133], [171, 133]], [2, 0.4]), taper([[178, 133], [184, 134]], [2, 0.4]),
-      taper([[150, 122], [138, 132], [131, 148], [127, 164]], [4.4, 3.4, 3, 2.6]),
-      taper([[166, 130], [161, 146], [159, 162], [157, 176]], [4, 3.2, 2.8, 2.4]),
-      taper([[188, 128], [198, 142], [200, 158], [198, 172]], [4, 3.2, 2.8, 2.4]),
-      ...claw(127, 164, 100), ...claw(157, 176, 95), ...claw(198, 172, 85),
-    ]) + '<ellipse cx="110" cy="124" rx="7.5" ry="6" transform="rotate(40 110 124)"/>';
+    ]) + '<ellipse cx="110" cy="124" rx="7.5" ry="6" transform="rotate(40 110 124)"/>') + G('leg1', parts([taper([[150, 122], [138, 132], [131, 148], [127, 164]], [4.4, 3.4, 3, 2.6]), ...claw(127, 164, 100)]))
+      + G('leg2', parts([taper([[166, 130], [161, 146], [159, 162], [157, 176]], [4, 3.2, 2.8, 2.4]), ...claw(157, 176, 95)]))
+      + G('leg3', parts([taper([[188, 128], [198, 142], [200, 158], [198, 172]], [4, 3.2, 2.8, 2.4]), ...claw(198, 172, 85)]));
     s.figure(beast, { fill: p.fig, rim: '#e6c6dc', offsets: [[1, -0.5], [0.5, -1]], rimOp: 0.9, shade: 0.5, edge: 0.3, halo: 0.35 });
     const eyes = [[106.5, 121.5, 1.4], [111, 119.5, 1.1], [113, 124.5, 0.9], [116.5, 116, 0.8], [104.5, 125.5, 0.7]];
+    s.add('<g data-part="eyes">');
     for (const [x, y, rr] of eyes) s.glow(x, y, rr * 4.6, '#b07cff', 0.75);
     s.bloom(eyes.map(([x, y, rr]) => `<circle cx="${x}" cy="${y}" r="${rr}" fill="#f6eeff"/>`).join(''), { sd: 1.1, k: 1.6, box: [90, 100, 40, 40] });
+    s.add('</g>');
     // a helmet on a spear in the foreground
     s.add('<g fill="#0c0812"><path d="M262,214L270,96L272,96L265,214Z"/><path d="M268,98L271,84L274,98Z"/><path d="M258,128a10,9 0 0 1 20,0l1,6h-22Z"/></g>');
     s.motes({ seed: 434, n: 16, x: [40, 290], y: [30, 190], r: [0.35, 0.9], fill: '#e0c4e4', cls: 'float', t: [6, 10], op: [0.3, 0.75] });
@@ -286,30 +303,34 @@ export const umbral = faction('umbral', {
     s.add('<g stroke="#221a33" stroke-width="1" fill="none"><path d="M-10,184H310M-10,198H310M40,172L20,214M110,172L100,214M190,172L200,214M260,172L280,214"/></g>');
     // the knight, rising
     s.glow(142, 108, 64, '#8f6bd8', 0.32);
-    const knight = parts([
-      blob([[124, 150], [121, 128], [124, 110], [134, 102], [150, 102], [160, 110], [163, 128], [160, 150]]),
-      taper([[160, 108], [176, 101], [186, 90]], [10, 8.5, 7]),
-      taper([[186, 90], [190, 76], [192, 66]], [7.5, 6.5, 6]),
-      taper([[124, 110], [108, 124], [100, 141]], [10, 8, 7]),
-      taper([[142, 66], [142, 58]], [3.4, 1.2]),
-    ]) + '<ellipse cx="124" cy="107" rx="11.5" ry="8" transform="rotate(-20 124 107)"/><ellipse cx="160" cy="106" rx="11.5" ry="8" transform="rotate(20 160 106)"/>' +
-      '<path d="M136,104V94H148V104Z"/><path d="M131,96V78Q131,66 142,64Q153,66 153,78V96Z"/>' +
-      '<circle cx="192" cy="63" r="5"/><ellipse cx="99" cy="145" rx="6.4" ry="4"/>';
+    const G = (n, x) => `<g data-part="${n}">${x}</g>`;
+    const knight = G('kbody', parts([blob([[124, 150], [121, 128], [124, 110], [134, 102], [150, 102], [160, 110], [163, 128], [160, 150]])])) +
+      G('karm', parts([
+        taper([[160, 108], [176, 101], [186, 90]], [10, 8.5, 7]),
+        taper([[186, 90], [190, 76], [192, 66]], [7.5, 6.5, 6]),
+      ])) + G('kbody', parts([taper([[124, 110], [108, 124], [100, 141]], [10, 8, 7])])) +
+      G('khead', parts([taper([[142, 66], [142, 58]], [3.4, 1.2])])) +
+      G('kbody', '<ellipse cx="124" cy="107" rx="11.5" ry="8" transform="rotate(-20 124 107)"/>') +
+      G('karm', '<ellipse cx="160" cy="106" rx="11.5" ry="8" transform="rotate(20 160 106)"/>') +
+      G('kbody', '<path d="M136,104V94H148V104Z"/>') + G('khead', '<path d="M131,96V78Q131,66 142,64Q153,66 153,78V96Z"/>') +
+      G('karm', '<circle cx="192" cy="63" r="5"/>') + G('kbody', '<ellipse cx="99" cy="145" rx="6.4" ry="4"/>');
     s.figure(knight, { fill: '#120c1e', rim: '#cbb8f4', offsets: [[-1.3, -0.4], [1.3, -0.4], [0, -1.4], [0, 1]], rimOp: 0.85, shade: 0.45, edge: 0.3, halo: 0.4 });
     s.glow(142, 80, 18, '#b07cff', 0.75);
+    s.add('<g data-part="kvisor">');
     s.bloom('<path d="M134,80.5H150" stroke="#f6eeff" stroke-width="2.2" stroke-linecap="round"/>', { sd: 1.3, k: 1.6, box: [118, 64, 48, 34] });
+    s.add('</g>');
     // the hourglass, cracked, the sand running out fast
     s.glow(194, 40, 44, '#b07cff', 0.7, 'breathe');
-    s.add('<g transform="translate(194 44) scale(1.3) translate(-194 -44)">' +
+    s.add('<g data-part="glass"><g transform="translate(194 44) scale(1.3) translate(-194 -44)">' +
       '<path d="M186,32Q194,42 194,44Q194,46 186,56H202Q194,46 194,44Q194,42 202,32Z" fill="#d9c8f6" opacity=".55"/>' +
       '<path d="M188.5,35H199.5Q196,40.5 194,43Q192,40.5 188.5,35Z" fill="#c08cff"/><path d="M187.5,56Q194,47 200.5,56Z" fill="#c08cff"/>' +
       '<path d="M194,43V55" stroke="#f1e6ff" stroke-width=".8"/><path d="M189,33.5l3,3.4l-2.2,2.6l3.6,2.4" stroke="#0a0710" stroke-width=".8" fill="none"/>' +
       '<g fill="#1a1428"><rect x="181" y="28" width="26" height="4" rx="1"/><rect x="181" y="56" width="26" height="4" rx="1"/><rect x="183" y="32" width="1.8" height="24"/><rect x="203.2" y="32" width="1.8" height="24"/></g>' +
       [[194, 47], [194, 50.5], [194, 53.5], [186, 40], [184, 46]].map(([x, y], i) =>
-        `<circle class="fall" style="--d:${(-i * 0.3).toFixed(1)}s" cx="${x}" cy="${y}" r=".7" fill="#f1e6ff"/>`).join('') + '</g>');
+        `<circle style="--d:${(-i * 0.3).toFixed(1)}s" cx="${x}" cy="${y}" r=".7" fill="#f1e6ff"/>`).join('') + '</g></g>');
     // the tomb, its lid shoved aside, mist spilling over the rim
     s.figure('<path d="M66,152H234V198H66Z"/><path d="M60,146H240V154H60Z"/>', { fill: '#1d1630', rim: '#c9b6f4', offsets: [[0, -1.2]], rimOp: 0.7 });
-    s.add('<g fill="none" stroke="#2e2445" stroke-width="1.6"><rect x="78" y="162" width="40" height="26"/><rect x="130" y="162" width="40" height="26"/><rect x="182" y="162" width="40" height="26"/></g>');
+    s.add('<g data-part="panels" fill="none" stroke="#2e2445" stroke-width="1.6"><rect x="78" y="162" width="40" height="26"/><rect x="130" y="162" width="40" height="26"/><rect x="182" y="162" width="40" height="26"/></g>');
     s.figure('<path d="M214,140L292,180L288,190L210,150Z"/>', { fill: '#251d3a', rim: '#c9b6f4', offsets: [[0, -1.2]], rimOp: 0.6 });
     s.fog(146, '#b9a6e8', 0.34);
     s.fog(156, '#8f78c8', 0.2);
@@ -336,14 +357,14 @@ export const umbral = faction('umbral', {
     s.shafts({ cx: 162, cy: 110, from: -58, to: 58, n: 7, len: 180, spread: 2.6, color: '#c9a6ff', op: 0.24, seed: 452, sd: 2.4 });
     // the doorway: the lit gap and its spill, the slab swung back, the frame
     s.bloom(`<path d="M158,174L166,174L248,214L176,214Z" fill="${s.lin([[0, '#d9c2ff', 0.7], [1, '#c9a6ff', 0]])}"/><rect x="135" y="52" width="31" height="122" fill="#f6eeff"/>`, { sd: 2.6, k: 1.2, box: [100, 20, 180, 200] });
-    s.add('<path d="M135,52L158,56V170L135,174Z" fill="#0a0710"/><path d="M158,56V170" stroke="#d9c2ff" stroke-width="1"/>');
+    s.add('<g data-part="slab"><path d="M135,52L158,56V170L135,174Z" fill="#0a0710"/><path d="M158,56V170" stroke="#d9c2ff" stroke-width="1"/></g>');
     s.figure(parts([
       poly([[120, 174], [121, 52], [135, 50], [135, 174]]),
       poly([[166, 174], [166, 50], [180, 52], [181, 174]]),
       poly([[112, 55], [114, 40], [150, 35], [188, 40], [190, 55], [150, 51]]),
       poly([[112, 174], [188, 174], [192, 180], [108, 180]]),
     ]), { fill: '#16101f', rim: '#cdb6f4', offsets: [[0, -1.2], [-1, -0.4], [1, -0.4]], rimOp: 0.8, shade: 0.4, edge: 0.3, halo: 0.35 });
-    s.add('<path d="M166.4,52V174" stroke="#f1e6ff" stroke-width="1.2" opacity=".8"/>');
+    s.add('<path data-part="edge" d="M166.4,52V174" stroke="#f1e6ff" stroke-width="1.2" opacity=".8"/>');
     // someone small stands in the light, looking at it
     const walker = parts([
       taper([[196, 180], [195, 196]], [6, 9.5]),
@@ -391,27 +412,30 @@ export const umbral = faction('umbral', {
       // rips running with the cloth, the flash showing through
       poly([[218, 88], [224, 88.5], [238, 103], [235, 106.5], [228, 98]]) + poly([[242, 111], [246.5, 110], [257, 125], [253, 126.5]]) +
       poly([[203, 95], [207.5, 94], [218, 108], [214, 110], [209, 103]]);
-    const body = parts([
+    const G = (n, x) => `<g data-part="${n}">${x}</g>`;
+    const body = G('rbody', parts([
       taper([[138, 122], [120, 150]], [17, 13]), taper([[120, 150], [104, 184]], [12, 9]),
       taper([[154, 124], [168, 152]], [17, 13]), taper([[168, 152], [182, 182]], [12, 9]),
       poly([[128, 104], [164, 104], [168, 128], [162, 121], [160, 134], [154, 124], [150, 138], [144, 124], [138, 135], [134, 122], [128, 131]]),
       taper([[146, 118], [146, 96], [147, 76]], [28, 34, 38]),
       blob([[137, 72], [135, 57], [139, 45], [147, 40], [155, 45], [159, 57], [157, 72]]),
       ...crown.map(([x, y, a, h]) => { const t = (a * Math.PI) / 180; return taper([[x, y], [x + Math.sin(t) * h, y - Math.cos(t) * h]], [3.6, 0.5]); }),
-      taper([[126, 80], [114, 106], [108, 132]], [11, 9, 8]),
-      taper([[168, 80], [178, 106], [184, 132]], [11, 9, 8]),
-      taper([[116, 102], [117, 120]], [5, 0.5]), taper([[176, 102], [173, 121]], [5, 0.5]),
-      ...claw(107, 138, 95, 8), ...claw(185, 138, 85, 8),
-    ]) + `<path d="${cloak}" fill-rule="evenodd"/>` + '<ellipse cx="126" cy="77" rx="12" ry="9" transform="rotate(-25 126 77)"/><ellipse cx="168" cy="77" rx="12" ry="9" transform="rotate(25 168 77)"/>' +
-      '<circle cx="120" cy="150" r="7.5"/><circle cx="168" cy="152" r="7.5"/><ellipse cx="107" cy="134" rx="6" ry="6.6"/><ellipse cx="185" cy="134" rx="6" ry="6.6"/>' +
-      '<ellipse cx="98" cy="187" rx="10" ry="3.4"/><ellipse cx="188" cy="185" rx="9" ry="3"/>' +
-      '<path d="M106,142C103,164 111,186 129,193S180,197 216,195" fill="none" stroke-width="2.6" stroke-dasharray="3.2 1.6"/>' +
-      '<path d="M186,142C193,164 207,182 240,190S282,195 306,193" fill="none" stroke-width="2.6" stroke-dasharray="3.2 1.6"/>';
+    ])) + G('rlarm', parts([taper([[126, 80], [114, 106], [108, 132]], [11, 9, 8])])) + G('rrarm', parts([taper([[168, 80], [178, 106], [184, 132]], [11, 9, 8])])) +
+      G('rlarm', parts([taper([[116, 102], [117, 120]], [5, 0.5])])) + G('rrarm', parts([taper([[176, 102], [173, 121]], [5, 0.5])])) +
+      G('rlarm', parts([...claw(107, 138, 95, 8)])) + G('rrarm', parts([...claw(185, 138, 85, 8)])) +
+      G('rcloak', `<path d="${cloak}" fill-rule="evenodd"/>`) +
+      G('rlarm', '<ellipse cx="126" cy="77" rx="12" ry="9" transform="rotate(-25 126 77)"/>') + G('rrarm', '<ellipse cx="168" cy="77" rx="12" ry="9" transform="rotate(25 168 77)"/>') +
+      G('rbody', '<circle cx="120" cy="150" r="7.5"/><circle cx="168" cy="152" r="7.5"/>') + G('rlarm', '<ellipse cx="107" cy="134" rx="6" ry="6.6"/>') + G('rrarm', '<ellipse cx="185" cy="134" rx="6" ry="6.6"/>') +
+      G('rbody', '<ellipse cx="98" cy="187" rx="10" ry="3.4"/><ellipse cx="188" cy="185" rx="9" ry="3"/>') +
+      G('rchainL', '<path d="M106,142C103,164 111,186 129,193S180,197 216,195" fill="none" stroke-width="2.6" stroke-dasharray="3.2 1.6"/>') +
+      G('rchainR', '<path d="M186,142C193,164 207,182 240,190S282,195 306,193" fill="none" stroke-width="2.6" stroke-dasharray="3.2 1.6"/>');
     s.figure(body, { fill: p.fig, rim: '#d6c2fa', offsets: [[-1.1, -0.6], [1.3, -0.5], [0.2, -1.3]], rimOp: 0.9, shade: 0.5, edge: 0.32, halo: 0.4 });
     // the eye slit and the seam of light down its chest
     s.glow(147, 58, 18, '#b07cff', 0.8, 'breathe');
+    s.add('<g data-part="rglints">');
     s.glow(146, 96, 16, '#a46bff', 0.55);
     s.bloom('<path d="M140.5,58H153.5" stroke="#f6eeff" stroke-width="2.2" stroke-linecap="round"/><path d="M147,82l-3,8l4,6l-4,9l3,7" stroke="#d6b8ff" stroke-width="1.4" fill="none" stroke-linecap="round"/>', { sd: 1.3, k: 1.6, box: [120, 40, 56, 82] });
+    s.add('</g>');
     // grave mist curling round its feet
     s.haze(168, 194, '#8a6cc8', 0.36, 8);
     s.fog(191, '#a08ad0', 0.26);

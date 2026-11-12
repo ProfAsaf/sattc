@@ -192,19 +192,17 @@ export const champions = {
     s.add(`<path d="${place('M-16,-90Q-10,-95 -4,-91M5,-91Q11,-95 17,-90M0.5,-85L0.5,-67M-9.5,-65L9.5,-65M-12.5,-44L-6.5,-45.5L0,-42.5L6.5,-45.5L12.5,-44')}" fill="none" stroke="#ffd77a" stroke-width="1" stroke-linecap="round" opacity=".85"/>` +
       `<path d="${sunMark(fx + 0.5, fy - 77, 3)}" fill="none" stroke="#ffd77a" stroke-width=".9"/>`);
     // the lantern, all light
-    s.glow(lx, lb - 12, 50, '#fffaf0', 0.85, 'breathe');
+    s.add('<g data-part="halo">'); s.glow(lx, lb - 12, 50, '#fffaf0', 0.85); s.add('</g>');
     const lamp = at(lx, lb, 1.3);
-    s.bloom(`<path d="${lamp('M-5,0L5,0L3.6,-2.4L-3.6,-2.4Z')}" fill="${p.fig}"/>` +
+    s.bloom(`<g data-part="lantern"><path d="${lamp('M-5,0L5,0L3.6,-2.4L-3.6,-2.4Z')}" fill="${p.fig}"/>` +
       `<path d="${lamp('M-4.2,-2.4L4.2,-2.4L4.2,-16.4L-4.2,-16.4Z')}" fill="#fffdf4"/>` +
       `<path d="${lamp('M-5,-16.4L5,-16.4L2.6,-19.6L-2.6,-19.6Z')}" fill="${p.fig}"/>` +
       `<circle cx="${f1(lx)}" cy="${f1(lb - 22 * 1.3)}" r="2.8" fill="none" stroke="${p.fig}" stroke-width="1.4"/>` +
-      `<path d="${glint(lx, lb - 12, 16, 0.12)}" fill="#ffffff"/>`, { sd: 2.4, k: 1.6, box: [lx - 50, lb - 70, 100, 96] });
+      `<path d="${glint(lx, lb - 12, 16, 0.12)}" fill="#ffffff"/></g>`, { sd: 2.4, k: 1.6, box: [lx - 50, lb - 70, 100, 96] });
     // the spirits, gathering
     const sp = [[123, 44, 0.5], [133, 20, 0.42], [165, 13, 0.46], [195, 26, 0.5], [204, 54, 0.44], [191, 80, 0.38], [119, 72, 0.36], [103, 26, 0.34], [219, 38, 0.3]];
-    for (const [x, y, k] of sp) s.glow(x, y - 2, 6 + 15 * k, '#fff1c4', 0.7);
-    for (let g = 0; g < 3; g++) {
-      s.path(U(sp.filter((_, i) => i % 3 === g).map(([x, y, k]) => sprite(x, y, k))), '#fffcf0', `class="float" style="--t:${5 + g * 1.5}s;--d:-${g * 2}s"`);
-    }
+    // each Spirit is its own part (glow and figure): it leaves its place when it gathers into the lantern
+    sp.forEach(([x, y, k], i) => { s.add(`<g data-part="spirit${i}">`); s.glow(x, y - 2, 6 + 15 * k, '#fff1c4', 0.7); s.path(sprite(x, y, k), '#fffcf0'); s.add('</g>'); });
     s.motes({ seed: 9805, n: 18, x: [96, 220], y: [10, 110], r: [0.4, 1], fill: '#ffe39a', cls: 'float', t: [4, 8], op: [0.5, 1] });
     s.add(particles({ seed: 9806, n: 10, x: [30, 270], y: [90, 190], r: [0.5, 1.1], fill: '#fff6d8', cls: 'float', t: [5, 9], op: [0.3, 0.7] }));
     return s.svg();
@@ -263,9 +261,9 @@ export const champions = {
       plume(bx + 4, by + 4, -6, 40, 62, [5, 10, 9, 4, 0.4]),
     ].join('');
     const hem = place('M19,-33L12,-30L8,-35L2,-30L-4,-35L-10,-29L-17,-34L-25,-30L-33,-37');
-    s.bloom(`<path d="${tongues}" fill="${fire}"/>` +
+    s.bloom(`<g data-part="plume"><path d="${tongues}" fill="${fire}"/>` +
       `<path d="${plume(bx, by, -30, -6, 62, [5, 11, 10, 4, 0.4]) + plume(bx + 2, by, -20, 12, 48, [4, 7, 6, 3, 0.4])}" fill="${s.linU(bx, by, bx + 60, by - 14, [[0, '#ffffff'], [0.5, '#fff4d2', 0.95], [1, '#ffe08a', 0.4]])}"/>` +
-      `<path d="${hem}" fill="none" stroke="#ff7a2e" stroke-width="2.2" stroke-linejoin="round"/><path d="${hem}" fill="none" stroke="#ffd27a" stroke-width=".8" stroke-linejoin="round"/>`, { sd: 2.4, k: 1.4 });
+      `</g><path d="${hem}" fill="none" stroke="#ff7a2e" stroke-width="2.2" stroke-linejoin="round"/><path d="${hem}" fill="none" stroke="#ffd27a" stroke-width=".8" stroke-linejoin="round"/>`, { sd: 2.4, k: 1.4 });
     s.motes({ seed: 9814, n: 34, x: [160, 300], y: [0, 120], r: [0.4, 1.3], fill: '#ffc25a', hot: '#fff6d8', cls: 'rise', t: [3, 7] });
     s.motes({ seed: 9815, n: 16, x: [0, 300], y: [10, 190], r: [0.4, 1], fill: '#ff8a3a', cls: 'rise', t: [5, 9], op: [0.3, 0.8] });
     return s.svg();
@@ -312,33 +310,37 @@ export const champions = {
     ));
     s.figure(`<path d="${giant}"/>`, { fill: p.fig, rim: p.rim, offsets: [[-1.2, -1], [0, -1.3], [1, -0.8]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [-0.6, -1] });
     // bark: a few long seams, and the face in it
+    s.add('<g data-part="face">');
     s.add(`<path d="${place('M-12,-104C-9,-90 -14,-78 -10,-64M12,-100C9,-88 14,-76 11,-64M-18,-50C-16,-36 -20,-22 -19,-8M18,-50C16,-36 20,-22 19,-8M-14,-142C-12,-132 -15,-126 -12,-120M14,-142C12,-132 15,-126 12,-120')}" fill="none" stroke="#34482a" stroke-width="1.2" opacity=".8"/>`);
     s.add(`<path d="${place('M-12,-136C-8,-142 -3,-142 -1,-138M12,-136C8,-142 3,-142 1,-138M0,-136C1,-130 1,-126 -1,-122M-7,-120C-3,-118 3,-118 7,-120')}" fill="none" stroke="#5c7a40" stroke-width="1.6" stroke-linecap="round"/>`);
     s.path(place(U(taper([[-8, -118], [-9, -110], [-7, -100]], [4, 3, 0.6]), taper([[-2, -117], [-2, -106], [0, -96]], [4.4, 3.4, 0.6]), taper([[4, -117], [5, -108], [3, -99]], [4, 3, 0.6]), taper([[9, -118], [11, -111], [10, -104]], [3.4, 2.4, 0.5]))), '#3f5a2c');
+    s.add('</g>');
     // the shield of woven roots, a green bud at its boss
     const [sx, sy, sr] = [fx + 26 * K, fy - 80 * K, 27];
     s.figure(`<circle cx="${f1(sx)}" cy="${f1(sy)}" r="${sr}"/>`, { fill: '#1e2b15', rim: p.rim, offsets: [[-1, -1], [0.6, -1]], rimOp: 0.9, shade: 0.5 });
     // roots woven over and under each other, bound round with a twisted rim
     const cid = s.uid('c');
-    s.defs.push(`<clipPath id="${cid}"><circle cx="${f1(sx)}" cy="${f1(sy)}" r="${sr - 2}"/></clipPath>`);
+    s.defs.push(`<clipPath id="${cid}"><circle cx="${f1(sx)}" cy="${f1(sy)}" r="${sr - 2}" visibility="visible"/></clipPath>`);
     let warp = '', weft = '';
     for (let i = -3; i <= 3; i++) {
       const o = i * 8;
       warp += `M${f1(sx - 30)},${f1(sy + o - 10)}Q${f1(sx)},${f1(sy + o + 8)} ${f1(sx + 30)},${f1(sy + o - 10)}`;
       weft += `M${f1(sx + o - 10)},${f1(sy - 30)}Q${f1(sx + o + 8)},${f1(sy)} ${f1(sx + o - 10)},${f1(sy + 30)}`;
     }
+    s.add('<g data-part="weave">');
     s.add(`<g clip-path="url(#${cid})" fill="none" stroke-linecap="round"><path d="${warp}" stroke="#4d6a3a" stroke-width="3.2"/><path d="${weft}" stroke="#3e5830" stroke-width="3.2" stroke-dasharray="5 3"/></g>` +
       `<circle cx="${f1(sx)}" cy="${f1(sy)}" r="${sr - 1.4}" fill="none" stroke="#4a6638" stroke-width="3.4" stroke-dasharray="3 1.6"/>`);
     s.path(U([[0, 2], [70, -1], [128, 1], [200, -1], [250, 1], [315, -1]].map(([a, dir]) => {
       const r0 = rad(a);
       return taper([[sx + Math.cos(r0) * (sr - 1), sy + Math.sin(r0) * (sr - 1)], [sx + Math.cos(r0 + dir * 0.12) * (sr + 5), sy + Math.sin(r0 + dir * 0.12) * (sr + 5)], [sx + Math.cos(r0 + dir * 0.3) * (sr + 9), sy + Math.sin(r0 + dir * 0.3) * (sr + 9)]], [3.4, 2, 0.4]);
     })), '#1e2b15');
+    s.add('</g>');
     // its eyes and the bud, lit from inside
     const eyes = [[fx - 6.4 * K, fy - 134 * K], [fx + 6.4 * K, fy - 134 * K]];
-    for (const [x, y] of eyes) s.glow(x, y, 9, '#ecff9a', 0.9);
+    s.add('<g data-part="eyeglow">'); for (const [x, y] of eyes) s.glow(x, y, 9, '#ecff9a', 0.9); s.add('</g>');
     s.glow(sx, sy, 16, '#ecff9a', 0.8, 'breathe');
-    s.bloom(`<path d="${eyes.map(([x, y]) => lens(x, y, 6, 0, 0.4)).join('')}" fill="#f7ffc8"/>` +
-      `<path d="${leafAt(sx, sy + 2, -62, 7, 0.46) + leafAt(sx, sy + 2, -118, 7, 0.46)}" fill="#effcaa"/><circle cx="${f1(sx)}" cy="${f1(sy + 2)}" r="2" fill="#fbffe0"/>`, { sd: 1.4, k: 1.6, box: [fx - 50, fy - 150, 110, 110] });
+    s.bloom(`<g data-part="eyes"><path d="${eyes.map(([x, y]) => lens(x, y, 6, 0, 0.4)).join('')}" fill="#f7ffc8"/></g>` +
+      `<g data-part="bud"><path d="${leafAt(sx, sy + 2, -62, 7, 0.46) + leafAt(sx, sy + 2, -118, 7, 0.46)}" fill="#effcaa"/><circle cx="${f1(sx)}" cy="${f1(sy + 2)}" r="2" fill="#fbffe0"/></g>`, { sd: 1.4, k: 1.6, box: [fx - 50, fy - 150, 110, 110] });
     // grass and flowers at its feet
     const G = rng(9823), blades = [];
     for (let x = -8; x < 310; x += 3 + G() * 5) {
@@ -439,10 +441,13 @@ export const champions = {
     s.add(`<g fill="none" stroke="#e6faf6" stroke-width="1" opacity=".35"><path d="M40,140C80,110 120,86 168,64C196,52 214,44 230,40M70,150C110,124 150,104 196,90C214,84 222,80 228,74M120,156C150,140 186,128 230,118"/></g>`);
     // what the wave is carrying
     for (const [x, y] of [[66, 122], [104, 92], [204, 54], [236, 104], [176, 112]]) s.glow(x, y, 20, '#f0f8e8', 0.45, 'breathe');
-    const fishes = U(fish(46, 136, 11, -24), fish(60, 128, 9, -30), fish(132, 70, 10, -40), fish(146, 82, 8, -34), fish(218, 80, 11, 20),
-      fish(250, 92, 9, 40), fish(196, 128, 10, -10), fish(214, 138, 8, -14), fish(90, 112, 9, -28));
-    s.bloom(scroll(66, 122, -24, 0.9) + scroll(104, 92, 16, 0.8) + scroll(204, 54, -32, 0.9) + scroll(236, 104, 28, 0.8) + scroll(176, 112, -8, 0.85) +
-      `<path d="${fishes}" fill="#e6f1f2"/>` +
+    const fishAt = [[46, 136, 11, -24], [60, 128, 9, -30], [132, 70, 10, -40], [146, 82, 8, -34], [218, 80, 11, 20],
+      [250, 92, 9, 40], [196, 128, 10, -10], [214, 138, 8, -14], [90, 112, 9, -28]];
+    const fishes = fishAt.map((f, i) => `<g data-part="fish${i}"><path d="${fish(...f)}" fill="#e6f1f2"/></g>`).join('');
+    const scrolls = [[66, 122, -24, 0.9], [104, 92, 16, 0.8], [204, 54, -32, 0.9], [236, 104, 28, 0.8], [176, 112, -8, 0.85]]
+      .map((a, i) => `<g data-part="scroll${i}">${scroll(...a)}</g>`).join('');
+    s.bloom(scrolls +
+      fishes +
       `<path d="M150,40C170,30 190,20 220,16C240,18 256,26 266,38C272,48 270,58 266,64" fill="none" stroke="#f3fcf6" stroke-width="2.4" stroke-linecap="round"/>` +
       `<g fill="#f8fdf9">${[[268, 66, 2.4], [262, 70, 1.8], [256, 64, 1.6], [272, 58, 1.8], [240, 18, 1.6], [208, 15, 1.4], [180, 22, 1.4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`, { sd: 1.6, k: 1.25 });
     // the sea in front, the rock, the surf round it
@@ -470,8 +475,8 @@ export const champions = {
     s.figure(`<path d="${her}"/>`, { fill: p.fig, rim: p.rim, offsets: [[0, -1.3], [-1, -0.7], [1, -0.7]], rimOp: 0.95, shade: 0.45, edge: 0.32, halo: { op: 0.3, sd: 2.6, color: '#c6f4f6' }, light: [0.3, -1] });
     // the light in her raised hand
     const [hx, hy] = [fx + 15.5 * K, fy - 124 * K];
-    s.glow(hx, hy, 26, '#e6fdfc', 0.9, 'breathe');
-    s.add(`<circle cx="${f1(hx)}" cy="${f1(hy)}" r="2.4" fill="#f6fffe"/>`);
+    s.add('<g data-part="handlight">'); s.glow(hx, hy, 26, '#e6fdfc', 0.9);
+    s.add(`<circle cx="${f1(hx)}" cy="${f1(hy)}" r="2.4" fill="#f6fffe"/>`); s.add('</g>');
     s.add([[212, 66], [222, 78], [230, 60], [258, 74]].map(([x, y], i) =>
       `<ellipse class="fall" style="--d:${(-i * 0.4).toFixed(1)}s" cx="${x}" cy="${y}" rx="1.2" ry="1.8" fill="#f4fcf6"/>`).join(''));
     s.motes({ seed: 9842, n: 16, x: [40, 270], y: [30, 160], r: [0.4, 1.1], fill: '#c6f4f6', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.9] });

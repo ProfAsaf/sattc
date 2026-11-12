@@ -204,15 +204,21 @@ export const radiant = faction('radiant', {
       ell(102.5, 129, 6, 6.2),
       ell(103.5, 122.5, 9, 7.6, -10),
       ell(105.5, 126.5, 13.5, 2.3, -10),
-      ell(124, 152, 16.5, 20.5),
     ));
-    s.figure(`<path d="${kid}"/>`, { fill: p.fig, rim: p.rim, offsets: [[1.3, -0.7], [0.5, -1.3]], rimOp: 1, shade: 0.45, edge: 0.32, halo: 0.4 });
+    const kidShield = place(U(ell(124, 152, 16.5, 20.5)));
+    // (each piece carries the whole silhouette's two extreme corners as dots, so its gradient fill spans the same box as before)
+    const xs = [], ys = [];
+    (kid + kidShield).replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_, x, y) => { xs.push(+x); ys.push(+y); return ''; });
+    const box = `M${Math.min(...xs)},${Math.min(...ys)}ZM${Math.max(...xs)},${Math.max(...ys)}Z`;
+    s.figure(`<g data-part="kid"><path d="${kid}${box}"/></g><g data-part="shield"><path d="${kidShield}${box}"/></g>`, { fill: p.fig, rim: p.rim, offsets: [[1.3, -0.7], [0.5, -1.3]], rimOp: 1, shade: 0.45, edge: 0.32, halo: 0.4 });
     // a sun painted on the shield, its boss catching the light
     const [bx, by] = [kx(124), ky(152)];
+    s.add('<g data-part="sun">');
     s.add(`<g stroke="#6b5233" stroke-width="1.4" fill="none" opacity=".9"><ellipse cx="${f1(bx)}" cy="${f1(by)}" rx="${f1(11.5 * K)}" ry="${f1(14.5 * K)}"/>${
       Array.from({ length: 8 }, (_, i) => { const a = (i * Math.PI) / 4; return `<path d="M${f1(bx + Math.cos(a) * 4.5 * K)},${f1(by + Math.sin(a) * 5.6 * K)}L${f1(bx + Math.cos(a) * 8.5 * K)},${f1(by + Math.sin(a) * 10.6 * K)}"/>`; }).join('')}</g>`);
-    s.glow(bx, by, 16, '#ffd77a', 0.8, 'breathe');
+    s.glow(bx, by, 16, '#ffd77a', 0.8);
     s.bloom(`<circle cx="${f1(bx)}" cy="${f1(by)}" r="${f1(2.8 * K)}" fill="#ffefb8"/><path d="${glint(bx, by, 9)}" fill="#fffbea"/>`, { sd: 1.6, k: 1.5, box: [bx - 40, by - 40, 80, 80] });
+    s.add('</g>');
     s.motes({ seed: 502, n: 20, x: [40, 280], y: [40, 190], r: [0.4, 1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 0.9] });
     return s.svg();
   },
@@ -248,13 +254,16 @@ export const radiant = faction('radiant', {
     const heads = [];
     for (const [ph, t1] of [[Math.PI, 0.93], [0, 1]]) {
       const pts = strand(ph, t1);
-      spirits += `<path d="${taper(pts, [0.5, 3, 7, 11], { per: 3 })}" fill="${halo}"/><path d="${taper(pts, [0.3, 1.2, 2.6, 4.2], { per: 3 })}" fill="${trail}"/>`;
+      spirits += `<g data-part="helix"><path d="${taper(pts, [0.5, 3, 7, 11], { per: 3 })}" fill="${halo}"/><path d="${taper(pts, [0.3, 1.2, 2.6, 4.2], { per: 3 })}" fill="${trail}"/></g>`;
       heads.push(pts[pts.length - 1]);
     }
     for (const [x, y] of heads) {
-      s.glow(x, y, 24, '#fff1c2', 0.95, 'breathe');
+      const n = heads.findIndex((h) => h === heads.find((q) => q[0] === x && q[1] === y));
+      s.add(`<g data-part="soul${n}">`);
+      s.glow(x, y, 24, '#fff1c2', 0.95);
+      s.add('</g>');
       const wing = (d) => taper([[x + d * 1.5, y - 1], [x + d * 6, y - 6], [x + d * 11, y - 9.5], [x + d * 14, y - 9]], [3.4, 4.4, 2.6, 0.4]);
-      spirits += `<path d="${U(ell(x, y - 4.5, 2.9, 3), taper([[x, y - 1.5], [x, y + 4], [x, y + 10]], [4.4, 3.2, 0.4]), wing(-1), wing(1))}" fill="#fffbea"/>`;
+      spirits += `<g data-part="soul${n}"><path d="${U(ell(x, y - 4.5, 2.9, 3), taper([[x, y - 1.5], [x, y + 4], [x, y + 10]], [4.4, 3.2, 0.4]), wing(-1), wing(1))}" fill="#fffbea"/></g>`;
     }
     s.bloom(spirits, { sd: 1.8, k: 1.3, box: [96, 20, 132, 180] });
     // wheat in the foreground, taller at the edges
@@ -285,11 +294,13 @@ export const radiant = faction('radiant', {
     s.path(poly([[112, 214], ...spline([[118, 186], [128, 166], [146, 155], [168, 151], [192, 148], [212, 152], [228, 164], [240, 186]], 6), [246, 214]]), s.lin([[0, '#45362a'], [1, '#2a2017']]));
     // the gonfalon, lit through by the sun
     const gon = poly([[122, 33], [166, 33], [165.5, 58], [162, 84], [158, 103], [155, 112], [146, 98], [137, 123], [129, 98], [114, 113], [118, 88], [120.5, 60]]);
+    s.add('<g data-part="banner">');
     s.path(gon, s.rad([[0, '#fff4d0'], [0.55, '#f5c766'], [1, '#d48d3c']], { cx: 0.5, cy: 0.4, r: 0.65 }), 'opacity=".96"');
     s.add(`<path d="${taper([[133, 35], [132, 62], [130, 96]], [5, 8, 4])}" fill="#a86424" opacity=".18"/>` +
       `<path d="${taper([[154, 35], [154, 62], [151, 96]], [5, 8, 4])}" fill="#a86424" opacity=".18"/>`);
     s.add(`<g stroke="#a3652a" stroke-width="1.5" fill="none" opacity=".6"><circle cx="144" cy="52" r="6.5"/><path d="${
       Array.from({ length: 8 }, (_, i) => { const a = (i * Math.PI) / 4; return `M${f1(144 + Math.cos(a) * 9)},${f1(52 + Math.sin(a) * 9)}L${f1(144 + Math.cos(a) * 12.5)},${f1(52 + Math.sin(a) * 12.5)}`; }).join('')}"/></g>`);
+    s.add('</g>');
     // the captain
     const cap = U(
       taper([[155, 118], [151, 134], [147, 148]], [8.4, 6.8, 5.4]),
@@ -330,7 +341,7 @@ export const radiant = faction('radiant', {
         crowd.push(taper([[bx, 216], [tx, ty]], [2.2, 1.8]), poly([[tx - 2.2, ty + 1], [tx, ty - 9], [tx + 2.2, ty + 1]]));
       }
     }
-    s.figure(`<path d="${U(crowd)}"/>`, { fill: '#1d150e', rim: '#f0d9a0', offsets: [[0, -1.1]], rimOp: 0.55 });
+    s.figure(`<g data-part="army"><path d="${U(crowd)}"/></g>`, { fill: '#1d150e', rim: '#f0d9a0', offsets: [[0, -1.1]], rimOp: 0.55 });
     s.motes({ seed: 525, n: 18, x: [40, 260], y: [20, 170], r: [0.4, 1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 0.9] });
     return s.svg();
   },
@@ -354,11 +365,13 @@ export const radiant = faction('radiant', {
     const topE = spline([[73, 24], [100, 18], [130, 28], [160, 20], [190, 30], [216, 24], [238, 33]], 5);
     const botE = spline([[75, 66], [102, 62], [132, 74], [162, 66], [190, 78], [214, 72]], 5);
     const flag = poly([...topE, [258, 37], [233, 46], [254, 57], [227, 59], [246, 74], ...botE.reverse()]);
+    s.add('<g data-part="flag">');
     s.path(flag, s.lin([[0, '#dfa04a'], [0.55, '#f6cb74'], [1, '#fff3d0']], { x1: 0, y1: 0, x2: 1, y2: 0 }), 'opacity=".9"');
     s.add(`<path d="${taper([[131, 29], [131, 51], [132, 73]], [7, 10, 7])}" fill="#9b5c22" opacity=".2"/>` +
       `<path d="${taper([[191, 31], [190, 54], [190, 77]], [7, 10, 7])}" fill="#9b5c22" opacity=".14"/>`);
     s.add(`<g stroke="#9a6326" stroke-width="1.5" fill="none" opacity=".55"><circle cx="106" cy="43" r="6.5"/><path d="${
       Array.from({ length: 8 }, (_, i) => { const a = (i * Math.PI) / 4; return `M${f1(106 + Math.cos(a) * 9)},${f1(43 + Math.sin(a) * 9)}L${f1(106 + Math.cos(a) * 12.5)},${f1(43 + Math.sin(a) * 12.5)}`; }).join('')}"/></g>`);
+    s.add('</g>');
     // the hill, its grass flattened by the wind
     const hill = spline([[-10, 198], [30, 190], [70, 181], [102, 178], [136, 179], [176, 186], [226, 196], [310, 206]], 6);
     s.path(poly([...hill, [310, 214], [-10, 214]]), '#2a2016');
@@ -408,8 +421,8 @@ export const radiant = faction('radiant', {
     const puffs = (list) => U(list.map(([x, y, r]) => ell(x, y, r * 1.25, r)));
     const left = puffs([[40, -20, 64], [-4, 52, 22], [24, 60, 17], [50, 54, 19], [78, 58, 16], [104, 46, 17], [126, 30, 15], [140, 12, 13]]);
     const right = puffs([[262, -20, 64], [198, 12, 13], [212, 32, 15], [236, 46, 18], [262, 56, 19], [290, 50, 21], [308, 62, 17]]);
-    s.figure(`<path d="${left}"/>`, { fill: '#4d5565', rim: '#ffe2a6', offsets: [[1.8, 0.6], [0.6, 1.8]], rimOp: 0.85 });
-    s.figure(`<path d="${right}"/>`, { fill: '#4d5565', rim: '#ffe2a6', offsets: [[-1.8, 0.6], [-0.6, 1.8]], rimOp: 0.85 });
+    s.figure(`<g data-part="cloudL"><path d="${left}"/></g>`, { fill: '#4d5565', rim: '#ffe2a6', offsets: [[1.8, 0.6], [0.6, 1.8]], rimOp: 0.85 });
+    s.figure(`<g data-part="cloudR"><path d="${right}"/></g>`, { fill: '#4d5565', rim: '#ffe2a6', offsets: [[-1.8, 0.6], [-0.6, 1.8]], rimOp: 0.85 });
     s.glow(170, 10, 34, '#fffaf0', 0.9, 'breathe');
     s.layer(ridge({ seed: 542, base: 154, amp: 10, freq: 2.4 }), '#8d887c', { blur: 0.6 });
     s.haze(134, 156, '#fff0c8', 0.3, 4);
@@ -444,8 +457,10 @@ export const radiant = faction('radiant', {
     for (const x of [84, 216]) s.glow(x, 140, 46, '#fff1c4', 0.75, 'breathe');
     const spL = U(soldier(84, 183, 0.92));
     const sp = spL + mirror(spL);
+    s.add('<g data-part="spirits">');
     s.path(sp, ghost);
     s.add(`<path d="${sp}" fill="none" stroke="${edge}" stroke-width=".8"/>`);
+    s.add('</g>');
     s.motes({ seed: 562, n: 14, x: [58, 112], y: [100, 190], r: [0.4, 1.1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [4, 7], op: [0.5, 1] });
     s.motes({ seed: 563, n: 14, x: [188, 242], y: [100, 190], r: [0.4, 1.1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [4, 7], op: [0.5, 1] });
     // the captain, sword planted
@@ -492,7 +507,9 @@ export const radiant = faction('radiant', {
       const y = 186 - 150 * Math.pow(R(), 1.2), up = 186 - y;
       big.push([168 + Math.sin(up / 26) * 10 + (R() + R() - 1) * (10 + up * 0.45), y, 1.1 + R() * 1]);
     }
+    s.add('<g data-part="river">');
     s.bloom(`<path d="${dots(small)}" fill="#ffe6a8" opacity=".85"/><path d="${dots(big)}" fill="#fff6dc"/>`, { sd: 1.5, k: 1.3, box: [60, 0, 220, 210] });
+    s.add('</g>');
     s.glow(168, 160, 44, '#fff0c0', 0.55, 'breathe');
     s.motes({ seed: 573, n: 30, x: [118, 222], y: [60, 190], r: [0.5, 1.2], fill: '#ffe2a0', hot: '#ffffff', cls: 'rise', t: [5, 10], op: [0.5, 1] });
     s.path(poly([...spline([[-10, 140], [40, 146], [92, 166], [130, 182], [168, 190], [206, 182], [246, 162], [280, 150], [310, 144]], 6), [310, 214], [-10, 214]]), '#171a2c');

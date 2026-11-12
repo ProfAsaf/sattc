@@ -80,12 +80,13 @@ export const multi = {
     s.add(`<g fill="#2e1d34" opacity=".55">${[[150, 44, 40], [112, 24, 34], [192, 20, 38], [150, 2, 48]].map(([x, y, r]) =>
       `<ellipse class="drift" cx="${x}" cy="${y}" rx="${r * 1.3}" ry="${r * 0.8}"/>`).join('')}</g>`);
     const gfill = s.lin([[0, '#d6c4f6', 0.42], [0.4, '#a98fdc', 0.2], [1, '#a98fdc', 0]]);
+    let gi = 0;
     for (const [x, y, k, lean, up, t] of [[96, 40, 1, 7, 1, 9], [206, 30, 0.95, -7, -1, 11], [156, 12, 0.72, 4, 1, 8]]) {
       // long heads, hollow slanted eyes, mouths stretched open, bodies
       // unravelling into the smoke
       const body = U(ell(x, y, 5.2 * k, 11 * k), taper([[x, y + 6 * k], [x + lean, y + 24 * k], [x - lean * 0.7, y + 44 * k], [x + lean * 0.5, y + 66 * k], [x - lean * 0.2, y + 80 * k]], [10 * k, 8 * k, 5 * k, 2 * k, 0.3 * k]),
         taper([[x - up * 3 * k, y + 12 * k], [x - up * 9 * k, y + 22 * k], [x - up * 8 * k, y + 34 * k]], [3 * k, 2 * k, 0.3 * k]));
-      s.add(`<g class="float" style="--t:${t}s;--d:-${t / 3}s"><path d="${body}" fill="${gfill}"/><g fill="#0b0810" opacity=".8">` +
+      s.add(`<g data-part="ghost${gi++}"><path d="${body}" fill="${gfill}"/><g fill="#0b0810" opacity=".8">` +
         `<ellipse cx="${f1(x - 2.4 * k)}" cy="${f1(y - 2 * k)}" rx="${f1(1.1 * k)}" ry="${f1(2.6 * k)}" transform="rotate(-18 ${f1(x - 2.4 * k)} ${f1(y - 2 * k)})"/>` +
         `<ellipse cx="${f1(x + 2.4 * k)}" cy="${f1(y - 2 * k)}" rx="${f1(1.1 * k)}" ry="${f1(2.6 * k)}" transform="rotate(18 ${f1(x + 2.4 * k)} ${f1(y - 2 * k)})"/>` +
         `<ellipse cx="${f1(x)}" cy="${f1(y + 5.4 * k)}" rx="${f1(1.4 * k)}" ry="${f1(3.6 * k)}"/></g></g>`);
@@ -97,9 +98,11 @@ export const multi = {
     const outer = U(flame(150, 150, 122, -8, 36), flame(130, 150, 94, -18, 26, -0.14), flame(171, 150, 102, 16, 27),
       flame(114, 154, 66, -14, 19), flame(187, 154, 74, 16, 19, -0.14), flame(141, 142, 108, 12, 16, -0.16), flame(160, 144, 88, -12, 15),
       flame(104, 160, 40, -10, 13), flame(198, 160, 46, 12, 13, -0.14));
+    s.add('<g data-part="flames">');
     s.bloom(`<path d="${outer}" fill="${s.lin([[0, '#9a5cf0', 0], [0.2, '#a868f4', 0.85], [0.48, '#d65aa6', 0.92], [0.7, '#ff7a2e', 1], [1, '#ffc35a', 1]])}"/>` +
       `<path d="${U(flame(150, 148, 82, -5, 21), flame(135, 148, 58, -10, 13, -0.14), flame(165, 148, 64, 10, 14))}" fill="${s.lin([[0, '#efe2ff', 0], [0.3, '#e7d2ff', 0.8], [0.7, '#ffd27a', 1], [1, '#fff6de', 1]])}"/>`,
     { sd: 2.6, k: 1.2, box: [60, -10, 180, 200] });
+    s.add('</g>');
     // the pyre and the shrouded body on it
     s.glow(150, 162, 58, '#ffb347', 0.95);
     const pyre = U(
@@ -110,8 +113,10 @@ export const multi = {
       ell(121.5, 130, 6, 5),
     );
     s.figure(`<path d="${pyre}"/>`, { fill: '#120708', rim: '#ff9447', offsets: [[0, -1.2], [-0.8, -0.6], [0.8, -0.6]], rimOp: 0.9, shade: 0.5, halo: 0.3 });
+    s.add('<g data-part="tongues">');
     s.bloom(`<path d="${U(flame(118, 172, 12, -3, 5), flame(184, 172, 13, 3, 5, -0.14), flame(132, 161, 11, -2, 4.4, -0.14), flame(166, 161, 12, 2, 4.4), flame(146, 150.5, 10, 2, 4))}" fill="${s.lin([[0, '#ffe8a0', 0.85], [1, '#ff7a2e', 1]])}"/>`,
       { sd: 1.4, k: 1.4, box: [96, 126, 110, 60] });
+    s.add('</g>');
     // mourners at the edges, hoods bowed
     const mourner = U(
       blob([[24, 214], [26, 178], [30, 152], [36, 134], [46, 128], [56, 134], [62, 156], [67, 214]]),
@@ -260,13 +265,17 @@ export const multi = {
     );
     s.figure(`<g ${big}><path d="${man}"/></g>`, { fill: '#070b13', rim: '#a6e4ec', offsets: [[1.3, 0.5], [0.8, 1], [0, -1]], rimOp: 0.85, shade: 0.5, edge: 0.3, halo: 0.35 });
     s.add(`<g ${big}>`);
+    s.add('<g data-part="face">');
     s.path(poly([[160.5, 96], [163.5, 98], [165.5, 102.5], [163.8, 103.4], [164.3, 105.6], [161, 106.4], [158.4, 102]]), '#cfe3e8', 'opacity=".9"');
+    s.add('</g>');
     // the open book, pages lit from within, black water running off them
+    s.add('<g data-part="book">');
     s.add(`<g ${s.fx('bloom', { sd: 1.4, k: 1.3 })}><path d="${poly([[159, 112.5], [172, 116.5], [172, 121.5], [160, 118]])}" fill="#effdfb"/>` +
       `<path d="${poly([[172, 116.5], [186, 111.5], [185, 117], [172, 121.5]])}" fill="#def8f5"/>` +
       '<path d="M162,114.6L170,117M162,116.4L169,118.6M174.5,116.8L183,113.8M174.5,118.6L182,115.8" stroke="#7fa7b0" stroke-width=".5"/></g>');
     s.path(U(taper([[164, 118.6], [164.4, 124], [164.8, 129]], [2, 1.4, 0.4]), taper([[177, 119.6], [177.3, 126], [177.6, 133]], [2.2, 1.5, 0.4]),
       taper([[183, 117.6], [183.2, 122], [183.4, 126]], [1.6, 1.1, 0.3])), '#05070d', 'stroke="#8d6ad8" stroke-width=".4"');
+    s.add('</g>');
     s.add([[164.8, 140, 0], [177.6, 148, 0.5], [183.4, 136, 1.1], [177.6, 160, 0.8]].map(([x, y, d]) =>
       `<ellipse class="fall" style="--d:-${d}s" cx="${x}" cy="${y}" rx="1.1" ry="1.7" fill="#05070d" stroke="#8d6ad8" stroke-width=".4"/>`).join(''));
     s.add('</g>');
@@ -390,10 +399,11 @@ export const multi = {
       taper([[184, 84], [188, 92], [186, 100]], [2.6, 1.8, 0.3]), taper([[194, 86], [196, 94]], [2.2, 0.3]),
       taper([[90, 106], [86, 114]], [2.2, 0.3]), taper([[200, 116], [206, 122]], [2.2, 0.3]),
     );
-    s.add(`<g ${tilt}><g ${s.fx('bloom', { sd: 1.4, k: 1.4 })}><path d="${stripes}" fill="#ff6a1f" opacity=".45" stroke="#ff7a2e" stroke-width="2.4" stroke-linejoin="round"/><path d="${stripes}" fill="#ffcc78"/></g>`);
+    s.add(`<g ${tilt}><g data-part="stripes" ${s.fx('bloom', { sd: 1.4, k: 1.4 })}><path d="${stripes}" fill="#ff6a1f" opacity=".45" stroke="#ff7a2e" stroke-width="2.4" stroke-linejoin="round"/><path d="${stripes}" fill="#ffcc78"/></g>`);
+    s.add('<g data-part="face">');
     s.glow(222, 92, 7, '#ffcf5a', 0.9);
     s.add(`<ellipse cx="222" cy="92" rx="2.8" ry="1.5" fill="#fff0b0" transform="rotate(12 222 92)"/>` +
-      `<path d="${U(taper([[227, 104], [228.5, 113], [230, 122]], [3, 2.2, 0.3]), taper([[220, 106], [221, 113], [222.5, 119]], [2.4, 1.8, 0.3]))}" fill="#f3e3c0"/></g>`);
+      `<path d="${U(taper([[227, 104], [228.5, 113], [230, 122]], [3, 2.2, 0.3]), taper([[220, 106], [221, 113], [222.5, 119]], [2.4, 1.8, 0.3]))}" fill="#f3e3c0"/></g></g>`);
     // big leaves in the foreground
     const R = rng(643);
     const fronds = [];
@@ -443,8 +453,8 @@ export const multi = {
       taper([[146, 113], [143.5, 121], [140, 126]], [5.4, 4.4, 3.6]), taper([[154, 113], [158, 120], [162.5, 124]], [5.4, 4.4, 3.6]),
       taper([[143, 92], [135, 95], [128.5, 92]], [4.4, 3.6, 3]), ell(127.5, 91.5, 2.6, 2.4),
       taper([[157, 92], [165, 95], [171.5, 92]], [4.4, 3.6, 3]), ell(172.5, 91.5, 2.6, 2.4));
-    s.bloom(`<path d="${wing(-1) + wing(1)}" fill="${wf}"/><path d="${child}" fill="#fffdf4"/>` +
-      '<ellipse cx="150" cy="69" rx="8" ry="2.4" fill="none" stroke="#fff3c6" stroke-width="1.2" opacity=".9"/>', { sd: 2, k: 1.2, box: [80, 36, 140, 110] });
+    s.bloom(`<g data-part="wingL"><path d="${wing(-1)}" fill="${wf}"/></g><g data-part="wingR"><path d="${wing(1)}" fill="${wf}"/></g><g data-part="child"><path d="${child}" fill="#fffdf4"/></g>` +
+      '<g data-part="halo"><ellipse cx="150" cy="69" rx="8" ry="2.4" fill="none" stroke="#fff3c6" stroke-width="1.2" opacity=".9"/></g>', { sd: 2, k: 1.2, box: [80, 36, 140, 110] });
     s.motes({ seed: 654, n: 22, x: [96, 204], y: [56, 150], r: [0.4, 1.1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [4, 8], op: [0.5, 1] });
     s.motes({ seed: 655, n: 10, x: [132, 168], y: [120, 175], r: [0.35, 0.8], fill: '#ffdf98', hot: '#ffffff', cls: 'rise', t: [3, 6], op: [0.5, 1] });
     return s.svg();
@@ -468,9 +478,11 @@ export const multi = {
     s.figure(`<path d="${hand}"/>`, { fill: '#120c07', rim: '#ffcf6a', offsets: [[0, -1.3], [-0.7, -1], [0.7, -1]], rimOp: 0.9, shade: 0.5, edge: 0.3, halo: 0.35 });
     s.add('<ellipse cx="178" cy="150" rx="30" ry="4.6" fill="#ffcf6a" opacity=".13"/>');
     // the spark
-    s.glow(152, 86, 18, '#fff6d8', 1, 'breathe');
+    s.add('<g data-part="spark">');
+    s.glow(152, 86, 18, '#fff6d8', 1);
     s.bloom(`<path d="${glint(152, 86, 15, 0.12)}" fill="#fffbea"/><path d="${rot(glint(152, 86, 8, 0.2), 152, 86, 45)}" fill="#fff3cc"/><circle cx="152" cy="86" r="2.6" fill="#ffffff"/>`,
       { sd: 2, k: 1.5, box: [112, 46, 80, 80] });
+    s.add('</g>');
     s.motes({ seed: 661, n: 16, x: [116, 190], y: [52, 126], r: [0.3, 0.75], fill: '#ffd27a', hot: '#fffaea', cls: 'twinkle', op: [0.3, 0.9], t: [1.5, 3.5] });
     return s.svg();
   },

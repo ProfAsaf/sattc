@@ -132,12 +132,12 @@ const tide = faction('tide', {
     const tail = taper([[0, 32], [0.6, 48], [-1.2, 68], [-4.5, 92]], [3, 1.9, 1, 0.25]);
     const tf = 'translate(150 84) rotate(-18) scale(.92 .86)';
     const mist = s.lin([[0, '#f6efd8', 0.8], [1, '#f6efd8', 0]]);
-    s.add(`<g transform="${tf}" fill="${mist}">${[1, -1].map((k) =>
+    s.add(`<g data-part="mist" transform="${tf}" fill="${mist}">${[1, -1].map((k) =>
       `<path d="${taper([[91 * k, 25], [95 * k, 46], [99 * k, 72], [102 * k, 108]], [9, 6.5, 4, 0.8])}" opacity=".42"/>` +
       `<path d="${taper([[91 * k, 25], [95 * k, 46], [99 * k, 72], [102 * k, 108]], [2.8, 1.9, 1.1, 0.2])}" opacity=".95"/>` +
       `<path d="${taper([[66 * k, 19], [68 * k, 40], [71 * k, 64]], [3.4, 1.8, 0.3])}" opacity=".3"/>`).join('')}</g>`);
     s.figure(`<g transform="${tf}">${P(body)}${P(tail)}</g>`, { fill: p.fig, rim: '#f0e3bf', offsets: [[1, 0.8], [1.2, -0.3]], rimOp: 0.9, shade: 0.5, halo: 0.3 });
-    s.add(`<g transform="${tf}" fill="#f4f3d6"><circle cx="-15.6" cy="-13" r="1.1"/><circle cx="15.6" cy="-13" r="1.1"/></g>`);
+    s.add(`<g data-part="eyes" transform="${tf}" fill="#f4f3d6"><circle cx="-15.6" cy="-13" r="1.1"/><circle cx="15.6" cy="-13" r="1.1"/></g>`);
     // wisps it is gliding through
     s.add(`<g fill="#d8e6d8">${[[64, 118, 52, 3.2, 0.32], [236, 56, 40, 2.4, 0.22], [112, 34, 30, 2, 0.18], [196, 128, 34, 2.4, 0.26]].map(([x, y, rx, ry, o]) =>
       `<ellipse class="drift" cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" opacity="${o}"/>`).join('')}</g>`);
@@ -159,6 +159,7 @@ const tide = faction('tide', {
     const outer = [[312, 120], [310, 72], [298, 42], [276, 22], [246, 10], [214, 9], [184, 15], [156, 27], [132, 41], [113, 55], [100, 69], [92, 84]];
     const inner = [[92, 84], [99, 80], [109, 71], [122, 63], [140, 58], [160, 58], [180, 64], [196, 76], [207, 94], [212, 116], [210, 140], [202, 160], [190, 178], [176, 196], [166, 214]];
     const wave = poly([[312, 214], ...spline(outer, 6), ...spline(inner, 6).slice(1)]);
+    s.add('<g data-part="wave">');
     s.figure(P(wave), { fill: s.linU(100, 40, 290, 170, [[0, '#6fb4b2'], [0.18, '#3c8690'], [0.45, '#1a5561'], [1, '#062530']]), rim: '#f2fbf4', offsets: [[-1, -1.2], [0, -1.4]], rimOp: 0.9 });
     // light caught under the lip, and the run of the water up the face
     const back = [[180, 214], [200, 186], [216, 164], [226, 140], [228, 114], [222, 90], [210, 72], [192, 58], [170, 50], [148, 48], [126, 53], [108, 63], [97, 76]];
@@ -174,13 +175,16 @@ const tide = faction('tide', {
       taper([[106, 74], [107, 84]], [2.2, 0.3]),
       taper([[116, 66], [119, 76]], [2, 0.3]),
     ])}${circ([[87, 112, 1.5], [95, 108, 1.1], [83, 100, 1.2], [104, 92, 1], [252, 10, 2.4], [232, 8, 2.2], [210, 10, 2], [188, 15, 1.8], [164, 25, 1.6], [142, 37, 1.4]])}</g>`);
+    s.add('</g>');
     // the beach he came up, his footprints and the furrows his heels dug
     s.path(ledge([[-10, 160], [24, 163], [58, 169], [86, 177], [108, 186], [126, 198], [136, 214]]), s.lin([[0, '#7f978d'], [1, '#2c423f']]));
     s.add(`<g fill="#3b5552" opacity=".8">${[[14, 165], [26, 168], [38, 168], [50, 172], [62, 173]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.6" ry="1.1"/>`).join('')}</g>`);
     s.add('<path d="M70,177L94,180M72,180L95,183" stroke="#3b5552" stroke-width="1.2" opacity=".8"/>');
     // the backwash, pulling everything toward the wave
+    s.add('<g data-part="wash">');
     s.add('<g fill="none" stroke="#eef8f2" stroke-linecap="round"><path d="M66,174C100,168 132,166 170,172" stroke-width="2" opacity=".7"/>' +
       '<path d="M84,186C112,180 142,180 178,186" stroke-width="1.6" opacity=".55"/><path d="M98,198C124,192 152,194 184,200" stroke-width="1.4" opacity=".45"/></g>');
+    s.add('</g>');
     // the knight: leaning for the shore, sword up, cape and plume torn seaward
     const knight = parts([
       taper([[121, 140], [114, 150], [110, 158]], [9, 8, 7]),
@@ -201,11 +205,14 @@ const tide = faction('tide', {
       '<circle cx="124" cy="69" r="3.4"/><circle cx="125.5" cy="75" r="2"/><circle cx="83" cy="124" r="3.2"/><ellipse cx="98" cy="178" rx="6" ry="2.6"/>';
     s.figure(knight, { fill: p.fig, rim: p.rim, offsets: [[-1.2, -0.8], [-0.4, -1.2]], rimOp: 0.95, shade: 0.4, halo: 0.3 });
     s.bloom(`<path d="${taper([[123.5, 65], [118.5, 45], [114, 27]], [3.4, 2.8, 0.3])}" fill="#f2fdfa"/>`, { sd: 1.4, k: 1.4, box: [96, 12, 46, 68] });
+    s.add('</g>');
     // white water round his legs, streaming off toward the wave
+    s.add('<g data-part="foam">');
     s.add(`<g fill="#eef8f2">${[[100, 177, 9, 2.6, 0.9], [151, 171, 8, 2.6, 0.85], [126, 176, 18, 3, 0.55]].map(([x, y, rx, ry, o]) =>
       `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" opacity="${o}"/>`).join('')}</g>`);
     s.add('<g fill="none" stroke="#eef8f2" stroke-width="1.2" opacity=".7" stroke-linecap="round"><path d="M108,179C122,177 136,178 150,176M157,172C166,171 174,172 182,175"/></g>');
     s.add(drops([[88, 118], [97, 113], [83, 108], [104, 102]], '#f4fcf6'));
+    s.add('</g>');
     s.add(particles({ seed: 634, n: 14, x: [92, 240], y: [20, 120], r: [0.5, 1.4], fill: '#f4fcf6', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
     return s.svg();
   },
@@ -231,9 +238,11 @@ const tide = faction('tide', {
       taper([[84, 74], [76, 96], [78, 118], [90, 136]], [30, 26, 18, 5]),
       taper([[70, 72], [60, 67]], [4.4, 0.4]), taper([[64, 92], [54, 91]], [4, 0.4]),
     ]);
+    s.add('<g data-part="monster">');
     s.figure(monster, { fill: '#0a2129', rim: p.rim, offsets: [[1.2, 0.2], [0.6, -1]], rimOp: 0.85, halo: 0.3 });
     s.glow(114, 50, 7, '#f4f3d6', 0.8);
     s.add('<ellipse cx="114" cy="50" rx="2.6" ry="1.5" fill="#f8f6dc" transform="rotate(14 114 50)"/>');
+    s.add('</g>');
     // the spiral: four streams unwound from the beast, winding in to the bubble
     const spiral = (a0, r0, turns, n = 18) => Array.from({ length: n }, (_, i) => {
       const t = i / (n - 1), a = a0 + turns * 2 * Math.PI * t, r = r0 * Math.pow(24 / r0, t);
@@ -242,15 +251,23 @@ const tide = faction('tide', {
     const widths = (n, w0) => Array.from({ length: n }, (_, i) => w0 * Math.pow(1 - i / (n - 1), 1.1) + 0.5);
     const arms = [[0.93, 124, 1.05, 9], [1, 136, 1, 7], [0.86, 116, 1.1, 6], [1.08, 150, 0.95, 5]].map(([a0, r0, tn, w]) => [spiral(Math.PI * a0, r0, tn), w]);
     const flow = s.linU(70, 120, 214, 120, [[0, '#bfeef0', 0.1], [0.5, '#d9f7f6', 0.45], [1, '#f2fffd', 0.85]]);
+    s.add('<g data-part="spiral">');
     s.add(`<g fill="${flow}">${parts(arms.map(([pts, w]) => taper(pts, widths(pts.length, w))))}</g>`);
     s.add(`<g fill="none" stroke="#f2fffd" stroke-width=".6" opacity=".55">${arms.map(([pts]) => `<path d="${line(pts.slice(6))}"/>`).join('')}</g>`);
+    s.add('</g>');
     // the bubble, and what is left of the monster
     s.glow(C[0], C[1], 40, '#e6fdfc', 0.7, 'breathe');
+    s.add('<g data-part="bubble">');
     s.add(`<circle cx="${C[0]}" cy="${C[1]}" r="22" fill="${s.rad([[0, '#a6e2e2', 0.5], [0.72, '#7cc7cc', 0.55], [0.92, '#d9f8f6', 0.85], [1, '#f2fffd', 0.95]], { cx: 0.44, cy: 0.42, r: 0.56 })}"/>`);
+    s.add('</g>');
     const fx = `translate(${C[0] - 2} ${C[1] + 2}) scale(1.15)`;
+    s.add('<g data-part="fish">');
     s.figure(`<g transform="${fx}">${fishShape(true)}</g>`, { fill: p.fig, rim: p.rim, offsets: [[0, -1], [-0.8, -0.6]], rimOp: 0.9 });
     s.add(`<g transform="${fx}">${fishFace(p.rim)}</g>`);
+    s.add('</g>');
+    s.add('<g data-part="shine">');
     s.bloom(`<path d="M${C[0] - 15},${C[1] - 9}A17,17 0 0 1 ${C[0] - 4},${C[1] - 18}" stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round"/>`, { sd: 1.2, k: 1.3, box: [C[0] - 30, C[1] - 30, 40, 36] });
+    s.add('</g>');
     s.add(`<ellipse cx="${C[0]}" cy="${hz + 6}" rx="30" ry="3" fill="#c6f4f6" opacity=".3"/>`);
     s.add(particles({ seed: 643, n: 14, x: [150, 250], y: [70, 170], r: [0.7, 1.9], stroke: '#cdf3f6', cls: 'rise', t: [6, 11], op: [0.4, 0.9] }));
     return s.svg();
@@ -276,31 +293,31 @@ const tide = faction('tide', {
     s.add('<g fill="none" stroke="#e9f8f2" stroke-width="1.4" opacity=".6" stroke-linecap="round"><path d="M80,178q8,-3 16,0M88,190q10,-3 20,0M224,180q-8,-3 -16,0M218,192q-10,-3 -20,0"/></g>');
     // the sage: hood down, hair and scarf and one sleeve streaming on the wind,
     // her robe billowing back with her bare feet below it
-    const sage = parts([
+    const sage = `<g data-part="hair">${parts([
       taper([[131, 55], [146, 51], [162, 53], [180, 48]], [8, 6, 4, 0.5]),
       taper([[133, 61], [150, 61], [168, 65], [186, 62]], [6, 4.5, 3, 0.4]),
-      taper([[136, 70], [156, 74], [178, 72], [200, 78], [224, 73]], [5, 5, 4.5, 3.5, 1]),
+    ])}</g><g data-part="scarf">${parts([taper([[136, 70], [156, 74], [178, 72], [200, 78], [224, 73]], [5, 5, 4.5, 3.5, 1])])}</g>` + parts([
       taper([[131, 64], [135, 72]], [4.4, 5]),
       taper([[136, 72], [140, 86], [144, 100]], [14, 15, 14]),
-      poly([[136, 97], [150, 97], [166, 103], [186, 111], [208, 117], [196, 121], [205, 129], [186, 129], [190, 137], [170, 135], [157, 139], [146, 137], [138, 127], [134, 111]]),
+    ]) + `<g data-part="robe">${parts([poly([[136, 97], [150, 97], [166, 103], [186, 111], [208, 117], [196, 121], [205, 129], [186, 129], [190, 137], [170, 135], [157, 139], [146, 137], [138, 127], [134, 111]])])}</g>` + parts([
       taper([[144, 132], [143, 146], [141, 156]], [6, 5, 4]),
       taper([[152, 134], [154, 147], [157, 156]], [6, 5, 4]),
       taper([[141, 155], [137, 162]], [4, 1.4]),
       taper([[157, 155], [156, 163]], [4, 1.4]),
-      taper([[134, 76], [124, 86], [115, 84]], [8, 9, 6]),
-      poly([[128, 82], [122, 92], [126, 100], [132, 90]]),
-      taper([[140, 75], [152, 69], [164, 63]], [7, 6, 4.6]),
-      poly([[146, 73], [156, 68], [166, 64], [178, 66], [192, 61], [184, 71], [170, 73], [156, 78]]),
-    ]) + '<circle cx="128" cy="58.5" r="6.6"/><ellipse cx="134.5" cy="66" rx="6" ry="4.4"/><circle cx="166" cy="61.8" r="2.8"/><circle cx="114" cy="83" r="2.8"/>';
+    ]) + `<g data-part="arm">${parts([taper([[134, 76], [124, 86], [115, 84]], [8, 9, 6]), poly([[128, 82], [122, 92], [126, 100], [132, 90]])])}<circle cx="114" cy="83" r="2.8"/></g>` +
+      `<g data-part="sleeve">${parts([taper([[140, 75], [152, 69], [164, 63]], [7, 6, 4.6]), poly([[146, 73], [156, 68], [166, 64], [178, 66], [192, 61], [184, 71], [170, 73], [156, 78]])])}<circle cx="166" cy="61.8" r="2.8"/></g>` +
+      '<circle cx="128" cy="58.5" r="6.6"/><ellipse cx="134.5" cy="66" rx="6" ry="4.4"/>';
     s.figure(sage, { fill: p.fig, rim: p.rim, offsets: [[0, -1.3], [-0.8, -0.9], [0.9, -0.8]], rimOp: 0.95, shade: 0.4, halo: 0.3 });
     // the open book, glowing
     s.glow(106, 78, 26, '#f4f3d6', 0.7, 'breathe');
+    s.add('<g data-part="book">');
     s.bloom('<path d="M95,75Q101,71 107,76Q113,71 119,75L117,85Q112,81 107,86Q102,81 97,85Z" fill="#fbf6dc"/>' +
       '<path d="M99,77.5Q103,75.5 106,78M108,78Q111,75.5 115,77.5M99.5,80.5Q103,78.5 106,81M108,81Q111,78.5 114.5,80.5" stroke="#b9c3ad" stroke-width=".5" fill="none"/>', { sd: 1.4, k: 1.3, box: [80, 56, 56, 46] });
+    s.add('</g>');
     // pages torn out on the wind, and gulls wheeling with them
     s.add(page(86, 60, -24, 0.85, 8, -1), page(70, 96, 18, 0.7, 9, -3), page(98, 118, -40, 0.6, 7, -5), page(176, 28, 30, 0.8, 9, -2),
       page(214, 58, -16, 0.7, 8, -6), page(232, 100, 40, 0.55, 10, -4), page(60, 44, 10, 0.5, 9, -7));
-    s.add(`<g fill="#123c48">${parts([bird(62, 30, 1.4), bird(228, 24, 1.2), bird(250, 64, 1.6), bird(196, 150, 1.1), bird(96, 142, 1)])}</g>`);
+    s.add(`<g fill="#123c48">${[bird(62, 30, 1.4), bird(228, 24, 1.2), bird(250, 64, 1.6), bird(196, 150, 1.1), bird(96, 142, 1)].map((d, i) => `<g data-part="bird${i}">${P(d)}</g>`).join('')}</g>`);
     s.motes({ seed: 663, n: 10, x: [70, 240], y: [20, 150], r: [0.4, 1], fill: '#f6fbe8', cls: 'float', t: [6, 10], op: [0.3, 0.8] });
     return s.svg();
   },
@@ -326,20 +343,23 @@ const tide = faction('tide', {
     // the mimic: crisp where it has learned the shape (helm, pauldron, sword
     // arm), still loose water where it has not
     s.glow(150, 104, 74, '#c6f4f6', 0.42, 'breathe');
-    const body = parts([
+    const body = '<g data-part="body">' + parts([
       taper([[150, 176], [147, 158], [152, 140], [150, 120]], [34, 18, 15, 22]),
       blob([[132, 88], [168, 88], [167, 104], [160, 118], [140, 118], [133, 104]]),
       blob([[160, 86], [172, 88], [179, 96], [177, 104], [168, 102]]),
       taper([[168, 96], [180, 110], [183, 128], [177, 146], [168, 166]], [10, 8, 7, 6, 4]),
+    ]) + '<path d="M139,82V64Q139,51 150,49Q161,51 161,64V82Z"/><ellipse cx="133" cy="90" rx="10" ry="7"/></g>' +
+      '<g data-part="plume">' + parts([
       taper([[150, 51], [153, 41], [160, 33]], [4.4, 2.8, 0.4]), taper([[153, 52], [162, 45], [172, 43]], [3.8, 2.4, 0.4]), taper([[156, 54], [167, 53], [177, 56]], [3.2, 2, 0.4]),
+    ]) + '</g><g data-part="arm">' + parts([
       taper([[131, 95], [124, 103], [120, 110]], [8, 7, 6]),
       taper([[120, 110], [117, 103], [116, 96]], [6, 5.5, 5]),
-    ]) + '<path d="M139,82V64Q139,51 150,49Q161,51 161,64V82Z"/><ellipse cx="133" cy="90" rx="10" ry="7"/><circle cx="116" cy="94" r="3.6"/>';
+    ]) + '<circle cx="116" cy="94" r="3.6"/></g>';
     s.bloom(`<g fill="${s.linU(0, 44, 0, 176, [[0, '#f2fffd'], [0.4, '#a9e3e3'], [1, '#3f8c96']])}" opacity=".84">${body}</g>`, { sd: 2.6, k: 0.7 });
-    s.add('<g fill="none" stroke="#ffffff" stroke-width=".8" opacity=".45" stroke-linecap="round"><path d="M146,170C150,160 146,150 151,140M154,166C157,154 152,146 155,132M138,98C144,102 152,100 160,106M168,112C174,120 179,128 177,140"/></g>');
-    s.add('<g fill="none" stroke="#f4fffd" stroke-width="1" opacity=".9"><path d="M139,82V64Q139,51 150,49Q161,51 161,64V82Z"/><ellipse cx="133" cy="90" rx="10" ry="7"/><path d="M150,88V117M140,100H150"/></g>');
-    s.add(`<g fill="#effdfc" stroke="#ffffff" stroke-width=".5">${parts([taper([[116, 90], [115, 64], [114, 44]], [4, 3.4, 0.4]), taper([[109, 91], [123, 91]], [2.4, 2.4])])}<circle cx="116" cy="101" r="2"/></g>`);
-    s.add('<path d="M142.5,66H157.5" stroke="#06151b" stroke-width="2.6" stroke-linecap="round"/><path d="M150,61.5V71" stroke="#06151b" stroke-width="1.1"/>');
+    s.add('<g data-part="body" fill="none" stroke="#ffffff" stroke-width=".8" opacity=".45" stroke-linecap="round"><path d="M146,170C150,160 146,150 151,140M154,166C157,154 152,146 155,132M138,98C144,102 152,100 160,106M168,112C174,120 179,128 177,140"/></g>');
+    s.add('<g data-part="body" fill="none" stroke="#f4fffd" stroke-width="1" opacity=".9"><path d="M139,82V64Q139,51 150,49Q161,51 161,64V82Z"/><ellipse cx="133" cy="90" rx="10" ry="7"/><path d="M150,88V117M140,100H150"/></g>');
+    s.add(`<g data-part="sword" fill="#effdfc" stroke="#ffffff" stroke-width=".5">${parts([taper([[116, 90], [115, 64], [114, 44]], [4, 3.4, 0.4]), taper([[109, 91], [123, 91]], [2.4, 2.4])])}<circle cx="116" cy="101" r="2"/></g>`);
+    s.add('<g data-part="body"><path d="M142.5,66H157.5" stroke="#06151b" stroke-width="2.6" stroke-linecap="round"/><path d="M150,61.5V71" stroke="#06151b" stroke-width="1.1"/></g>');
     s.add(drops([[178, 150], [171, 160], [184, 132], [176, 108], [163, 36], [176, 50]], '#d9f7f6'));
     s.add(particles({ seed: 674, n: 16, x: [110, 196], y: [40, 176], r: [0.6, 1.7], stroke: '#cdf3f6', cls: 'rise', t: [6, 10], op: [0.4, 0.9] }));
     return s.svg();
@@ -353,38 +373,38 @@ const tide = faction('tide', {
     s.rect(s.lin([[0, '#040c13'], [0.45, '#0c2632'], [0.67, '#1d4a58']]));
     s.add(particles({ seed: 681, n: 36, x: [0, W], y: [0, 110], r: [0.25, 0.8], fill: '#e4fbfb', cls: 'twinkle', op: [0.2, 0.85], t: [2.5, 6] }));
     // the rings the bells send out, and the light in the belfry
-    s.add(`<g transform="${g}" fill="none" stroke="#f4ecc8">${[[34, 0.42], [50, 0.3], [68, 0.2], [90, 0.12], [116, 0.07]].map(([r, o]) =>
+    s.add(`<g data-part="rings" transform="${g}" fill="none" stroke="#f4ecc8">${[[34, 0.42], [50, 0.3], [68, 0.2], [90, 0.12], [116, 0.07]].map(([r, o]) =>
       `<circle cx="150" cy="50" r="${r}" stroke-width="${f1(1.7 - r / 110)}" opacity="${o}"/>`).join('')}</g>`);
     s.glow(141, 54, 20, '#f6e8b8', 0.9);
     // a drowned town far off
     s.blur('<path d="M28,141V128L34,119L40,128V141ZM50,141V133L62,126L74,133V141ZM236,141V122L242,110L248,122V141ZM258,141V134L271,128L284,134V141Z" fill="#244f5c"/>', 0.7);
     s.path(`M-10,${hz}H${W + 10}V${H + 10}H-10Z`, s.lin([[0, '#1f4d5a'], [0.4, '#0c2a35'], [1, '#03101a']]));
     // the tower, leaning, crusted with barnacles and hung with weed
-    const tower = parts([
+    const tower = `<g data-part="tower" transform="${g}">` + parts([
       'M128,156V100H172V156Z', 'M124,101V66H176V101Z', 'M121,104V98H179V104Z', 'M120,68V62H180V68Z', 'M128,39V34H172V39Z',
       'M131,35L147,9L150,12L153,6L169,35Z',
-      'M144,60Q144,50.5 150,49.5Q156,50.5 156,60L158,61.5H142Z', 'M149.2,49.5V44H150.8V49.5Z',
       taper([[123, 104], [122, 113], [124, 122]], [2.2, 1.6, 0.4]), taper([[133, 104], [134, 110]], [1.8, 0.4]),
       taper([[177, 104], [178, 114], [176, 121]], [2.2, 1.6, 0.4]), taper([[170, 104], [169, 109]], [1.6, 0.4]),
     ]) + P('M131,62V38H169V62ZM139,60V48A11,11 0 0 1 161,48V60Z', 'fill-rule="evenodd"') +
       circ([[128, 138, 2.2], [129, 130, 1.6], [127.5, 146, 1.8], [172, 134, 2.2], [171.5, 126, 1.4], [172.5, 143, 1.9], [124, 66, 1.4], [176, 66, 1.6],
-        [121, 99, 1.6], [179, 99, 1.8], [138, 156, 2.2], [146, 155, 1.6], [163, 156, 2]]);
-    s.figure(`<g transform="${g}">${tower}</g>`, { fill: '#0b1e26', rim: '#e6efd6', offsets: [[0, -1.2], [-1, -0.5], [1, -0.5]], rimOp: 0.8, halo: 0.25 });
-    s.add(`<g transform="${g}" stroke="#2b4750" stroke-width=".8"><path d="M129,112H171M129,124H171M129,136H171M125,76H175M125,90H131M169,90H175M132,50H138M162,50H168"/></g>`);
+        [121, 99, 1.6], [179, 99, 1.8], [138, 156, 2.2], [146, 155, 1.6], [163, 156, 2]]) +
+      `</g><g data-part="bell" transform="${g}">` + parts(['M144,60Q144,50.5 150,49.5Q156,50.5 156,60L158,61.5H142Z', 'M149.2,49.5V44H150.8V49.5Z']) + '</g>';
+    s.figure(tower, { fill: '#0b1e26', rim: '#e6efd6', offsets: [[0, -1.2], [-1, -0.5], [1, -0.5]], rimOp: 0.8, halo: 0.25 });
+    s.add(`<g data-part="tower" transform="${g}" stroke="#2b4750" stroke-width=".8"><path d="M129,112H171M129,124H171M129,136H171M125,76H175M125,90H131M169,90H175M132,50H138M162,50H168"/></g>`);
     // the face, glowing: nearly midnight
     s.glow(144, 83, 64, '#f6e8b8', 0.5, 'breathe');
-    s.bloom(`<circle cx="150" cy="83" r="15" fill="${s.rad([[0, '#fffbe8'], [0.75, '#fbefc6'], [1, '#e9d49a']])}" transform="${g}"/>`, { sd: 2.4, k: 1.2, box: [110, 50, 70, 70] });
-    s.add(`<g transform="${g}"><circle cx="150" cy="83" r="15" fill="none" stroke="#3a3424" stroke-width="1.6"/>` +
+    s.bloom(`<g data-part="face"><circle cx="150" cy="83" r="15" fill="${s.rad([[0, '#fffbe8'], [0.75, '#fbefc6'], [1, '#e9d49a']])}" transform="${g}"/></g>`, { sd: 2.4, k: 1.2, box: [110, 50, 70, 70] });
+    s.add(`<g transform="${g}"><g data-part="face"><circle cx="150" cy="83" r="15" fill="none" stroke="#3a3424" stroke-width="1.6"/>` +
       `<g stroke="#5c5236" stroke-width="1.1">${Array.from({ length: 12 }, (_, i) => {
         const a = (i * Math.PI) / 6;
         return `<path d="M${f1(150 + Math.sin(a) * 10.8)},${f1(83 - Math.cos(a) * 10.8)}L${f1(150 + Math.sin(a) * 13)},${f1(83 - Math.cos(a) * 13)}"/>`;
-      }).join('')}</g>` +
-      '<path d="M150,83L143.4,79.2M150,83L149.2,71.4" stroke="#2a2618" stroke-width="1.7" stroke-linecap="round"/><circle cx="150" cy="83" r="1.6" fill="#2a2618"/></g>');
+      }).join('')}</g></g>` +
+      '<path data-part="hands" d="M150,83L143.4,79.2M150,83L149.2,71.4" stroke="#2a2618" stroke-width="1.7" stroke-linecap="round"/><circle cx="150" cy="83" r="1.6" fill="#2a2618"/></g>');
     // the sea closes over its feet; rings of light spread on the water
     s.add(`<rect x="-5" y="${hz}" width="${W + 10}" height="${H - hz + 10}" fill="${s.lin([[0, '#1f4d5a', 0.86], [0.2, '#0e2e39', 0.92], [1, '#03101a', 0.97]])}"/>`);
-    s.add(`<g fill="none" stroke="#f4ecc8">${[[40, 4, 0.5], [62, 6.5, 0.36], [88, 9, 0.24], [118, 12, 0.14]].map(([rx, ry, o]) =>
+    s.add(`<g data-part="ripples" fill="none" stroke="#f4ecc8">${[[40, 4, 0.5], [62, 6.5, 0.36], [88, 9, 0.24], [118, 12, 0.14]].map(([rx, ry, o]) =>
       `<ellipse cx="149" cy="142" rx="${rx}" ry="${ry}" stroke-width="1.2" opacity="${o}"/>`).join('')}</g>`);
-    s.add(glints([[146, 146, 22, 0.6], [147, 151, 16, 0.45], [145, 157, 20, 0.35], [147, 164, 12, 0.26], [146, 172, 16, 0.18]], '#f6e8b8'));
+    s.add('<g data-part="reflect">' + glints([[146, 146, 22, 0.6], [147, 151, 16, 0.45], [145, 157, 20, 0.35], [147, 164, 12, 0.26], [146, 172, 16, 0.18]], '#f6e8b8') + '</g>');
     s.path(ridge({ seed: 684, base: 214, amp: 24, freq: 3, peaks: true }), '#03101a');
     s.add(particles({ seed: 685, n: 12, x: [90, 210], y: [20, 130], r: [0.4, 1.1], fill: '#f6e8b8', cls: 'float', t: [6, 10], op: [0.3, 0.8] }));
     return s.svg();
@@ -404,35 +424,39 @@ const tide = faction('tide', {
     const face = [[246, 63], [244, 55], [237, 50], [229, 53], [226, 63], [229, 78], [240, 90], [262, 98], [290, 102], [312, 104]];
     s.figure(P(poly([...spline(top, 6), ...spline(face, 6).slice(1), [312, 214], [-10, 214]])),
       { fill: s.linU(0, 30, 0, 190, [[0, '#2f7580'], [0.35, '#1a5560'], [1, '#0b303b']]), rim: '#f4fcf6', offsets: [[-0.8, -1.2], [0, -1.4]], rimOp: 0.9 });
+    s.add('<g data-part="wave">');
     const lit = top.slice(0, 11).map(([x, y]) => [x, y + 12]);
     s.path(taper(top.slice(0, 11).map(([x, y]) => [x, y + 18]), [24, 30, 34, 36, 36, 36, 34, 30, 24, 14, 2]), '#5fa8a8', 'opacity=".3"');
     s.path(taper(lit, [16, 20, 22, 24, 24, 24, 22, 20, 16, 10, 2]), '#7fc4bc', 'opacity=".38"');
     s.path(taper(top.slice(0, 11).map(([x, y]) => [x, y + 5]), [6, 8, 9, 10, 10, 10, 9, 8, 6, 4, 1]), '#cdf0e6', 'opacity=".45"');
     s.add(`<g fill="none" stroke="#a9dcd6" stroke-width="1.1" stroke-linecap="round">${[[60, 0.14], [110, 0.2], [160, 0.18], [200, 0.2]].map(([x, o]) =>
       `<path d="${line([[x - 30, 190], [x - 14, 140], [x - 2, 96], [x + 6, 60]])}" opacity="${o}"/>`).join('')}</g>`);
+    s.add('</g>');
     // ragged foam along the crest and round the curl, spray torn off it
     const r = rng(696), ridgeLine = spline(top, 6);
     let foam = '';
     for (let i = 6; i < ridgeLine.length; i++) foam += disc(ridgeLine[i][0] + (r() - 0.5) * 2, ridgeLine[i][1] + 0.4 + r() * 1.4, 0.9 + r() * (i > 56 ? 2.6 : 1.7));
+    s.add('<g data-part="foam">');
     s.add(`<path d="${line(top.slice(1))}" fill="none" stroke="#f4fcf6" stroke-width="2" opacity=".9"/>`);
     s.path(foam, '#f4fcf6', 'opacity=".9"');
-    s.add(`<g fill="#f4fcf6">${parts([[262, 68, 0], [254, 70, 1], [270, 58, 2]].map(([x, y, k]) =>
+    s.add('</g>');
+    s.add(`<g data-part="spray" fill="#f4fcf6">${parts([[262, 68, 0], [254, 70, 1], [270, 58, 2]].map(([x, y, k]) =>
       taper([[x, y], [x - 4 + k, y + 7], [x - 9 + k * 2, y + 11 + k * 2]], [3.6, 2, 0.3])))}</g>`);
-    s.add(`<g fill="#e9f7f2" opacity=".2">${parts([[128, 38], [176, 21], [214, 15], [252, 26]].map(([x, y]) =>
+    s.add(`<g data-part="mist" fill="#e9f7f2" opacity=".2">${parts([[128, 38], [176, 21], [214, 15], [252, 26]].map(([x, y]) =>
       taper([[x, y], [x - 12, y - 7], [x - 30, y - 10]], [7, 4.4, 0.4])))}</g>`);
     // light off the face of it, behind the boat
     s.glow(104, 98, 54, '#bfe8e0', 0.3);
     // the first wave, nearer and lower, and the boat on its crest
     const near = [[-10, 148], [30, 136], [70, 126], [98, 121], [122, 124], [150, 134], [184, 142], [218, 140], [252, 132], [284, 136], [312, 144]];
     s.figure(P(ledge(near)), { fill: s.lin([[0, '#2f6f78'], [0.25, '#123e47'], [1, '#04131a']]), rim: '#dff5ee', offsets: [[0, -1.2]], rimOp: 0.8 });
-    s.add(`<path d="${line(near.slice(1, 8))}" fill="none" stroke="#eef9f4" stroke-width="1.6" opacity=".7"/>`);
+    s.add(`<path data-part="nearline" d="${line(near.slice(1, 8))}" fill="none" stroke="#eef9f4" stroke-width="1.6" opacity=".7"/>`);
     const bt = 'translate(100 118) rotate(-8) scale(1.4)';
-    const boat = '<path d="M-13,-2L12,-2L8,4L-9,4Z"/><path d="M-.6,-2V-23H.6V-2Z"/><path d="M1.2,-21.5L1.2,-7L10,-8.5Z"/>' +
-      `<path d="${taper([[-5, -2], [-5.4, -11]], [4, 3.4])}"/><circle cx="-3" cy="-14.4" r="2.3"/>` +
-      `<path d="${taper([[-4.4, -10], [-1.2, -15.5]], [1.6, 1.1])}"/><path d="${taper([[-6, -10], [-4.8, -13.8]], [1.4, 1])}"/>`;
-    s.figure(`<g transform="${bt}">${boat}</g>`, { fill: '#04121a', rim: '#e6f4ec', offsets: [[-0.8, -0.8], [0.6, -0.8]], rimOp: 0.9 });
+    const boat = `<g data-part="hull" transform="${bt}"><path d="M-13,-2L12,-2L8,4L-9,4Z"/><path d="M-.6,-2V-23H.6V-2Z"/><path d="M1.2,-21.5L1.2,-7L10,-8.5Z"/></g>` +
+      `<g data-part="sailor" transform="${bt}"><path d="${taper([[-5, -2], [-5.4, -11]], [4, 3.4])}"/><circle cx="-3" cy="-14.4" r="2.3"/>` +
+      `<path d="${taper([[-4.4, -10], [-1.2, -15.5]], [1.6, 1.1])}"/><path d="${taper([[-6, -10], [-4.8, -13.8]], [1.4, 1])}"/></g>`;
+    s.figure(boat, { fill: '#04121a', rim: '#e6f4ec', offsets: [[-0.8, -0.8], [0.6, -0.8]], rimOp: 0.9 });
     s.glow(84, 112.5, 13, '#f6e7b4', 0.9, 'breathe');
-    s.bloom(`<circle cx="0" cy="0" r="1.4" fill="#fff7d8" transform="${bt} translate(-11 -5.5)"/>`, { sd: 1.2, k: 1.4, box: [66, 94, 36, 34] });
+    s.bloom(`<g data-part="lantern"><circle cx="0" cy="0" r="1.4" fill="#fff7d8" transform="${bt} translate(-11 -5.5)"/></g>`, { sd: 1.2, k: 1.4, box: [66, 94, 36, 34] });
     s.add(drops([[256, 82], [264, 76], [248, 86], [272, 70]], '#eef9f4'));
     // the near swell
     s.path(ridge({ seed: 694, base: 214, amp: 30, peaks: true, freq: 3.2 }), '#04141b');
@@ -466,36 +490,45 @@ const tide = faction('tide', {
       const a1 = (150 * Math.PI) / 180, a2 = (212 * Math.PI) / 180;
       return `M${f1(188 + r * Math.cos(a1))},${f1(74.5 + r * Math.sin(a1))}A${r},${r} 0 0 1 ${f1(188 + r * Math.cos(a2))},${f1(74.5 + r * Math.sin(a2))}`;
     };
+    s.add('<g data-part="song">');
     s.bloom(`<g fill="none" stroke="#d9faf7" stroke-linecap="round">${[[12, 1.8, 0.85], [24, 1.6, 0.7], [38, 1.5, 0.55], [54, 1.3, 0.42], [72, 1.2, 0.3], [92, 1.1, 0.2]].map(([r, w, o]) =>
       `<path d="${ring(r)}" stroke-width="${w}" opacity="${o}"/>`).join('')}</g>`, { sd: 1.4, k: 1.2, box: [80, 20, 120, 110] });
+    s.add('</g>');
     // Nerissa: crowned with coral, singing, one hand held out to him; her hair
     // streams back across the moon and her tail sweeps off the rock to its fluke
-    const siren = parts([
-      taper([[202, 62], [214, 64], [222, 72], [232, 78], [240, 88], [250, 94], [260, 104]], [12, 13, 12, 10, 8, 5, 0.6]),
+    const siren = `<g data-part="hair">${parts([taper([[202, 62], [214, 64], [222, 72], [232, 78], [240, 88], [250, 94], [260, 104]], [12, 13, 12, 10, 8, 5, 0.6])])}</g>` +
+      `<g data-part="body">${parts([
       taper([[205, 72], [214, 82], [218, 94], [226, 104], [230, 116]], [9, 9, 8, 6, 0.6]),
+      taper([[199, 79], [201, 87]], [5.6, 7]),
+      taper([[201, 86], [204, 100], [207, 114], [208, 124]], [17, 13, 12, 18]),
+      taper([[209, 90], [217, 104], [220, 120]], [6, 5, 4.2]),
+    ])}</g>` +
+      `<g data-part="head">${parts([
       taper([[192.5, 62], [189, 52], [186, 43]], [3.6, 2.6, 1.2]), taper([[189, 53], [182, 47], [179, 42]], [2, 1.4, 0.6]),
       taper([[198, 60], [198.5, 47], [200, 35]], [4, 2.8, 1.2]), taper([[198.6, 48], [205, 42], [207, 37]], [2, 1.4, 0.6]), taper([[199.4, 41], [194, 36]], [1.6, 0.6]),
       taper([[203.5, 62], [209, 53], [214, 45]], [3.6, 2.6, 1.2]), taper([[209, 53], [211, 45]], [1.8, 0.6]),
-      taper([[199, 79], [201, 87]], [5.6, 7]),
-      taper([[201, 86], [204, 100], [207, 114], [208, 124]], [17, 13, 12, 18]),
+      blob([[195.9, 60.2], [202.8, 61.4], [206.2, 68.3], [203.9, 76.3], [198.2, 79.8], [192.4, 79.8], [190.1, 76.9], [188.4, 75.8], [190.1, 74], [187.8, 72.3], [187.2, 70.1], [190.1, 66], [191.3, 62.5]]),
+    ])}${circ([[186, 43, 1.6], [179, 42, 1.3], [200, 35, 1.7], [207, 37, 1.3], [194, 36, 1.2], [214, 45, 1.6], [211, 45, 1.2]])}</g>` +
+      `<g data-part="arm">${parts([
       taper([[195, 90], [187, 94], [179, 96]], [6.4, 5.4, 4.6]), taper([[179, 96], [171, 95], [164, 92]], [4.6, 4, 3.4]),
       taper([[164, 92], [157, 89.5], [151, 88]], [3.4, 2.8, 0.6]), taper([[163, 90.6], [159, 86.4]], [1.6, 0.5]),
-      taper([[209, 90], [217, 104], [220, 120]], [6, 5, 4.2]),
+    ])}</g>` +
+      `<g data-part="tail">${parts([
       taper([[206, 118], [214, 128], [228, 134], [244, 132], [256, 124], [264, 112], [268, 100]], [22, 20, 16, 12, 8, 5, 3]),
       taper([[268, 101], [258, 88], [251, 80]], [5, 4.6, 0.6], { bulge: 0.3 }), taper([[268, 101], [276, 88], [283, 80]], [5, 4.6, 0.6], { bulge: 0.3 }),
       taper([[228, 131], [234, 122], [242, 120]], [3, 1.6, 0.3]),
-      blob([[195.9, 60.2], [202.8, 61.4], [206.2, 68.3], [203.9, 76.3], [198.2, 79.8], [192.4, 79.8], [190.1, 76.9], [188.4, 75.8], [190.1, 74], [187.8, 72.3], [187.2, 70.1], [190.1, 66], [191.3, 62.5]]),
-    ]) + circ([[186, 43, 1.6], [179, 42, 1.3], [200, 35, 1.7], [207, 37, 1.3], [194, 36, 1.2], [214, 45, 1.6], [211, 45, 1.2], [221, 122, 2.6]]);
+    ])}${circ([[221, 122, 2.6]])}</g>`;
     s.figure(siren, { fill: p.fig, rim: p.rim, offsets: [[0, -1.3], [-1.1, -0.6], [1.1, -0.6], [0, 1]], rimOp: 0.9, shade: 0.35, halo: 0.35 });
     s.glow(200, 40, 17, '#f4f3d6', 0.55);
-    s.add(`<g fill="#fbf8e4">${circ([[186, 43, 1.5], [200, 35, 1.7], [214, 45, 1.5]])}</g><ellipse cx="191.6" cy="69" rx="1.5" ry=".8" fill="#c6f4f6"/>`);
+    s.add(`<g data-part="head" fill="#fbf8e4">${circ([[186, 43, 1.5], [200, 35, 1.7], [214, 45, 1.5]])}</g><ellipse data-part="head" cx="191.6" cy="69" rx="1.5" ry=".8" fill="#c6f4f6"/>`);
     // the knight, wading in to his waist, both arms out to her like a sleepwalker
-    const knight = parts([
+    const knight = '<g data-part="kbody">' + parts([
       blob([[74, 128], [78, 124], [92, 123.6], [96, 127.6], [93, 140], [91, 157], [77, 157], [75, 140]]),
       taper([[85.6, 125], [86, 120.6]], [5, 4.6]),
+    ]) + '<path d="M80.6,121V112.4Q80.6,105.6 87,105Q93.4,105.6 93.4,112L97.4,116.4L93.4,118.6V121Z"/></g>' + '<g data-part="kreach">' + parts([
       taper([[93, 128], [104, 130], [115, 127]], [5.4, 4.6, 4]),
       taper([[88, 132], [100, 136], [112, 134]], [5.4, 4.6, 4]),
-    ]) + '<path d="M80.6,121V112.4Q80.6,105.6 87,105Q93.4,105.6 93.4,112L97.4,116.4L93.4,118.6V121Z"/>' + circ([[116.4, 126.8, 2.4], [113.6, 134, 2.4]]);
+    ]) + circ([[116.4, 126.8, 2.4], [113.6, 134, 2.4]]) + '</g>';
     s.figure(knight, { fill: p.fig, rim: p.rim, offsets: [[1, -0.8], [0.4, -1.2]], rimOp: 0.9 });
     s.add('<ellipse cx="84" cy="156" rx="15" ry="2.6" fill="#e9f8f2" opacity=".75"/><g fill="none" stroke="#cdeee8"><ellipse cx="84" cy="157" rx="25" ry="4" opacity=".4"/><ellipse cx="84" cy="158" rx="37" ry="6" opacity=".2"/></g>');
     // dark rocks and surf at the near corners
@@ -520,18 +553,27 @@ const tide = faction('tide', {
     // the sphere of seawater
     const cx = 150, cy = 92, R = 53;
     s.glow(cx, cy, 90, '#c6f4f6', 0.35, 'breathe');
+    s.add('<g data-part="bubble">');
     s.add(`<circle cx="${cx}" cy="${cy}" r="${R}" fill="${s.rad([[0, '#a9e0dd', 0.62], [0.6, '#6fb5b8', 0.55], [0.88, '#9fd8d8', 0.6], [1, '#e2faf7', 0.92]], { cx: 0.45, cy: 0.4, r: 0.55 })}"/>`);
     s.add(`<ellipse cx="${cx + 8}" cy="${cy + 38}" rx="26" ry="9" fill="#f2fffb" opacity=".25"/>`);
+    s.add('</g>');
     // the fish
     const fx = 'translate(143 97) scale(2.45)';
-    s.figure(`<g transform="${fx}">${fishShape(true)}</g>`, { fill: p.fig, rim: p.rim, offsets: [[0, -1.2], [-0.8, -0.8]], rimOp: 0.9, shade: 0.4 });
-    s.add(`<g transform="${fx}">${fishFace(p.rim)}</g>`);
+    // (fishShape's pieces, each its own part: body, tail, top fin, belly fin and the two horn nubs)
+    s.figure(`<g transform="${fx}"><g data-part="fbody"><ellipse cx="0" cy="0" rx="10" ry="8.6"/></g>` +
+      '<g data-part="ftail"><path d="M7,-1.6C10.5,-4.5 13.5,-9 17.6,-10C16.2,-4 16.2,4 17.6,10C13.5,9 10.5,4.5 7,1.6Z"/></g>' +
+      '<g data-part="ftop"><path d="M-0.6,-8.5C1.4,-13.2 6.4,-14 9.4,-10.6C8,-8.8 6.4,-7.6 4.8,-6.8Z"/></g>' +
+      '<g data-part="fbelly"><path d="M-1.6,7.6C0.2,11.6 4.4,12.2 6.4,9.8C4.8,8.8 3.2,7.9 1.6,7.3Z"/></g>' +
+      '<g data-part="fhorns"><path d="M-7.6,-4.8L-11.6,-10.8L-4.6,-7.2Z"/><path d="M-3.8,-7.6L-5,-13.8L-0.6,-8.4Z"/></g></g>', { fill: p.fig, rim: p.rim, offsets: [[0, -1.2], [-0.8, -0.8]], rimOp: 0.9, shade: 0.4 });
+    s.add(`<g data-part="fface" transform="${fx}">${fishFace(p.rim)}</g>`);
     s.add([[112, 92, 2.4], [108, 80, 1.8], [111, 69, 1.4], [106, 59, 1]].map(([x, y, r], i) =>
       `<circle class="rise" style="--t:${6 + i}s;--d:${-i * 1.5}s;--o:.85" cx="${x}" cy="${y}" r="${r}" fill="none" stroke="#e9fdfb" stroke-width=".7" opacity=".85"/>`).join(''));
     // the light on its skin of water
+    s.add('<g data-part="bshine">');
     s.bloom(`<path d="M${cx - 44},${cy - 22}A50,50 0 0 1 ${cx - 14},${cy - 50}" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".9"/><circle cx="${cx - 40}" cy="${cy - 34}" r="2.4" fill="#fff"/>`,
       { sd: 1.6, k: 1.2, box: [cx - 70, cy - 70, 80, 70] });
     s.add(`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#e9fdfb" stroke-width="1.4" opacity=".8"/>`);
+    s.add('</g>');
     s.add(drops([[146, 152], [156, 157]], '#e9fdfb'));
     s.motes({ seed: 653, n: 10, x: [60, 240], y: [30, 150], r: [0.4, 1], fill: '#e6fbf8', cls: 'float', t: [6, 10], op: [0.3, 0.8] });
     return s.svg();
@@ -546,8 +588,10 @@ const umbral = faction('umbral', {
     s.rect(s.lin([[0, '#07050d'], [0.45, '#1c1430'], [0.72, '#43306a'], [0.8, '#2c2044'], [1, '#100b18']]));
     s.add(particles({ seed: 711, n: 24, x: [80, W], y: [0, 120], r: [0.25, 0.8], fill: '#e8defa', cls: 'twinkle', op: [0.2, 0.85], t: [2.5, 6] }));
     // the moon, a thin crescent
+    s.add('<g data-part="moon">');
     s.glow(226, 46, 86, '#c9b8f2', 0.36);
     s.bloom(`<path d="${crescent(226, 46, 24, 9, -6, 21)}" fill="#ece4f8"/>`, { sd: 2.4, k: 1, box: [176, 0, 100, 100] });
+    s.add('</g>');
     // the moor, and a dead tree on it
     s.path(ledge([[-10, 160], [60, 152], [120, 156], [180, 150], [240, 155], [310, 150]]), '#2c2244');
     s.add(`<g fill="#2c2244">${parts([taper([[262, 154], [262, 132], [258, 118]], [4, 2.6, 0.8]), taper([[262, 136], [272, 126], [278, 124]], [1.8, 1.1, 0.3]), taper([[260, 126], [252, 116]], [1.4, 0.3])])}</g>`);
@@ -555,9 +599,10 @@ const umbral = faction('umbral', {
     s.path(ledge([[-10, 186], [70, 180], [150, 184], [230, 178], [310, 182]]), '#140e1e');
     // the one who blows it: a hooded profile at the left edge, a sleeve raised
     const lady = P(blob([[-14, 36], [10, 27], [34, 28], [52, 36], [64, 46], [69, 56], [66.6, 62.4], [66.4, 66], [68, 70], [69.4, 73], [75, 80], [71, 82.6], [72.4, 85],
-      [74.6, 87.2], [72.6, 89.4], [72.8, 91.2], [69, 96], [64.4, 98.8], [62.6, 104], [66, 112], [70, 128], [74, 150], [76, 178], [72, 220], [-14, 220]], 4)) + P(taper([[66, 136], [74, 118], [82, 105]], [13, 10, 8]));
+      [74.6, 87.2], [72.6, 89.4], [72.8, 91.2], [69, 96], [64.4, 98.8], [62.6, 104], [66, 112], [70, 128], [74, 150], [76, 178], [72, 220], [-14, 220]], 4)).replace(/^/, '<g data-part="lady">') + '</g>' + '<g data-part="sleeve">' + P(taper([[66, 136], [74, 118], [82, 105]], [13, 10, 8])) + '</g>';
     s.figure(lady, { fill: p.fig, rim: '#d9c8f6', offsets: [[1.2, -0.4], [0.8, -1]], rimOp: 0.9, halo: 0.25 });
     // her pale hand, palm up, the kiss leaving it
+    s.add('<g data-part="hand">');
     s.glow(98, 98, 26, '#d9c8f6', 0.4);
     s.bloom(`<g fill="#e6dcf4">${parts([
       blob([[80, 104], [84, 99], [94, 97], [102, 97], [104, 100], [98, 103], [88, 105]]),
@@ -565,11 +610,12 @@ const umbral = faction('umbral', {
       taper([[100, 101.4], [106, 101.6], [111, 102]], [2.8, 2.2, 1.4]), taper([[88, 98], [90, 93], [93, 90]], [3.4, 2.6, 1.8]),
       taper([[81, 105], [87, 101]], [6, 5.4]),
     ])}</g>`, { sd: 1.2, k: 0.6, box: [66, 80, 60, 36] });
+    s.add('</g>');
     // the moths, spiralling up from her fingertips toward the moon
     const wing = s.rad([[0, '#f1e6ff'], [0.45, '#b98cff'], [1, '#6a3fc0']]);
     s.glow(150, 78, 40, '#9b6bff', 0.4).glow(196, 52, 30, '#9b6bff', 0.3);
     s.add([[122, 88, 0.62, 40], [138, 74, 0.82, -12], [156, 86, 0.95, 46], [170, 64, 1.1, -24], [150, 54, 0.74, -46], [186, 46, 0.86, 14], [200, 68, 0.64, 56], [206, 32, 0.54, -8]].map(([x, y, k, a], i) =>
-      `<g class="float" style="--t:${6 + (i % 4)}s;--d:${-i * 0.9}s">${moth(x, y, k, a, wing, '#1a1028')}</g>`).join(''));
+      `<g data-part="moth${i}">${moth(x, y, k, a, wing, '#1a1028')}</g>`).join(''));
     s.motes({ seed: 714, n: 12, x: [110, 230], y: [30, 110], r: [0.4, 1], fill: '#c9a6ff', cls: 'float', t: [5, 9], op: [0.3, 0.8] });
     return s.svg();
   },
@@ -590,9 +636,9 @@ const umbral = faction('umbral', {
     s.path(reeds(724, 40, 120, 160, 26, 52, 0.35) + reeds(725, 196, 276, 162, 24, 48, 0.35), '#251c38');
     // the adder: an S rising from its coils to a viper's head, jaws open
     const spine = [[96, 206], [112, 190], [136, 184], [156, 176], [162, 160], [150, 146], [134, 136], [130, 120], [140, 104], [158, 94], [172, 84], [179, 72]];
-    const snake = P(taper(spine, [12, 14, 15, 15, 14, 13, 12, 11, 10, 9, 8.4, 8], { per: 10 })) +
-      P(poly([[188, 66], [187, 57], [181, 51], [171, 48.5], [162, 50], [154, 53], [148, 56.5], [149, 59.2], [156, 60.2], [166, 61], [177, 64]])) +
-      P(taper([[184, 68], [170, 77], [156, 85]], [7.4, 4.6, 1.4]));
+    const snake = '<g data-part="body">' + P(taper(spine, [12, 14, 15, 15, 14, 13, 12, 11, 10, 9, 8.4, 8], { per: 10 })) + '</g>' +
+      '<g data-part="head">' + P(poly([[188, 66], [187, 57], [181, 51], [171, 48.5], [162, 50], [154, 53], [148, 56.5], [149, 59.2], [156, 60.2], [166, 61], [177, 64]])) +
+      P(taper([[184, 68], [170, 77], [156, 85]], [7.4, 4.6, 1.4])) + '</g>';
     s.figure(snake, { fill: p.fig, rim: '#d9cff2', offsets: [[0, -1.2], [-1, -0.6], [1, -0.6]], rimOp: 0.9, halo: 0.3 });
     // a violet zig-zag down its back
     const back = spline(spine, 10);
@@ -601,12 +647,13 @@ const umbral = faction('umbral', {
       const [x, y] = back[i], [x2, y2] = back[i + 1], l = Math.hypot(x2 - x, y2 - y) || 1;
       zig += `${zig ? 'L' : 'M'}${f1(x - ((y2 - y) / l) * 2.6 * k)},${f1(y + ((x2 - x) / l) * 2.6 * k)}`;
     }
-    s.add(`<path d="${zig}" fill="none" stroke="#a97cf6" stroke-width="1.7" stroke-linejoin="round" opacity=".75"/>`);
+    s.add(`<path data-part="zig" d="${zig}" fill="none" stroke="#a97cf6" stroke-width="1.7" stroke-linejoin="round" opacity=".75"/>`);
     // fangs, eye and tongue
+    s.add('<g data-part="face">');
     s.glow(172, 56, 8, '#b07cff', 0.8);
     s.bloom('<path d="M153.6,60Q153.8,65.6 156,68.6Q155.8,64 156.8,60.4Z" fill="#f6f0ff"/><path d="M158.8,60.8Q159,65.6 161,68.2Q160.8,64.2 161.8,61.2Z" fill="#f6f0ff"/>' +
       '<ellipse cx="172" cy="56" rx="2.4" ry="1.1" fill="#efe2ff"/>', { sd: 1, k: 1.3, box: [140, 44, 44, 34] });
-    s.add('<path d="M152,69L144,72M144,72L139.4,69.6M144,72L140.6,75.8" stroke="#c08cff" stroke-width=".9" fill="none" stroke-linecap="round"/><path d="M164,50.6Q170,48 177,50.6" stroke="#2b2140" stroke-width="1" fill="none"/>');
+    s.add('<path d="M152,69L144,72M144,72L139.4,69.6M144,72L140.6,75.8" stroke="#c08cff" stroke-width=".9" fill="none" stroke-linecap="round"/><path d="M164,50.6Q170,48 177,50.6" stroke="#2b2140" stroke-width="1" fill="none"/></g>');
     // reeds and cattails in front, and the dark water at its coils
     s.path(reeds(726, -10, 70, 214, 40, 78, 0.4) + reeds(727, 226, 310, 214, 36, 74, 0.4) + reeds(728, 104, 172, 214, 26, 54, 0.3), '#07050b');
     s.add('<g fill="none" stroke="#9a86c4" opacity=".4"><ellipse cx="112" cy="196" rx="20" ry="2.4"/><ellipse cx="112" cy="197" rx="32" ry="4" opacity=".5"/></g>');
@@ -693,13 +740,15 @@ const umbral = faction('umbral', {
     const wingR = 'M5,-6L26,-18L48,-27L90,-18Q77,-7 84,12Q70,6 64,31Q51,17 38,33Q26,20 11,22L6,8Z';
     const ears = 'M-6.5,-16L-9.5,-31L-1.5,-20Z', thumb = 'M48,-27L49,-34L52,-27Z';
     const bt = 'translate(150 82) scale(1.2)';
-    s.figure(`<g transform="${bt}">${P(wingR + flipX(wingR))}${P('M-9,4a9,15 0 1 1 18,0a9,15 0 1 1 -18,0Z' + disc(0, -14, 7.5) + ears + flipX(ears) + thumb + flipX(thumb) +
-      taper([[-4, 17], [-6, 24]], [2.6, 0.4]) + taper([[4, 17], [6, 24]], [2.6, 0.4]))}</g>`,
+    s.figure(`<g transform="${bt}">${`<g data-part="wings">${P(wingR + flipX(wingR))}</g>`}<g data-part="body">${P('M-9,4a9,15 0 1 1 18,0a9,15 0 1 1 -18,0Z' + disc(0, -14, 7.5) + ears + flipX(ears) + thumb + flipX(thumb) +
+      taper([[-4, 17], [-6, 24]], [2.6, 0.4]) + taper([[4, 17], [6, 24]], [2.6, 0.4]))}</g></g>`,
       { fill: s.radU(0, 4, 96, [[0, '#46142c'], [0.5, '#1c0914'], [1, '#0b0509']]), rim: '#ff9c8c', offsets: [[0, -1], [-1, 0], [1, 0], [0, 1]], rimOp: 0.7, halo: 0.3 });
     const veins = 'M5,-6L26,-18L48,-27L90,-18M48,-27L84,12M48,-27L64,31M48,-27L38,33M26,-18L11,22';
+    s.add('<g data-part="veins">');
     s.bloom(`<path d="${veins}${flipX(veins)}" transform="${bt}" fill="none" stroke="#b98cf6" stroke-width=".7" stroke-linecap="round" opacity=".7"/>`, { sd: 1, k: 1, box: [30, 30, 240, 120] });
+    s.add('</g><g data-part="eyes">');
     s.glow(150, 64.5, 10, '#d6a0ff', 0.7);
-    s.add('<g fill="#f3dcff"><circle cx="146.6" cy="64.4" r="1.1"/><circle cx="153.4" cy="64.4" r="1.1"/></g>');
+    s.add('<g fill="#f3dcff"><circle cx="146.6" cy="64.4" r="1.1"/><circle cx="153.4" cy="64.4" r="1.1"/></g></g>');
     s.add(particles({ seed: 734, n: 12, x: [40, 260], y: [30, 190], r: [0.4, 1.1], fill: '#e0a0c8', cls: 'float', t: [6, 10], op: [0.25, 0.7] }));
     return s.svg();
   },
@@ -725,7 +774,7 @@ const umbral = faction('umbral', {
     // bones laid in courses, a row of skulls between them
     s.figure(P(boneD(100, 150, 120, 6) + boneD(150, 200, 121, 6.4) + boneD(98, 136, 151, 6) + boneD(136, 172, 150, 6.4) + boneD(172, 202, 151, 5.6) +
       boneD(102, 158, 163, 6.4) + boneD(158, 198, 164, 6)), { fill: '#5a4e78', rim: '#d9c8f6', offsets: [[0, -1]], rimOp: 0.85 });
-    s.add(`<g fill="#7d7298">${skull(122, 143, 0.8)}${skull(150, 143, 0.85)}${skull(178, 143, 0.8)}</g>`);
+    s.add(`<g data-part="skulls" fill="#7d7298">${skull(122, 143, 0.8)}${skull(150, 143, 0.85)}${skull(178, 143, 0.8)}</g>`);
     // the top slab and the bowl
     s.figure('<path d="M96,114V106H204V114Z"/><path d="M128,97H172L165,104H135Z"/><path d="M125,94H175V97.4H125Z"/><path d="M145,103V106H155V103Z"/>', { fill: '#1d1630', rim: '#e6d6ff', offsets: [[0, -1.2]], rimOp: 0.9 });
     // candles, their wax running down over the bones
@@ -736,12 +785,14 @@ const umbral = faction('umbral', {
     // the cold flame
     s.glow(150, 64, 62, '#b07cff', 0.8, 'breathe');
     const tongue = (x, b) => `M${x},${b - 7}C${x + 2.4},${b - 3} ${x + 1.8},${b} ${x},${b}C${x - 1.8},${b} ${x - 2.4},${b - 3} ${x},${b - 7}Z`;
+    s.add('<g data-part="flames">');
     s.bloom(`<g fill="#9b6bff">${parts([
       taper([[150, 96], [144, 76], [153, 54], [146, 28]], [30, 21, 9, 0.6]),
       taper([[138, 96], [131, 80], [135, 62]], [13, 9, 0.5]),
       taper([[162, 96], [170, 80], [166, 60]], [13, 9, 0.5]),
     ])}</g><path d="${taper([[150, 96], [147.4, 78], [151.4, 54]], [17, 10, 0.5])}" fill="#dcc8ff"/><path d="${taper([[150, 96], [150, 86], [150.6, 72]], [8, 5, 0.4])}" fill="#ffffff"/>` +
       `<path d="${candles.map(([x, b, h]) => tongue(x, b - h - 1)).join('')}" fill="#efe2ff"/>`, { sd: 1.8, k: 1.3, box: [40, 20, 220, 190] });
+    s.add('</g>');
     s.add(particles({ seed: 754, n: 14, x: [128, 172], y: [16, 92], r: [0.4, 1.1], fill: '#d9c2ff', cls: 'rise', t: [4, 8], op: [0.4, 0.9] }));
     return s.svg();
   },
@@ -768,25 +819,33 @@ const umbral = faction('umbral', {
     s.add(`<g transform="${gt}" stroke="#1c1630" stroke-width="1.6" fill="none"><path d="M166,140V164M158,148H174"/><path d="M146,180H186M150,188H182" stroke-width="1"/></g>`);
     // the ghoul: haunches high, back arched, the long skull thrust out low,
     // arms hanging between its knees to the stone's edge
-    const ghoul = parts([
+    const ghoul = `<g data-part="body" transform="${gt}">${parts([
       taper([[190, 116], [187, 102], [178, 89], [162, 83]], [12, 14, 13, 10]),
       taper([[188, 114], [182, 100], [176, 87]], [9, 7, 5.6]), taper([[176, 87], [179, 106], [181, 123]], [5.6, 4.4, 3.6]),
       taper([[182, 116], [168, 102], [157, 89]], [9, 7, 5.4]), taper([[157, 89], [155, 108], [153, 123]], [5.4, 4.2, 3.4]),
       taper([[182, 123], [176, 125.5], [169, 126]], [5, 3.6, 2.2]), taper([[155, 123], [148, 125.5], [143, 126.4]], [5, 3.6, 2]),
       taper([[143.5, 126], [141, 129], [140.6, 133]], [1.8, 1.4, 0.5]),
       taper([[164, 84], [152, 87], [142, 91]], [7, 5.6, 5]),
+    ])}</g>` +
+      `<g data-part="head" transform="${gt}">${parts([
       blob([[143, 86], [137, 83.6], [129, 84.4], [122, 88], [118.6, 93], [122, 97], [130, 99], [138, 97.6], [143.6, 93]]),
-      taper([[136, 97.6], [128, 102.6], [121, 104]], [5, 3, 1.2]),
       taper([[141, 86], [149, 79.6], [154, 77.6]], [3.6, 1.6, 0.3]),
+    ])}</g>` +
+      `<g data-part="jaw" transform="${gt}">${parts([taper([[136, 97.6], [128, 102.6], [121, 104]], [5, 3, 1.2])])}</g>` +
+      `<g data-part="armA" transform="${gt}">${parts([
       taper([[160, 86], [152, 98], [147, 108]], [5.4, 4.4, 3.8]), taper([[147, 108], [143, 118], [140, 128]], [3.8, 3.2, 2.8]),
       taper([[140, 128], [137, 134], [136.4, 144]], [2.2, 1.7, 0.5]), taper([[141, 129], [139.6, 137], [140, 147]], [2.1, 1.6, 0.5]), taper([[142.4, 129], [142.8, 136], [144, 143]], [1.9, 1.5, 0.5]),
+    ])}</g>` +
+      `<g data-part="armB" transform="${gt}">${parts([
       taper([[168, 88], [169, 104], [166, 118]], [4.6, 3.8, 3]), taper([[166, 118], [162, 122], [158, 124]], [3.4, 2.6, 1]), taper([[166, 119], [164, 124], [163.6, 127]], [2.6, 2, 0.6]),
-    ]) + '<ellipse cx="170" cy="83" rx="8" ry="4.6" transform="rotate(-20 170 83)"/>' + circ([[192, 100, 1.8], [186.6, 92.4, 1.8], [179.6, 86, 1.8], [171.4, 80.6, 1.7], [164.4, 79.4, 1.6]]);
-    s.figure(`<g transform="${gt}">${ghoul}</g>`, { fill: p.fig, rim: '#e2d4f6', offsets: [[0, -1.2], [-1, -0.6], [1, -0.6]], rimOp: 0.9, shade: 0.45, halo: 0.3 });
-    s.add(`<path d="M181,94q-3,7 0,12M175,91q-3,7 0,12M186,99q-2.6,6 0,10" transform="${gt}" stroke="#c9b8f2" stroke-width=".8" fill="none" opacity=".4"/>`);
+    ])}</g>` + `<g data-part="body" transform="${gt}"><ellipse cx="170" cy="83" rx="8" ry="4.6" transform="rotate(-20 170 83)"/>${circ([[192, 100, 1.8], [186.6, 92.4, 1.8], [179.6, 86, 1.8], [171.4, 80.6, 1.7], [164.4, 79.4, 1.6]])}</g>`;
+    s.figure(ghoul, { fill: p.fig, rim: '#e2d4f6', offsets: [[0, -1.2], [-1, -0.6], [1, -0.6]], rimOp: 0.9, shade: 0.45, halo: 0.3 });
+    s.add(`<g data-part="ribs"><path d="M181,94q-3,7 0,12M175,91q-3,7 0,12M186,99q-2.6,6 0,10" transform="${gt}" stroke="#c9b8f2" stroke-width=".8" fill="none" opacity=".4"/></g>`);
     // too many eyes
+    s.add('<g data-part="eyefire">');
     s.glow(115.3, 55.2, 16, '#b07cff', 0.8);
     s.bloom(`<g transform="${gt}" fill="#efe2ff"><ellipse cx="128" cy="89.6" rx="1.7" ry="1.1"/><ellipse cx="123.2" cy="91.2" rx="1.3" ry=".9"/><ellipse cx="132.4" cy="88.4" rx="1" ry=".7"/></g>`, { sd: 1.2, k: 1.4, box: [96, 40, 40, 30] });
+    s.add('</g>');
     s.fog(198, '#8c78b8', 0.2);
     s.add(particles({ seed: 744, n: 12, x: [60, 280], y: [60, 190], r: [0.4, 1], fill: '#cdb8f0', cls: 'float', t: [6, 10], op: [0.25, 0.65] }));
     return s.svg();
@@ -820,17 +879,17 @@ const umbral = faction('umbral', {
       taper([[12, -53], [16, -40], [15, -30]], [6, 5, 4.4]) + taper([[-12, -53], [-15, -40], [-13, -31]], [6, 5, 4.4]) +
       'M13.4,-34V2H16.6V-34ZM9,-33H21V-30.6H9Z') + '</g>';
     const crowd = [[78, 176, 1.05], [98, 175, 0.95], [118, 176, 1.1], [140, 176, 0.9], [160, 177, 1], [228, 175, 1], [250, 176, 0.9], [272, 175, 1.05]];
-    s.figure(whole(26, 177, 1.05) + whole(44, 176, 0.85, true) + whole(58, 177, 1) + crowd.map(([x, b, k]) => cut(x, b, k)).join('') + giant,
+    s.figure(`<g data-part="folk0">${whole(26, 177, 1.05)}</g><g data-part="folk1">${whole(44, 176, 0.85, true)}</g><g data-part="folk2">${whole(58, 177, 1)}</g>` + crowd.map(([x, b, k]) => cut(x, b, k)).join('') + giant,
       { fill: '#0b0710', rim: '#d9c2ff', offsets: [[0, -1], [0.8, -0.5]], rimOp: 0.8 });
-    s.add(`<g fill="#d9c2ff" opacity=".42">${parts(crowd.map(([x, b, k]) =>
+    s.add(`<g data-part="ghosts" fill="#d9c2ff" opacity=".42">${parts(crowd.map(([x, b, k]) =>
       taper([[x + 1, b - 9 * k], [x + 2, b - 17 * k]], [5.4 * k, 4.6 * k]) + disc(x + 2.8 * k, b - 20.6 * k, 2.8 * k)))}</g>`);
-    s.add(`<g fill="#e6d6ff" opacity=".6">${parts(crowd.map(([x, b, k]) =>
+    s.add(`<g data-part="wisps" fill="#e6d6ff" opacity=".6">${parts(crowd.map(([x, b, k]) =>
       taper([[x + 2, b - 16 * k], [x + 6 * k, b - 25 * k], [x + 13 * k, b - 31 * k], [x + 22 * k, b - 35 * k]], [3.6 * k, 2.6 * k, 1.4 * k, 0.2]) +
       taper([[x + 3.4 * k, b - 21 * k], [x + 9 * k, b - 27 * k], [x + 17 * k, b - 28 * k]], [2.6 * k, 1.6 * k, 0.2]) +
       taper([[x, b - 13 * k], [x + 6 * k, b - 17 * k], [x + 12 * k, b - 17 * k]], [2.2 * k, 1.4 * k, 0.2])))}</g>`);
     // the scythe
-    s.bloom('<path d="M300,-8L216,130" stroke="#d9c2ff" stroke-width="3" stroke-linecap="round"/><path d="M252,66L262,72" stroke="#d9c2ff" stroke-width="2.4" stroke-linecap="round"/>' +
-      '<path d="M218,122C178,112 118,118 62,146C104,136 158,132 216,134Z" fill="#f1e6ff"/>', { sd: 2.2, k: 1.3 });
+    s.bloom('<g data-part="scythe"><path d="M300,-8L216,130" stroke="#d9c2ff" stroke-width="3" stroke-linecap="round"/><path d="M252,66L262,72" stroke="#d9c2ff" stroke-width="2.4" stroke-linecap="round"/>' +
+      '<path d="M218,122C178,112 118,118 62,146C104,136 158,132 216,134Z" fill="#f1e6ff"/></g>', { sd: 2.2, k: 1.3 });
     s.add(particles({ seed: 764, n: 18, x: [70, 290], y: [110, 170], r: [0.4, 1.2], fill: '#d9c2ff', cls: 'rise', t: [4, 8], op: [0.4, 0.9] }));
     return s.svg();
   },
@@ -861,37 +920,50 @@ const umbral = faction('umbral', {
     s.add(`<g fill="#140e20">${parts([bird(60, 80, 0.9), bird(232, 140, 0.8), bird(40, 104, 0.7)])}</g>`);
     // the wyrm: torn wings on long finger-bones, a chain of vertebrae from skull
     // to tail, its tail curled round as it circles
-    s.path(poly([[146, 82], [124, 56], [100, 36], [36, 48], [50, 58], [44, 62], [46, 74], [58, 78], [56, 84], [66, 90], [78, 90], [80, 96], [92, 96], [110, 92], [120, 96], [140, 92]]) +
-      poly([[156, 80], [180, 50], [206, 30], [266, 34], [254, 44], [260, 50], [262, 58], [250, 62], [252, 68], [244, 74], [232, 74], [230, 80], [222, 82], [204, 84], [196, 90], [182, 90]]),
-      '#1a1230', 'opacity=".88"');
+    s.add('<g data-part="memL">');
+    s.path(poly([[146, 82], [124, 56], [100, 36], [36, 48], [50, 58], [44, 62], [46, 74], [58, 78], [56, 84], [66, 90], [78, 90], [80, 96], [92, 96], [110, 92], [120, 96], [140, 92]]), '#1a1230', 'opacity=".88"');
+    s.add('</g><g data-part="memR">');
+    s.path(poly([[156, 80], [180, 50], [206, 30], [266, 34], [254, 44], [260, 50], [262, 58], [250, 62], [252, 68], [244, 74], [232, 74], [230, 80], [222, 82], [204, 84], [196, 90], [182, 90]]), '#1a1230', 'opacity=".88"');
+    s.add('</g>');
     s.glow(166, 100, 30, '#b07cff', 0.8, 'breathe');
+    s.add('<g data-part="heart">');
     s.bloom('<ellipse cx="166" cy="100" rx="8" ry="6" fill="#e6d0ff"/>', { sd: 2.2, k: 1.4, box: [140, 78, 52, 44] });
+    s.add('</g>');
     const spine = [[92, 110], [104, 102], [118, 93], [134, 86], [150, 83], [166, 85], [182, 92], [198, 103], [216, 111], [236, 111], [251, 102], [257, 88], [251, 75], [240, 69]];
     const sp = spline(spine, 3);
     let verts = '';
     sp.forEach(([x, y], i) => { verts += disc(x, y, Math.max(1.4, 4.6 - (i / sp.length) * 3.4)); });
-    const wyrm = P(taper(spine, [4.4, 5, 5.4, 5.4, 5.4, 5, 4.4, 3.8, 3.2, 2.6, 2.2, 1.8, 1.4, 0.8]) + verts) + parts([
+    const wyrm = `<g data-part="spine">${P(taper(spine, [4.4, 5, 5.4, 5.4, 5.4, 5, 4.4, 3.8, 3.2, 2.6, 2.2, 1.8, 1.4, 0.8]) + verts)}</g>` +
       // ribs, curving down round the light
-      ...[[142, 84, 1], [150, 83, 1.06], [158, 83.6, 1.1], [166, 85, 1.1], [174, 88, 1], [182, 92, 0.86]].map(([x, y, k]) =>
-        taper([[x, y + 1], [x - 5 * k, y + 10 * k], [x - 4 * k, y + 20 * k], [x + 1, y + 27 * k]], [3.64, 3.08, 2.38, 0.84])),
+      `<g data-part="ribs">${parts([...[[142, 84, 1], [150, 83, 1.06], [158, 83.6, 1.1], [166, 85, 1.1], [174, 88, 1], [182, 92, 0.86]].map(([x, y, k]) =>
+        taper([[x, y + 1], [x - 5 * k, y + 10 * k], [x - 4 * k, y + 20 * k], [x + 1, y + 27 * k]], [3.64, 3.08, 2.38, 0.84]))])}</g>` +
       // the skull, horned, jaw hanging
-      blob([[96, 104], [90, 99], [80, 99.6], [70, 104], [64, 109], [70, 112.6], [82, 113.6], [94, 112]]),
-      taper([[92, 113], [80, 119], [68, 120]], [5.6, 3.64, 1.4]),
-      taper([[94, 101], [103, 93], [111, 90]], [4.48, 2.52, 0.56]), taper([[89, 99.6], [94, 90], [97, 84]], [3.92, 2.24, 0.56]),
+      `<g data-part="skull">${parts([
+        blob([[96, 104], [90, 99], [80, 99.6], [70, 104], [64, 109], [70, 112.6], [82, 113.6], [94, 112]]),
+        taper([[94, 101], [103, 93], [111, 90]], [4.48, 2.52, 0.56]), taper([[89, 99.6], [94, 90], [97, 84]], [3.92, 2.24, 0.56]),
+      ])}</g>` +
+      `<g data-part="jaw">${parts([taper([[92, 113], [80, 119], [68, 120]], [5.6, 3.64, 1.4])])}</g>` +
       // the wing arms and finger-bones
-      taper([[146, 82], [134, 66], [124, 56]], [6.16, 5.04, 4.2]), taper([[124, 56], [112, 44], [100, 36]], [4.2, 3.64, 3.08]), taper([[100, 36], [104, 28]], [2.8, 0.42]),
-      taper([[100, 36], [68, 40], [36, 48]], [3.08, 2.24, 0.84]), taper([[100, 36], [72, 56], [46, 74]], [2.8, 2.1, 0.84]),
-      taper([[100, 36], [84, 62], [66, 90]], [2.8, 2.1, 0.84]), taper([[100, 36], [96, 66], [92, 96]], [2.52, 1.96, 0.84]),
-      taper([[156, 80], [168, 62], [180, 50]], [5.6, 4.76, 3.92]), taper([[180, 50], [194, 38], [206, 30]], [3.92, 3.36, 2.8]), taper([[206, 30], [208, 22]], [2.52, 0.42]),
-      taper([[206, 30], [236, 30], [266, 34]], [2.8, 2.1, 0.84]), taper([[206, 30], [236, 44], [262, 58]], [2.66, 1.96, 0.84]),
-      taper([[206, 30], [226, 52], [244, 74]], [2.52, 1.96, 0.84]), taper([[206, 30], [214, 56], [222, 82]], [2.38, 1.82, 0.84]),
+      `<g data-part="armL">${parts([
+        taper([[146, 82], [134, 66], [124, 56]], [6.16, 5.04, 4.2]), taper([[124, 56], [112, 44], [100, 36]], [4.2, 3.64, 3.08]), taper([[100, 36], [104, 28]], [2.8, 0.42]),
+        taper([[100, 36], [68, 40], [36, 48]], [3.08, 2.24, 0.84]), taper([[100, 36], [72, 56], [46, 74]], [2.8, 2.1, 0.84]),
+        taper([[100, 36], [84, 62], [66, 90]], [2.8, 2.1, 0.84]), taper([[100, 36], [96, 66], [92, 96]], [2.52, 1.96, 0.84]),
+      ])}</g>` +
+      `<g data-part="armR">${parts([
+        taper([[156, 80], [168, 62], [180, 50]], [5.6, 4.76, 3.92]), taper([[180, 50], [194, 38], [206, 30]], [3.92, 3.36, 2.8]), taper([[206, 30], [208, 22]], [2.52, 0.42]),
+        taper([[206, 30], [236, 30], [266, 34]], [2.8, 2.1, 0.84]), taper([[206, 30], [236, 44], [262, 58]], [2.66, 1.96, 0.84]),
+        taper([[206, 30], [226, 52], [244, 74]], [2.52, 1.96, 0.84]), taper([[206, 30], [214, 56], [222, 82]], [2.38, 1.82, 0.84]),
+      ])}</g>` +
       // the legs, claws hanging
-      taper([[184, 94], [192, 106], [187, 119]], [5.04, 3.92, 3.36]), taper([[187, 119], [183, 125]], [2.52, 0.42]), taper([[187, 119], [189, 126]], [2.52, 0.42]),
-      taper([[150, 90], [146, 102], [139, 107]], [4.2, 3.36, 2.8]), taper([[139, 107], [134, 109]], [2.24, 0.42]), taper([[139, 107], [136, 112]], [2.24, 0.42]),
-    ]);
+      `<g data-part="legs">${parts([
+        taper([[184, 94], [192, 106], [187, 119]], [5.04, 3.92, 3.36]), taper([[187, 119], [183, 125]], [2.52, 0.42]), taper([[187, 119], [189, 126]], [2.52, 0.42]),
+        taper([[150, 90], [146, 102], [139, 107]], [4.2, 3.36, 2.8]), taper([[139, 107], [134, 109]], [2.24, 0.42]), taper([[139, 107], [136, 112]], [2.24, 0.42]),
+      ])}</g>`;
     s.figure(wyrm, { fill: '#120c1e', rim: '#e2d4f6', offsets: [[0, -1.2], [-0.8, -0.8], [0.8, -0.8]], rimOp: 0.85, halo: 0.3 });
+    s.add('<g data-part="eye">');
     s.glow(80, 104, 7, '#b07cff', 0.9);
     s.add('<ellipse cx="80" cy="104" rx="2.2" ry="1.3" fill="#efe2ff"/>');
+    s.add('</g>');
     s.add(particles({ seed: 764, n: 14, x: [40, 290], y: [40, 200], r: [0.4, 1.2], fill: '#d9c2ff', cls: 'float', t: [6, 10], op: [0.3, 0.8] }));
     return s.svg();
   },

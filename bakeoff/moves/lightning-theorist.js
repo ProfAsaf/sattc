@@ -21,7 +21,15 @@
 //             dims away.
 //   2300-3100 the arc between her hands returns, stuttering back to full.
 //   3500      everything is at rest as drawn (the move ends at END).
+//
+// THE CONTRACT (bakeoff/recipe.md): role attacker, element lightning. The bolt goes out through
+// the hand nearer its target (`emit`: her right hand; her left if the target is to her left,
+// and then she throws, and leans, the other way) to T = k.aim, else the sea (spec.sea). Its
+// strokes, flashes and the burst at T are on the overlay, since T may be on another card;
+// the water's spike, rings and droplets are only for when T is the sea. BEATS: the throw and
+// the first stroke (release 1110), where it lands (impact 1120), and her at rest again (settle 3500).
 export const END = 3800;
+export const BEATS = { release: 1110, impact: 1120, settle: 3500 };
 export const STILLS = [220, 700, 1000, 1125, 1240, 1500, 2450, 3400];
 
 export const textures = {
@@ -32,7 +40,9 @@ export const textures = {
 export function build(k) {
   const { fx, act, rand, u } = k, eio = 'ease-in-out';
   const arc = k.part('arc'), her = k.part('her');
-  const [hl, hr] = k.spec.hands, [fx0, fy0] = k.spec.feet, S = k.spec.sea;
+  const [hl, hr] = k.spec.hands, [fx0, fy0] = k.spec.feet;
+  const T = k.aim || k.spec.sea, solo = !k.aim, S = T;
+  const dir = T[0] >= (hl[0] + hr[0]) / 2 ? 1 : -1, E = dir > 0 ? hr : hl; // which hand throws, and which way she leans
 
   k.css(`.g-bolt { border-radius: 50%; background: radial-gradient(closest-side, rgba(246,248,255,.95), rgba(170,190,255,.55) 22%, rgba(110,120,255,.2) 50%, rgba(90,90,255,.06) 78%, rgba(90,90,255,0) 100%); }
 .g-gold { border-radius: 50%; background: radial-gradient(closest-side, rgba(255,246,214,.9), rgba(255,208,130,.45) 25%, rgba(255,170,70,.12) 55%, rgba(255,150,40,0) 100%); }`);
@@ -54,19 +64,24 @@ export function build(k) {
     return k.svg(`<defs><filter id="b" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8"/></filter></defs><g transform="translate(${-x0} ${-y0})">${layer(5, '#6f7dff', 0.75, true)}${layer(2.1, '#b4c8ff', 0.85, false)}${layer(0.8, '#ffffff', 1, false)}</g>`, w, h);
   };
 
-  // the great bolt: from the cloud, through her hands, out over the sea (four different strokes)
-  const BOX = [90, -10, 175, 165], BC = [BOX[0] + BOX[2] / 2, BOX[1] + BOX[3] / 2];
+  // the great bolt: from the cloud, through her hand, out to T (four different strokes); the box is sized to hold all of them
   const sky = [136, -4], mid = [126, 34];
-  const great = [0, 1, 2, 3].map((v) => {
-    const s1 = jag(sky, mid, 5, 7), s2 = jag(mid, hr, 3, 5), s3 = jag(hr, S, 11, 12 + v * 2);
+  const dist = Math.hypot(T[0] - E[0], T[1] - E[1]), nseg = Math.max(11, Math.round(dist / 9));
+  const greatS = [0, 1, 2, 3].map((v) => {
+    const s1 = jag(sky, mid, 5, 7), s2 = jag(mid, E, 3, 5), s3 = jag(E, T, nseg, 12 + v * 2);
+    const q = (f) => s3[Math.min(s3.length - 1, Math.round(f * (s3.length - 1)))];
     const forks = [
-      { pts: jag(s3[4], [s3[4][0] + 30, s3[4][1] + (v % 2 ? 4 : 22)], 4, 5), w: 0.55 },
-      { pts: jag(s3[7], [s3[7][0] + 6, S[1] + 8], 3, 4), w: 0.5 },
+      { pts: jag(q(0.36), [q(0.36)[0] + 30 * dir, q(0.36)[1] + (v % 2 ? 4 : 22)], 4, 5), w: 0.55 },
+      { pts: jag(q(0.64), [q(0.64)[0] + 6 * dir, T[1] + 8], 3, 4), w: 0.5 },
       { pts: jag(s1[2], [166 - v * 9, 14 + v * 3], 4, 4), w: 0.5 },
-      { pts: jag(s3[2], [s3[2][0] - 14, s3[2][1] + 16], 3, 3), w: 0.45 },
+      { pts: jag(q(0.18), [q(0.18)[0] - 14 * dir, q(0.18)[1] + 16], 3, 3), w: 0.45 },
     ];
-    return boltSvg(BOX, [{ pts: [...s1, ...s2.slice(1), ...s3.slice(1)], w: 1 }, ...forks]);
+    return [{ pts: [...s1, ...s2.slice(1), ...s3.slice(1)], w: 1 }, ...forks];
   });
+  const xs = greatS.flatMap((g) => g.flatMap((q) => q.pts.map((p) => p[0]))), ys = greatS.flatMap((g) => g.flatMap((q) => q.pts.map((p) => p[1])));
+  const bx0 = Math.floor(Math.min(...xs) - 14), by0 = Math.floor(Math.min(...ys) - 14);
+  const BOX = [bx0, by0, Math.ceil(Math.max(...xs) + 14) - bx0, Math.ceil(Math.max(...ys) + 14) - by0], BC = [BOX[0] + BOX[2] / 2, BOX[1] + BOX[3] / 2];
+  const great = greatS.map((g) => boltSvg(BOX, g));
   // small crackles snapping between her hands, and feeder bolts from the cloud
   const CB = [80, 28, 80, 56];
   const crackle = [0, 1, 2, 3].map((v) => {
@@ -90,9 +105,9 @@ export function build(k) {
   };
 
   // ── she: the leaning (about her feet), tremble while charging, the throw, the rocking back to rest
-  const lean = [[0, 0], [250, -3], [420, -3.4], [1040, -4.2], [1108, -4.6], [1170, 6.8], [1380, 5.2], [1700, -1.8], [2050, 1.2], [2400, -0.4], [2800, 0]];
+  const lean = [[0, 0], [250, -3], [420, -3.4], [1040, -4.2], [1108, -4.6], [1170, 6.8], [1380, 5.2], [1700, -1.8], [2050, 1.2], [2400, -0.4], [2800, 0]].map(([t, a]) => [t, a * dir]);
   const trem = [];
-  for (let t = 450; t < 1040; t += 55) trem.push([t, -3.4 - (t - 450) / 590 * 0.8 + (trem.length % 2 ? 0.7 : -0.7) * (0.5 + (t - 450) / 590)]);
+  for (let t = 450; t < 1040; t += 55) trem.push([t, dir * (-3.4 - (t - 450) / 590 * 0.8 + (trem.length % 2 ? 0.7 : -0.7) * (0.5 + (t - 450) / 590))]);
   const her_k = [...lean.filter(([t]) => t < 450 || t > 1040), ...trem].sort((a, b) => a[0] - b[0]);
   act(her, her_k.map(([t, a], i) => [t, { transform: `rotate(${a.toFixed(2)}deg)` }, t === 1108 ? 'ease-in' : t === 1170 ? 'ease-out' : eio]));
   // where a point on her (her hands) is when she is leaned `a` degrees: as px from rest
@@ -123,8 +138,8 @@ export function build(k) {
     if (n % 3 === 1) fv[Math.floor(rand() * 3)].push([t + 20, 55 + rand() * 30, 0.5 + 0.4 * g]);
     t += 120 - g * 70 + rand() * 30;
   }
-  crackle.forEach((src, v) => fx(k.picIn(src, [CB[0] + CB[2] / 2, CB[1] + CB[3] / 2], CB[2], CB[3]), blinks(cv[v])));
-  feed.forEach((src, v) => fx(k.picIn(src, [FB[0] + FB[2] / 2, FB[1] + FB[3] / 2], FB[2], FB[3]), blinks(fv[v])));
+  crackle.forEach((src, v) => { if (cv[v].length) fx(k.picIn(src, [CB[0] + CB[2] / 2, CB[1] + CB[3] / 2], CB[2], CB[3]), blinks(cv[v])); });
+  feed.forEach((src, v) => { if (fv[v].length) fx(k.picIn(src, [FB[0] + FB[2] / 2, FB[1] + FB[3] / 2], FB[2], FB[3]), blinks(fv[v])); });
   // after the throw: a few last crackles die on her hands
   const dv = [[2000, 45, 0.5], [2090, 40, 0.4], [2230, 50, 0.45]];
   fx(k.picIn(crackle[2], [CB[0] + CB[2] / 2, CB[1] + CB[3] / 2], CB[2], CB[3]), blinks([]).concat([[2000, { opacity: 0 }], [2001, { opacity: 0.5 }], [2050, { opacity: 0 }], [2260, { opacity: 0 }], [2261, { opacity: 0.5 }], [2310, { opacity: 0 }]]));
@@ -149,9 +164,9 @@ export function build(k) {
     [1900, { transform: 'scale(1)', opacity: 0.1 }, 'ease-out'], [2100, { transform: 'scale(1)', opacity: 0 }]]);
   flash(k.lightIn('g-bolt', [150, 14], 330, 110));
   flash(k.lightIn('g-bolt', [200, 52], 250, 80), 0.4);
-  flash(k.lightIn('g-bolt', [S[0] - 10, S[1] + 8], 230, 62), 0.55, 1.1);
+  flash(solo ? k.lightIn('g-bolt', [S[0] - 10, S[1] + 8], 230, 62) : k.light('g-bolt', T, 120), 0.55, 1.1);
   // the sea stays lit, then fades
-  fx(k.lightIn('g-bolt', [S[0], S[1] + 6], 150, 40), [[1110, { opacity: 0 }, 'ease-out'], [1160, { opacity: 0.7 }], [1500, { opacity: 0.45 }, eio], [2300, { opacity: 0 }]]);
+  fx(solo ? k.lightIn('g-bolt', [S[0], S[1] + 6], 150, 40) : k.light('g-bolt', T, 70), [[1110, { opacity: 0 }, 'ease-out'], [1160, { opacity: 0.7 }], [1500, { opacity: 0.45 }, eio], [2300, { opacity: 0 }]]);
   // a flash of her: warm light on her face and shoulders at the blaze
   fx(k.lightIn('g-gold', [122, 84], 110, 90), [[900, { opacity: 0 }, eio], [1060, { opacity: 0.55 }], [1108, { opacity: 0.7 }], [1112, { opacity: 0.2 }], [1500, { opacity: 0.2 }, eio], [2000, { opacity: 0 }]]);
   // (also the blaze itself: a white bloom between her hands just before the throw)
@@ -160,25 +175,40 @@ export function build(k) {
   // ── the bolt itself, in strokes
   great.forEach((src, v) => {
     const [t, dur, o] = strokes[v];
-    fx(k.picIn(src, BC, BOX[2], BOX[3]), [[t - 1, { opacity: 0 }], [t, { opacity: 1 }], [t + dur * 0.45, { opacity: 1 }], [t + dur, { opacity: 0.5 * o }], [t + dur + 28, { opacity: 0 }]]);
+    fx(k.pic(src, BC, BOX[2], BOX[3]), [[t - 1, { opacity: 0 }], [t, { opacity: 1 }], [t + dur * 0.45, { opacity: 1 }], [t + dur, { opacity: 0.5 * o }], [t + dur + 28, { opacity: 0 }]]);
   });
   // a pale after-image of the first stroke, hanging in the dark a moment
-  fx(k.picIn(great[0], BC, BOX[2], BOX[3]), [[1160, { opacity: 0 }], [1170, { opacity: 0.35 }], [1215, { opacity: 0.2 }], [1226, { opacity: 0 }], [1420, { opacity: 0 }], [1421, { opacity: 0.22 }], [1470, { opacity: 0 }]]);
+  fx(k.pic(great[0], BC, BOX[2], BOX[3]), [[1160, { opacity: 0 }], [1170, { opacity: 0.35 }], [1215, { opacity: 0.2 }], [1226, { opacity: 0 }], [1420, { opacity: 0 }], [1421, { opacity: 0.22 }], [1470, { opacity: 0 }]]);
 
   // ── where it strikes the water: burst, spike of water, droplets, rings
-  fx(k.lightIn('g-bolt', S, 70, 44), [[1108, { transform: 'scale(.3)', opacity: 0 }, 'ease-out'], [1118, { transform: 'scale(1.1)', opacity: 1 }], [1200, { transform: 'scale(1.7)', opacity: 0.6 }, 'ease-out'], [1230, { transform: 'scale(1.2)', opacity: 0.9 }], [1500, { transform: 'scale(2)', opacity: 0.2 }, 'ease-out'], [1800, { transform: 'scale(2.3)', opacity: 0 }]]);
-  const spike = k.svg('<defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#cfe0ff" stop-opacity=".9"/><stop offset="0.6" stop-color="#ffffff"/><stop offset="1" stop-color="#bcd0ff" stop-opacity="0"/></linearGradient></defs><path d="M8,0 L10.5,9 L9.5,15 L14,34 L2,34 L6.5,15 L5.5,9Z" fill="url(#g)"/>', 16, 34);
-  const spk = (x, t, sx, sy) => fx(k.picIn(spike, [x, S[1] + 2], 16 * sx, 34 * sy, { base: true }), [[t, { transform: 'scale(.3, 0)', opacity: 0 }, 'ease-out'], [t + 70, { transform: 'scale(1, 1)', opacity: 1 }, 'ease-in'], [t + 190, { transform: 'scale(1.2, .9)', opacity: 0.8 }], [t + 380, { transform: 'scale(.6, .15)', opacity: 0 }]]);
-  spk(S[0], 1112, 1, 1); spk(S[0] - 7, 1150, 0.6, 0.6); spk(S[0] + 8, 1180, 0.55, 0.7); spk(S[0] + 2, 1235, 0.7, 0.55);
-  const ring = k.svg('<ellipse cx="30" cy="8" rx="28" ry="6" fill="none" stroke="#e8f0ff" stroke-width="1.4"/><ellipse cx="30" cy="8" rx="22" ry="4.4" fill="none" stroke="#9fb4ff" stroke-width=".8" stroke-opacity=".7"/>', 60, 16);
-  for (const [t, big] of [[1118, 1.25], [1250, 1.7], [1410, 2.1], [1600, 2.4]]) {
-    fx(k.picIn(ring, [S[0], S[1] + 3], 60, 16), [[t, { transform: 'scale(.12)', opacity: 0 }, 'ease-out'], [t + 40, { transform: 'scale(.3)', opacity: 0.95 }, 'ease-out'], [t + 650, { transform: `scale(${big})`, opacity: 0 }]]);
-  }
-  // droplets thrown up, falling back
-  for (let i = 0; i < 22; i++) {
-    const t = 1118 + i * 22 + rand() * 40, dx = (rand() - 0.5) * 48, rise = 14 + rand() * 24, sz = 3 + rand() * 4, life = 380 + rand() * 260;
-    const pts = k.arc([0, 0], [dx * 0.5, -rise * 1.9], [dx, 2 + rand() * 4], 6);
-    fx(k.picIn('spark', [S[0] + (rand() - 0.5) * 8, S[1] + 1], sz, sz), pts.map(([x, y], j) => [Math.round(t + life * j / 6), { transform: `${k.T(x, y)} scale(${(1 - 0.45 * j / 6).toFixed(2)})`, opacity: j === 6 ? 0 : 1 - 0.1 * j }, j < 3 ? 'ease-out' : 'ease-in']));
+  fx(solo ? k.lightIn('g-bolt', S, 70, 44) : k.light('g-bolt', S, 64), [[1108, { transform: 'scale(.3)', opacity: 0 }, 'ease-out'], [1118, { transform: 'scale(1.1)', opacity: 1 }], [1200, { transform: 'scale(1.7)', opacity: 0.6 }, 'ease-out'], [1230, { transform: 'scale(1.2)', opacity: 0.9 }], [1500, { transform: 'scale(2)', opacity: 0.2 }, 'ease-out'], [1800, { transform: 'scale(2.3)', opacity: 0 }]]);
+  if (solo) {
+    const spike = k.svg('<defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#cfe0ff" stop-opacity=".9"/><stop offset="0.6" stop-color="#ffffff"/><stop offset="1" stop-color="#bcd0ff" stop-opacity="0"/></linearGradient></defs><path d="M8,0 L10.5,9 L9.5,15 L14,34 L2,34 L6.5,15 L5.5,9Z" fill="url(#g)"/>', 16, 34);
+    const spk = (x, t, sx, sy) => fx(k.picIn(spike, [x, S[1] + 2], 16 * sx, 34 * sy, { base: true }), [[t, { transform: 'scale(.3, 0)', opacity: 0 }, 'ease-out'], [t + 70, { transform: 'scale(1, 1)', opacity: 1 }, 'ease-in'], [t + 190, { transform: 'scale(1.2, .9)', opacity: 0.8 }], [t + 380, { transform: 'scale(.6, .15)', opacity: 0 }]]);
+    spk(S[0], 1112, 1, 1); spk(S[0] - 7, 1150, 0.6, 0.6); spk(S[0] + 8, 1180, 0.55, 0.7); spk(S[0] + 2, 1235, 0.7, 0.55);
+    const ring = k.svg('<ellipse cx="30" cy="8" rx="28" ry="6" fill="none" stroke="#e8f0ff" stroke-width="1.4"/><ellipse cx="30" cy="8" rx="22" ry="4.4" fill="none" stroke="#9fb4ff" stroke-width=".8" stroke-opacity=".7"/>', 60, 16);
+    for (const [t, big] of [[1118, 1.25], [1250, 1.7], [1410, 2.1], [1600, 2.4]]) {
+      fx(k.picIn(ring, [S[0], S[1] + 3], 60, 16), [[t, { transform: 'scale(.12)', opacity: 0 }, 'ease-out'], [t + 40, { transform: 'scale(.3)', opacity: 0.95 }, 'ease-out'], [t + 650, { transform: `scale(${big})`, opacity: 0 }]]);
+    }
+    // droplets thrown up, falling back
+    for (let i = 0; i < 22; i++) {
+      const t = 1118 + i * 22 + rand() * 40, dx = (rand() - 0.5) * 48, rise = 14 + rand() * 24, sz = 3 + rand() * 4, life = 380 + rand() * 260;
+      const pts = k.arc([0, 0], [dx * 0.5, -rise * 1.9], [dx, 2 + rand() * 4], 6);
+      fx(k.picIn('spark', [S[0] + (rand() - 0.5) * 8, S[1] + 1], sz, sz), pts.map(([x, y], j) => [Math.round(t + life * j / 6), { transform: `${k.T(x, y)} scale(${(1 - 0.45 * j / 6).toFixed(2)})`, opacity: j === 6 ? 0 : 1 - 0.1 * j }, j < 3 ? 'ease-out' : 'ease-in']));
+    }
+  } else {
+    // it lands on another card: a white flash, two rings of light and a crown of sparks and little forks
+    const ring2 = k.svg('<defs><filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.6"/></filter></defs><circle cx="50" cy="50" r="40" fill="none" stroke="#9fb4ff" stroke-width="5" filter="url(#b)"/><circle cx="50" cy="50" r="40" fill="none" stroke="#ffffff" stroke-width="1.4"/>', 100, 100);
+    for (const [t, big, o] of [[1118, 0.7, 1], [1250, 0.95, 0.8], [1410, 1.15, 0.6]]) {
+      fx(k.pic(ring2, S, 100, 100), [[t, { transform: 'scale(.1)', opacity: 0 }, 'ease-out'], [t + 40, { transform: 'scale(.2)', opacity: o }, 'ease-out'], [t + 520, { transform: `scale(${big})`, opacity: 0 }]]);
+    }
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2 + rand() * 0.4, r = 14 + rand() * 20, t = 1118 + rand() * 80, sz = 3 + rand() * 3.5, life = 300 + rand() * 260;
+      const ex = Math.cos(a) * r, ey = Math.sin(a) * r * 0.85;
+      fx(k.pic('spark', S, sz, sz), [[t, { transform: 'scale(.5)', opacity: 0 }, 'ease-out'], [t + 30, { transform: `${k.T(ex * 0.4, ey * 0.4)} scale(1.2)`, opacity: 1 }, 'ease-out'], [t + life, { transform: `${k.T(ex, ey + 8)} scale(.2)`, opacity: 0 }]]);
+    }
+    const fkSvg = [0, 1, 2].map(() => boltSvg([0, 0, 60, 60], [{ pts: jag([30, 30], [30 + (rand() - 0.5) * 50, 30 + (rand() - 0.5) * 50], 4, 4), w: 0.8 }, { pts: jag([30, 30], [30 + (rand() - 0.5) * 50, 30 + (rand() - 0.5) * 50], 4, 4), w: 0.7 }]));
+    fkSvg.forEach((src, v) => fx(k.pic(src, S, 60, 60), [[1118 + v * 120, { opacity: 0 }], [1119 + v * 120, { opacity: 1 }], [1160 + v * 120, { opacity: 0.6 }], [1190 + v * 120, { opacity: 0 }]]));
   }
   // sparks spat off her hands as she gathers, and a few more thrown with the bolt
   for (const [p, dir] of [[hl, -1], [hr, 1]]) {
@@ -189,8 +219,8 @@ export function build(k) {
     }
   }
   for (let i = 0; i < 12; i++) {
-    const t = 1112 + rand() * 120, f = rand(), px = hr[0] + (S[0] - hr[0]) * f + (rand() - 0.5) * 8, py = hr[1] + (S[1] - hr[1]) * f + (rand() - 0.5) * 8;
+    const t = 1112 + rand() * 120, f = rand(), px = E[0] + (S[0] - E[0]) * f + (rand() - 0.5) * 8, py = E[1] + (S[1] - E[1]) * f + (rand() - 0.5) * 8;
     const dx = (rand() - 0.5) * 26, dy = 6 + rand() * 14, sz = 2.5 + rand() * 2.5;
-    fx(k.picIn('spark', [px, py], sz, sz), [[t, { transform: 'scale(1.3)', opacity: 0 }, 'ease-out'], [t + 25, { transform: 'scale(1.1)', opacity: 1 }, 'ease-out'], [t + 330, { transform: `${k.T(dx, dy)} scale(.2)`, opacity: 0 }]]);
+    fx(k.pic('spark', [px, py], sz, sz), [[t, { transform: 'scale(1.3)', opacity: 0 }, 'ease-out'], [t + 25, { transform: 'scale(1.1)', opacity: 1 }, 'ease-out'], [t + 330, { transform: `${k.T(dx, dy)} scale(.2)`, opacity: 0 }]]);
   }
 }

@@ -85,6 +85,21 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Sproutling: the stem (from its foot in the soil), the two leaves (the one drawing of both,
+  // with its halo, split down the stem; each turns about the joint at the stem's top) and the
+  // husk of its seed on the left leaf's tip (it turns with that leaf). `joint`: the stem's top,
+  // where the leaves meet; `base`: its foot; `tips`: the leaf tips (left, right);
+  // `alone`: the ground to its right, where its boon goes when nothing is aimed at
+  'sproutling': {
+    role: 'support', element: 'nature', facing: 'front', emit: [150, 88], hit: [150, 128],
+    joint: [150, 95], base: [150, 156], tips: [[100, 76], [201, 72]], alone: [232, 150],
+    parts: [
+      { name: 'stem', of: 'fig:2 [data-part=stem]', pivot: [150, 156] },
+      { name: 'leafL', of: '[data-part=leaves]', pivot: [150, 95], poly: [[60, 40], [150, 40], [150, 130], [60, 130]] },
+      { name: 'leafR', of: '[data-part=leaves]', pivot: [150, 95], poly: [[150, 40], [240, 40], [240, 130], [150, 130]] },
+      { name: 'husk', of: '[data-part=husk]', pivot: [150, 95] },
+    ],
+  },
   // Scorched Earth: the sun in the haze (from its heart), the glowing cracks in the ground (from the
   // middle of the plain), the stumps in the middle distance, the snapped trunk (from its roots) and the
   // fire smouldering inside it. `base`: the trunk's roots, where the wave of heat starts;
@@ -376,6 +391,51 @@ export const PUPPETS = {
       { name: 'neck2', of: ['fig:0', '[data-part=moss]', '[data-part=eyes]'], pivot: [157.6, 133.6], cut: true, joint: 7, poly: [[161.2, 83.7], [161.8, 80.4], [168.1, 76.1], [172.5, 69.7], [173.9, 64.0], [173.1, 56.2], [169.5, 49.3], [163.4, 44.4], [156.0, 42.1], [148.2, 42.9], [142.9, 45.4], [137.4, 50.9], [134.9, 56.2], [134.0, 62.0], [135.5, 69.7], [140.2, 76.4], [139.1, 85.4], [145.1, 111.6], [146.6, 133.9], [165.2, 100.7]] },
       { name: 'neck3', of: ['fig:0', '[data-part=moss]', '[data-part=eyes]'], pivot: [175.1, 143.2], cut: true, joint: 7, poly: [[201.4, 109.8], [209.8, 109.1], [216.7, 105.5], [221.6, 99.4], [223.9, 92.0], [223.1, 84.2], [219.5, 77.3], [213.4, 72.4], [206.0, 70.1], [200.1, 70.4], [194.6, 72.4], [189.9, 75.9], [186.4, 80.6], [184.1, 88.0], [184.5, 94.4], [173.7, 116.1], [164.8, 139.3], [185.3, 147.2], [194.1, 124.4]] },
       { name: 'neck4', of: ['fig:0', '[data-part=moss]', '[data-part=eyes]'], pivot: [191.1, 159.2], cut: true, joint: 7, poly: [[222.2, 149.4], [230.0, 151.9], [237.8, 151.1], [244.7, 147.5], [249.6, 141.4], [251.9, 134.0], [251.1, 126.2], [247.5, 119.3], [241.4, 114.4], [235.9, 112.4], [230.0, 112.1], [224.3, 113.5], [220.9, 115.4], [215.4, 120.9], [213.5, 124.3], [212.2, 129.5], [184.3, 150.5], [197.8, 167.8]] },
+    ],
+  },
+  // Mycelium Bud: each of its eleven mushrooms (the stem, the cap with its rim and shade, and the
+  // light under the cap with its specks), the figure and the gills split by a polygon round each,
+  // about its foot in the moss, so each can bob, swell and pop up; the mound, the threads of light
+  // under the moss and the ferns stay.
+  // m0 is the big one in the middle, m1 and m2 the two beside it, then the little ones.
+  // `caps`: each cap's centre, `bases`: each foot (both as drawn, m0..m10); `emit`: the big
+  // cap's gills, where the spores leave; `alone`: the moss on its right, where its boon goes when
+  // nothing is aimed at
+  'mycelium-bud': {
+    role: 'support', element: 'nature', facing: 'front', emit: [147, 112], hit: [148, 150],
+    caps: [[145, 110], [105, 136], [194, 142], [128, 160], [210, 168], [91, 176], [76, 185], [229, 182], [169, 173], [246, 193], [58, 195]], bases: [[148, 176], [112, 180], [188, 180], [130, 182], [208, 184], [92, 188], [76, 192], [228, 190], [168, 182], [246, 198], [58, 200]], alone: [248, 190],
+    parts: [
+      { name: 'm0', of: ['fig:1', '[data-part=gills]'], pivot: [148, 176], poly: [[155.8, 125.2], [164.4, 121.9], [171.1, 117.4], [175.2, 111.9], [176.3, 106.1], [174.4, 100.5], [169.5, 95.7], [162.3, 92.1], [153.4, 90.1], [143.6, 89.8], [133.9, 91.4], [125.4, 94.7], [118.7, 99.2], [114.6, 104.7], [113.5, 110.5], [115.4, 116.1], [120.2, 120.9], [127.5, 124.5], [138.8, 126.6], [141.1, 177.3], [154.9, 176.7], [152.6, 125.7]] },
+      { name: 'm1', of: ['fig:1', '[data-part=gills]'], pivot: [112, 180], poly: [[111.7, 145.7], [119.4, 141.7], [123.4, 137.9], [125.5, 133.7], [125.6, 129.7], [123.6, 126.2], [119.8, 123.6], [114.5, 122.1], [108.3, 121.8], [101.7, 122.8], [95.4, 125.0], [90.0, 128.2], [86.1, 132.0], [84.0, 136.1], [83.9, 140.1], [85.8, 143.6], [89.6, 146.3], [94.9, 147.8], [101.7, 148.0], [107.0, 181.8], [117.0, 180.2]] },
+      { name: 'm2', of: ['fig:1', '[data-part=gills]'], pivot: [188, 180], poly: [[197.0, 152.4], [203.0, 152.0], [207.5, 150.5], [210.7, 148.1], [212.3, 144.9], [212.1, 141.4], [210.2, 137.9], [206.7, 134.6], [202.0, 132.0], [196.5, 130.3], [190.8, 129.6], [185.4, 130.1], [180.9, 131.6], [177.7, 134.1], [176.1, 137.2], [176.3, 140.7], [178.2, 144.3], [181.7, 147.5], [188.1, 150.6], [183.5, 180.3], [192.5, 181.7]] },
+      { name: 'm3', of: ['fig:1', '[data-part=gills]'], pivot: [130, 182], poly: [[131.8, 166.1], [135.5, 164.5], [137.7, 162.5], [139.1, 160.2], [139.3, 157.8], [138.4, 155.6], [136.5, 153.7], [133.8, 152.5], [130.4, 151.8], [123.4, 152.8], [120.4, 154.3], [118.1, 156.3], [116.8, 158.6], [116.5, 161.0], [117.4, 163.2], [119.3, 165.1], [122.1, 166.4], [125.3, 166.9], [126.7, 183.3], [133.3, 182.7]] },
+      { name: 'm4', of: ['fig:1', '[data-part=gills]'], pivot: [208, 184], poly: [[214.5, 173.8], [218.5, 171.4], [219.4, 169.5], [219.4, 167.4], [216.7, 163.5], [211.5, 161.2], [208.5, 160.9], [203.4, 162.2], [201.7, 163.7], [200.8, 165.5], [200.8, 167.6], [201.8, 169.7], [203.5, 171.5], [206.4, 173.1], [205.1, 184.7], [210.9, 185.3], [212.2, 174.1]] },
+      { name: 'm5', of: ['fig:1', '[data-part=gills]'], pivot: [92, 188], poly: [[94.1, 180.0], [96.0, 178.9], [98.2, 176.0], [97.7, 172.9], [96.4, 171.6], [92.4, 170.5], [90.1, 170.6], [85.9, 172.3], [84.4, 173.7], [83.6, 175.3], [84.2, 178.4], [85.5, 179.7], [88.8, 180.7], [89.4, 189.2], [94.6, 188.8]] },
+      { name: 'm6', of: ['fig:1', '[data-part=gills]'], pivot: [76, 192], poly: [[79.6, 187.6], [81.3, 185.3], [81.4, 184.0], [81.0, 182.8], [78.7, 181.0], [73.7, 181.1], [72.3, 181.9], [70.6, 184.2], [71.0, 186.7], [73.8, 188.6], [73.8, 193.0], [78.2, 193.0], [78.2, 188.4]] },
+      { name: 'm7', of: ['fig:1', '[data-part=gills]'], pivot: [228, 190], poly: [[230.9, 185.9], [234.4, 183.8], [234.9, 182.5], [234.8, 181.2], [233.0, 178.8], [229.6, 177.5], [227.8, 177.4], [224.7, 178.6], [223.7, 179.6], [223.3, 182.3], [224.0, 183.6], [226.3, 185.3], [225.7, 190.7], [230.3, 191.3]] },
+      { name: 'm8', of: ['fig:1', '[data-part=gills]'], pivot: [168, 182], poly: [[170.9, 176.9], [173.5, 175.7], [174.9, 173.3], [174.7, 172.0], [172.8, 169.6], [169.5, 168.4], [167.6, 168.5], [164.5, 169.7], [163.6, 170.8], [163.3, 173.5], [164.0, 174.7], [166.4, 176.4], [165.7, 182.8], [170.3, 183.2]] },
+      { name: 'm9', of: ['fig:1', '[data-part=gills]'], pivot: [246, 198], poly: [[248.4, 195.9], [249.4, 195.2], [250.5, 193.3], [249.9, 191.1], [248.9, 190.3], [245.0, 189.3], [242.6, 190.4], [241.9, 191.3], [241.7, 193.4], [244.0, 195.8], [244.0, 199.0], [248.0, 199.0]] },
+      { name: 'm10', of: ['fig:1', '[data-part=gills]'], pivot: [58, 200], poly: [[60.0, 197.8], [62.3, 195.4], [62.5, 194.3], [61.4, 192.4], [60.3, 191.7], [56.2, 191.6], [54.1, 193.1], [53.5, 195.3], [54.6, 197.2], [56.0, 198.0], [56.0, 201.0], [60.0, 201.0]] },
+    ],
+  },
+  // Rootmother: the tree-woman (her trunk, head and arms, with the bark lines on her) cut from her
+  // roots; her hair of roots (the same drawing, split off above and behind the head, about the back
+  // of her head); the stag (its body, and its head with neck and antlers split off about the
+  // neck's root); the vines wound round it and the green light of its wounds closing, each cut
+  // from where it lies. `hands`: her fingertips, where the healing leaves her (`emit`); `feet`: her
+  // roots; `wound`: where the stag's wounds close (its own target, `alone`); `vine`: the two vines
+  // from her fingers to the wounds, for the light to run along
+  'rootmother': {
+    role: 'support', element: 'nature', facing: 'right', emit: [192, 142], hit: [112, 140],
+    hands: [[192, 139], [193, 149]], feet: [108, 188], alone: [226, 168],
+    vine: [[[186, 132], [194, 128], [202, 134], [192, 142], [204, 150], [196, 158], [212, 162], [226, 160], [240, 164]], [[186, 146], [196, 154], [206, 162], [214, 172], [226, 176], [238, 178]]],
+    parts: [
+      { name: 'stag', of: 'fig:0', pivot: [226, 186], poly: [[0, 150], [300, 150], [300, 210], [0, 210]] },
+      { name: 'head', of: 'fig:0', pivot: [206, 158], poly: [[150, 0], [300, 0], [300, 152], [150, 152]] },
+      { name: 'her', of: ['fig:1', '[data-part=bark]'], pivot: [108, 188], poly: [[151, 0], [300, 0], [300, 210], [0, 210], [0, 115], [106, 115], [106, 104], [109, 88], [117, 75], [127, 63], [132, 56], [149, 53]] },
+      { name: 'hair', of: ['fig:1', '[data-part=bark]'], pivot: [130, 60], poly: [[0, 0], [150, 0], [150, 54], [133, 57], [128, 64], [118, 76], [110, 88], [107, 104], [107, 116], [0, 116]] },
+      { name: 'vines', of: '[data-part=vines]', pivot: [200, 150] },
+      { name: 'wounds', of: '[data-part=wounds]', pivot: [226, 170] },
     ],
   },
   // ── end of lane B ──

@@ -636,14 +636,16 @@ export const ultra_a = {
       { fill: '#2a2014', rim: '#f0e0a8', offsets: [[-0.6, -0.9]], rimOp: 0.75 });
     // the sprout: a pale stem, two fleshy first leaves, the next one coming
     const stem = taper([[sx, sy - 2], [sx - 3, 138], [sx + 1, 116], [sx, 96]], [8, 7, 6, 5]);
-    s.figure(`<path d="${stem}"/>`, { fill: '#3c5226', rim: p.rim, offsets: [[-1, -0.4], [1, -0.4]], rimOp: 0.85, shade: 0.4, light: [-0.5, -1] });
+    s.figure(`<g data-part="stem"><path d="${stem}"/></g>`, { fill: '#3c5226', rim: p.rim, offsets: [[-1, -0.4], [1, -0.4]], rimOp: 0.85, shade: 0.4, light: [-0.5, -1] });
     const leaves = U(leafAt(sx, 95, -160, 52, 0.5, 5), leafAt(sx, 95, -22, 54, 0.5, 5));
     s.glow(sx, 88, 50, '#f2ffb0', 0.5, 'breathe');
-    s.bloom(`<path d="${leaves}" fill="${s.radU(sx, 92, 56, [[0, '#fbffe0'], [0.45, '#eefaa6'], [1, '#bcd46a']])}"/>` +
+    s.bloom(`<g data-part="leaves"><path d="${leaves}" fill="${s.radU(sx, 92, 56, [[0, '#fbffe0'], [0.45, '#eefaa6'], [1, '#bcd46a']])}"/>` +
       `<path d="M${sx},95L${sx - 46},78M${sx},95L${sx + 47},76" fill="none" stroke="#9cb456" stroke-width="1" opacity=".7"/>` +
-      `<path d="${lens(sx, 86, 15, -90, 0.46)}" fill="#f8ffd2"/>`, { sd: 2, k: 1.35, box: [80, 50, 140, 70] });
+      `<path d="${lens(sx, 86, 15, -90, 0.46)}" fill="#f8ffd2"/></g>`, { sd: 2, k: 1.35, box: [80, 50, 140, 70] });
     // the husk of its seed still caught on one leaf
+    s.add('<g data-part="husk">');
     s.path(lens(sx - 49, 77, 11, -160, 0.62), '#6a5230');
+    s.add('</g>');
     // a fallen leaf and grass at the edges
     s.figure(`<path d="${U(lens(250, 166, 60, -14, 0.34), taper([[218, 174], [212, 178]], [2, 1], { per: 2 }))}"/>`, { fill: '#1c2410', rim: p.rim, offsets: [[0, -1]], rimOp: 0.5 });
     s.add('<path d="M222,173L278,158" fill="none" stroke="#2e3a1c" stroke-width=".9"/>');
@@ -689,9 +691,9 @@ export const ultra_a = {
     s.glow(148, 120, 90, '#f2ffb0', 0.5, 'breathe');
     s.figure(`<path d="${tops.map((t) => t.d).join('')}"/>`, { fill: '#1b2714', rim: p.rim, offsets: [[0, -1.2], [-0.8, -0.8], [0.8, -0.8]], rimOp: 0.9, shade: 0.4, light: [0, -1] });
     // the light under every cap, and the specks on the big ones
-    const gills = tops.map((t) => rot(ell(t.x, t.y + t.ry * 0.12, t.rx * 0.9, Math.max(1, t.ry * 0.26), 0, 18), t.x, t.y, t.a)).join('');
-    const specks = dots(tops.slice(0, 4).flatMap((t) => [[t.x - t.rx * 0.42, t.y - t.ry * 0.5, t.rx * 0.07], [t.x + t.rx * 0.12, t.y - t.ry * 0.78, t.rx * 0.08], [t.x + t.rx * 0.52, t.y - t.ry * 0.36, t.rx * 0.06]]));
-    s.bloom(`<path d="${threads}" fill="#f2ffc0" opacity=".8"/><path d="${gills}" fill="#f4ffc4"/><path d="${specks}" fill="#f7ffd8" opacity=".9"/>`, { sd: 1.8, k: 1.4, box: [40, 70, 220, 145] });
+    const gills = tops.map((t) => rot(ell(t.x, t.y + t.ry * 0.12, t.rx * 0.9, Math.max(1, t.ry * 0.26), 0, 18), t.x, t.y, t.a));
+    const specks = tops.map((t, i) => (i < 4 ? dots([[t.x - t.rx * 0.42, t.y - t.ry * 0.5, t.rx * 0.07], [t.x + t.rx * 0.12, t.y - t.ry * 0.78, t.rx * 0.08], [t.x + t.rx * 0.52, t.y - t.ry * 0.36, t.rx * 0.06]]) : ''));
+    s.bloom(`<path d="${threads}" fill="#f2ffc0" opacity=".8"/><g data-part="gills">` + tops.map((t, i) => `<path d="${gills[i]}" fill="#f4ffc4"/>${specks[i] ? `<path d="${specks[i]}" fill="#f7ffd8" opacity=".9"/>` : ''}`).join('') + '</g>', { sd: 1.8, k: 1.4, box: [40, 70, 220, 145] });
     s.motes({ seed: 11204, n: 30, x: [70, 230], y: [30, 170], r: [0.3, 0.9], fill: '#eefaa6', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 1] });
     s.add(particles({ seed: 11205, n: 12, x: [90, 210], y: [60, 150], r: [0.4, 0.8], fill: '#f7ffc8', cls: 'rise', t: [6, 10], op: [0.4, 0.9] }));
     // ferns at the near corners
@@ -749,19 +751,21 @@ export const ultra_a = {
       taper([[78, -42], [84, -40], [88, -36]], [2, 1.2, 0.4]), taper([[78, -42], [83, -36], [84, -31]], [2, 1.2, 0.4]),
     ));
     s.figure(`<path d="${her}"/>`, { fill: p.fig, rim: p.rim, offsets: [[0.8, -1], [0, -1.3], [-0.8, -0.8]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [0.6, -1] });
-    s.add(`<path d="${place('M2,-20C4,-36 1,-48 4,-60M-2,-8C0,-20 -3,-30 -1,-40M8,-90C10,-98 14,-104 18,-108')}" fill="none" stroke="#3a4a2a" stroke-width="1" opacity=".8"/>`);
+    s.add(`<g data-part="bark"><path d="${place('M2,-20C4,-36 1,-48 4,-60M-2,-8C0,-20 -3,-30 -1,-40M8,-90C10,-98 14,-104 18,-108')}" fill="none" stroke="#3a4a2a" stroke-width="1" opacity=".8"/></g>`);
     // her vines, wound from her fingers round its neck and over its back to
     // the wounds
     const vines = U(
       taper([[186, 132], [194, 128], [202, 134], [192, 142], [204, 150], [196, 158], [212, 162], [226, 160], [240, 164]], [2.2, 2.2, 2, 2, 1.8, 1.6, 1.4, 1.2, 0.5], { per: 4 }),
       taper([[186, 146], [196, 154], [206, 162], [214, 172], [226, 176], [238, 178]], [2, 1.8, 1.6, 1.4, 1.2, 0.4], { per: 4 }),
     );
+    s.add('<g data-part="vines">');
     s.path(vines, '#56782e');
+    s.add('</g>');
     // the wounds, closing in green light, and new leaves on the vines
     s.glow(226, 168, 30, '#eaff9a', 0.6, 'breathe');
-    s.bloom(`<path d="${U(taper([[216, 170], [224, 166], [234, 160]], [0.5, 2.6, 0.5], { per: 3 }), taper([[226, 178], [233, 175], [241, 172]], [0.5, 2, 0.5], { per: 3 }),
+    s.bloom(`<g data-part="wounds"><path d="${U(taper([[216, 170], [224, 166], [234, 160]], [0.5, 2.6, 0.5], { per: 3 }), taper([[226, 178], [233, 175], [241, 172]], [0.5, 2, 0.5], { per: 3 }),
       taper([[204, 154], [207, 149], [210, 143]], [0.4, 1.8, 0.4], { per: 3 }))}" fill="#f2ffb0"/>` +
-      `<path d="${U(leafAt(202, 134, -30, 7, 0.45), leafAt(196, 158, 150, 7, 0.45), leafAt(212, 162, -80, 6, 0.45), leafAt(206, 162, 70, 6, 0.45), leafAt(232, 177, 60, 6, 0.45))}" fill="#dff59a"/>`, { sd: 1.6, k: 1.5, box: [170, 110, 90, 80] });
+      `<path d="${U(leafAt(202, 134, -30, 7, 0.45), leafAt(196, 158, 150, 7, 0.45), leafAt(212, 162, -80, 6, 0.45), leafAt(206, 162, 70, 6, 0.45), leafAt(232, 177, 60, 6, 0.45))}" fill="#dff59a"/></g>`, { sd: 1.6, k: 1.5, box: [170, 110, 90, 80] });
     s.motes({ seed: 11304, n: 18, x: [192, 252], y: [104, 176], r: [0.4, 1.1], fill: '#eaff9a', hot: '#ffffff', cls: 'rise', t: [3, 6], op: [0.5, 1] });
     s.add(particles({ seed: 11305, n: 12, x: [20, 280], y: [20, 170], r: [0.5, 1.1], fill: '#fffbe0', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
     return s.svg();

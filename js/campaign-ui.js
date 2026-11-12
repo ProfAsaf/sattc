@@ -344,7 +344,7 @@ async function openPlace(i, instant = false) {
   wrap.style.visibility = 'hidden';
   hold(mapLive, true);
   root.classList.add('placed');
-  requestAnimationFrame(() => { el.classList.add('in', 'lit'); settle(ui.place); }); // (lit stays while it shrinks away; in goes)
+  requestAnimationFrame(() => { if (!ui) return; el.classList.add('in', 'lit'); settle(ui.place); }); // (lit stays while it shrinks away; in goes. No ui: a fight came back over the page and it went)
   if (from < n) setTimeout(() => playWin(el, i, from, n), 900);
   else Camp.markShown(W.id, i, n);
 }

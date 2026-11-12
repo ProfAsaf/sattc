@@ -21,7 +21,8 @@ import * as St from './stats.js';
 import * as Rating from './rating.js';
 import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
-import { actBig, fight, hushTable, readyToFight, startTableAlive, stopTableAlive } from './cards-alive.js';
+import { actBig, endFights, fight, hushTable, readyToFight, startTableAlive, stopTableAlive } from './cards-alive.js';
+import { CHOICES, choose, chosen, dayLevel } from './steady.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
 import * as Camp from './campaign.js';
@@ -704,16 +705,17 @@ function save() {
   store.set({ mode: G.mode, setup: G.setup, actions: G.actions, me: G.me, bots: [...G.bots], over: G.state.phase === 'over', takebacks: G.takebacks || 0, level: G.level, at: Date.now(), ...(G.campaign ? { campaign: G.campaign } : {}) });
 }
 
-// On start-up, straight back into a practice game the app was in the middle of
-// (an iPhone may close a page in the background, or when it runs short of
-// memory, and open it afresh: a white flash, then the home screen). Not a game
-// you left on purpose, or one from more than 20 minutes ago (Resume on the
-// Play page still has it), unless the phone closed the page under it
-// (`closed`, js/steady.js): then it goes back in however long the last move
-// was thought over. True if it went back in.
-export function autoResume(closed = false) {
+// On start-up, straight back into a practice game (a campaign fight too) the
+// app was in the middle of: an iPhone may close a page in the background, or
+// when it runs short of memory, and open it afresh (a white flash, then the
+// home screen). Not a game you left on purpose, or one whose last move was
+// over 12 hours ago (Resume on the Play page still has it); it was 20 minutes
+// until Asaf, back from a crashed campaign fight on the home screen, asked
+// for it to "always be able to super quickly come back to where it was".
+// True if it went back in.
+export function autoResume() {
   const saved = store.get();
-  if (!saved || saved.over || saved.left || !saved.at || (!closed && Date.now() - saved.at > 20 * 60000) || G) return false;
+  if (!saved || saved.over || saved.left || !saved.at || Date.now() - saved.at > 12 * 3600e3 || G) return false;
   const page = saved.campaign ? Camp.placeHash(saved.campaign.world, saved.campaign.stage) : '#/play'; // (a campaign fight comes back over its place)
   if (!['', '#', '#/', page, ...(saved.campaign ? ['#/campaign', Camp.mapHash(saved.campaign.world)] : [])].includes(location.hash)) return false; // (a page opened on purpose stays open)
   if (location.hash !== page) location.hash = page;
@@ -2693,6 +2695,7 @@ async function animateOld(root, events, after = G.state) {
       continue;
     }
     if (e.k === 'die') {
+      endFights(); // (any striker's move still playing ends: the deaths are heavy enough)
       const group = [];
       while (i < events.length && events[i].k === 'die') group.push(events[i++]);
       const deaths = group.map((g) => {
@@ -3444,6 +3447,14 @@ function playerSheet(pi) {
     <div class="btn-col">${P.discard.length ? `<button class="btn" data-act="discards" data-of="${pi}">Look at the discard pile</button>` : ''}</div>`;
 }
 
+// The cards moving on their own (js/cards-alive.js, Home's fan): lively, calm
+// (one at a time, less moving) or still (none, and fights charge as they used
+// to). A phone that closed the game today is kept calmer whatever's chosen.
+function cardsModeLabel() {
+  const c = chosen(), next = CHOICES[(CHOICES.indexOf(c) + 1) % CHOICES.length];
+  return `Moving cards: ${c}${dayLevel() > 0 && c !== 'still' ? ' (calmer today: the phone closed the game)' : ''} (tap for ${next})`;
+}
+
 function menuSheet() {
   return `<h3>Menu</h3>${S().ultra ? '<p class="sheet-note ultra-note">This game plays <b>SATTC Ultra</b>.</p>' : ''}<div class="btn-col">
     ${tutStep() ? '<button class="btn" data-act="coach-skip">Skip the lesson (play on against the bot)</button>' : ''}
@@ -3452,6 +3463,7 @@ function menuSheet() {
     <button class="btn" data-act="log">Game log</button>
     <button class="btn" data-act="speed">${fastOn() ? 'Animations: fast (tap for normal)' : 'Animations: normal (tap for fast)'}</button>
     <button class="btn" data-act="pace">${tapThrough() ? 'Others’ moves: wait for your tap (tap for automatic)' : 'Others’ moves: automatic (tap to wait for your tap)'}</button>
+    <button class="btn" data-act="cards-mode">${cardsModeLabel()}</button>
     ${G.mode === 'online' && ['on', 'off'].includes(Push.status()) ? `<button class="btn" data-act="alerts">${Push.status() === 'on' ? '🔔 Turn alerts: on (tap to turn off)' : '🔔 Turn alerts: off (tap to turn on)'}</button>` : ''}
     <button class="btn" data-act="fixes">Fix something</button>
     <button class="btn" data-act="rules">All the rules (leaves the table)</button>
@@ -3916,6 +3928,15 @@ function onAct(act, el) {
     case 'tax-no': G.flow.a.payTax = false; G.flow.i++; nextChoice(); break;
     case 'discards': G.sheet = discardSheet(Number(el.dataset.of)); redraw(); break;
     case 'menu': G.sheet = menuSheet(); redraw(); break;
+    case 'cards-mode': {
+      choose(CHOICES[(CHOICES.indexOf(chosen()) + 1) % CHOICES.length]);
+      hushTable(); // (what's acting stops now; the stage keeps to the new choice)
+      bigAct?.stop();
+      bigAct = null;
+      G.sheet = menuSheet();
+      redraw();
+      break;
+    }
     case 'log': G.sheet = logSheet(); redraw(); break;
     case 'speed': {
       const fast = !fastOn();

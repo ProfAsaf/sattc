@@ -16,7 +16,7 @@ import { BY_ID } from './cards.js';
 import { hasKw, power, vitality } from './engine.js';
 import { esc } from './render.js';
 import * as FX from './fx.js';
-import { fight, readyToFight } from './cards-alive.js';
+import { endFights, fight, readyToFight } from './cards-alive.js';
 
 const shortName = (n) => String(n ?? '').replace(/^Bot · /, '');
 const list = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
@@ -315,6 +315,7 @@ export function playStory(story, { stage = null, tap = false } = {}) {
         await FX.wait(260);
       }
       if (g !== gen) return;
+      if (b.dead.length) endFights(); // (the strikers' moves end before the deaths: together they're the heaviest moment)
       // the destroyed crumble, then stay put, dimmed under a ☠, so the step still shows who met whom
       await Promise.race([Promise.all(b.dead.map((u) => {
         const c = el(u);

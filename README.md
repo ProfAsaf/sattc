@@ -1075,6 +1075,12 @@ Asaf: "sometimes it freezes with a white flash and takes me out of game".
     - after a closing, a practice game comes back however long ago its last move was (`autoResume(closed)`);
     - the last fight's line and its ▶ Replay come back with it (`collective.lastFight`, kept while the line is up);
     - a page comes back scrolled where it was (`collective.scrolls`, sessionStorage).
+- **After "It seems to be crashing a lot" (2026-11-12, after a campaign fight crashed back to the home screen):**
+  - The crash watch kept its mark in sessionStorage, which the app on the home screen loses when iOS restarts it, so it never noticed a crash. The mark is now in localStorage, and a page still open in another tab answers for it (BroadcastChannel). After a restart, a crash is now counted, and the cards calm down.
+  - The app on the home screen opens at its first page after iOS closes it, so when the address names no page, the last one (within 12 hours) comes back, scrolled where it was (`collective.place`). A practice or campaign fight comes back if its last move was within 12 hours, not 20 minutes. A campaign fight that had just ended comes back to its place, where the win plays out.
+  - Lighter by default: at most 2 scenes at once in a game; scenes [1 screen, 150 elements]; fights [1.2, 140]; an opened card [1.6, 180]. A fight's moves end as the deaths start (`endFights()`). The frame watch steps in when frames come over 40 ms apart.
+  - The worker keeps only the page and the `?v=` files. Pictures, sprites and moves go past it to the browser as before, and the pictures an earlier worker copied are cleared.
+  - **The game's menu: "Moving cards: lively / calm / still".** Calm means one at a time with less room. Still means nothing moves on its own, fights charge as they used to, an opened card stays still, and Home's fan rests. A phone that closed the game today is kept calmer than the choice.
 - **A ceiling on what the cards set moving** (`js/cards-alive.js` `fit()`): before a move plays, it counts the elements it would set moving and how much screen they cover, and fits them to the room left. It first stills the picture's own lights, then drops the biggest effects, then every other spark; the creature's body always moves. Idle scenes together keep under 220 moving elements, about what the game's own effects allow. A fight that can't fit charges as it used to. Details and measurements are in living-cards.md.
 - Test: `.phone-tests/ui-resume.mjs`.
 

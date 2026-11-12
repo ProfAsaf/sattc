@@ -569,27 +569,35 @@ Mode.paint();
 // map where it was, under a place it zooms out of): the browser's own restoring
 // on Back would jump the map first.
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+// Where the app is, kept as it goes (localStorage): its page, and how far down
+// each page is scrolled. The app on the home screen opens at its first page
+// after iOS closes it (Asaf, 2026-11-12: a campaign fight crashed and "took me
+// back to this screen"), so when the address names no page, the last one
+// comes back, scrolled where it was, if it was within 12 hours.
+const PLACE = 'collective.place';
+const readPlace = () => { try { return JSON.parse(localStorage.getItem(PLACE) || 'null') || {}; } catch { return {}; } };
+const keepPlace = (p) => { try { localStorage.setItem(PLACE, JSON.stringify(p)); } catch { /* fine without */ } };
+const was = readPlace();
+if (!location.search && ['', '#', '#/'].includes(location.hash) && was.hash && was.hash !== '#/' && Date.now() - (was.at || 0) < 12 * 3600e3) {
+  history.replaceState(null, '', location.pathname + was.hash);
+}
+const backTo = location.hash === was.hash ? was.scrolls?.[was.hash] : 0; // (scrolled where it was, if it's that page again)
+window.addEventListener('hashchange', () => keepPlace({ ...readPlace(), hash: location.hash, at: Date.now() }));
 window.addEventListener('hashchange', route);
-// A page's title bar gets its backdrop once the page scrolls under it; and
-// where each page was scrolled to is kept (sessionStorage), so a page the phone
-// closes comes back where it was.
-const SCROLLS = 'collective.scrolls';
+// A page's title bar gets its backdrop once the page scrolls under it.
 let scrollKeep = 0;
 window.addEventListener('scroll', () => {
   document.body.classList.toggle('scrolled', window.scrollY > 4);
   clearTimeout(scrollKeep);
-  scrollKeep = setTimeout(() => {
-    try { const s = JSON.parse(sessionStorage.getItem(SCROLLS) || '{}'); s[location.hash || '#/'] = Math.round(window.scrollY); sessionStorage.setItem(SCROLLS, JSON.stringify(s)); } catch { /* fine without */ }
-  }, 250);
+  scrollKeep = setTimeout(() => { const p = readPlace(); keepPlace({ ...p, hash: location.hash, at: Date.now(), scrolls: { ...p.scrolls, [location.hash]: Math.round(window.scrollY) } }); }, 250);
 }, { passive: true });
 // (the phone closed the last page under us, out of memory: the cards calm down for today, js/steady.js)
 const reopened = startSteady();
 route();
-if (reopened) {
-  try { const y = JSON.parse(sessionStorage.getItem(SCROLLS) || '{}')[location.hash || '#/']; if (y > 0) requestAnimationFrame(() => window.scrollTo(0, y)); } catch { /* (as above) */ }
-}
+keepPlace({ ...readPlace(), hash: location.hash, at: Date.now() });
+if (backTo > 0 && !location.hash.startsWith('#/campaign')) requestAnimationFrame(() => window.scrollTo(0, backTo)); // (the campaign's map places itself)
 startScreenAlive(); // (any page's cards act now and then while you leave them be: js/cards-alive.js)
-if (reopened) setTimeout(() => toast('Your phone closed the game (low on memory?). The cards will act less today to keep it steady.', 6000), 900);
+reopened.then((closed) => { if (closed) setTimeout(() => toast('Your phone closed the game (low on memory?). The cards will act less today to keep it steady.', 6000), 500); });
 const params = new URLSearchParams(location.search);
 // The game's files kept on the phone, so it comes back at once (sw.js).
 // ?fresh=1 lets go of them all, and of the worker that keeps them.
@@ -605,7 +613,7 @@ else {
   // an invite tapped in an alert (sw.js) comes before the last room
   const tapped = params.get('invite');
   if (tapped) history.replaceState(null, '', location.pathname + location.hash);
-  Push.takeInvite().then((code) => (code || tapped ? acceptInvite(code || tapped) : autoResume(reopened) || autoRejoin()));
+  Push.takeInvite().then((code) => (code || tapped ? acceptInvite(code || tapped) : autoResume() || autoRejoin()));
 }
 Push.onInvite(acceptInvite); // (one tapped while the game is open)
 // an invite link (?room=CODE) opens the Play tab with the code filled in

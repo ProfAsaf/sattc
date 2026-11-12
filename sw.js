@@ -9,9 +9,10 @@
 //  - a script or stylesheet whose address carries ?v= (all of them:
 //    tools/stamp.mjs) never changes, so once it's on the phone it comes from
 //    there;
-//  - anything else of the game's (pictures, sprites, moves) comes from the
-//    network as before, and from the phone only when the network fails or
-//    takes over 1.5 s.
+//  - anything else (pictures, sprites, moves) the worker leaves alone: the
+//    browser fetches it as it always did. (It used to be copied too; every
+//    picture passing through the worker cost the phone memory, and the
+//    phone was crashing a lot: Asaf, 2026-11-12.)
 // An old version's files are cleared out whenever a fresh page comes in, and
 // ?fresh=1 on the game's address clears the whole copy (js/app.js).
 
@@ -19,7 +20,14 @@ const FILES = 'collective-files';
 const WAIT = 1500; // ms the network has before the phone's copy is used
 
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+// (and the pictures an earlier worker copied go)
+self.addEventListener('activate', (e) => e.waitUntil((async () => {
+  await self.clients.claim();
+  try {
+    const c = await caches.open(FILES);
+    for (const req of await c.keys()) { const u = new URL(req.url); if (!u.searchParams.has('v') && u.pathname !== new URL(self.registration.scope).pathname) await c.delete(req); }
+  } catch { /* (nothing kept yet) */ }
+})()));
 
 self.addEventListener('fetch', (e) => {
   const r = e.request;
@@ -28,7 +36,6 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== scope.origin || !url.pathname.startsWith(scope.pathname) || url.pathname.endsWith('/sw.js')) return;
   if (r.mode === 'navigate') e.respondWith(page(r));
   else if (url.searchParams.has('v')) e.respondWith(kept(r));
-  else e.respondWith(fresh(r));
 });
 
 const later = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -39,21 +46,6 @@ async function keep(key, res) {
 async function copyOf(key) {
   try { return (await (await caches.open(FILES)).match(key)) || null; } catch { return null; }
 }
-// From the network, kept on the phone as it comes; the phone's copy if the
-// network fails, or is still waited for after WAIT ms (then the network's
-// answer still goes on into the copy, for next time).
-async function netOr(r, key) {
-  const net = fetch(r).then((res) => { keep(key, res.clone()).catch(() => {}); return res; });
-  const slow = later(WAIT).then(async () => (await copyOf(key)) || net);
-  try {
-    return await Promise.race([net, slow]);
-  } catch (err) {
-    const c = await copyOf(key);
-    if (c) return c;
-    throw err;
-  }
-}
-
 // the page (one copy, whatever follows its address); a fresh one clears out
 // an old version's files. It gets a second from the network (none when the
 // phone says it has no connection), then the copy is used.
@@ -85,8 +77,6 @@ async function kept(r) {
   return res;
 }
 
-// anything else of the game's
-const fresh = (r) => netOr(r, r);
 
 // The ?v= files the page names are this version's; any other ?v= file kept is
 // an old version's, and goes.

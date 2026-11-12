@@ -28,7 +28,7 @@ import { getSpeed, isReduced } from './fx.js';
 import { calm } from './steady.js';
 
 const HOME_ONLY = new Set(['seraphine', 'the-barrow-queen']); // (they act in Home's own scene, js/home-alive.js)
-export const canAct = (id) => !!(LIVE[id] && PUPPETS[id] && !HOME_ONLY.has(id)) && !still();
+export const canAct = (id) => !!(LIVE[id] && PUPPETS[id] && !HOME_ONLY.has(id)) && !still() && calm() < 3; // (3: Moving cards set to still)
 
 // ── why nothing acts, seen on a phone: open the game once with ?alive=1 for a
 // line at the bottom of the screen saying where the cards are, whether that's
@@ -189,13 +189,13 @@ export function actBig(host, card, id) {
 // charges as it used to. There's less room after the phone has closed the game
 // today (calm(), js/steady.js), and at the calmest nothing acts by itself.
 const ROOM = { // by calm level: [screens, elements]
-  scenes: [[1.4, 220], [0.7, 110], [0, 0]], // the scenes together
-  fight: [[2.4, 280], [1.2, 140], [0, 0]], // a fight's moves (no scene plays meanwhile)
-  big: [[2, 240], [1.1, 130], [0.7, 80]], // a card opened big (nothing else acts meanwhile)
+  scenes: [[1, 150], [0.6, 90], [0, 0]], // the scenes together
+  fight: [[1.2, 140], [0.7, 80], [0, 0]], // a fight's moves (no scene plays meanwhile; they end as the deaths start: endFights())
+  big: [[1.6, 180], [1, 110], [0.7, 80]], // a card opened big (nothing else acts meanwhile)
 };
 const used = { area: 0, n: 0 }; // what scenes and fights keep moving now
 function roomFor(kind) {
-  const [a, n0] = ROOM[kind][calm()] || [0, 0], k = strained() ? 0.5 : 1, area = a * k, n = Math.round(n0 * k);
+  const [a, n0] = ROOM[kind][Math.min(2, calm())] || [0, 0], k = strained() ? 0.5 : 1, area = a * k, n = Math.round(n0 * k);
   return kind === 'scenes' ? { area: area - used.area, n: n - used.n } : { area, n };
 }
 
@@ -216,7 +216,7 @@ function watchFrames(ms) {
       strain.gaps.push(t - strain.last);
       if (strain.gaps.length > 40) strain.gaps.shift();
       const mid = [...strain.gaps].sort((x, y) => x - y)[20];
-      if (strain.gaps.length === 40 && mid > 45) {
+      if (strain.gaps.length === 40 && mid > 40) {
         strain.times++;
         strain.until = Date.now() + 60e3 * strain.times;
         strain.gaps = [];
@@ -308,7 +308,7 @@ function tick(st) {
     note('why', (why || (st.scenes.size ? `at rest: ${st.scenes.size} acting, ${used.n} moving (${used.area.toFixed(1)} screens)` : now - st.last < st.idle ? 'touched just now' : 'at rest')) + (calm() ? ` · calm ${calm()} (the phone closed the game today)` : '') + (strained() ? ' · frames slow: calmer for now' : ''));
   }
   if (why) { st.last = now; endAll(st); return; }
-  const most = strained() ? Math.min(1, st.max) : [st.max, 1, 0][calm()] ?? 0;
+  const most = strained() ? Math.min(1, st.max) : [st.max, 1, 0, 0][calm()] ?? 0;
   if (now - st.last < st.idle || now < st.next || st.scenes.size >= most || roomFor('scenes').n < 30) return;
   st.next = now + NEXT[0] + Math.random() * (NEXT[1] - NEXT[0]);
   scene(st).catch((e) => { console.warn('cards alive:', e); note('last', `went wrong: ${e?.message || e}`); });
@@ -317,7 +317,7 @@ function tick(st) {
 // ── a game ───────────────────────────────────────────────────────────
 // `quiet()`: the game at rest (no move playing out, nobody choosing a target).
 export function startTableAlive(root, quiet, why = null) {
-  startStage('table', { root, quiet, why, idle: 600, max: 3, pick: (st) => pickGame(st, root) });
+  startStage('table', { root, quiet, why, idle: 600, max: 2, pick: (st) => pickGame(st, root) });
 }
 export const stopTableAlive = () => stopStage('table');
 // a move is about to play out, or the table to be drawn again: every scene ends now
@@ -573,6 +573,9 @@ function endAll(st) { for (const sc of [...st.scenes]) endScene(st, sc); }
 // with nothing landed, when a striker has no move that aims (or Reduce Motion
 // is on) or its move isn't ready in time: the game charges as it always did.
 const fighting = new Map(); // a card in a fight -> what ends that fight
+// The deaths after a fight's blows are the game's heaviest moment on a phone:
+// the strikers' moves (playing on after their blows) end first.
+export function endFights() { for (const end of new Set(fighting.values())) end(); }
 const idOf = (el) => el?.dataset.cid || el?.dataset.id;
 const aims = (id) => canAct(id) && ['attacker', 'support'].includes(PUPPETS[id].role);
 const guards = (id) => canAct(id) && PUPPETS[id].role === 'defender';
@@ -608,7 +611,7 @@ export function readyToFight(cards) {
   }
 }
 export async function fight(blows, { wait = 1600 } = {}) {
-  if (isReduced() || !ROOM.fight[calm()]?.[1] || !blows.length || blows.some(({ from, to }) => !from?.isConnected || !to?.isConnected || !from.querySelector(ART))) return false;
+  if (isReduced() || calm() >= 2 || !blows.length || blows.some(({ from, to }) => !from?.isConnected || !to?.isConnected || !from.querySelector(ART))) return false;
   const plan = blows.map((b) => {
     const id = idOf(b.from), back = blows.find((o) => o.from === b.to && o.to === b.from);
     if (aims(id)) return { ...b, id, how: 'aim' };

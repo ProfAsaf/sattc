@@ -21,6 +21,7 @@ The history, with Asaf's words at each step, is in README.md under "Home's fan a
     - An attacker aims its move at a card on another side (`k.aim` = that card's `hit`). A support aims at the card nearest it on its own side.
     - A defender it reaches takes the blow on its nearest guard point (`k.blows` at the attacker's impact). Any other card jolts along the blow; the jolt moves its `.tc-body`, as the game's own shakes do.
     - A quarter of the time, and always for defenders and auras, a card acts alone.
+    - Cards in your hand act too, always alone, since aimed at the table one would look like being played. That's the only place in a game where spells act. A hand card qualifies when the middle of its picture isn't under another card of the fan (`inHand()`, `elementFromPoint`).
     - Any touch ends a scene. `draw()`, `redraw()` and `present()` call `hushTable()` first, so the game's own moves never meet one.
   - **In Cards**, after 2 s untouched, one card acts at a time: an attacker or support aims its move at the card beside it. A defender there takes the blow on its guard; any other card jolts. Some scenes are a card on its own.
   - A card's picture is swapped to sprites for its scene only, and swapped back after. Nothing plays with Reduce Motion. A test can set `window.__ppPicks = []` to note who acts on whom.

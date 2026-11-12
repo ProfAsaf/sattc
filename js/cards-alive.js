@@ -138,7 +138,18 @@ export function startTableAlive(root, quiet) {
   startStage('table', {
     root, quiet, idle: 2500, art: '.tc-art', overIn: root, overCls: 'pp-fx pp-game',
     joltOf: (el) => el.querySelector('.tc-body') || el, // (the game's own shakes move .tc-body, never the tilted card)
-    pick: (st) => pickAcross(st, onScreen(root.querySelectorAll('.g-side .tcard.on-board[data-cid]'), (el) => el.dataset.cid)),
+    pick: (st) => pickAcross(st, onScreen(root.querySelectorAll('.g-side .tcard.on-board[data-cid]'), (el) => el.dataset.cid), inHand(root)),
+  });
+}
+// The cards in your hand whose picture shows: on screen, and its middle not
+// under another card of the fan.
+function inHand(root) {
+  const vw = innerWidth, vh = innerHeight;
+  return [...root.querySelectorAll('.tc-hand > .tcard.in-hand[data-cid]')].flatMap((el) => {
+    const a = el.querySelector('.tc-art')?.getBoundingClientRect();
+    if (!a || a.width < 24 || a.top < 0 || a.bottom > vh || a.left < 0 || a.right > vw) return [];
+    const top = document.elementFromPoint(a.left + a.width / 2, a.top + a.height / 2)?.closest('.tcard');
+    return top === el ? [{ el, id: el.dataset.cid, r: el.getBoundingClientRect(), side: null, hand: true }] : [];
   });
 }
 export const stopTableAlive = () => stopStage('table');
@@ -175,11 +186,15 @@ function actors(st, cards) {
   return fresh.length ? fresh : can;
 }
 // a game: an attacker at a card on another side, a support at the card nearest
-// it on its own; a quarter of the time, and for anyone else, a card alone
-function pickAcross(st, cards) {
-  const pool = actors(st, cards);
+// it on its own; a quarter of the time, and for anyone else, a card alone. A
+// card in your hand always acts alone (aimed at the table, it would look like
+// being played).
+function pickAcross(st, cards, hand = []) {
+  const pool = actors(st, [...cards, ...hand]);
   if (!pool.length) return null;
-  const a = one(pool), role = PUPPETS[a.id].role, [ax] = mid(a);
+  const a = one(pool);
+  if (a.hand) return { actor: a };
+  const role = PUPPETS[a.id].role, [ax] = mid(a);
   const foes = cards.filter((c) => c.side !== a.side), mates = cards.filter((c) => c.side === a.side && c !== a);
   const nearest = (list) => list.slice().sort((p, q) => Math.abs(mid(p)[0] - ax) - Math.abs(mid(q)[0] - ax))[0];
   const target = Math.random() < 0.25 ? null : role === 'attacker' && foes.length ? one(foes) : role === 'support' && mates.length ? nearest(mates) : null;

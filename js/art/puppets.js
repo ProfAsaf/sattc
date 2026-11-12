@@ -89,6 +89,47 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Morrow, the Bone Gardener: the arm that scatters the seed (cut from her figure left of x=131 between y=98 and
+  // y=128; the rest of her stays in the picture). `hand`: the seed leaves it (`emit`); `shoulder`: the arm's joint
+  // (where it meets her cloak); `lamp`: the lantern's heart on the spade; `hit`: her middle; `alone`: the grave
+  // mound at the left, where the seed is sown when nothing is aimed at
+  'legend-morrow': {
+    role: 'support', element: 'nature', facing: 'left', emit: [112, 122], hit: [150, 140], alone: [62, 188],
+    hand: [112, 122], shoulder: [131, 113], lamp: [192, 88], mounds: [[60, 190], [240, 190]],
+    parts: [
+      { name: 'arm', of: 'fig:1', pivot: [131, 113], poly: [[0, 98], [131, 98], [131, 128], [0, 128]], cut: true },
+    ],
+  },
+  // Marisol, the Harbormistress: the figure (her whole silhouette, and the ledger under her arm) split about her
+  // raised shoulder: `arm` (the lantern arm and the frame, everything above y=108 left of x=141) and `her` (the rest,
+  // swaying about her feet); `lamplight`, the lantern's glass and its glow, moves with the arm. `lamp`: the lantern's
+  // heart; `shoulder`: the arm's joint; `feet`: where she stands; `ward`: the dome of light she throws up (centre, radii);
+  // `guard`: where blows land on it; `blows`: the river's surges when nothing is aimed at her
+  'legend-marisol': {
+    role: 'defender', element: 'water', facing: 'front', hit: [150, 124],
+    guard: [[189, 112], [191, 134], [111, 112], [109, 134]],
+    lamp: [125, 74], shoulder: [140, 103], feet: [150, 192], ward: [150, 132, 42, 60],
+    blows: [{ at: 1000, to: [189, 112] }, { at: 1450, to: [191, 134] }],
+    parts: [
+      { name: 'ledger', of: 'fig:2', pivot: [150, 192] },
+      { name: 'her', of: 'fig:1', pivot: [150, 192], poly: [[0, 0], [300, 0], [300, 210], [0, 210], [0, 108], [141, 108], [141, 100], [138, 90], [135, 80], [135, 40], [0, 40]] },
+      { name: 'arm', of: 'fig:1', pivot: [140, 103], poly: [[0, 40], [135, 40], [135, 80], [138, 90], [141, 100], [141, 108], [0, 108]] },
+      { name: 'lamplight', of: '[data-part=lamplight]', pivot: [140, 103] },
+    ],
+  },
+  // Danse Macabre: the four near dancers (two ghosts and two skeletons, each tagged whole; the far two and the fire
+  // stay in the picture). `fire`: the violet bonfire's heart, where the gift leaves from (`emit`); `feet`: each
+  // dancer's footing; `ring`: where the summoned dead rise when nothing is aimed at (`alone`)
+  'danse-macabre': {
+    role: 'support', element: 'bone', facing: 'front', emit: [150, 138], hit: [150, 158], alone: [150, 188],
+    fire: [150, 150], feet: [[86, 192], [214, 192], [36, 160], [266, 160]], ring: [150, 184],
+    parts: [
+      { name: 'ghostL', of: '[data-part=ghostL]', pivot: [38, 158] },
+      { name: 'ghostR', of: '[data-part=ghostR]', pivot: [264, 158] },
+      { name: 'skelL', of: '[data-part=skelL]', pivot: [86, 192] },
+      { name: 'skelR', of: '[data-part=skelR]', pivot: [214, 192] },
+    ],
+  },
   // Mire Witch: the lantern arm (cut from her figure: right of x=155 between y=81 and y=110; the rest of her stays in
   // the picture), the lantern's glass, and the seven will-o'-wisps (each a glowN, its violet glow, and a wispN, its
   // flame). `lamp`: the lantern's glass, where the wisps gather and the attack leaves from (`emit`); `shoulder`: the

@@ -897,16 +897,20 @@ export const ultra_d = {
     s.add(`<ellipse cx="150" cy="172" rx="124" ry="22" fill="${s.rad([[0, '#c9a6ff', 0.42], [1, '#c9a6ff', 0]])}"/>`);
     // a dancer: a skeleton (pale bone, rimmed by the fire) or a ghost
     // (a translucent sheet)
-    const skel = (x, y, k, pose, lit, rim) => {
+    const skel = (x, y, k, pose, lit, rim, tag) => {
       const sk = skeleton(pose), A = at(x, y, k);
+      if (tag) s.add(`<g data-part="${tag}">`);
       s.figure(`<path d="${A(sk.d)}"/>`, { fill: lit ? '#ece4f6' : '#9c8ec0', rim: '#fbf6ff', offsets: rim, rimOp: 0.9 });
       s.path(dots(sk.eyes.map(([ex, ey, r]) => [x + ex * k, y + ey * k, r * k])), '#120a1e');
+      if (tag) s.add('</g>');
     };
-    const spook = (x, y, k, pose, op) => {
+    const spook = (x, y, k, pose, op, tag) => {
       const g = ghost(pose), A = at(x, y, k), d = A(g.d);
+      if (tag) s.add(`<g data-part="${tag}">`);
       s.path(d, s.lin([[0, '#f6f0ff', op], [1, '#c8b4f0', op * 0.3]]));
       s.path(d, 'none', `stroke="#f6f0ff" stroke-width=".7" opacity="${f2(op)}"`);
       s.path(dots(g.face.map(([fx, fy, r]) => [x + fx * k, y + fy * k, r * k])), '#1a1030', `opacity="${f2(Math.min(1, op + 0.2))}"`);
+      if (tag) s.add('</g>');
     };
     // the far side of the ring, behind the fire
     skel(116, 152, 0.56, { tilt: -10, la: [-160, -130], ra: [-40, -80], ll: [104, 92], rl: [24, 84] }, true, [[0.8, -0.6]]);
@@ -920,10 +924,10 @@ export const ultra_d = {
     s.glow(150, 150, 46, '#f2e4ff', 0.6, 'breathe');
     s.bloom(`<path d="${tongues.join('')}" fill="${fire}"/><path d="${core.join('')}" fill="#fbf6ff" opacity=".9"/>`, { sd: 2, k: 1.4, box: [80, 50, 140, 150] });
     // the near side of the ring, dark against the fire
-    spook(36, 168, 0.9, { tilt: 12, la: -150, ra: -30, dir: 1 }, 0.72);
-    spook(266, 166, 0.9, { tilt: -12, la: -150, ra: -30, dir: -1 }, 0.72);
-    skel(86, 190, 1.02, { tilt: -6, la: [-160, -130], ra: [-40, -60], ll: [96, 90], rl: [10, 70] }, false, [[0.9, -0.7], [0, -1]]);
-    skel(214, 190, 1.02, { tilt: 8, la: [-140, -110], ra: [-20, 10], ll: [170, 110], rl: [84, 92] }, false, [[-0.9, -0.7], [0, -1]]);
+    spook(36, 168, 0.9, { tilt: 12, la: -150, ra: -30, dir: 1 }, 0.72, 'ghostL');
+    spook(266, 166, 0.9, { tilt: -12, la: -150, ra: -30, dir: -1 }, 0.72, 'ghostR');
+    skel(86, 190, 1.02, { tilt: -6, la: [-160, -130], ra: [-40, -60], ll: [96, 90], rl: [10, 70] }, false, [[0.9, -0.7], [0, -1]], 'skelL');
+    skel(214, 190, 1.02, { tilt: 8, la: [-140, -110], ra: [-20, 10], ll: [170, 110], rl: [84, 92] }, false, [[-0.9, -0.7], [0, -1]], 'skelR');
     // graves in the near corners
     s.figure(`${slab(10, 218, 22, 30, -8)}${cross(294, 218, 34, 7)}`, { fill: '#08060c', rim: '#b8a6e2', offsets: [[0, -1]], rimOp: 0.6 });
     s.motes({ seed: 15003, n: 22, x: [110, 190], y: [40, 160], r: [0.35, 1], fill: '#c9a6ff', hot: '#ffffff', cls: 'rise', t: [3, 7], op: [0.4, 0.9] });
@@ -1004,10 +1008,12 @@ export const ultra_d = {
     s.path(M(quad(25.4, -72.6, 2.4, 19, -8)), '#efe2c4');
     s.add(`<path d="${M('M14,-80L22,-81M14.4,-64L23.4,-65')}" stroke="#b08850" stroke-width=".8"/>`);
     // her lantern
+    s.add('<g data-part="lamplight">');
     s.glow(lamp.c[0], lamp.c[1], 70, '#ffd98a', 0.5);
-    s.glow(lamp.c[0], lamp.c[1], 20, '#fff4d0', 0.75, 'breathe');
+    s.glow(lamp.c[0], lamp.c[1], 20, '#fff4d0', 0.75);
     s.bloom(`<path d="${lamp.glass}" fill="${s.radU(lamp.c[0], lamp.c[1], 8, [[0, '#ffffff'], [0.5, '#fff0c0'], [1, '#ffc060']])}"/>` +
       `<path d="${glint(lamp.c[0], lamp.c[1], 9, 0.12)}" fill="#ffffff" opacity=".85"/>`, { sd: 1.6, k: 1.5, box: [96, 46, 60, 60] });
+    s.add('</g>');
     // a coil of rope, a crate and a fish basket on the near planks
     s.figure(`<path d="${U(quad(272, 198, 30, 22), quad(290, 182, 22, 14), blob([[14, 214], [10, 196], [20, 190], [36, 190], [44, 196], [42, 214]], 4))}"/>`, { fill: '#0e0a08', rim: '#ffcf8a', offsets: [[0, -1]], rimOp: 0.6 });
     s.add(`<path d="${oval(70, 200, 12, 4)}${oval(70, 199, 8, 2.6)}${oval(70, 198.4, 4, 1.3)}" fill="none" stroke="#2a1e14" stroke-width="2"/><path d="M257,198H287M272,187V209" stroke="#2a1e14" stroke-width="1.2"/>`);

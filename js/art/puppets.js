@@ -21,6 +21,67 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // the bonepicker (a creature, an attacker with Soar: a gaunt vulture-horror on a broken wall): its
+  // body (with the stubby extra legs), the ragged tail-wing, the great raised wing, its head (ruff,
+  // long neck, beak and bald skull), its three long legs (each about its hip) and the cluster of
+  // glowing eyes; `emit`: the beak's tip, where its strike leaves from, `hit`: the middle of its
+  // body, `neck`: where the head swings from, `wingRoot`: where the wing turns, `eyes`: the
+  // cluster's middle, `hips`: the three legs' joints, `feet`: its claws on the wall
+  'bonepicker': {
+    role: 'attacker', element: 'bone', facing: 'left', emit: [101, 146], hit: [170, 112],
+    neck: [148, 100], wingRoot: [166, 92], tailRoot: [160, 110], eyes: [109, 122], hips: [[150, 122], [166, 130], [188, 128]], feet: [[127, 164], [157, 176], [198, 172]],
+    parts: [
+      { name: 'tail', of: 'fig:1 [data-part=tail]', pivot: [160, 110] },
+      { name: 'body', of: 'fig:1 [data-part=body]', pivot: [168, 112] },
+      { name: 'wing', of: 'fig:1 [data-part=wing]', pivot: [166, 92] },
+      { name: 'head', of: 'fig:1 [data-part=head]', pivot: [148, 100] },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [148, 100] },
+      { name: 'leg1', of: 'fig:1 [data-part=leg1]', pivot: [150, 122] },
+      { name: 'leg2', of: 'fig:1 [data-part=leg2]', pivot: [166, 130] },
+      { name: 'leg3', of: 'fig:1 [data-part=leg3]', pivot: [188, 128] },
+    ],
+  },
+  // unearth (a spell, a support: a creature comes back from the discard pile to your hand): the
+  // skeletal arm (the two forearm bones, rising out of the grave by stretching from its foot), the
+  // palm's bones, the five fingers (each about its base knuckle), the lip of fresh earth over the
+  // arm's foot, the violet cracks in it and the clods on it; `emit`: the palm's heart, where the
+  // returning spirit gathers and leaves from, `hit`: the arm, where its boon lands when alone,
+  // `grave`: where the arm comes out of the earth, `bases`: the five fingers' base knuckles
+  'unearth': {
+    role: 'support', element: 'bone', facing: 'front', emit: [150, 104], hit: [151, 140],
+    grave: [150, 178], bases: [[142, 118], [146, 114], [151, 113], [156, 114], [160, 118]],
+    parts: [
+      { name: 'arm', of: 'fig:0 [data-part=arm]', pivot: [150, 178] },
+      { name: 'palm', of: 'fig:0 [data-part=palm]', pivot: [150, 124] },
+      { name: 'f1', of: 'fig:0 [data-part=f1]', pivot: [142, 118] },
+      { name: 'f2', of: 'fig:0 [data-part=f2]', pivot: [146, 114] },
+      { name: 'f3', of: 'fig:0 [data-part=f3]', pivot: [151, 113] },
+      { name: 'f4', of: 'fig:0 [data-part=f4]', pivot: [156, 114] },
+      { name: 'f5', of: 'fig:0 [data-part=f5]', pivot: [160, 118] },
+      { name: 'lip', of: 'fig:1', pivot: [150, 172] },
+      { name: 'cracks', of: '[data-part=cracks]', pivot: [150, 172] },
+      { name: 'clods', of: '[data-part=clods]', pivot: [150, 168] },
+    ],
+  },
+  // the kindly undertaker (a creature, a support: he gains you life when your creatures die): his
+  // lantern arm (with the lantern's frame, turning from the shoulder), the lantern's white-hot
+  // glass, his head (nose, hat and brim), the glint in his eye, his tape arm and the measuring
+  // tape hanging from it; `emit`: the lantern, where his gift of light gathers and leaves
+  // from, `hit`: his chest, `shoulder`: where the lantern arm turns, `neck`: where his head
+  // nods, `tapeShoulder`: where the tape arm turns, `tapeHand`: its hand, `coffins`: the
+  // coffin rows' middles (where his own light falls when he is alone)
+  'kindly-undertaker': {
+    role: 'support', element: 'light', facing: 'left', emit: [110, 131], hit: [140, 116],
+    shoulder: [134, 94], neck: [132, 88], tapeShoulder: [145, 95], tapeHand: [155, 126], coffins: [[40, 140], [214, 130]],
+    parts: [
+      { name: 'arm', of: 'fig:1 [data-part=lamparm]', pivot: [134, 94] },
+      { name: 'lamp', of: '[data-part=lamp]', pivot: [134, 94] },
+      { name: 'head', of: 'fig:1 [data-part=head]', pivot: [132, 88] },
+      { name: 'glint', of: '[data-part=eyeglint]', pivot: [132, 88] },
+      { name: 'tapearm', of: 'fig:1 [data-part=tapearm]', pivot: [145, 95] },
+      { name: 'tape', of: '[data-part=tape]', pivot: [155, 127] },
+    ],
+  },
   // grave rat (a creature, an attacker with Venom: it digs at a grave, then lunges and bites): its
   // body (with the haunch and the spine), the ribs over it, its head (snout and ear), its
   // digging forelegs, its hind leg, its tail, its glowing eye and the bones on the heap; `emit`:

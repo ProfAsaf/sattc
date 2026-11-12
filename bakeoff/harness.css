@@ -1,0 +1,16 @@
+/* The bake-off harness (bakeoff/harness.html): a phone screen with one card
+   big in the middle, and an overlay above it (.bk-fx) for what leaves the
+   picture. Effects are unseen (opacity 0) until their motion shows them. */
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0e0b09; }
+body { font: 14px/1.4 system-ui, sans-serif; color: #d9cdb4; }
+.bk-stage { position: relative; width: 402px; max-width: 100vw; height: 540px; margin: 0 auto; }
+.bk-stage > .card { --cw: 330px; position: absolute; left: 50%; top: 40px; margin-left: -165px; }
+.bk-fx { position: absolute; inset: 0; z-index: 5; pointer-events: none; isolation: isolate; contain: strict; }
+.bk-stage .fx-in { position: absolute; inset: 0; pointer-events: none; contain: strict; } /* (sealed: what's added inside doesn't lay the card out again) */
+.bk-stage .fx { position: absolute; display: block; pointer-events: none; opacity: 0; max-width: none; }
+.bk-stage i.fx { border-radius: 50%; }
+.bk-stage .lit { mix-blend-mode: plus-lighter; }
+.bk-stage .fx-copy { position: absolute; display: block; pointer-events: none; opacity: 0; max-width: none; }
+.bk-bar { width: 402px; max-width: 100vw; margin: 0 auto; text-align: center; }
+#bk-play { font: inherit; padding: 10px 22px; border-radius: 22px; border: 1px solid #8a7550; background: #2a2118; color: #f1e2c0; }
+#bk-info { margin-top: 8px; font-size: 12px; color: #a39478; min-height: 3em; }

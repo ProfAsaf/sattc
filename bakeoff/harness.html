@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<!-- The puppet bake-off harness (bakeoff/recipe.md): one card shown big at phone
+     size, its puppet parts over its baked picture, and its move
+     (bakeoff/moves/<id>.js) played on demand.   harness.html?id=<card id> -->
+<html lang="en"><head>
+<meta charset="utf-8">
+<base href="../"><!-- (the game's pictures are named from its root) -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>puppet harness</title>
+<link rel="stylesheet" href="css/card.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="bakeoff/harness.css">
+</head><body>
+<div class="bk-stage"><div class="bk-fx"></div></div>
+<div class="bk-bar"><button type="button" id="bk-play">Play the move</button><div id="bk-info">loading…</div></div>
+<script type="module" src="bakeoff/harness.js"></script>
+</body></html>

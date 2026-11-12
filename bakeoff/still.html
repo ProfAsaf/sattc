@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<!-- A card's picture alone, still, for the bake-off checks (bakeoff/checks/check.mjs):
+       still.html?id=<id>&mode=draw    the drawing (js/art/scenes), as it is
+       still.html?id=<id>&mode=noamb   the drawing without its ambient moving bits (what the bake photographs)
+       still.html?id=<id>&mode=baked   the baked picture with its parts laid back at rest (art/live)
+     300 x 210 css px at the top left; the checks shoot it at 2x. -->
+<html><head><meta charset="utf-8"><base href="../"><title>still</title>
+<style>
+html, body { margin: 0; background: transparent; overflow: hidden; }
+#a { position: absolute; left: 0; top: 0; width: 300px; height: 210px; overflow: hidden; }
+#a > svg { display: block; width: 300px; height: 210px; }
+#a.noamb .rise, #a.noamb .float, #a.noamb .twinkle, #a.noamb .drift, #a.noamb .breathe, #a.noamb .fall, #a.noamb .sway, #a.noamb .turn { visibility: hidden; }
+#a img { position: absolute; display: block; max-width: none; }
+</style>
+</head><body><div id="a"></div>
+<script type="module">
+import { artSVG } from './js/art/index.js';
+import { LIVE } from './js/art-live.js';
+const q = new URLSearchParams(location.search), id = q.get('id'), mode = q.get('mode') || 'draw';
+const a = document.getElementById('a');
+const pc = (v, of) => `${(v / of * 100).toFixed(4)}%`;
+async function go() {
+  if (mode === 'baked') {
+    const pic = LIVE[id];
+    if (!pic) throw new Error('not baked');
+    const L = await (await fetch(pic.live)).json();
+    const parts = L.sprites.filter((s) => s.a === 'part');
+    a.innerHTML = `<img src="${pic.src}" style="left:0;top:0;width:300px;height:210px">` +
+      parts.map((s) => `<img src="${s.img}" style="left:${pc(s.x, 300)};top:${pc(s.y, 210)};width:${pc(s.w, 300)};height:${pc(s.h, 210)}">`).join('');
+    await Promise.all([...a.querySelectorAll('img')].map((im) => im.decode()));
+    window.parts = parts.map((s) => ({ name: s.name, x: s.x, y: s.y, w: s.w, h: s.h }));
+  } else {
+    a.innerHTML = artSVG(id) || '';
+    if (!a.firstElementChild) throw new Error('no drawing');
+    if (mode === 'noamb') a.className = 'noamb';
+  }
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 150))));
+  window.ready = true;
+}
+go().catch((e) => { window.failed = String(e.message || e); });
+</script>
+</body></html>

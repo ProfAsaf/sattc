@@ -13,6 +13,9 @@
 // (c) cheap: the move runs on the compositor: no animation left on the main thread,
 //            no style or layout work while it plays, and nothing left running after
 // (d) strip: about 8 stills across the move, in one picture: bakeoff/out/<id>-strip.png
+// (e) aim:   the interaction contract (bakeoff/recipe.md, "Interactions"): the move has its
+//            BEATS, and aimed at another point (or, for a defender, given blows) it still
+//            builds and stays cheap; its stills, with the points ringed: bakeoff/out/<id>-aimed-strip.png
 //
 // Each run is noted in bakeoff/out/log.jsonl; the last report is bakeoff/out/<id>-report.json.
 import { spawnSync } from 'node:child_process';
@@ -28,7 +31,7 @@ const OUT = join(ROOT, 'bakeoff', 'out');
 const REF = join(ROOT, 'bakeoff', 'ref');
 mkdirSync(OUT, { recursive: true });
 const [id, ...rest] = process.argv.slice(2);
-if (!id) { console.log('usage: node bakeoff/checks/check.mjs <card id> [a b c d | start | look] [--video]'); process.exit(2); }
+if (!id) { console.log('usage: node bakeoff/checks/check.mjs <card id> [a b c d e | start | look] [--video]'); process.exit(2); }
 const flags = new Set(rest.filter((a) => a.startsWith('--')));
 const words = rest.filter((a) => !a.startsWith('--'));
 const log = (o) => appendFileSync(join(OUT, 'log.jsonl'), JSON.stringify({ t: new Date().toISOString(), id, ...o }) + '\n');
@@ -44,7 +47,7 @@ if (START) { log({ run: 'start' }); console.log(`noted: you start ${id}`); }
 const B = START ? '' : base();
 const tmp = mkdtempSync(join(tmpdir(), 'bkc-'));
 const report = { id, at: new Date().toISOString(), pass: {}, notes: [] };
-const want = words.length ? [...words] : ['a', 'b', 'c', 'd'];
+const want = words.length ? [...words] : ['a', 'b', 'c', 'd', 'e'];
 if (START || words[0] === 'ref' || words[0] === 'look') want.length = 0;
 
 // a picture of the drawing (still.html, 300 x 210 css px) at `k` x
@@ -58,6 +61,46 @@ async function still(mode, file, k = 2) {
     writeFileSync(file, await pg.shot({ x: 0, y: 0, width: 300, height: 210 }, k));
     return parts;
   }, 60000);
+}
+
+// The interaction contract each puppet carries (bakeoff/recipe.md, "Interactions")
+const ROLES = ['attacker', 'defender', 'support', 'aura'];
+const ELEMENTS = ['fire', 'lightning', 'frost', 'water', 'wind', 'earth', 'nature', 'venom', 'shadow', 'spirit', 'bone', 'blood', 'light', 'arcane', 'steel'];
+const FACINGS = ['left', 'right', 'front'];
+const isPt = (v) => Array.isArray(v) && v.length === 2 && v.every(Number.isFinite);
+const CARDS = existsSync(join(ROOT, 'bakeoff', 'cards.json')) ? JSON.parse(readFileSync(join(ROOT, 'bakeoff', 'cards.json'), 'utf8')) : [];
+function contract(spec) {
+  const card = CARDS.find((c) => c.id === id), creature = !card || card.type === 'creature' || ['legend', 'champion', 'token'].includes(card.kind);
+  const out = [];
+  if (!ROLES.includes(spec.role)) out.push(`the puppet needs role: one of ${ROLES.join(', ')}`);
+  if (!ELEMENTS.includes(spec.element)) out.push(`the puppet needs element: one of ${ELEMENTS.join(', ')}`);
+  if (!FACINGS.includes(spec.facing)) out.push('the puppet needs facing: left, right or front');
+  if ((spec.role === 'attacker' || spec.role === 'support') && !isPt(spec.emit)) out.push('an attacker or support needs emit: [x, y], where its attack or boon leaves from');
+  if (creature && !isPt(spec.hit)) out.push('a creature needs hit: [x, y], where blows land on it');
+  if (spec.role === 'defender' && !(Array.isArray(spec.guard) && spec.guard.length && spec.guard.every(isPt))) out.push('a defender needs guard: [[x, y], ...], where it takes blows');
+  return out;
+}
+// stills of the move in the harness (pg), as one picture: the card's picture and a margin round it
+async function stripOf(pg, inf, file, title, video = null) {
+  const r = await pg.ev(`(() => { const c = document.querySelector('.bk-stage > .card').getBoundingClientRect(), a = document.querySelector('.bk-stage .c-art').getBoundingClientRect(), s = document.querySelector('.bk-stage').getBoundingClientRect();
+    const x = Math.max(s.left, c.left - 24), y = Math.max(s.top, c.top - 34); return { x, y, width: Math.min(s.right, c.right + 24) - x, height: Math.min(s.bottom, a.bottom + 50) - y }; })()`);
+  const shoot = async (ms, f, k) => {
+    await pg.ev(`(() => { for (const a of document.getAnimations()) a.pause(); bk.hold(${ms}); return true; })()`);
+    await pg.ev('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(true))))');
+    await sleep(40);
+    writeFileSync(f, await pg.shot(r, k));
+  };
+  const END = inf.END, stills = Array.isArray(inf.STILLS) && inf.STILLS.length ? inf.STILLS : Array.from({ length: 8 }, (_, i) => Math.round(((i + 0.5) * END) / 8));
+  const files = [];
+  for (const [i, ms] of stills.entries()) { const f = join(tmp, `s${i}.png`); await shoot(ms, f, 0.8); files.push(f); }
+  py('strip', file, '4', title, stills.map((ms) => `${ms} ms`).join('|'), ...files);
+  if (video) {
+    const vf = [], step = 50;
+    for (let i = 0, ms = -300; ms <= END + 300; ms += step, i++) { const f = join(tmp, `v${String(i).padStart(3, '0')}.png`); await shoot(Math.max(0, Math.min(END, ms)), f, 0.6); vf.push(f); }
+    py('anim', video, String(step), ...vf);
+  }
+  await pg.ev('(bk.stop(), true)');
+  return stills;
 }
 
 try {
@@ -78,7 +121,8 @@ try {
     if (!existsSync(ref)) throw new Error(`no reference picture bakeoff/ref/${id}.png`);
     const now = join(OUT, `${id}-draw.png`);
     await still('draw', now);
-    const d = py('diff', ref, now, join(OUT, `${id}-a-diff.png`));
+    let d = py('diff', ref, now, join(OUT, `${id}-a-diff.png`));
+    if (!d.error && d.changed) { await still('draw', now); d = py('diff', ref, now, join(OUT, `${id}-a-diff.png`)); } // (a render can come out a hair off once: look twice)
     report.a = d;
     report.pass.a = !d.error && d.changed === 0;
     console.log(`(a) still drawing unchanged: ${report.pass.a ? 'PASS' : 'FAIL'}  ${d.error || `${d.changed} changed pixels of ${d.pixels} (${d.over24} by more than 24 levels)${d.changed ? `, in the box ${d.box}; see bakeoff/out/${id}-a-diff.png` : ''}`}`);
@@ -93,6 +137,7 @@ try {
     const jf = join(ROOT, 'art', 'live', `${id}.json`);
     let parts = [];
     if (!spec) notes.push(`no puppet for ${id} in js/art/puppets.js`);
+    else notes.push(...contract(spec));
     if (!live.includes(`"${id}"`)) notes.push(`${id} is not in js/art-live.js (bake it: tools/bake-live.mjs ${id})`);
     if (!existsSync(jf)) notes.push(`no art/live/${id}.json (bake it)`);
     else {
@@ -199,33 +244,57 @@ try {
         for (const l of c.offCompositorWhy.slice(0, 8)) console.log(`      ${l}`);
       }
       if (want.includes('d')) {
-        // the region shot: the card's picture and a margin round it (where effects may spill)
-        const r = await pg.ev(`(() => { const c = document.querySelector('.bk-stage > .card').getBoundingClientRect(), a = document.querySelector('.bk-stage .c-art').getBoundingClientRect(), s = document.querySelector('.bk-stage').getBoundingClientRect();
-          const x = Math.max(s.left, c.left - 24), y = Math.max(s.top, c.top - 34); return { x, y, width: Math.min(s.right, c.right + 24) - x, height: Math.min(s.bottom, a.bottom + 50) - y }; })()`);
-        const shoot = async (ms, file, k) => {
-          await pg.ev(`(() => { for (const a of document.getAnimations()) a.pause(); bk.hold(${ms}); return true; })()`);
-          await pg.ev('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(true))))');
-          await sleep(40);
-          writeFileSync(file, await pg.shot(r, k));
-        };
-        const stills = Array.isArray(inf.STILLS) && inf.STILLS.length ? inf.STILLS : Array.from({ length: 8 }, (_, i) => Math.round(((i + 0.5) * END) / 8));
-        const files = [];
-        for (const [i, ms] of stills.entries()) { const f = join(tmp, `s${i}.png`); await shoot(ms, f, 0.8); files.push(f); }
-        const strip = join(OUT, `${id}-strip.png`);
-        py('strip', strip, '4', `${id}: ${stills.length} stills across its ${END} ms move`, stills.map((ms) => `${ms} ms`).join('|'), ...files);
-        report.d = { stills, file: `bakeoff/out/${id}-strip.png` };
-        if (flags.has('--video')) {
-          const vf = [], step = 50;
-          for (let i = 0, ms = -300; ms <= END + 300; ms += step, i++) { const f = join(tmp, `v${String(i).padStart(3, '0')}.png`); await shoot(Math.max(0, Math.min(END, ms)), f, 0.6); vf.push(f); }
-          py('anim', join(OUT, `${id}-move.webp`), String(step), ...vf);
-          report.d.video = `bakeoff/out/${id}-move.webp`;
-        }
-        await pg.ev('(bk.stop(), true)');
+        const stills = await stripOf(pg, inf, join(OUT, `${id}-strip.png`), `${id}: ${(Array.isArray(inf.STILLS) && inf.STILLS.length) || 8} stills across its ${END} ms move`, flags.has('--video') ? join(OUT, `${id}-move.webp`) : null);
+        report.d = { stills, file: `bakeoff/out/${id}-strip.png`, ...(flags.has('--video') ? { video: `bakeoff/out/${id}-move.webp` } : {}) };
         report.pass.d = stills.length >= 6 && stills.length <= 10;
         console.log(`(d) frame strip: ${report.pass.d ? 'PASS' : 'FAIL'}  bakeoff/out/${id}-strip.png (${stills.length} stills: ${stills.join(', ')} ms)${report.d.video ? `; the move: ${report.d.video}` : ''}`);
       }
       if (pg.problems.length) { report.notes.push(...pg.problems.slice(0, 6)); console.log(`    page errors: ${pg.problems.slice(0, 4).join(' | ')}`); }
     });
+  }
+
+  // (e) the interaction contract: its BEATS, and aimed elsewhere (or given blows) it still works
+  if (want.includes('e')) {
+    const { PUPPETS } = await import(pathToFileURL(join(ROOT, 'js', 'art', 'puppets.js')).href + `?e=${Date.now()}`);
+    const spec = PUPPETS[id] || {}, e = { notes: [] };
+    let query = '';
+    if (spec.role === 'aura') e.skipped = 'an aura is not aimed';
+    else if (spec.role === 'defender') {
+      const g = Array.isArray(spec.guard) && spec.guard.length ? spec.guard : isPt(spec.hit) ? [spec.hit] : null;
+      if (!g) e.notes.push('a defender needs guard points in js/art/puppets.js');
+      else query = `blows=${[[900, g[0]], [1350, g.at(-1)]].map(([t, [x, y]]) => `${t},${x},${y}`).join(';')}`;
+    } else if (!ROLES.includes(spec.role)) e.notes.push('the puppet needs a role (js/art/puppets.js)');
+    else query = `aim=${(spec.facing === 'left' ? [-28, 45] : spec.facing === 'front' ? [150, -22] : [328, 45]).join(',')}`;
+    if (query) {
+      await withChrome({}, async (pg) => {
+        await pg.send('Performance.enable');
+        await pg.goto(`${B}/bakeoff/harness.html?id=${encodeURIComponent(id)}&${query}&mark&nc=${Date.now()}`);
+        await pg.waitFor(`window.bk && window.bk.state !== 'loading'`, 30000);
+        const inf = await pg.ev('bk.info');
+        if (inf.error || (await pg.ev('bk.state')) !== 'ready') { e.notes.push(`with ${query} the move does not build: ${inf.error || 'no move'}`); return; }
+        const Bt = inf.BEATS, END = inf.END;
+        if (!Bt || !['release', 'impact', 'settle'].every((k) => Number.isFinite(Bt[k])) || !(Bt.release >= 0 && Bt.release <= Bt.impact && Bt.impact <= Bt.settle && Bt.settle <= END)) e.notes.push('the move needs BEATS = { release, impact, settle }: ms, in that order, within END');
+        const metrics = async () => Object.fromEntries((await pg.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]));
+        await sleep(500);
+        await pg.ev('bk.play()');
+        await sleep(300);
+        await pg.ev('(bk.play(), true)');
+        await sleep(120);
+        const m1 = await metrics();
+        await sleep(END - 220);
+        const m2 = await metrics();
+        await sleep(400);
+        Object.assign(e, { query, recalcs: m2.RecalcStyleCount - m1.RecalcStyleCount, layouts: m2.LayoutCount - m1.LayoutCount, taskMs: Math.round((m2.TaskDuration - m1.TaskDuration) * 1000) });
+        if (e.recalcs > 3 || e.layouts > 1 || e.taskMs > 80) e.notes.push(`aimed, it isn't cheap: ${e.recalcs} style recalcs, ${e.layouts} layouts, ${e.taskMs} ms of main-thread work while it played`);
+        await stripOf(pg, inf, join(OUT, `${id}-aimed-strip.png`), `${id}, ${query.replace('=', ' ')} (ringed)`);
+        e.file = `bakeoff/out/${id}-aimed-strip.png`;
+        if (pg.problems.length) e.notes.push(...pg.problems.slice(0, 3));
+      });
+    }
+    report.e = e;
+    report.pass.e = !e.notes.length;
+    console.log(`(e) can be aimed: ${report.pass.e ? 'PASS' : 'FAIL'}  ${e.skipped || (query ? `${query}; ${e.recalcs ?? '?'} style recalcs while it played; look at bakeoff/out/${id}-aimed-strip.png: does it go to the ringed points?` : '')}`);
+    for (const n of e.notes) console.log(`    - ${n}`);
   }
 } catch (e) {
   report.error = String(e.message || e);

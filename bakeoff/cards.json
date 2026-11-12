@@ -1,0 +1,4128 @@
+[
+ {
+  "id": "cinderling",
+  "lane": "a",
+  "file": "js/art/scenes/ember.js",
+  "name": "Cinderling",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Imp",
+  "factions": [
+   "ember"
+  ],
+  "power": 2,
+  "vitality": 1,
+  "keywords": [
+   "lastBreath"
+  ],
+  "text": "Last Breath: Deal 1 damage to each opponent.",
+  "art": "A small winged imp made of cooling lava and glowing cracks, crouched on a volcanic rock, sparks drifting around it.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "reckless-initiate",
+  "lane": "a",
+  "file": "js/art/scenes/ember.js",
+  "name": "Reckless Initiate",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "ember"
+  ],
+  "power": 2,
+  "vitality": 2,
+  "keywords": [],
+  "text": "Whenever Reckless Initiate attacks, it takes 1 damage.\nPay 2 Energy: Reckless Initiate gets +2 Power this turn.",
+  "art": "A young fire-cult initiate charging forward with a burning torch-spear, robes scorched, wild grin, smoke behind.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "spark-runner",
+  "lane": "a",
+  "file": "js/art/scenes/ember.js",
+  "name": "Spark Runner",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Elemental",
+  "factions": [
+   "ember"
+  ],
+  "power": 3,
+  "vitality": 1,
+  "keywords": [
+   "rush"
+  ],
+  "text": "Rush",
+  "art": "A lean elemental made of crackling sparks sprinting across scorched ground, a trail of embers streaking behind it.",
+  "role": "attacker",
+  "element": "lightning",
+  "upgrade": false
+ },
+ {
+  "id": "feed-the-flame",
+  "lane": "a",
+  "file": "js/art/scenes/ember.js",
+  "name": "Feed the Flame",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Sacrifice a creature you control. Deal 3 damage to any target. If the sacrificed creature had Last Breath, deal 4 instead.",
+  "art": "A hooded figure feeding a small struggling shadow-creature into a roaring brazier, the flames leaping upward.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "ash-collector",
+  "lane": "a",
+  "file": "js/art/scenes/ember.js",
+  "name": "Ash Collector",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "ember"
+  ],
+  "power": 3,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Whenever another creature you control dies, Ash Collector gets +1 Power this turn.",
+  "art": "A hunched man with a soot-black coat and a lantern of glowing ash, sweeping a smoking battlefield at dusk.",
+  "role": "attacker",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "wildfire",
+  "lane": "a",
+  "file": "js/art/scenes/ember.js",
+  "name": "Wildfire",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Deal 2 damage to every creature.",
+  "art": "A wall of wildfire sweeping across a hillside forest at night, silhouetted animals and soldiers fleeing.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "phoenix-of-the-last-spark",
+  "lane": "a",
+  "file": "js/art/scenes/ember.js",
+  "name": "Phoenix of the Last Spark",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Phoenix",
+  "factions": [
+   "ember"
+  ],
+  "power": 4,
+  "vitality": 3,
+  "keywords": [
+   "soar",
+   "rush",
+   "lastBreath"
+  ],
+  "text": "Soar, Rush\nLast Breath: During your next turn, you may pay 2 Energy to return this card from your discard pile to your hand.",
+  "art": "A great phoenix rising from a dying ember, wings of flame unfurling against a dark sky.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "the-mountain-is-angry",
+  "lane": "a",
+  "file": "js/art/scenes/ember.js",
+  "name": "The Mountain Is Angry",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Costs 1 less for each creature that died this turn (minimum 3).\nDeal 7 damage to an opponent.",
+  "art": "A volcano erupting in fury, a face half-formed in the lava and smoke, a tiny village below.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "little-gardener",
+  "lane": "a",
+  "file": "js/art/scenes/verdant.js",
+  "name": "Little Gardener",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Rabbit",
+  "factions": [
+   "verdant"
+  ],
+  "power": 1,
+  "vitality": 3,
+  "keywords": [],
+  "text": "The first time each turn another creature you control gets a permanent stat increase, Little Gardener gets +1/+1 permanently.",
+  "art": "A small rabbit gardener in a green hooded cloak watering a glowing sprout with a tiny copper can, sunlit forest floor.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "seedling",
+  "lane": "a",
+  "file": "js/art/scenes/verdant.js",
+  "name": "Seedling",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Plant",
+  "factions": [
+   "verdant"
+  ],
+  "power": 1,
+  "vitality": 2,
+  "keywords": [],
+  "text": "At the start of your turn, if Seedling has 3 or more Vitality, sacrifice it and draw a card.",
+  "art": "A tiny sprouting seedling creature with two leaf-arms and a curious face, pushing up through rich forest soil.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "wild-growth",
+  "lane": "a",
+  "file": "js/art/scenes/verdant.js",
+  "name": "Wild Growth",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "verdant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Give a creature you control +2/+2 permanently.",
+  "art": "Vines and branches bursting outward around a startled wolf, its body thickening with bark and moss.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "mossback",
+  "lane": "a",
+  "file": "js/art/scenes/verdant.js",
+  "name": "Mossback",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Beast",
+  "factions": [
+   "verdant"
+  ],
+  "power": 3,
+  "vitality": 4,
+  "keywords": [
+   "awaken"
+  ],
+  "text": "Awaken: Gain 2 Life.\nPay 3 Energy: Mossback gets +1/+1 permanently.",
+  "art": "A huge slow tortoise-like beast with a mossy, flowering shell, wading through a misty forest stream.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "ancient-roots",
+  "lane": "a",
+  "file": "js/art/scenes/verdant.js",
+  "name": "Ancient Roots",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "verdant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Your maximum Energy increases by 1 (to at most 8).",
+  "art": "Colossal ancient tree roots coiling around glowing stones deep underground, faint green light pulsing through them.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "patient-giant",
+  "lane": "a",
+  "file": "js/art/scenes/verdant.js",
+  "name": "Patient Giant",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Giant",
+  "factions": [
+   "verdant"
+  ],
+  "power": 3,
+  "vitality": 6,
+  "keywords": [
+   "reach"
+  ],
+  "text": "Reach\nWhenever Patient Giant takes damage and survives, it gets +1 Power permanently.",
+  "art": "A towering, calm forest giant with bark-like skin and arrows stuck in its shoulder, standing unbothered in a clearing.",
+  "role": "defender",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "worldtree-stag",
+  "lane": "a",
+  "file": "js/art/scenes/verdant.js",
+  "name": "Worldtree Stag",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Beast",
+  "factions": [
+   "verdant"
+  ],
+  "power": 6,
+  "vitality": 7,
+  "keywords": [],
+  "text": "When played, give another creature you control +2/+2 permanently.",
+  "art": "A majestic stag whose antlers are living branches full of leaves and blossoms, standing in golden forest light.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "the-forest-remembers",
+  "lane": "a",
+  "file": "js/art/scenes/verdant.js",
+  "name": "The Forest Remembers",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Ancient",
+  "factions": [
+   "verdant"
+  ],
+  "power": 7,
+  "vitality": 8,
+  "keywords": [
+   "overrun"
+  ],
+  "text": "Overrun\nCosts 1 less for each creature you control that has been permanently strengthened (minimum 3).",
+  "art": "An ancient tree-spirit colossus rising from the forest, with a wise weathered face in its trunk and birds in its crown.",
+  "role": "attacker",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "memory-diver",
+  "lane": "a",
+  "file": "js/art/scenes/tide.js",
+  "name": "Memory Diver",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Seeker",
+  "factions": [
+   "tide"
+  ],
+  "power": 2,
+  "vitality": 2,
+  "keywords": [],
+  "text": "When played, look at the top 3 cards of your deck. Put one into your hand and the other two into your discard pile.",
+  "art": "A diver in a dark cloak swimming down through deep water toward the ruins of a sunken library, glowing memories drifting like pages.",
+  "role": "attacker",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "curious-wisp",
+  "lane": "a",
+  "file": "js/art/scenes/tide.js",
+  "name": "Curious Wisp",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Spirit",
+  "factions": [
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 2,
+  "keywords": [
+   "soar"
+  ],
+  "text": "Soar\nWhen played, look at the top card of your deck. You may put it on the bottom.\nPay 4 Energy: Draw a card.",
+  "art": "A small glowing sea-wisp with big curious eyes peeking over the edge of a tide pool at dusk.",
+  "role": "support",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "not-yet",
+  "lane": "a",
+  "file": "js/art/scenes/tide.js",
+  "name": "Not Yet",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nReturn a creature or Relic that costs 3 or less to its owner's hand.",
+  "art": "A wave curling up and gently sweeping a startled goblin warrior back off a beach toward the sea.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "second-thought",
+  "lane": "a",
+  "file": "js/art/scenes/tide.js",
+  "name": "Second Thought",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Draw 2 cards, then discard a card.",
+  "art": "A scholar looking into a still pool that shows a different reflection of her, candles and scrolls around.",
+  "role": "support",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "mirror-mage",
+  "lane": "a",
+  "file": "js/art/scenes/tide.js",
+  "name": "Mirror Mage",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human Wizard",
+  "factions": [
+   "tide"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [],
+  "text": "The first Spell you play each turn that costs 2 or less costs 1 less.",
+  "art": "A wizard casting a spell whose light is reflected and doubled in a floating mirror of water.",
+  "role": "attacker",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "countercurrent",
+  "lane": "a",
+  "file": "js/art/scenes/tide.js",
+  "name": "Countercurrent",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trap",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trap"
+  ],
+  "text": "Trap — The next time an opponent plays a Spell, they must pay 2 more Energy or that Spell is canceled.",
+  "art": "A spell of fire being swallowed by a rising whirlpool of seawater, a calm mage watching from the shore.",
+  "role": "support",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "deepwater-leviathan",
+  "lane": "a",
+  "file": "js/art/scenes/tide.js",
+  "name": "Deepwater Leviathan",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Leviathan",
+  "factions": [
+   "tide"
+  ],
+  "power": 6,
+  "vitality": 6,
+  "keywords": [],
+  "text": "When played, you may return another creature to its owner's hand.",
+  "art": "An enormous leviathan surfacing beside a tiny ship in a storm, its eye the size of the ship.",
+  "role": "attacker",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "perfect-recall",
+  "lane": "a",
+  "file": "js/art/scenes/tide.js",
+  "name": "Perfect Recall",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Return up to three Spells from your discard pile to your hand.",
+  "art": "An old archivist in a flooded library, three glowing scrolls rising out of the water into her hands.",
+  "role": "support",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "something-beneath",
+  "lane": "a",
+  "file": "js/art/scenes/umbral.js",
+  "name": "Something Beneath",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Horror",
+  "factions": [
+   "umbral"
+  ],
+  "power": 6,
+  "vitality": 6,
+  "keywords": [],
+  "text": "Costs 1 less for every two creatures in your discard pile (minimum 2).",
+  "art": "A colossal shadowy tentacled horror rising from a black lake beneath ruined towers, a faint violet glow in its maw.",
+  "role": "attacker",
+  "element": "shadow",
+  "upgrade": false
+ },
+ {
+  "id": "grave-rat",
+  "lane": "a",
+  "file": "js/art/scenes/umbral.js",
+  "name": "Grave Rat",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Rat",
+  "factions": [
+   "umbral"
+  ],
+  "power": 1,
+  "vitality": 1,
+  "keywords": [
+   "venom",
+   "lastBreath"
+  ],
+  "text": "Venom\nLast Breath: Put the top 2 cards of your deck into your discard pile.",
+  "art": "A scrawny rat with glowing violet eyes digging through an old grave under moonlight, bones scattered.",
+  "role": "attacker",
+  "element": "bone",
+  "upgrade": false
+ },
+ {
+  "id": "kindly-undertaker",
+  "lane": "a",
+  "file": "js/art/scenes/umbral.js",
+  "name": "Kindly Undertaker",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "umbral"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Whenever another creature you control dies, gain 1 Life.",
+  "art": "A gentle old undertaker with a measuring tape and a lantern, standing among rows of coffins with a soft smile.",
+  "role": "support",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "unearth",
+  "lane": "a",
+  "file": "js/art/scenes/umbral.js",
+  "name": "Unearth",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "echo"
+  ],
+  "text": "Return a creature that costs 2 or less from your discard pile to your hand.\nEcho 4",
+  "art": "A skeletal hand clawing up out of fresh earth in a misty graveyard, violet light seeping from the soil.",
+  "role": "support",
+  "element": "bone",
+  "upgrade": false
+ },
+ {
+  "id": "bonepicker",
+  "lane": "a",
+  "file": "js/art/scenes/umbral.js",
+  "name": "Bonepicker",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Horror",
+  "factions": [
+   "umbral"
+  ],
+  "power": 3,
+  "vitality": 3,
+  "keywords": [
+   "soar"
+  ],
+  "text": "Soar\nCosts 1 less if a creature died this turn.",
+  "art": "A gaunt vulture-like horror with too many limbs perched on a broken wall over a battlefield at twilight.",
+  "role": "attacker",
+  "element": "earth",
+  "upgrade": false
+ },
+ {
+  "id": "borrowed-time",
+  "lane": "a",
+  "file": "js/art/scenes/umbral.js",
+  "name": "Borrowed Time",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Return a creature from your discard pile to play. It has Rush. At the end of the turn, sacrifice it.",
+  "art": "A ghostly knight rising from a tomb holding a cracked hourglass, the sand running fast.",
+  "role": "support",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "death-is-a-door",
+  "lane": "a",
+  "file": "js/art/scenes/umbral.js",
+  "name": "Death Is a Door",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "If a creature you control died this turn, this costs 3 instead.\nDestroy a creature or a Relic.",
+  "art": "A tall stone door standing alone on a moor at night, slightly open, cold violet light spilling from inside.",
+  "role": "attacker",
+  "element": "earth",
+  "upgrade": false
+ },
+ {
+  "id": "the-one-who-came-back",
+  "lane": "a",
+  "file": "js/art/scenes/umbral.js",
+  "name": "The One Who Came Back",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Revenant",
+  "factions": [
+   "umbral"
+  ],
+  "power": 7,
+  "vitality": 7,
+  "keywords": [
+   "echo"
+  ],
+  "text": "Echo 7\nWhen played from your discard pile, each opponent loses 3 Life.",
+  "art": "A towering revenant in tattered armour striding out of a burial mound, chains trailing, violet storm behind.",
+  "role": "attacker",
+  "element": "shadow",
+  "upgrade": false
+ },
+ {
+  "id": "shieldbearer",
+  "lane": "a",
+  "file": "js/art/scenes/radiant.js",
+  "name": "Shieldbearer",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 1,
+  "vitality": 4,
+  "keywords": [
+   "guard"
+  ],
+  "text": "Guard",
+  "art": "A stout soldier planting a huge tower shield in the mud, arrows bouncing off it, sunlight behind.",
+  "role": "defender",
+  "element": "light",
+  "upgrade": true
+ },
+ {
+  "id": "street-recruit",
+  "lane": "a",
+  "file": "js/art/scenes/radiant.js",
+  "name": "Street Recruit",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 1,
+  "vitality": 2,
+  "keywords": [
+   "bond"
+  ],
+  "text": "Bond: Street Recruit has +1 Power.",
+  "art": "A scrappy young recruit with an oversized shield grinning beside a line of soldiers in a sunny town square.",
+  "role": "attacker",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "twin-souls",
+  "lane": "a",
+  "file": "js/art/scenes/radiant.js",
+  "name": "Twin Souls",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nCreate two 1/1 Spirit creatures.",
+  "art": "Two small luminous spirits spiralling around each other above a field at dawn.",
+  "role": "support",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "rally",
+  "lane": "a",
+  "file": "js/art/scenes/radiant.js",
+  "name": "Rally",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nYour creatures get +1 Power this turn.",
+  "art": "A captain raising a sword as a golden banner unfurls, soldiers cheering behind her.",
+  "role": "support",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "standard-keeper",
+  "lane": "a",
+  "file": "js/art/scenes/radiant.js",
+  "name": "Standard Keeper",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Your other creatures have +1 Power.",
+  "art": "An old standard-bearer holding a tall golden banner upright in the wind on a hilltop.",
+  "role": "attacker",
+  "element": "wind",
+  "upgrade": false
+ },
+ {
+  "id": "stand-together",
+  "lane": "a",
+  "file": "js/art/scenes/radiant.js",
+  "name": "Stand Together",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Your creatures get +1/+1 this turn. If you control 4 or more creatures, draw a card.",
+  "art": "A line of armoured knights linking shields under a burst of golden light breaking through clouds.",
+  "role": "support",
+  "element": "wind",
+  "upgrade": false
+ },
+ {
+  "id": "dawn-captain",
+  "lane": "a",
+  "file": "js/art/scenes/radiant.js",
+  "name": "Dawn Captain",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 4,
+  "vitality": 5,
+  "keywords": [
+   "watchful"
+  ],
+  "text": "Watchful\nWhen played, create two 1/1 Spirit creatures.",
+  "art": "A captain in gold-trimmed armour on a ridge at sunrise, two glowing spirit-soldiers forming at her sides.",
+  "role": "defender",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "a-thousand-lights",
+  "lane": "a",
+  "file": "js/art/scenes/radiant.js",
+  "name": "A Thousand Lights",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Create five 1/1 Spirit creatures. Then give each creature you control +1/+1 permanently.",
+  "art": "Hundreds of small glowing spirits rising from a dark valley toward the stars, a lone figure watching.",
+  "role": "support",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "funeral-pyre",
+  "lane": "a",
+  "file": "js/art/scenes/multi.js",
+  "name": "Funeral Pyre",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "ember",
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Sacrifice a creature you control. Deal damage equal to its Power to any target. If it had Last Breath, that happens one extra time.",
+  "art": "A funeral pyre burning with violet and orange flames under a starless sky, ghostly shapes in the smoke.",
+  "role": "attacker",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "we-grow-together",
+  "lane": "a",
+  "file": "js/art/scenes/multi.js",
+  "name": "We Grow Together",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "verdant",
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Give two creatures you control +1/+2 permanently. If you control 4 or more creatures, give three creatures +1/+2 instead.",
+  "art": "A dryad and a radiant knight clasping hands in a glade, golden light and green leaves swirling around them.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "forbidden-archivist",
+  "lane": "a",
+  "file": "js/art/scenes/multi.js",
+  "name": "Forbidden Archivist",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human Wizard",
+  "factions": [
+   "tide",
+   "umbral"
+  ],
+  "power": 2,
+  "vitality": 4,
+  "keywords": [],
+  "text": "Once each turn, when a card goes from your hand or deck into your discard pile, lose 1 Life and draw a card.",
+  "art": "A pale archivist in a drowned, candlelit vault reading a book whose pages drip with ink-dark water.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "lightning-theorist",
+  "lane": "a",
+  "file": "js/art/scenes/multi.js",
+  "name": "Lightning Theorist",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human Wizard",
+  "factions": [
+   "ember",
+   "tide"
+  ],
+  "power": 3,
+  "vitality": 2,
+  "keywords": [],
+  "text": "Whenever you play your second Spell in a turn, deal 2 damage to each opponent.",
+  "art": "A wild-haired scholar on a sea cliff in a storm, lightning arcing between her outstretched hands.",
+  "role": "attacker",
+  "element": "lightning",
+  "upgrade": true
+ },
+ {
+  "id": "apex-predator",
+  "lane": "a",
+  "file": "js/art/scenes/multi.js",
+  "name": "Apex Predator",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Beast",
+  "factions": [
+   "verdant",
+   "ember"
+  ],
+  "power": 5,
+  "vitality": 5,
+  "keywords": [],
+  "text": "When played, it fights another creature. If Apex Predator survives, it gets +2/+2 permanently.",
+  "art": "A massive sabre-toothed beast with smouldering stripes leaping onto prey in a burning jungle.",
+  "role": "support",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "spirit",
+  "lane": "a",
+  "file": "js/art/scenes/multi.js",
+  "name": "Spirit",
+  "kind": "token",
+  "type": "creature",
+  "subtype": "Spirit",
+  "factions": [
+   "radiant"
+  ],
+  "power": 1,
+  "vitality": 1,
+  "keywords": [],
+  "text": "",
+  "art": "A small luminous spirit shaped like a winged child of light, glowing softly against a dawn sky.",
+  "role": "attacker",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "spark",
+  "lane": "a",
+  "file": "js/art/scenes/multi.js",
+  "name": "Spark",
+  "kind": "token",
+  "type": "spell",
+  "subtype": "",
+  "factions": [],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Gain 1 Energy.\n(Given to every player who does not go first.)",
+  "art": "A single bright spark floating above an open palm in darkness.",
+  "role": "support",
+  "element": "shadow",
+  "upgrade": false
+ },
+ {
+  "id": "scorch",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Scorch",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nDeal 2 damage to a creature.",
+  "art": "An outstretched hand flicking a bolt of white-hot fire at a snarling wolf mid-leap, the bolt the brightest thing in a dark ravine.",
+  "role": "attacker",
+  "element": "lightning",
+  "upgrade": false
+ },
+ {
+  "id": "kindle",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Kindle",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nA creature you control gets +2 Power and Swift this turn.",
+  "art": "A warrior in mid-swing whose sword bursts into a streak of flame, the arc of fire lighting the smoke around her.",
+  "role": "support",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "ember-duelist",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Ember Duelist",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "ember"
+  ],
+  "power": 2,
+  "vitality": 2,
+  "keywords": [
+   "swift",
+   "hunt"
+  ],
+  "text": "Swift, Hunt\nPay 2 Energy: Ember Duelist deals 1 damage to a creature.",
+  "art": "A lean fencer in a long scorched coat saluting with a red-hot rapier, standing on a balcony above a burning city at night.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "mutiny",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Mutiny",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Take control of an enemy creature until the end of the turn. It is ready and has Rush.",
+  "art": "A soldier turning to point his burning spear back at his own army, his eyes glowing ember-red, the army a dark silhouette behind.",
+  "role": "support",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "molten-berserker",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Molten Berserker",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Elemental",
+  "factions": [
+   "ember"
+  ],
+  "power": 5,
+  "vitality": 2,
+  "keywords": [],
+  "text": "Can’t block.",
+  "art": "A hulking brute of cracked magma charging forward, molten drops flying off its fists, the ground cracking under each step.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "the-kiln",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "The Kiln",
+  "kind": "card",
+  "type": "relic",
+  "subtype": "Relic",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "relic"
+  ],
+  "text": "Relic\nWhenever a creature you control dies, deal 1 damage to each opponent.",
+  "art": "A great beehive-shaped stone kiln glowing from within, faint shapes of souls rising in its fire and smoke, in a dark courtyard.",
+  "role": "aura",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "smoldering-golem",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Smoldering Golem",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Golem",
+  "factions": [
+   "ember"
+  ],
+  "power": 3,
+  "vitality": 4,
+  "keywords": [
+   "lastBreath"
+  ],
+  "text": "Last Breath: Deal 2 damage to every creature and each opponent.",
+  "art": "A squat golem of stacked hot stones with glowing cracks and steam venting from its seams, standing in a ruined forge.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "sudden-growth",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Sudden Growth",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "verdant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nA creature you control gets +3/+3 this turn.",
+  "art": "A fox suddenly towering to giant size as vines and roots explode from the ground around it, leaves flying.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "canopy-archer",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Canopy Archer",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "verdant"
+  ],
+  "power": 2,
+  "vitality": 2,
+  "keywords": [
+   "reach"
+  ],
+  "text": "Reach\nPay 2 Energy: Deal 1 damage to a creature with Soar.",
+  "art": "A hooded archer perched high on a great tree branch, bow drawn upward at a dark winged shape against a sunlit sky.",
+  "role": "attacker",
+  "element": "wind",
+  "upgrade": false
+ },
+ {
+  "id": "grove-druid",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Grove Druid",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Druid",
+  "factions": [
+   "verdant"
+  ],
+  "power": 1,
+  "vitality": 2,
+  "keywords": [],
+  "text": "When played, choose: your maximum Energy increases by 1, or destroy a Relic.",
+  "art": "A druid wearing a crown of antlers kneeling to plant a glowing seed, green light and roots spreading out from her hands.",
+  "role": "attacker",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "savage-clash",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Savage Clash",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "verdant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "A creature you control fights an enemy creature.",
+  "art": "A great bear and a horned beast colliding head-on in a forest clearing, leaves and dust bursting around them.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "heartwood-totem",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Heartwood Totem",
+  "kind": "card",
+  "type": "relic",
+  "subtype": "Relic",
+  "factions": [
+   "verdant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "relic"
+  ],
+  "text": "Relic\nAt the start of your turn, your creature with the least Power gets +1/+1 permanently.",
+  "art": "A tall carved wooden totem with a glowing green heart-knot at its centre, sprouting leaves, in a mossy glade with light shafts.",
+  "role": "aura",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "grandmother-bramble",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Grandmother Bramble",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Ancient",
+  "factions": [
+   "verdant"
+  ],
+  "power": 3,
+  "vitality": 4,
+  "keywords": [],
+  "text": "Whenever another creature you control gets a permanent boost, it gets +1/+1 more.",
+  "art": "An old, kindly tree-woman with a shawl of moss and bird nests in her twiggy hair, bending to tend a row of glowing saplings.",
+  "role": "support",
+  "element": "wind",
+  "upgrade": false
+ },
+ {
+  "id": "ironhide-charger",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Ironhide Charger",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Beast",
+  "factions": [
+   "verdant"
+  ],
+  "power": 4,
+  "vitality": 4,
+  "keywords": [
+   "overrun",
+   "hunt"
+  ],
+  "text": "Overrun, Hunt",
+  "art": "An armour-plated rhino-like beast charging head-down through a cloud of dust, the ground cracking beneath it.",
+  "role": "attacker",
+  "element": "wind",
+  "upgrade": false
+ },
+ {
+  "id": "stampede",
+  "lane": "a",
+  "file": "js/art/scenes/new-a.js",
+  "name": "Stampede",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "verdant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nYour creatures get +2/+2 and Overrun this turn.",
+  "art": "A herd of huge horned beasts thundering across a plain beneath a storm, dust rising in a wall behind them.",
+  "role": "support",
+  "element": "lightning",
+  "upgrade": false
+ },
+ {
+  "id": "cloud-ray",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Cloud Ray",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Ray",
+  "factions": [
+   "tide"
+  ],
+  "power": 2,
+  "vitality": 1,
+  "keywords": [
+   "soar"
+  ],
+  "text": "Soar\nPay 2 Energy: Return Cloud Ray to your hand.",
+  "art": "A manta ray gliding through clouds high above the ocean at dusk, its wing-tips trailing mist.",
+  "role": "attacker",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "riptide",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Riptide",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trap",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trap"
+  ],
+  "text": "Trap — When an opponent attacks you, return the attacking creature that costs the most to its owner’s hand.",
+  "art": "A huge wave curling over an armoured knight on a beach and dragging him back into the surf, his sword raised.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "sea-change",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Sea Change",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nA creature becomes a 1/1 Fish with no abilities.",
+  "art": "A spiral of sea-magic shrinking a roaring horned monster into a small startled fish inside a floating bubble.",
+  "role": "support",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "windborne-sage",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Windborne Sage",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human Wizard",
+  "factions": [
+   "tide"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [
+   "soar"
+  ],
+  "text": "Soar\nWhen played, draw a card.",
+  "art": "A robed sage floating on the sea wind above tall cliffs, pages and gulls swirling around her.",
+  "role": "support",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "tidal-mimic",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Tidal Mimic",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Shapeshifter",
+  "factions": [
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 1,
+  "keywords": [],
+  "text": "When played, it becomes a copy of another creature (without that creature’s “when played” effect).",
+  "art": "A translucent water-creature rising from a tide pool and reshaping itself into the likeness of a knight, only half formed.",
+  "role": "attacker",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "the-drowned-clock",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "The Drowned Clock",
+  "kind": "card",
+  "type": "relic",
+  "subtype": "Relic",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "relic"
+  ],
+  "text": "Relic\nAt the start of your turn, the clock chimes. On the third chime, each opponent loses 6 Life, and the count starts over.",
+  "art": "A barnacled clock tower half sunk in a dark sea, its round face glowing, bells ringing out rings of light over the water.",
+  "role": "aura",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "one-more-wave",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "One More Wave",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Take an extra turn after this one.",
+  "art": "A second, taller wave rising behind the first over a tiny boat, a lone sailor looking up at it.",
+  "role": "support",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "nerissa",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Nerissa, Voice of the Deep",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Siren",
+  "factions": [
+   "tide"
+  ],
+  "power": 3,
+  "vitality": 4,
+  "keywords": [],
+  "text": "When played, take control of an enemy creature that costs 4 or less.",
+  "art": "A siren queen with a crown of coral singing on a sea rock, a knight walking into the waves toward her, rings of song in the air.",
+  "role": "attacker",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "fish",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Fish",
+  "kind": "token",
+  "type": "creature",
+  "subtype": "Fish",
+  "factions": [
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 1,
+  "keywords": [],
+  "text": "(It used to be something else.)",
+  "art": "A small round surprised fish floating in a bubble of seawater, a few bubbles rising.",
+  "role": "attacker",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "kiss-of-night",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Kiss of Night",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nA creature you control gets Venom and Drain this turn.",
+  "art": "A pale hand blowing a kiss that becomes a swirl of violet moths, under a crescent moon.",
+  "role": "support",
+  "element": "shadow",
+  "upgrade": false
+ },
+ {
+  "id": "marsh-adder",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Marsh Adder",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Serpent",
+  "factions": [
+   "umbral"
+  ],
+  "power": 1,
+  "vitality": 2,
+  "keywords": [
+   "venom"
+  ],
+  "text": "Venom",
+  "art": "A black snake with violet markings rearing up from tall reeds in a moonlit marsh, fangs catching the light.",
+  "role": "attacker",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "vesper-bat",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Vesper Bat",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Bat",
+  "factions": [
+   "umbral"
+  ],
+  "power": 1,
+  "vitality": 2,
+  "keywords": [
+   "soar",
+   "drain"
+  ],
+  "text": "Soar, Drain\nPay 3 Energy: Each opponent loses 1 Life. You gain 1 Life.",
+  "art": "A large bat with violet-veined wings spread wide, silhouetted against a huge blood-red moon over a ruined spire.",
+  "role": "support",
+  "element": "blood",
+  "upgrade": false
+ },
+ {
+  "id": "bone-altar",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Bone Altar",
+  "kind": "card",
+  "type": "relic",
+  "subtype": "Relic",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "relic"
+  ],
+  "text": "Relic\nOnce each turn, on your turn: sacrifice a creature to draw a card.",
+  "art": "An altar of stacked bones and dripping candles in a crypt, a cold violet flame burning on top.",
+  "role": "aura",
+  "element": "bone",
+  "upgrade": false
+ },
+ {
+  "id": "hungry-ghoul",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Hungry Ghoul",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Horror",
+  "factions": [
+   "umbral"
+  ],
+  "power": 2,
+  "vitality": 2,
+  "keywords": [],
+  "text": "Whenever another creature dies, Hungry Ghoul gets +1/+1 permanently.\nPay 1 Energy: Sacrifice another creature you control.",
+  "art": "A gaunt hunched ghoul crouching on a gravestone, long fingers, glowing violet eyes, a fog-filled graveyard behind.",
+  "role": "support",
+  "element": "shadow",
+  "upgrade": false
+ },
+ {
+  "id": "the-culling",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "The Culling",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Destroy every creature with 2 or less Power.",
+  "art": "A giant scythe of violet light sweeping across a field of small silhouetted figures that dissolve into wisps.",
+  "role": "attacker",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "carrion-wyrm",
+  "lane": "a",
+  "file": "js/art/scenes/new-b.js",
+  "name": "Carrion Wyrm",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Wyrm",
+  "factions": [
+   "umbral"
+  ],
+  "power": 3,
+  "vitality": 4,
+  "keywords": [
+   "soar",
+   "venom"
+  ],
+  "text": "Soar, Venom",
+  "art": "A skeletal winged wyrm circling low over a battlefield under storm clouds, violet light in its ribcage.",
+  "role": "attacker",
+  "element": "bone",
+  "upgrade": false
+ },
+ {
+  "id": "champion-radiant",
+  "lane": "a",
+  "file": "js/art/scenes/champions.js",
+  "name": "Aurelia, the Lightkeeper",
+  "kind": "champion",
+  "type": "creature",
+  "subtype": "Champion",
+  "factions": [
+   "radiant"
+  ],
+  "power": 1,
+  "vitality": 4,
+  "keywords": [],
+  "text": "Starts on the table; attacks from Level 2. If it leaves, it goes back to your hand, 2 Energy dearer.\nLevel 2 at 3 Spirits: 2/5. Your Spirits have +1/+1 and Soar.\nLevel 3 at 6 Spirits: 3/6, Soar. Also, each Spirit you create brings another.",
+  "art": "A tall armoured woman holding a lantern of pure light high above her head on a dawn hillside, small winged spirits gathering around the glow.",
+  "role": "defender",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "champion-ember",
+  "lane": "a",
+  "file": "js/art/scenes/champions.js",
+  "name": "Pyra, Herald of Ash",
+  "kind": "champion",
+  "type": "creature",
+  "subtype": "Champion",
+  "factions": [
+   "ember"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Starts on the table; attacks from Level 2. If it leaves, it goes back to your hand, 2 Energy dearer.\nLevel 2 at 3 Spells: 3/4. Each Spell you play deals 1 damage to each opponent.\nLevel 3 at 6 Spells: 5/4, Swift. Also, your Spells cost 1 less.",
+  "art": "A herald in scorched robes blowing a long curved horn, a plume of fire and sparks pouring from it across a red sky.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "champion-verdant",
+  "lane": "a",
+  "file": "js/art/scenes/champions.js",
+  "name": "Old Root, Grove Warden",
+  "kind": "champion",
+  "type": "creature",
+  "subtype": "Champion",
+  "factions": [
+   "verdant"
+  ],
+  "power": 0,
+  "vitality": 5,
+  "keywords": [
+   "reach"
+  ],
+  "text": "Starts on the table; attacks from Level 2. If it leaves, it goes back to your hand, 2 Energy dearer.\nLevel 2 at 4 boosts: 2/6, Reach. Each turn your weakest creature gets +1/+1 permanently.\nLevel 3 at 10 boosts: 5/7, Reach, Overrun. Also, your other creatures’ permanent boosts give +1/+1 more.",
+  "art": "An ancient tree-giant with a face in its bark and a shield of woven roots, standing guard at the edge of a sunlit forest.",
+  "role": "defender",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "champion-umbral",
+  "lane": "a",
+  "file": "js/art/scenes/champions.js",
+  "name": "Morwen, the Gravekeeper",
+  "kind": "champion",
+  "type": "creature",
+  "subtype": "Champion",
+  "factions": [
+   "umbral"
+  ],
+  "power": 1,
+  "vitality": 4,
+  "keywords": [],
+  "text": "Starts on the table; attacks from Level 2. If it leaves, it goes back to your hand, 2 Energy dearer.\nLevel 2 at 8 deaths: 2/4, Venom. When another creature of yours dies, each opponent loses 1 Life.\nLevel 3 at 14 deaths: 5/5, Venom, Drain. Also, each turn your best dead creature (cost 3 or less) returns to play.",
+  "art": "A cloaked gravekeeper leaning on a long spade in a moonlit cemetery, faint violet spirits rising from the graves behind her.",
+  "role": "defender",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "champion-tide",
+  "lane": "a",
+  "file": "js/art/scenes/champions.js",
+  "name": "Nim, the Tidecaller",
+  "kind": "champion",
+  "type": "creature",
+  "subtype": "Champion",
+  "factions": [
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 4,
+  "keywords": [
+   "soar"
+  ],
+  "text": "Starts on the table; attacks from Level 2. If it leaves, it goes back to your hand, 2 Energy dearer.\nLevel 2 at 2 extra cards: 2/5, Soar. Draw an extra card each turn.\nLevel 3 at 5 extra cards: 4/6, Soar. Also, each card you draw costs each opponent 1 Life.",
+  "art": "A slender sea-mage on a rock in the surf, one hand raised as a great wave rises behind her full of glowing scrolls and silver fish.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "the-bright-choir",
+  "lane": "a",
+  "file": "js/art/scenes/new-d.js",
+  "name": "The Bright Choir",
+  "kind": "card",
+  "type": "relic",
+  "subtype": "Relic",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "relic"
+  ],
+  "text": "Relic\nWhenever you create one or more Spirits, create that many more.",
+  "art": "A ring of tall glowing choir figures in a great hall of dawn light, each small spirit rising from their song splitting into two as it climbs.",
+  "role": "aura",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "dawnsinger",
+  "lane": "a",
+  "file": "js/art/scenes/new-d.js",
+  "name": "Dawnsinger",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Whenever you create a Spirit, each opponent loses 1 Life.",
+  "art": "A singer on a hilltop at dawn, head thrown back in song, a stream of tiny winged spirits pouring from her voice toward the rising sun.",
+  "role": "support",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "crescendo",
+  "lane": "a",
+  "file": "js/art/scenes/new-d.js",
+  "name": "Crescendo",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Deal damage to any target equal to the number of Spells you have played this turn, this one included.",
+  "art": "A fire mage with both arms raised like a conductor, a spiral of flame around her growing wider and brighter with every turn of the spiral.",
+  "role": "support",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "ripple",
+  "lane": "a",
+  "file": "js/art/scenes/new-d.js",
+  "name": "Ripple",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Draw a card. The next Spell you play this turn costs 1 less.",
+  "art": "A single bright drop falling into a still dark pool, rings of light spreading outward across the water to the reeds at its edges.",
+  "role": "support",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "season-of-plenty",
+  "lane": "a",
+  "file": "js/art/scenes/new-d.js",
+  "name": "Season of Plenty",
+  "kind": "card",
+  "type": "relic",
+  "subtype": "Relic",
+  "factions": [
+   "verdant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "relic"
+  ],
+  "text": "Relic\nAt the start of your turn, each creature you control that has been permanently strengthened gets +1/+1 permanently.",
+  "art": "An orchard at harvest under a huge low golden sun, the tallest trees bowed with fruit, one young tree in the middle glowing as it grows.",
+  "role": "aura",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "lantern-ferryman",
+  "lane": "a",
+  "file": "js/art/scenes/new-d.js",
+  "name": "Lantern Ferryman",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Shade",
+  "factions": [
+   "umbral"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Whenever another creature you control dies, if it was not a token, create a 1/1 Spirit creature.",
+  "art": "A hooded ferryman poling a narrow boat across a dark misty river, a lantern glowing at the bow and a pale spirit rising from the water in its wake.",
+  "role": "support",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "wild-bloom",
+  "lane": "a",
+  "file": "js/art/scenes/new-d.js",
+  "name": "Wild Bloom",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "verdant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nDouble the Power and Vitality of a creature you control this turn.",
+  "art": "A small fern bursting in an instant into a towering flowering plant, petals and light exploding outward from its heart.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "choking-smoke",
+  "lane": "a",
+  "file": "js/art/scenes/ultra-g.js",
+  "name": "Choking Smoke",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Each opponent has 2 less Energy on their next turn.",
+  "art": "Thick black smoke pouring from a forge chimney and settling over a village of workshops, the forge fires below choking down to embers.",
+  "role": "support",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "tollkeeper",
+  "lane": "a",
+  "file": "js/art/scenes/ultra-g.js",
+  "name": "Tollkeeper",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Whenever an opponent Invests, you draw a card.",
+  "art": "A stern tollkeeper in a gold-trimmed coat at a raised bridge gate, a lantern and a ledger in hand, coins stacked on the gatepost at dawn.",
+  "role": "support",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "grave-robber",
+  "lane": "a",
+  "file": "js/art/scenes/ultra-g.js",
+  "name": "Grave Robber",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "umbral"
+  ],
+  "power": 2,
+  "vitality": 2,
+  "keywords": [],
+  "text": "When played, each opponent puts the three costliest creature cards in their discard pile on the bottom of their deck.",
+  "art": "A hooded grave robber climbing out of an open crypt with a sack over his shoulder and a shovel in hand, the moon behind the cemetery wall.",
+  "role": "attacker",
+  "element": "earth",
+  "upgrade": false
+ },
+ {
+  "id": "pickpocket",
+  "lane": "a",
+  "file": "js/art/scenes/ultra-g.js",
+  "name": "Pickpocket",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Bird",
+  "factions": [
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 2,
+  "keywords": [
+   "soar"
+  ],
+  "text": "Soar\nWhenever it hits an opponent in a fight, a random card from their hand goes to their discard pile.",
+  "art": "A sly magpie in a tiny cloak flying off over a harbour market with a glinting coin purse in its beak, a merchant shaking a fist below.",
+  "role": "attacker",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "whispered-doubt",
+  "lane": "a",
+  "file": "js/art/scenes/ultra-g.js",
+  "name": "Whispered Doubt",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Choose a card that costs 4 or more in an opponent’s hand: it goes to the bottom of their deck, and they draw a card. You draw a card.",
+  "art": "A shadowy figure leaning to whisper into a sleeping king’s ear, violet wisps curling into his dreams, his battle plans scattered on the table.",
+  "role": "support",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "blight-beetle",
+  "lane": "a",
+  "file": "js/art/scenes/ultra-g.js",
+  "name": "Blight Beetle",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Insect",
+  "factions": [
+   "verdant"
+  ],
+  "power": 1,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Pay 2 Energy: an enemy creature loses +1/+1 of the growth it got for good.",
+  "art": "A large iridescent beetle gnawing through the glowing roots of a great tree, the leaves above it withering and drifting down.",
+  "role": "defender",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "legend-ione",
+  "lane": "a",
+  "file": "js/art/scenes/ultra-g.js",
+  "name": "Ione, the Bloomcaller",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Human Druid",
+  "factions": [
+   "verdant",
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 3,
+  "keywords": [
+   "reach"
+  ],
+  "text": "Legend. It counts Spells you play.\nLevel 2 at 6: 2/4, Reach. The first Spell you play each turn costs 1 less.\nLevel 3 at 12: 3/5, Reach. Also, your Spells that grow a creature for good grow it +1/+1 more.",
+  "art": "A young druid-mage on a riverbank holding an open book of pressed flowers, glowing spells spiralling from its pages into a blooming tree beside her.",
+  "role": "defender",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "legend-hush",
+  "lane": "a",
+  "file": "js/art/scenes/ultra-g.js",
+  "name": "Hush, the Fog Witch",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Human Witch",
+  "factions": [
+   "tide",
+   "umbral"
+  ],
+  "power": 1,
+  "vitality": 4,
+  "keywords": [],
+  "text": "Legend. It counts attacks on you that dealt you no damage.\nLevel 2 at 3: 2/5. At the start of your turn, each opponent loses 1 Life and you gain 1.\nLevel 3 at 7: 3/6, Drain. Also, whenever an attack on you deals you no damage, draw a card.",
+  "art": "A pale witch with a lantern on a misty shore, a great wall of fog rising from the sea behind her, the faint shapes of lost warriors inside it.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "bastion",
+  "lane": "b",
+  "file": "js/art/scenes/new-c.js",
+  "name": "Bastion",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nA creature you control gets +1/+3 this turn.",
+  "art": "A dome of golden light flaring in front of a young soldier as a black spear strikes it and shatters.",
+  "role": "support",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "lightweaver",
+  "lane": "b",
+  "file": "js/art/scenes/new-c.js",
+  "name": "Lightweaver",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 1,
+  "vitality": 2,
+  "keywords": [],
+  "text": "When played, create a 1/1 Spirit creature.",
+  "art": "A girl in white robes weaving threads of golden light between her hands into a small winged spirit.",
+  "role": "support",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "ambush-at-dawn",
+  "lane": "b",
+  "file": "js/art/scenes/new-c.js",
+  "name": "Ambush at Dawn",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trap",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trap"
+  ],
+  "text": "Trap — When an opponent attacks you, create two 1/1 Spirits in time to block.",
+  "art": "Golden spirit-soldiers bursting out of the morning mist on a road as dark riders gallop toward them.",
+  "role": "support",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "dawnwatch-knight",
+  "lane": "b",
+  "file": "js/art/scenes/new-c.js",
+  "name": "Dawnwatch Knight",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human Knight",
+  "factions": [
+   "radiant"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [
+   "swift",
+   "watchful"
+  ],
+  "text": "Swift, Watchful\nPay 2 Energy: Another creature you control gets +0/+2 this turn.",
+  "art": "A knight standing guard on a castle battlement at sunrise, spear and shield ready, a long banner streaming.",
+  "role": "defender",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "dawns-judgment",
+  "lane": "b",
+  "file": "js/art/scenes/new-c.js",
+  "name": "Dawn’s Judgment",
+  "kind": "card",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nDestroy an attacking creature.",
+  "art": "A pillar of golden light striking down from the clouds onto a charging dark knight on a road.",
+  "role": "attacker",
+  "element": "wind",
+  "upgrade": false
+ },
+ {
+  "id": "choirmother",
+  "lane": "b",
+  "file": "js/art/scenes/new-c.js",
+  "name": "Choirmother",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Angel",
+  "factions": [
+   "radiant"
+  ],
+  "power": 2,
+  "vitality": 4,
+  "keywords": [],
+  "text": "Your Spirits have +1/+1 and Soar.\nPay 4 Energy: Create a 1/1 Spirit.",
+  "art": "A tall luminous figure singing with arms raised, small winged spirits rising around her like sparks into a dawn sky.",
+  "role": "defender",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "beacon-of-hope",
+  "lane": "b",
+  "file": "js/art/scenes/new-c.js",
+  "name": "Beacon of Hope",
+  "kind": "card",
+  "type": "relic",
+  "subtype": "Relic",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "relic"
+  ],
+  "text": "Relic\nAt the start of your turn, create a 1/1 Spirit creature.",
+  "art": "A tall beacon tower on a hill, its great golden flame casting a beam in which a small spirit is forming.",
+  "role": "aura",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "banner-of-the-charge",
+  "lane": "b",
+  "file": "js/art/scenes/new-c.js",
+  "name": "Banner of the Charge",
+  "kind": "card",
+  "type": "relic",
+  "subtype": "Relic",
+  "factions": [
+   "ember",
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "relic"
+  ],
+  "text": "Relic\nYour creatures have Rush.",
+  "art": "A golden war banner with burning edges carried at the head of a charging cavalry line into the dawn.",
+  "role": "aura",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "brook-hydra",
+  "lane": "b",
+  "file": "js/art/scenes/new-c.js",
+  "name": "Brook Hydra",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Hydra",
+  "factions": [
+   "verdant",
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 1,
+  "keywords": [],
+  "text": "Whenever you draw a card, Brook Hydra gets +1/+1 permanently.",
+  "art": "A sleek river hydra with mossy teal scales, five heads rising from a sunlit forest stream.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "gloomweb-spider",
+  "lane": "b",
+  "file": "js/art/scenes/new-c.js",
+  "name": "Gloomweb Spider",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Spider",
+  "factions": [
+   "verdant",
+   "umbral"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [
+   "reach",
+   "venom"
+  ],
+  "text": "Reach, Venom",
+  "art": "A huge black-violet spider hanging in a great web strung between dead trees, mist and a pale moon below.",
+  "role": "attacker",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "sky-warden",
+  "lane": "b",
+  "file": "js/art/scenes/new-c.js",
+  "name": "Sky Warden",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human Knight",
+  "factions": [
+   "tide",
+   "radiant"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [
+   "soar"
+  ],
+  "text": "Soar\nWhen played, exhaust an enemy creature. It doesn’t ready at the start of its controller’s next turn.",
+  "art": "A knight riding a white griffin diving through clouds, casting a net of golden light downward.",
+  "role": "attacker",
+  "element": "wind",
+  "upgrade": false
+ },
+ {
+  "id": "the-pale-abbess",
+  "lane": "b",
+  "file": "js/art/scenes/new-c.js",
+  "name": "The Pale Abbess",
+  "kind": "card",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "umbral",
+   "radiant"
+  ],
+  "power": 2,
+  "vitality": 4,
+  "keywords": [
+   "drain"
+  ],
+  "text": "Drain\nWhenever another creature you control dies, each opponent loses 1 Life.",
+  "art": "A pale abbess in white and violet robes holding up a lantern in a misty cemetery, small spirits drifting from the graves into it.",
+  "role": "defender",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "kindling-heart",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Kindling Heart",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Elemental",
+  "factions": [
+   "ember"
+  ],
+  "power": 0,
+  "vitality": 1,
+  "keywords": [
+   "unstable"
+  ],
+  "text": "Unstable",
+  "art": "A small stone heart cracked open with molten fire inside, glowing brighter and brighter, heat shimmer and sparks rising from it.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "bloodrage-berserker",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Bloodrage Berserker",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "ember"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Gets +1/+0 for each damage on it.",
+  "art": "A scarred berserker roaring with a burning axe raised, his wounds glowing like embers, sparks flying around him.",
+  "role": "support",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "stoke-the-furnace",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Stoke the Furnace",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "invest"
+  ],
+  "text": "Invest\nDeal 1 damage to each opponent.",
+  "art": "A great forge furnace being stoked by a smith with a long iron poker, flames roaring up a stone chimney into a red sky.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "ember-volley",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Ember Volley",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Deal 1 damage to each of up to three enemy creatures.",
+  "art": "A volley of small flaming arrows arcing across a dusky sky toward a distant line of figures.",
+  "role": "attacker",
+  "element": "wind",
+  "upgrade": false
+ },
+ {
+  "id": "molten-core",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Molten Core",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Elemental",
+  "factions": [
+   "ember"
+  ],
+  "power": 2,
+  "vitality": 1,
+  "keywords": [
+   "swift",
+   "fuse"
+  ],
+  "text": "Swift\nSymbiote",
+  "art": "A glowing orb of molten rock floating between two cupped hands, about to be pressed into the chest of a stone giant.",
+  "role": "attacker",
+  "element": "earth",
+  "upgrade": false
+ },
+ {
+  "id": "scorched-earth",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Scorched Earth",
+  "kind": "ultra",
+  "type": "field",
+  "subtype": "Field",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "field"
+  ],
+  "text": "Field\nCreatures don’t heal at the start of turns.",
+  "art": "A blackened plain of burnt ground and smoking stumps under an orange haze, embers drifting on the wind.",
+  "role": "aura",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "sproutling",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Sproutling",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Plant",
+  "factions": [
+   "verdant"
+  ],
+  "power": 0,
+  "vitality": 1,
+  "keywords": [
+   "grows"
+  ],
+  "text": "Grows 1",
+  "art": "A tiny sprout with two bright leaves pushing up out of dark soil, a single beam of sunlight falling on it.",
+  "role": "attacker",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "mycelium-bud",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Mycelium Bud",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Fungus",
+  "factions": [
+   "verdant"
+  ],
+  "power": 1,
+  "vitality": 1,
+  "keywords": [
+   "multiply"
+  ],
+  "text": "Multiply",
+  "art": "A cluster of glowing mushrooms on a mossy forest floor, spores drifting and new little caps sprouting all around them.",
+  "role": "attacker",
+  "element": "venom",
+  "upgrade": false
+ },
+ {
+  "id": "rootmother",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Rootmother",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Treefolk",
+  "factions": [
+   "verdant"
+  ],
+  "power": 2,
+  "vitality": 5,
+  "keywords": [],
+  "text": "Whenever a creature of yours heals, it also gets +1/+1 for good.",
+  "art": "A tall tree-woman with roots for hair gently wrapping vines around a wounded stag, its wounds glowing green as they close.",
+  "role": "defender",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "thornback-archer",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Thornback Archer",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "verdant"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [
+   "reach"
+  ],
+  "text": "Reach\nWhenever a creature of yours with Soar fights, Thornback Archer first deals 2 damage to the creature it fights.",
+  "art": "An archer in bark armour kneeling on a cliff edge, loosing an arrow at a dark beast that lunges at a great eagle above her.",
+  "role": "attacker",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "deep-roots",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Deep Roots",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "verdant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "invest"
+  ],
+  "text": "Invest\nYour weakest creature gets +1/+1 for good.",
+  "art": "Huge tree roots spreading deep underground through glowing soil and stone, a small young tree standing in the light above.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "bark-graft",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Bark Graft",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Plant",
+  "factions": [
+   "verdant"
+  ],
+  "power": 1,
+  "vitality": 3,
+  "keywords": [
+   "reach",
+   "fuse"
+  ],
+  "text": "Reach\nSymbiote",
+  "art": "A living plate of bark and moss crawling up a warrior’s arm and shoulder like armour, small leaves unfurling on it.",
+  "role": "defender",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "overgrowth",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Overgrowth",
+  "kind": "ultra",
+  "type": "field",
+  "subtype": "Field",
+  "factions": [
+   "verdant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "field"
+  ],
+  "text": "Field\nEvery permanent boost gives +1/+1 more.",
+  "art": "A ruined stone city overrun by giant flowering vines and trees, warm sunlight streaming through the leaves.",
+  "role": "aura",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "tidecallers-library",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Tidecaller’s Library",
+  "kind": "ultra",
+  "type": "relic",
+  "subtype": "Relic",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "relic"
+  ],
+  "text": "Relic\nAt the start of your turn, draw an extra card. You can hold 12 cards.",
+  "art": "A great underwater library with shelves of glowing scrolls, silver fish drifting between the stacks, light falling from above.",
+  "role": "aura",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "flood-rite",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-a.js",
+  "name": "Flood Rite",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "Ritual",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "ritual"
+  ],
+  "text": "Ritual\nI (2): Draw 2 cards.\nII (3): Return a creature to its owner’s hand.\nIII (5): Take an extra turn.",
+  "art": "Robed figures in a circle on a moonlit beach, arms raised, a gigantic wave rising behind them.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "tide-of-fortune",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Tide of Fortune",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "invest"
+  ],
+  "text": "Invest\nDraw 2 cards.",
+  "art": "A wave breaking on a rocky shore and leaving behind gold coins and pearls glinting in the foam.",
+  "role": "support",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "wavewarden",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Wavewarden",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Merfolk",
+  "factions": [
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 5,
+  "keywords": [
+   "bodyguard"
+  ],
+  "text": "Bodyguard",
+  "art": "A merfolk guard with a great shell shield standing in front of smaller sea creatures, a spear of water shattering on the shield.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "wing-graft",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Wing Graft",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Bird",
+  "factions": [
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 1,
+  "keywords": [
+   "soar",
+   "fuse"
+  ],
+  "text": "Soar\nSymbiote",
+  "art": "A pair of shimmering wings made of sea spray and light unfolding from a figure’s shoulders over the ocean.",
+  "role": "attacker",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "blood-pact",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Blood Pact",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "invest"
+  ],
+  "text": "Invest\nLose 3 Life.",
+  "art": "Two hands clasping over a dark altar, a thin thread of red light binding them together, candles guttering.",
+  "role": "attacker",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "bloodbinder",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Bloodbinder",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Vampire",
+  "factions": [
+   "umbral"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [
+   "drain"
+  ],
+  "text": "Drain\nYour creatures with Drain heal themselves for the damage they deal.",
+  "art": "A pale vampire mage drawing a stream of red light from a fallen foe into her own wounds, which close as she watches.",
+  "role": "support",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "gravewarden",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Gravewarden",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Shade",
+  "factions": [
+   "umbral"
+  ],
+  "power": 2,
+  "vitality": 4,
+  "keywords": [],
+  "text": "Whenever another creature of yours dies, your creatures heal 2 and get +1/+0 for good.",
+  "art": "A hooded shade with a lantern standing over a fresh grave, violet light flowing from the grave into a line of soldiers behind it.",
+  "role": "defender",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "grave-rite",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Grave Rite",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "Ritual",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "ritual"
+  ],
+  "text": "Ritual\nI (2): A creature card from your discard pile to your hand.\nII (3): Each opponent loses 2 Life; you gain 2.\nIII (4): Two creatures from your discard pile return to play.",
+  "art": "Cloaked figures around a ring of graves under a violet moon, pale hands breaking up through the earth.",
+  "role": "attacker",
+  "element": "earth",
+  "upgrade": false
+ },
+ {
+  "id": "shackles",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Shackles",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "hex"
+  ],
+  "text": "Hex 4: an enemy creature can’t attack or block.",
+  "art": "Heavy iron shackles carved with violet runes clamped on the legs of a huge beast, chains running down into the ground.",
+  "role": "support",
+  "element": "shadow",
+  "upgrade": false
+ },
+ {
+  "id": "venom-shard",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Venom Shard",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Crystal",
+  "factions": [
+   "umbral"
+  ],
+  "power": 1,
+  "vitality": 1,
+  "keywords": [
+   "venom",
+   "fuse"
+  ],
+  "text": "Venom\nSymbiote",
+  "art": "A sliver of black crystal dripping green poison, hovering over an open palm, faint fumes curling up from it.",
+  "role": "attacker",
+  "element": "venom",
+  "upgrade": false
+ },
+ {
+  "id": "shield-captain",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Shield Captain",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 1,
+  "vitality": 4,
+  "keywords": [
+   "guard"
+  ],
+  "text": "Guard\nYour other creatures with Guard get +0/+2. Whenever one of your creatures with Guard blocks, it gets +0/+1 for good.",
+  "art": "A captain with a tower shield raised, a row of shield-bearers locking shields beside her, golden light on their armour.",
+  "role": "defender",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "bastion-wall",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Bastion Wall",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Construct",
+  "factions": [
+   "radiant"
+  ],
+  "power": 0,
+  "vitality": 6,
+  "keywords": [
+   "guard"
+  ],
+  "text": "Guard\nWhenever Bastion Wall blocks, the attacking player loses 2 Life.",
+  "art": "A living wall of golden stone blocks with a carved stern face, arrows and spears breaking against it.",
+  "role": "defender",
+  "element": "earth",
+  "upgrade": false
+ },
+ {
+  "id": "field-medic",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Field Medic",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 1,
+  "vitality": 2,
+  "keywords": [],
+  "text": "At the start of your turn, your creatures heal 2 more.",
+  "art": "A field medic in a white tabard kneeling beside a wounded knight, binding a glowing golden bandage around his arm.",
+  "role": "support",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "lantern-moth",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Lantern Moth",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Insect",
+  "factions": [
+   "radiant"
+  ],
+  "power": 1,
+  "vitality": 1,
+  "keywords": [
+   "soar",
+   "multiply"
+  ],
+  "text": "Soar\nMultiply",
+  "art": "A swarm of glowing moths with lantern-like bodies flying over a dark meadow at dusk, more joining them.",
+  "role": "attacker",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "menders-hymn",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Mender’s Hymn",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nHeal a creature you control fully, poison too. It gets +0/+2 this turn.",
+  "art": "A priestess singing with her hands raised, golden notes of light settling on a wounded soldier.",
+  "role": "support",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "tithe-of-light",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Tithe of Light",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "invest"
+  ],
+  "text": "Invest\nGain 3 Life.",
+  "art": "Villagers placing small glowing candles into a great golden bowl in a temple, light rising to the rafters.",
+  "role": "support",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "sanctuary-spring",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-b.js",
+  "name": "Sanctuary Spring",
+  "kind": "ultra",
+  "type": "field",
+  "subtype": "Field",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "field"
+  ],
+  "text": "Field\nAt the start of their owner’s turn, creatures heal fully (but not poison).",
+  "art": "A clear spring in a sunlit grotto, golden light dancing on the water, a wounded deer drinking from it.",
+  "role": "aura",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "legend-halvard",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Halvard, the Unbroken",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Warden",
+  "factions": [
+   "radiant",
+   "verdant"
+  ],
+  "power": 1,
+  "vitality": 6,
+  "keywords": [
+   "guard"
+  ],
+  "text": "Legend. It counts Guard creatures of yours at the start of your turns.\nLevel 2 at 5: 2/7, Guard. Your creatures with Guard can block three attackers.\nLevel 3 at 11: 3/9, Guard. Also, your creatures with Guard have Power equal to their Vitality.",
+  "art": "A towering armoured warden with a great shield planted in the ground before him, roots and vines climbing his armour, golden light behind him and a line of shields at his back.",
+  "role": "defender",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "legend-aeris",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Aeris, Queen of the Winds",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Sylph",
+  "factions": [
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 3,
+  "keywords": [
+   "soar"
+  ],
+  "text": "Legend. It counts hits on players by your creatures with Soar.\nLevel 2 at 3: 2/4, Soar. Your other creatures with Soar get +1/+0.\nLevel 3 at 7: 3/5, Soar. Also, when your fliers hit a player in a fight, draw a card.",
+  "art": "A winged queen riding a great updraft above sea cliffs, her cloak of wind full of circling gulls and kestrels, storm light on the waves below.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "legend-vesh",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Vesh, the Red Widow",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Vampire",
+  "factions": [
+   "umbral",
+   "ember"
+  ],
+  "power": 2,
+  "vitality": 4,
+  "keywords": [],
+  "text": "Legend. It counts the times your creatures take damage.\nLevel 2 at 5 (8 with 3 players): 3/5, Drain. Your creatures with damage on them have Drain.\nLevel 3 at 12 (18 with 3 players): 4/6, Drain. Also, your creatures get +1/+0 for each damage on them.",
+  "art": "A pale widow in a red veil standing in a field of thorned roses at dusk, drops of crimson light rising from her hands, ravens on the gravestones behind her.",
+  "role": "defender",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "legend-ymra",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Ymra, Heart of the Mountain",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Giant",
+  "factions": [
+   "ember",
+   "verdant"
+  ],
+  "power": 2,
+  "vitality": 5,
+  "keywords": [],
+  "text": "Legend. It counts permanent boosts to your creatures.\nLevel 2 at 6: 3/6, Overrun. When you fuse a card into a creature, it gets +1/+1 more.\nLevel 3 at 14: 5/8, Overrun. Also, when a creature of yours erupts, your other creatures take no damage and it keeps half its growth.",
+  "art": "A colossal stone giantess rising out of a volcanic mountainside, molten veins glowing in her body and forests growing on her shoulders, tiny villages at her feet.",
+  "role": "defender",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "legend-lumen",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Lumen, Mother of Moths",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Insect",
+  "factions": [
+   "radiant",
+   "umbral"
+  ],
+  "power": 1,
+  "vitality": 4,
+  "keywords": [
+   "soar"
+  ],
+  "text": "Legend. It counts tokens you create.\nLevel 2 at 3: 2/5, Soar. Your tokens get +1/+0.\nLevel 3 at 8: 3/6, Soar. Also, whenever one of your tokens dies, each opponent loses 1 Life.",
+  "art": "A great luminous moth with wings like stained-glass lanterns hovering over a dark meadow, hundreds of small glowing moths spiralling out from beneath her wings.",
+  "role": "defender",
+  "element": "wind",
+  "upgrade": false
+ },
+ {
+  "id": "pitfall",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Pitfall",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "Trap",
+  "factions": [
+   "verdant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trap"
+  ],
+  "text": "Trap\nWhen a creature with 5 or more Power attacks you, it falls in: it leaves the fight and doesn’t ready on its next turn.",
+  "art": "A hidden pit under a carpet of leaves on a forest path, a huge horned beast tumbling into it, vines snapping shut over the edge.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "mirror-shield",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Mirror Shield",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "Trap",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trap"
+  ],
+  "text": "Trap\nWhen an opponent attacks you, their attacker with the most Power leaves the fight and takes damage equal to half its Power.",
+  "art": "A great polished golden shield standing alone on a battlefield, a charging monster reflected in it, a burst of light where they meet.",
+  "role": "attacker",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "fog-bank",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Fog Bank",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "Trap",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trap"
+  ],
+  "text": "Trap\nWhen an opponent attacks you, creatures deal no damage to you this fight.",
+  "art": "A thick silver fog rolling in from the sea over a rocky shore, the shapes of charging warriors fading into it.",
+  "role": "support",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "grave-snare",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Grave Snare",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "Trap",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trap"
+  ],
+  "text": "Trap\nWhen an opponent attacks you, their attacker with the most Power leaves the fight. Hex 3: it can’t attack or block.",
+  "art": "Skeletal hands bursting out of the earth of a misty graveyard to grip the legs of a charging knight’s horse, violet runes glowing.",
+  "role": "support",
+  "element": "bone",
+  "upgrade": false
+ },
+ {
+  "id": "backdraft",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Backdraft",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "Trap",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trap"
+  ],
+  "text": "Trap\nWhen an opponent attacks you, each attacking creature takes 2 damage.",
+  "art": "A wall of flame bursting back out of a stone doorway into a line of charging attackers, embers and smoke billowing.",
+  "role": "support",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "sunglass-lancer",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Sunglass Lancer",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 4,
+  "vitality": 1,
+  "keywords": [],
+  "text": "",
+  "art": "A lancer in thin mirrored armour charging with a lance of pure sunlight, the armour already cracking like glass where the light hits it.",
+  "role": "attacker",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "prism-duelist",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Prism Duelist",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Sylph",
+  "factions": [
+   "tide"
+  ],
+  "power": 3,
+  "vitality": 1,
+  "keywords": [
+   "soar",
+   "shield"
+  ],
+  "text": "Soar\nShield (it starts with one)",
+  "art": "A slender winged duelist inside a shimmering prism bubble over the sea, a rapier of light in hand, rainbows scattering off the bubble.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "aegis-acolyte",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Aegis Acolyte",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 1,
+  "vitality": 2,
+  "keywords": [],
+  "text": "When it enters, give another creature of yours a Shield.",
+  "art": "A young acolyte raising both hands, a translucent golden shield of light forming over a kneeling knight in front of her.",
+  "role": "support",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "ward-of-dawn",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Ward of Dawn",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nGive a creature of yours a Shield.",
+  "art": "A dome of dawn light snapping into place over a soldier as a huge claw comes down on it, sparks flying where they meet.",
+  "role": "defender",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "shieldwright",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-c.js",
+  "name": "Shieldwright",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Dwarf",
+  "factions": [
+   "radiant"
+  ],
+  "power": 1,
+  "vitality": 3,
+  "keywords": [],
+  "text": "At the start of your turn, give a Shield to your creature with the most Power that has none.",
+  "art": "A stout smith at a glowing anvil hammering out a round shield of light, finished shields stacked behind her, warriors waiting at the forge door.",
+  "role": "defender",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "the-granary",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-d.js",
+  "name": "The Granary",
+  "kind": "ultra",
+  "type": "relic",
+  "subtype": "Relic",
+  "factions": [
+   "verdant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "relic"
+  ],
+  "text": "Relic\nAt the end of your turn, it saves up to 3 of your unspent Energy for your next turn.",
+  "art": "A round stone granary on a hill above a river delta, golden grain spilling from its open door into baskets, warm evening light, small boats unloading below.",
+  "role": "aura",
+  "element": "earth",
+  "upgrade": false
+ },
+ {
+  "id": "pearl-diver",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-d.js",
+  "name": "Pearl Diver",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Pay 2 Energy: Invest.",
+  "art": "A diver in a shell-studded harness rising through teal water toward the light, a large glowing pearl held in one hand, a trail of bubbles above her.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "compound-interest",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-d.js",
+  "name": "Compound Interest",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Draw a card for every 3 maximum Energy you have.",
+  "art": "Glowing pages and coins spiralling up out of an open ledger on a desk in a sea-cave counting house, each page splitting in two as it rises.",
+  "role": "support",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "the-merchant-tortoise",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-d.js",
+  "name": "The Merchant Tortoise",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Tortoise",
+  "factions": [
+   "verdant",
+   "tide"
+  ],
+  "power": 7,
+  "vitality": 7,
+  "keywords": [
+   "reach",
+   "overrun"
+  ],
+  "text": "Reach, Overrun\nIts Power and Vitality are each equal to your maximum Energy.",
+  "art": "A colossal ancient tortoise wading through a river delta, a whole market town of tents, towers and gardens on its shell, tiny boats beside its feet.",
+  "role": "attacker",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "grave-harvest",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-d.js",
+  "name": "Grave Harvest",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "offering"
+  ],
+  "text": "Offering\nDraw a card. With an Offering, draw 3 instead.",
+  "art": "A hooded gravedigger pulling glowing violet bulbs out of a grave mound by moonlight, pale roots trailing from them, a lantern on a crooked post.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "bone-lance",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-d.js",
+  "name": "Bone Lance",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "offering"
+  ],
+  "text": "Offering\nDeal 2 damage to any target. With an Offering, deal 5 instead.",
+  "art": "A long spear of pale bone wreathed in violet fire hurled across a misty graveyard, a trail of ghostly light behind it.",
+  "role": "attacker",
+  "element": "bone",
+  "upgrade": true
+ },
+ {
+  "id": "bone-tithe",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-d.js",
+  "name": "Bone Tithe",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Sacrifice a creature. Invest, and draw a card.",
+  "art": "A skeletal hand setting a glowing coin onto an altar heaped with bones, violet candlelight, a cowled figure watching from the dark.",
+  "role": "support",
+  "element": "bone",
+  "upgrade": false
+ },
+ {
+  "id": "mire-witch",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-d.js",
+  "name": "Mire Witch",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "umbral",
+   "verdant"
+  ],
+  "power": 2,
+  "vitality": 4,
+  "keywords": [],
+  "text": "Whenever you sacrifice a creature, each opponent loses 1 Life and you gain 2 Life.",
+  "art": "A witch knee-deep in a misty bog holding a lantern of glowing fungus, pale mushrooms and violet will-o’-wisps rising around her.",
+  "role": "defender",
+  "element": "spirit",
+  "upgrade": false
+ },
+ {
+  "id": "danse-macabre",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-d.js",
+  "name": "Danse Macabre",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Return up to four creatures from your discard pile to play. They have Rush. At the end of your turn, sacrifice them.",
+  "art": "A ring of dancing skeletons and pale ghosts whirling around a bonfire of violet flame in a moonlit graveyard.",
+  "role": "support",
+  "element": "bone",
+  "upgrade": false
+ },
+ {
+  "id": "legend-marisol",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-d.js",
+  "name": "Marisol, the Harbormistress",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "verdant",
+   "tide"
+  ],
+  "power": 2,
+  "vitality": 4,
+  "keywords": [
+   "reach"
+  ],
+  "text": "Legend. It counts the times you Invest.\nLevel 2 at 3: 3/5, Reach. Whenever you Invest, draw a card.\nLevel 3 at 6: 4/6, Reach. Also, your cards that cost 7 or more cost 2 less.",
+  "art": "A harbormistress on a busy river dock with a ledger under one arm and a lantern raised, barges loaded with grain and fish behind her, sunset over the delta.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "legend-morrow",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-d.js",
+  "name": "Morrow, the Bone Gardener",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "umbral",
+   "verdant"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Legend. It counts creatures you sacrifice.\nLevel 2 at 3: 3/4. Whenever you sacrifice a creature that isn’t a token, create a 1/1 Spirit.\nLevel 3 at 7: 4/5, Venom. Also, with an Offering, your cards do their stronger effect twice.",
+  "art": "An old gardener in a hooded cloak tending a moonlit graveyard garden, pale flowers and glowing mushrooms growing out of the graves, a lantern hanging from her spade.",
+  "role": "support",
+  "element": "nature",
+  "upgrade": false
+ },
+ {
+  "id": "turnabout",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-e.js",
+  "name": "Turnabout",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "Trick",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trick"
+  ],
+  "text": "Trick\nSwap a creature’s Power and Vitality this turn. Draw a card.",
+  "art": "A swordsman in mid-somersault over a breaking wave, the whole scene mirrored upside down in the glassy water below him.",
+  "role": "support",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "bluff",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-e.js",
+  "name": "Bluff",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "Trap",
+  "factions": [
+   "umbral"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "trap"
+  ],
+  "text": "Trap\nWhen an opponent attacks you, Invest and draw a card. (Face down, it looks like any other Trap.)",
+  "art": "A figure in a theatrical half-mask in a moonlit alley holding a small closed box behind their back, violet light leaking from under its lid.",
+  "role": "support",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "reed-lurker",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-e.js",
+  "name": "Reed Lurker",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Merfolk",
+  "factions": [
+   "tide"
+  ],
+  "power": 3,
+  "vitality": 3,
+  "keywords": [
+   "ambush"
+  ],
+  "text": "Ambush",
+  "art": "A lean merfolk hunter crouched among tall reeds at the water’s edge, only his eyes and a bone spear above the surface, mist over the marsh.",
+  "role": "attacker",
+  "element": "bone",
+  "upgrade": false
+ },
+ {
+  "id": "gloom-stalker",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-e.js",
+  "name": "Gloom Stalker",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Shade",
+  "factions": [
+   "umbral"
+  ],
+  "power": 2,
+  "vitality": 4,
+  "keywords": [
+   "ambush",
+   "venom"
+  ],
+  "text": "Ambush, Venom",
+  "art": "A thin shadow-creature unfolding out of a dark doorway, long fingers dripping green poison, two pale eyes in the blackness.",
+  "role": "attacker",
+  "element": "venom",
+  "upgrade": false
+ },
+ {
+  "id": "the-puppeteer",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-e.js",
+  "name": "The Puppeteer",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "umbral"
+  ],
+  "power": 2,
+  "vitality": 4,
+  "keywords": [],
+  "text": "Pay 2 Energy: an enemy creature fights another enemy creature.",
+  "art": "A masked puppeteer on a dark stage working the strings of two marionette knights that duel each other, a violet spotlight from above.",
+  "role": "defender",
+  "element": "shadow",
+  "upgrade": false
+ },
+ {
+  "id": "grand-illusion",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-e.js",
+  "name": "Grand Illusion",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Return all creatures to their owners’ hands. Draw a card for each of yours.",
+  "art": "A great curtain of seawater sweeping across a battlefield, warriors and beasts dissolving into bubbles and glittering spray behind it.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "spellwright-apprentice",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-e.js",
+  "name": "Spellwright Apprentice",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human Wizard",
+  "factions": [
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 2,
+  "keywords": [],
+  "text": "The first time you play a Spell each turn, it gets +1/+1 for good.",
+  "art": "A young apprentice wizard in a sea-cave study, glowing runes curling up out of an open spellbook and settling onto her sleeves like tattoos.",
+  "role": "support",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "static-spark",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-e.js",
+  "name": "Static Spark",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "ember"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Deal 1 damage to any target.",
+  "art": "A tiny crackling spark leaping from an outstretched fingertip toward a candle wick in a dark room, the air around it shimmering.",
+  "role": "attacker",
+  "element": "lightning",
+  "upgrade": false
+ },
+ {
+  "id": "the-arcane-well",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-e.js",
+  "name": "The Arcane Well",
+  "kind": "ultra",
+  "type": "relic",
+  "subtype": "Relic",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "relic"
+  ],
+  "text": "Relic\nYour Spells cost 1 less (but not less than 1).",
+  "art": "A round stone well in a moonlit courtyard brimming with glowing blue water, runes circling its rim, small lights rising out of it.",
+  "role": "aura",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "the-last-storm",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-e.js",
+  "name": "The Last Storm",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "ember",
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Deal damage to an opponent equal to the number of Spells in your discard pile.",
+  "art": "A colossal storm over a dark sea, lightning and fire twisting together into one huge bolt that strikes a distant tower.",
+  "role": "support",
+  "element": "lightning",
+  "upgrade": false
+ },
+ {
+  "id": "legend-mirelle",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-e.js",
+  "name": "Mirelle, the Mask-Maker",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "tide",
+   "umbral"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Legend. It counts Tricks you play and Traps of yours that spring.\nLevel 2 at 3: 3/4, Swift. Your Tricks and Traps cost 1 less.\nLevel 3 at 7: 4/5, Swift. Also, whenever you play a Trick, draw a card.",
+  "art": "A slender figure in a long coat holding a glowing half-mask up before her face, dozens of masks hanging on the walls of a moonlit workshop by the sea.",
+  "role": "support",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "legend-seren",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-e.js",
+  "name": "Seren, the Storm-Scholar",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Human Wizard",
+  "factions": [
+   "ember",
+   "tide"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Legend. It counts Spells you play.\nLevel 2 at 5: 3/4. Whenever you play your second Spell in a turn, draw a card.\nLevel 3 at 12: 4/5, Soar. Also, whenever you play a Spell, deal 1 damage to each opponent.",
+  "art": "A scholar on top of a sea tower in a storm, an open book in one hand, lightning and fire coiling around her raised staff.",
+  "role": "support",
+  "element": "lightning",
+  "upgrade": false
+ },
+ {
+  "id": "weatherwitch",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "Weatherwitch",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "tide"
+  ],
+  "power": 1,
+  "vitality": 3,
+  "keywords": [],
+  "text": "Your Fields cost 1 less. When played, you may return a Field from your discard pile to your hand.",
+  "art": "A weather witch on a windy cliff holding up a glass jar with a tiny storm cloud swirling inside it, her cloak and hair whipping in the wind.",
+  "role": "defender",
+  "element": "wind",
+  "upgrade": false
+ },
+ {
+  "id": "storm-shepherd",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "Storm Shepherd",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [
+   "soar"
+  ],
+  "text": "Soar\nWhile your Field is in play, it has +2/+1.",
+  "art": "A shepherdess riding a great white bird through golden storm clouds, her crook raised, sunlight breaking through behind her.",
+  "role": "support",
+  "element": "wind",
+  "upgrade": false
+ },
+ {
+  "id": "gale-winds",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "Gale Winds",
+  "kind": "ultra",
+  "type": "field",
+  "subtype": "Field",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "field"
+  ],
+  "text": "Field\nCreatures with Soar get +1/+1. When it arrives, draw a card.",
+  "art": "Strong winds sweeping over a sea cliff, gulls and kites riding long streaks of wind across a bright teal sky.",
+  "role": "aura",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "rolling-fog",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "Rolling Fog",
+  "kind": "ultra",
+  "type": "field",
+  "subtype": "Field",
+  "factions": [
+   "tide"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "field"
+  ],
+  "text": "Field\nNo more than two creatures can attack in one fight. It lifts at the start of your third turn after it arrives.",
+  "art": "A thick bank of fog rolling over a coastal hillside, two warriors clear in front and the shapes of many more lost in the mist behind them.",
+  "role": "aura",
+  "element": "shadow",
+  "upgrade": false
+ },
+ {
+  "id": "hallowed-ground",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "Hallowed Ground",
+  "kind": "ultra",
+  "type": "field",
+  "subtype": "Field",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "field"
+  ],
+  "text": "Field\nCreatures can’t attack the turn they arrive, even with Rush.",
+  "art": "A ring of tall standing stones on a dawn hill, golden light pouring through the gaps onto a calm field of grass inside.",
+  "role": "aura",
+  "element": "earth",
+  "upgrade": false
+ },
+ {
+  "id": "keeper-of-the-skies",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "Keeper of the Skies",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "tide",
+   "radiant"
+  ],
+  "power": 2,
+  "vitality": 5,
+  "keywords": [
+   "reach"
+  ],
+  "text": "Reach\nOpponents’ Fields cost 3 more.",
+  "art": "A tall robed woman on a lighthouse gallery, one hand raised to hold back a dark storm front while the sky behind her stays golden.",
+  "role": "defender",
+  "element": "wind",
+  "upgrade": false
+ },
+ {
+  "id": "the-eye-of-the-storm",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "The Eye of the Storm",
+  "kind": "ultra",
+  "type": "field",
+  "subtype": "Field",
+  "factions": [
+   "tide",
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "field"
+  ],
+  "text": "Field\nOpponents can’t play Fields. Your creatures get +1/+1 and Soar.",
+  "art": "Looking up from the calm centre of a gigantic hurricane: a circle of golden sky high above, ringed by walls of churning cloud and lightning.",
+  "role": "aura",
+  "element": "lightning",
+  "upgrade": false
+ },
+ {
+  "id": "ash-squire",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "Ash Squire",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "ember"
+  ],
+  "power": 2,
+  "vitality": 1,
+  "keywords": [
+   "rush"
+  ],
+  "text": "Rush",
+  "art": "A young squire with a torch and a short sword sprinting out of a cloud of smoke and embers, leaning into the run.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "war-drummer",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "War Drummer",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human",
+  "factions": [
+   "radiant"
+  ],
+  "power": 2,
+  "vitality": 2,
+  "keywords": [],
+  "text": "Your other creatures have +1/+0 while attacking.",
+  "art": "A drummer in a gold tabard beating a great war drum on a dawn hill, banners flying behind her and soldiers marching past.",
+  "role": "support",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "war-chest",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "War Chest",
+  "kind": "ultra",
+  "type": "relic",
+  "subtype": "Relic",
+  "factions": [
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [
+   "relic"
+  ],
+  "text": "Relic\nThe first time each turn your creatures hit an opponent in a fight, Invest.",
+  "art": "An iron-bound chest overflowing with gold coins and captured banners inside a war tent, lantern light glinting off the coins.",
+  "role": "aura",
+  "element": "light",
+  "upgrade": false
+ },
+ {
+  "id": "blitz-captain",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "Blitz Captain",
+  "kind": "ultra",
+  "type": "creature",
+  "subtype": "Human Knight",
+  "factions": [
+   "ember",
+   "radiant"
+  ],
+  "power": 3,
+  "vitality": 2,
+  "keywords": [
+   "rush"
+  ],
+  "text": "Rush\nWhen played, your other creatures get +1/+0 and Rush this turn.",
+  "art": "A knight on a rearing warhorse raising a burning banner, a charge of riders pouring past her toward a smoky red horizon.",
+  "role": "attacker",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "hour-of-glory",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "Hour of Glory",
+  "kind": "ultra",
+  "type": "spell",
+  "subtype": "",
+  "factions": [
+   "ember",
+   "radiant"
+  ],
+  "power": null,
+  "vitality": null,
+  "keywords": [],
+  "text": "Your creatures get +3/+0 and Rush this turn.",
+  "art": "A whole army charging down a hillside at sunrise, gold light and ember sparks streaming from their raised weapons, banners blazing.",
+  "role": "support",
+  "element": "fire",
+  "upgrade": false
+ },
+ {
+  "id": "legend-oriel",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "Oriel, Lady of Storms",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Sylph",
+  "factions": [
+   "tide",
+   "radiant"
+  ],
+  "power": 1,
+  "vitality": 4,
+  "keywords": [
+   "soar"
+  ],
+  "text": "Legend. It counts Fields you play, and turns you start with your Field in play.\nLevel 2 at 3: 2/5, Soar. Whenever you play a Field, draw a card.\nLevel 3 at 8: 3/6, Soar. Also, at the start of your turn, if your Field is in play, deal 2 damage to each opponent.",
+  "art": "A winged lady in a cloak of cloud floating above a sunlit sea, one hand calling down rain and the other calling up the sun.",
+  "role": "defender",
+  "element": "water",
+  "upgrade": false
+ },
+ {
+  "id": "legend-kasimir",
+  "lane": "b",
+  "file": "js/art/scenes/ultra-f.js",
+  "name": "Kasimir, the First Blade",
+  "kind": "legend",
+  "type": "creature",
+  "subtype": "Human Knight",
+  "factions": [
+   "ember",
+   "radiant"
+  ],
+  "power": 2,
+  "vitality": 3,
+  "keywords": [
+   "rush"
+  ],
+  "text": "Legend. It counts the times your creatures hit an opponent.\nLevel 2 at 4: 3/4, Rush. Your creatures that cost 2 or less get +1/+0.\nLevel 3 at 10: 4/5, Rush, Overrun. Also, each of your creatures that hits an opponent in a fight deals 1 more.",
+  "art": "A young knight in scorched gold armour leaping down from a broken wall into battle, sword blazing, a banner streaming behind him at dawn.",
+  "role": "attacker",
+  "element": "earth",
+  "upgrade": false
+ }
+]

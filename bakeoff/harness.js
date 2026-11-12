@@ -21,6 +21,9 @@
 //
 // harness.html?id=<card id>        the card, still; "Play the move" plays it
 //            ...&play / &loop       play once when ready / again and again
+//            ...&aim=x,y            aim its attack (or boon) at a point, in drawing units: k.aim
+//            ...&blows=ms,x,y;...   blows landing on it (a defender's block): k.blows
+//            ...&mark               draw a ring at the aim and at each blow (for checking)
 
 import { CARDS, ULTRA } from '../js/cards.js';
 import { cardHTML, livenArt } from '../js/render.js';
@@ -40,6 +43,10 @@ const f1 = (v) => (+v).toFixed(1);
 const bare = ({ offset, easing, ...f }) => f;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MOVES = new Set(['transform', 'opacity']);
+// interactions (bakeoff/recipe.md): where another card is, for a move that can be aimed
+const nums = (v) => v.split(',').map(Number);
+const AIM = q.get('aim') ? nums(q.get('aim')) : null;
+const BLOWS = q.get('blows') ? q.get('blows').split(';').filter(Boolean).map((b) => { const [at, x, y] = nums(b); return { at, to: [x, y] }; }) : null;
 
 const bk = { state: 'loading', info: { id }, play, hold, stop };
 window.bk = bk;
@@ -136,6 +143,8 @@ function makeKit(mod, art, box) {
   const k = {
     END, u, P, OW, OH, art, rand: dice(hashOf(id)),
     spec: PUPPETS[id] || {},
+    // interactions: where its attack (or boon) goes, and blows landing on it; null when it plays alone
+    aim: AIM, blows: BLOWS,
     // a point on the card's face, in fractions of it (0-1), as overlay px
     F: (x, y) => toFace(x, y),
     // a part (a sprite cut by the bake): img.sp[data-part=name]
@@ -211,7 +220,15 @@ async function main() {
   const buildMs = performance.now() - t0;
   await Promise.all(made.filter((el) => el.tagName === 'IMG').map(loaded));
   const idle = made.filter((el) => el.classList.contains('fx') && !moved.has(el)).length;
-  Object.assign(bk.info, { END, STILLS: mod.STILLS || null, effects: made.length, motions: anims.length, unmoved: idle, buildMs: Math.round(buildMs) });
+  Object.assign(bk.info, { END, STILLS: mod.STILLS || null, BEATS: mod.BEATS || null, role: PUPPETS[id]?.role || null, aim: AIM, blows: BLOWS, effects: made.length, motions: anims.length, unmoved: idle, buildMs: Math.round(buildMs) });
+  if (q.has('mark')) {
+    // (a still ring at each point the move was given, to see that it goes there)
+    for (const pt of [...(AIM ? [AIM] : []), ...(BLOWS || []).map((b) => b.to)]) {
+      const [X, Y] = k.P(...pt), r = document.createElement('i');
+      r.style.cssText = `position:absolute;left:${(X - 7).toFixed(1)}px;top:${(Y - 7).toFixed(1)}px;width:14px;height:14px;border-radius:50%;border:2px dashed #3cf;box-sizing:border-box;z-index:9`;
+      over.append(r);
+    }
+  }
   bk.state = 'ready';
   say(`${card.name}: ${anims.length} motions, ${made.length} effects, ${END} ms${idle ? ` (${idle} effects never move: unseen)` : ''}`);
   return bk.info;

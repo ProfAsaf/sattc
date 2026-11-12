@@ -20,9 +20,13 @@ const GHOST_POLYS = [
 ];
 
 export const PUPPETS = {
+  // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // ── end of lane A ──
+
   // the dragon's head and neck (its own pieces of the figure, and its eye),
   // turning about the base of its neck; and the fire it breathes as drawn
   ashmaw: {
+    role: 'attacker', element: 'fire', facing: 'left', emit: [70, 70], hit: [150, 122], // (the interaction contract: bakeoff/recipe.md)
     neck: [146, 90], mouth: [70, 70],
     parts: [
       { name: 'head', of: ['fig:0 [data-part=head]', ':scope > [data-part=head]'], pivot: [146, 90] },
@@ -33,6 +37,7 @@ export const PUPPETS = {
   // above them. `edges`: her raised wings' outer edges (raised 20°, as far out as
   // the picture shows them), where blows land on her shield.
   seraphine: {
+    role: 'defender', element: 'light', facing: 'front', hit: [150, 82], guard: [[33, 38], [267, 38]],
     heart: [150, 82], edges: [[33, 38], [267, 38]],
     parts: [
       { name: 'wingL', of: '[data-part=wings]', pivot: [144, 80], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
@@ -42,6 +47,7 @@ export const PUPPETS = {
   },
   // her court of ghosts, each on its own
   'the-barrow-queen': {
+    role: 'attacker', element: 'spirit', facing: 'front', emit: [150, 160], hit: [150, 100],
     parts: COURT.map(([x, y, k, d], i) => ({ name: `ghost${i}`, of: '[data-part=court]', pivot: [x + k * d, y + 2 * k], poly: GHOST_POLYS[i] })),
   },
   // the theorist: the arc held between her hands (and the bolt feeding it), and
@@ -77,4 +83,7 @@ export const PUPPETS = {
       { name: 'lance', of: '[data-part=lance]', pivot: [60, 72] },
     ],
   },
+
+  // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // ── end of lane B ──
 };

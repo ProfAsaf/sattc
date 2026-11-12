@@ -1,0 +1,585 @@
+[
+ {
+  "lane": "a",
+  "n": 1,
+  "ids": [
+   "cinderling",
+   "little-gardener",
+   "the-kiln"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 2,
+  "ids": [
+   "reckless-initiate",
+   "spark-runner",
+   "feed-the-flame"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 3,
+  "ids": [
+   "ash-collector",
+   "wildfire",
+   "phoenix-of-the-last-spark"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 4,
+  "ids": [
+   "the-mountain-is-angry",
+   "seedling",
+   "wild-growth"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 5,
+  "ids": [
+   "mossback",
+   "ancient-roots",
+   "patient-giant"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 6,
+  "ids": [
+   "worldtree-stag",
+   "the-forest-remembers",
+   "memory-diver"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 7,
+  "ids": [
+   "curious-wisp",
+   "not-yet",
+   "second-thought"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 8,
+  "ids": [
+   "mirror-mage",
+   "countercurrent",
+   "deepwater-leviathan"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 9,
+  "ids": [
+   "perfect-recall",
+   "something-beneath",
+   "grave-rat"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 10,
+  "ids": [
+   "kindly-undertaker",
+   "unearth",
+   "bonepicker"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 11,
+  "ids": [
+   "borrowed-time",
+   "death-is-a-door",
+   "the-one-who-came-back"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 12,
+  "ids": [
+   "shieldbearer",
+   "street-recruit",
+   "twin-souls"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 13,
+  "ids": [
+   "rally",
+   "standard-keeper",
+   "stand-together"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 14,
+  "ids": [
+   "dawn-captain",
+   "a-thousand-lights",
+   "funeral-pyre"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 15,
+  "ids": [
+   "we-grow-together",
+   "forbidden-archivist",
+   "lightning-theorist"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 16,
+  "ids": [
+   "apex-predator",
+   "spirit",
+   "spark"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 17,
+  "ids": [
+   "scorch",
+   "kindle",
+   "ember-duelist"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 18,
+  "ids": [
+   "mutiny",
+   "molten-berserker",
+   "smoldering-golem"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 19,
+  "ids": [
+   "sudden-growth",
+   "canopy-archer",
+   "grove-druid"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 20,
+  "ids": [
+   "savage-clash",
+   "heartwood-totem",
+   "grandmother-bramble"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 21,
+  "ids": [
+   "ironhide-charger",
+   "stampede",
+   "cloud-ray"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 22,
+  "ids": [
+   "riptide",
+   "sea-change",
+   "windborne-sage"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 23,
+  "ids": [
+   "tidal-mimic",
+   "the-drowned-clock",
+   "one-more-wave"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 24,
+  "ids": [
+   "nerissa",
+   "fish",
+   "kiss-of-night"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 25,
+  "ids": [
+   "marsh-adder",
+   "vesper-bat",
+   "bone-altar"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 26,
+  "ids": [
+   "hungry-ghoul",
+   "the-culling",
+   "carrion-wyrm"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 27,
+  "ids": [
+   "champion-radiant",
+   "champion-ember",
+   "champion-verdant"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 28,
+  "ids": [
+   "champion-umbral",
+   "champion-tide",
+   "the-bright-choir"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 29,
+  "ids": [
+   "dawnsinger",
+   "crescendo",
+   "ripple"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 30,
+  "ids": [
+   "season-of-plenty",
+   "lantern-ferryman",
+   "wild-bloom"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 31,
+  "ids": [
+   "choking-smoke",
+   "tollkeeper",
+   "grave-robber"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 32,
+  "ids": [
+   "pickpocket",
+   "whispered-doubt",
+   "blight-beetle"
+  ]
+ },
+ {
+  "lane": "a",
+  "n": 33,
+  "ids": [
+   "legend-ione",
+   "legend-hush"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 1,
+  "ids": [
+   "dawns-judgment",
+   "dawnwatch-knight",
+   "beacon-of-hope"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 2,
+  "ids": [
+   "bastion",
+   "lightweaver",
+   "ambush-at-dawn"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 3,
+  "ids": [
+   "choirmother",
+   "banner-of-the-charge",
+   "brook-hydra"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 4,
+  "ids": [
+   "gloomweb-spider",
+   "sky-warden",
+   "the-pale-abbess"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 5,
+  "ids": [
+   "kindling-heart",
+   "bloodrage-berserker",
+   "stoke-the-furnace"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 6,
+  "ids": [
+   "ember-volley",
+   "molten-core",
+   "scorched-earth"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 7,
+  "ids": [
+   "sproutling",
+   "mycelium-bud",
+   "rootmother"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 8,
+  "ids": [
+   "thornback-archer",
+   "deep-roots",
+   "bark-graft"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 9,
+  "ids": [
+   "overgrowth",
+   "tidecallers-library",
+   "flood-rite"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 10,
+  "ids": [
+   "tide-of-fortune",
+   "wavewarden",
+   "wing-graft"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 11,
+  "ids": [
+   "blood-pact",
+   "bloodbinder",
+   "gravewarden"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 12,
+  "ids": [
+   "grave-rite",
+   "shackles",
+   "venom-shard"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 13,
+  "ids": [
+   "shield-captain",
+   "bastion-wall",
+   "field-medic"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 14,
+  "ids": [
+   "lantern-moth",
+   "menders-hymn",
+   "tithe-of-light"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 15,
+  "ids": [
+   "sanctuary-spring",
+   "legend-halvard",
+   "legend-aeris"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 16,
+  "ids": [
+   "legend-vesh",
+   "legend-ymra",
+   "legend-lumen"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 17,
+  "ids": [
+   "pitfall",
+   "mirror-shield",
+   "fog-bank"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 18,
+  "ids": [
+   "grave-snare",
+   "backdraft",
+   "sunglass-lancer"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 19,
+  "ids": [
+   "prism-duelist",
+   "aegis-acolyte",
+   "ward-of-dawn"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 20,
+  "ids": [
+   "shieldwright",
+   "the-granary",
+   "pearl-diver"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 21,
+  "ids": [
+   "compound-interest",
+   "the-merchant-tortoise",
+   "grave-harvest"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 22,
+  "ids": [
+   "bone-lance",
+   "bone-tithe",
+   "mire-witch"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 23,
+  "ids": [
+   "danse-macabre",
+   "legend-marisol",
+   "legend-morrow"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 24,
+  "ids": [
+   "turnabout",
+   "bluff",
+   "reed-lurker"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 25,
+  "ids": [
+   "gloom-stalker",
+   "the-puppeteer",
+   "grand-illusion"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 26,
+  "ids": [
+   "spellwright-apprentice",
+   "static-spark",
+   "the-arcane-well"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 27,
+  "ids": [
+   "the-last-storm",
+   "legend-mirelle",
+   "legend-seren"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 28,
+  "ids": [
+   "weatherwitch",
+   "storm-shepherd",
+   "gale-winds"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 29,
+  "ids": [
+   "rolling-fog",
+   "hallowed-ground",
+   "keeper-of-the-skies"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 30,
+  "ids": [
+   "the-eye-of-the-storm",
+   "ash-squire",
+   "war-drummer"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 31,
+  "ids": [
+   "war-chest",
+   "blitz-captain",
+   "hour-of-glory"
+  ]
+ },
+ {
+  "lane": "b",
+  "n": 32,
+  "ids": [
+   "legend-oriel",
+   "legend-kasimir"
+  ]
+ }
+]

@@ -32,6 +32,22 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+// js/art-live.js: every card baked so far (in art/live), with cache-busting versions.
+//   node tools/bake-live.mjs --manifest   (only that: after merging bakes made elsewhere)
+function writeManifest() {
+  const d = join(ROOT, 'art', 'live');
+  const v = (f) => createHash('sha1').update(readFileSync(join(d, f))).digest('hex').slice(0, 8);
+  const baked = readdirSync(d).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5)).filter((id) => existsSync(join(d, `${id}.webp`))).sort();
+  writeFileSync(join(ROOT, 'js', 'art-live.js'), `// Written by tools/bake-live.mjs: cards whose art, shown big and moving, is a
+// baked picture without its moving parts or characters, with those as
+// sprites over it (js/sprites.js): nothing redrawn while they move.
+export const LIVE = {
+${baked.map((id) => `  ${JSON.stringify(id)}: { src: 'art/live/${id}.webp?v=${v(`${id}.webp`)}', live: 'art/live/${id}.json?v=${v(`${id}.json`)}' },`).join('\n')}
+};
+`);
+  console.log(`art-live.js: ${baked.length} cards`);
+}
+if (process.argv.includes('--manifest')) { writeManifest(); process.exit(0); }
 const BASE = process.env.BASE || 'http://localhost:8770';
 const SCALE = 2; // a 300-wide picture shown about 140 wide in the fan on a 3x phone
 const HOME_FAN = ['ashmaw', 'seraphine', 'the-barrow-queen']; // (app.js home)
@@ -192,12 +208,4 @@ for (const [id, { L, groups, puppet }] of Object.entries(pics)) {
   writeFileSync(join(dir, `${id}.json`), JSON.stringify({ defs: L.defs, sprites: [...chars, ...L.sprites] }));
 }
 // every card baked so far, with versions
-const baked = readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5)).filter((id) => existsSync(join(dir, `${id}.webp`))).sort();
-writeFileSync(join(ROOT, 'js', 'art-live.js'), `// Written by tools/bake-live.mjs: cards whose art, shown big and moving, is a
-// baked picture without its moving parts or characters, with those as
-// sprites over it (js/sprites.js): nothing redrawn while they move.
-export const LIVE = {
-${baked.map((id) => `  ${JSON.stringify(id)}: { src: 'art/live/${id}.webp?v=${ver(`${id}.webp`)}', live: 'art/live/${id}.json?v=${ver(`${id}.json`)}' },`).join('\n')}
-};
-`);
-console.log(`art-live.js: ${baked.length} cards`);
+writeManifest();

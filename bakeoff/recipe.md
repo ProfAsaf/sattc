@@ -1,6 +1,6 @@
 # Recipe: turning a card into a living puppet
 
-You are making three cards of **The Collective**, a phone card game, come alive. Each card gets its own **signature move**: a few seconds in which its picture acts, then settles back exactly as drawn. This file is everything you need. Read it all before you start.
+You are making cards of **The Collective**, a phone card game, come alive: every card is being done, a batch of three at a time, and you have one batch. Each card gets its own **signature move**: a few seconds in which its picture acts, then settles back exactly as drawn. Each also carries what a later stage needs to have cards **interact**: one card's attack striking another, a defender blocking it (see "Interactions"). This file is everything you need. Read it all before you start.
 
 ## What you're making, and the bar
 
@@ -16,9 +16,10 @@ To see the bar: read `living-cards.md` (how Home's scene was made, and its rules
 
 ## Your setup
 
-You're given a folder (a git worktree of the game on its own branch), a port, and three card ids.
+You're given a folder (a git worktree of the game on its own branch), a port, a lane (A or B) and a batch of card ids. `bakeoff/cards.json` has each card's data, the drawing file it's in, and a suggested role and element.
 
-- **Work only inside your folder.** Don't read, list or change anything outside it: not the game's main folder, not other `collective-bakeoff-*` folders next to yours. Don't push, merge or switch branches. Don't commit; your work is collected from your folder.
+- **Work only inside your folder.** Don't read, list or change anything outside it: not the game's main folder, not other `collective-*` folders next to yours. Don't push, merge or switch branches. Don't commit; your work is collected from your folder.
+- **Only your batch's cards.** Other cards in the same drawing file, and their puppets, are someone else's.
 - **A page server is already running** for your folder at `http://localhost:<port>`. Don't start or stop servers. If it stops answering, say so in your final report.
 - **Run commands from your folder.** Each shell command starts fresh, so begin every command with `cd "<your folder>" &&`. In the Bash tool the folder looks like `/c/Users/.../collective-bakeoff-xxx`; file tools (Read, Edit, Write) take the Windows form `C:\Users\...\collective-bakeoff-xxx\...`.
 - **Every command that drives the browser needs `BASE`**: `BASE=http://localhost:<port> node ...`.
@@ -33,16 +34,44 @@ You're given a folder (a git worktree of the game on its own branch), a port, an
 | `js/cards.js` | Every card's data: name, type, rules text, and `art` (what the picture shows). | read |
 | `js/art/scenes/*.js` | The drawings: one function per card id, e.g. `'lightning-theorist'(s) { ... }`. | tag moving pieces in your three |
 | `js/art/kit.js` | The drawing helpers (`s.figure`, `s.bloom`, `s.glow`, `taper`, `blob` ...). | read only |
-| `js/art/puppets.js` | Each puppet card's parts and anchor points. | add your three |
+| `js/art/puppets.js` | Each puppet card's parts, anchor points and interaction contract. | add yours in your lane's section |
+| `bakeoff/cards.json` | Every card: data, drawing file, suggested `role` and `element`. | read |
 | `tools/bake-live.mjs` | Photographs a card and cuts out its parts. Writes `art/live/<id>.webp`, `art/live/<id>-p-<part>.webp`, `art/live/<id>.json` and updates `js/art-live.js`. | run |
 | `bakeoff/moves/<id>.js` | The card's move, built with the harness kit. | write |
 | `bakeoff/moves/ashmaw.js` | **The worked example**: the dragon from Home, as a solo move. | read |
 | `bakeoff/harness.html` | The harness: one card big at phone size; plays its move. | use via the checks |
 | `bakeoff/checks/check.mjs` | The four checks, and a picture of the move. | run |
-| `bakeoff/ref/<id>.png` | Each card's drawing as it was before you started (for check a). | never change |
+| `bakeoff/ref/<id>.png` | Each card's drawing as it was before you started (for check a; made for you before you start). | never change |
 | `bakeoff/out/` | What the checks write: strips, diffs, reports, the log. | read |
 
 Don't change other cards, Home's three puppets in `js/art/puppets.js`, the shared drawing helpers, the harness, the checks or the references.
+
+## Interactions: what every card carries
+
+Later, cards side by side will act on each other by their roles: an attacker's fire strikes the card beside it and a defender throws up its shield; two attackers' attacks meet and burst apart; a support's light heals a neighbour. That engine isn't built yet. So that it can use your card without redoing it, every card you make carries this **contract**:
+
+1. **In its puppet entry** (`js/art/puppets.js`):
+   - `role`: what it does in a fight. One of:
+     - `attacker`: it strikes. Creatures that hit hard, and spells or Traps that deal damage or destroy.
+     - `defender`: it blocks. Guard and Shield creatures, walls, and protective spells.
+     - `support`: it helps. Healers, buffers, growers, card draw, Energy.
+     - `aura`: fields and relics: the place itself acts.
+
+     `bakeoff/cards.json` suggests one from the card's rules. Check it against the card's text and picture, and change it if it's wrong (say so in your report).
+   - `element`: what its effects are made of. One of `fire`, `lightning`, `frost`, `water`, `wind`, `earth`, `nature`, `venom`, `shadow`, `spirit`, `bone`, `blood`, `light`, `arcane`, `steel`. Suggested from its picture; pick what its move shows.
+   - `facing`: `left`, `right` or `front`: which way its figure (or the spell's thrust) faces in the drawing.
+   - `emit: [x, y]`: where its attack or boon leaves from (jaws, hands, a blade's tip, the spell's heart). Attackers and supports.
+   - `hit: [x, y]`: where blows land on it (its chest, its middle). Every creature.
+   - `guard: [[x, y], ...]`: where it takes blows when it blocks (a shield's face, wing edges). Defenders.
+
+   Measure these from the cut parts (step 5), in the drawing's units, at rest.
+2. **In its move** (`bakeoff/moves/<id>.js`): `export const BEATS = { release, impact, settle }`, in ms: when its attack (or boon, or brace) goes out, when it lands (or the first blow lands), and when the card is back at rest. The engine lines up two cards' moves by these.
+3. **Its move can be aimed.**
+   - **Attackers and supports**: the attack or boon goes to `T = k.aim || <your own target>`. `k.aim` is another card's point, in your drawing's units: it may be far outside your picture, to either side. Alone, `k.aim` is null and the move uses its own target. Work out every point of the attack's path, and where it lands, from `emit` and `T`. Turn the figure (or the part that throws) toward `T`: if `T` is behind it, mirror or turn it, as the worked example does. Put what flies or lands outside your picture on the overlay (`k.pic`, `k.light`), never `picIn`.
+   - **Defenders**: blows come at you as `k.blows || <your own blows>`: a list of `{ at: ms, to: [x, y] }`. Alone, `k.blows` is null and you use your own (the arrows in the picture, or whatever its threat is). React to each blow at its time and place, snapped to your nearest `guard` point: a jolt, a flash, sparks.
+   - **Auras** aren't aimed: their move spreads over their picture and past its frame.
+
+   Check (e) tries it: it aims your move at another point, or sends it two blows. It checks that the move builds and stays cheap, and makes a strip with those points ringed. Look at that strip: the attack must go to the ring.
 
 ## How a puppet works
 
@@ -63,7 +92,8 @@ cd "<folder>" && node bakeoff/checks/check.mjs <id> start
 - Read the card in `js/cards.js` (search for `id: '<id>'`): its type, rules and the `art` line.
 - Find its drawing: `grep -n "'<id>'\|  <id>(" js/art/scenes/*.js`. Read the whole function. Note how each piece is drawn and in what order (later is in front).
 - See it: `BASE=http://localhost:<port> node bakeoff/checks/check.mjs <id> look`, then Read `bakeoff/out/<id>-look.png` (the picture at 3x; the drawing's units are 300 x 210, so divide pixels by 3).
-- Plan the move from the card's brief (at the end of this file): which pieces move, about which joints, what effects, and the timeline in ms. Write the plan down in a comment at the top of the move file.
+- Read its line in `bakeoff/cards.json`: confirm or change its `role` and `element` (see "Interactions").
+- Plan the move from its role (see "Moves by role", at the end) and its picture: which pieces move, about which joints, what effects, its target or blows, and the timeline in ms, with its BEATS. Write the plan down in a comment at the top of the move file.
 
 ### 2. Tag the moving pieces in the drawing
 
@@ -82,7 +112,7 @@ Must say 0 changed pixels. If not, `bakeoff/out/<id>-a-diff.png` shows where.
 
 ### 3. Describe the puppet in `js/art/puppets.js`
 
-Add an entry `'<id>': { ...anchors, parts: [...] }` to `PUPPETS`. Read the comments and Home's three entries there first. Each part, in the drawing's units (300 x 210):
+Add an entry `'<id>': { role, element, facing, emit, hit, guard, ...other anchors, parts: [...] }` to `PUPPETS`, **just below your lane's line** (`// ── lane A's puppets ...` or `// ── lane B's puppets ...`), so two lanes' entries never touch. Read the comments and Home's three entries there first. Each part, in the drawing's units (300 x 210):
 
 - `name`: what the move calls it.
 - `of`: what it's cut from:
@@ -111,7 +141,7 @@ Check (b) says which parts were cut and whether the baked picture with its parts
 
 ### 5. Measure the anchors from the cut parts
 
-Where exactly is a hand, a shield's edge, the lance's tip? Measure it from the parts rather than guessing: a few lines of Python with PIL and numpy on `art/live/<id>-p-<name>.webp` (pixels are 2x the drawing's units; add the part's `x, y` from the JSON). Home's angel's shield edges were found by turning each wing's alpha 20 degrees about its joint and taking the outermost opaque point. Put what you find in the puppet's anchors.
+Where exactly is a hand, a shield's edge, the lance's tip? Measure it from the parts rather than guessing: a few lines of Python with PIL and numpy on `art/live/<id>-p-<name>.webp` (pixels are 2x the drawing's units; add the part's `x, y` from the JSON). Home's angel's shield edges were found by turning each wing's alpha 20 degrees about its joint and taking the outermost opaque point. Put what you find in the puppet's anchors, and measure the contract's points the same way: `emit` (where its attack leaves), `hit` (where blows land on it), `guard` (where it blocks).
 
 ### 6. Write the move: `bakeoff/moves/<id>.js`
 
@@ -119,11 +149,13 @@ Start from the worked example, `bakeoff/moves/ashmaw.js`. A move is a module:
 
 ```js
 export const END = 4000;                        // its length in ms: 3000-4500
+export const BEATS = { release: 900, impact: 1200, settle: 3700 }; // its key moments (see "Interactions")
 export const STILLS = [200, 600, 1000, 1400, 1900, 2500, 3100, 3700]; // optional: 8 moments for the frame strip
 export const textures = {                       // optional: little pictures of your own, painted once
   spark: [32, 32, (x, y) => { const r = Math.hypot(x - 0.5, y - 0.5) * 2; return [255, 240, 200, Math.max(0, 1 - r)]; }],
 };
 export function build(k) {
+  const T = k.aim || [240, 60];                 // where its attack goes: another card's point, or its own target
   const arm = k.part('arm');
   k.act(arm, [[0, { transform: 'none' }, 'ease-in-out'], [600, { transform: 'rotate(-25deg)' }, 'ease-out'], [900, { transform: 'rotate(10deg)' }, 'ease-in-out'], [2000, { transform: 'none' }]]);
   k.fx(k.picIn('flame', [120, 80], 14, 24, { base: true }), [[700, { transform: 'scale(.5)', opacity: 0 }, 'ease-out'], [820, { transform: 'scale(1)', opacity: 0.9 }], [1500, { transform: 'scale(.6)', opacity: 0 }]]);
@@ -138,7 +170,9 @@ export function build(k) {
 |---|---|
 | `k.END` | the move's length, ms |
 | `k.part(name)` | a part's sprite (an `<img>`), at rest where it's drawn; it turns about its `pivot` |
-| `k.spec` | the card's entry in `js/art/puppets.js` (your anchors) |
+| `k.spec` | the card's entry in `js/art/puppets.js` (your anchors and contract: `k.spec.emit`, `k.spec.guard`, ...) |
+| `k.aim` | where its attack or boon goes when another card is there, `[x, y]` in your drawing's units (often outside your picture); `null` alone |
+| `k.blows` | blows landing on a defender when another card attacks: `[{ at: ms, to: [x, y] }, ...]`; `null` alone |
 | `k.act(el, list)` | moves a part (or a copy of one): `list` is `[[ms, { transform, opacity }, easing], ...]`. It holds its first pose before its first moment and its last pose after its last. |
 | `k.fx(el, list)` | the same for an effect: unseen before its first moment and after its last; a keyframe without `opacity` has opacity 1 |
 | `k.picIn(src, [x, y], w, h, o)` | a picture inside the card's picture (its frame clips it), centred on `[x, y]`, `w x h` units. `o.base`: standing on its bottom edge at `[x, y]`; `o.top`: hanging from its top edge; `o.lit: false`: drawn normally instead of adding its light; `o.under`: beneath the parts instead of over them. `src` is a texture name or an image URL. |
@@ -172,41 +206,40 @@ export function build(k) {
 BASE=http://localhost:<port> node bakeoff/checks/check.mjs <id>
 ```
 
-runs all four checks:
+runs all five checks:
 
 - **(a) still**: the drawing is pixel-identical to the reference (0 changed pixels).
 - **(b) bake**: every part was cut, and at rest the baked card matches the drawing.
 - **(c) cheap**: while the move plays, no animation runs off the compositor, at most 3 style recalcs and 1 layout, at most 80 ms of main-thread work; starting it holds the page under 100 ms; nothing left running after it ends.
 - **(d) strip**: 8 stills across the move in one picture, `bakeoff/out/<id>-strip.png`.
+- **(e) aim**: its contract (role, element, facing, emit, hit, guard are checked in b; BEATS here), and the move aimed at another point, or given two blows: it builds and stays cheap, and `bakeoff/out/<id>-aimed-strip.png` shows it with the points ringed.
 
-Then **Read the strip and judge it against the bar** above. Is the action clear in the stills? Does each phase (gather, strike, aftermath, settle) show? Is it rich enough (Home's fire is dozens of overlapping pieces, not three)? Does it fit the picture's style and light? Is the last still back at rest? For a closer look at a moment, set `STILLS` to the moments you want and run `check.mjs <id> d`.
+Then **Read both strips and judge them against the bar** above. In the aimed strip, the attack (or boon) must reach the ring, or the blocks must happen at the rings. Is the action clear in the stills? Does each phase (gather, strike, aftermath, settle) show? Is it rich enough (Home's fire is dozens of overlapping pieces, not three)? Does it fit the picture's style and light? Is the last still back at rest? For a closer look at a moment, set `STILLS` to the moments you want and run `check.mjs <id> d`.
 
-Improve and check again. Stop when all four checks pass and the move is at the bar, or after about six rounds of improving one card. Then go on to the next card (step 0 again).
+Improve and check again. Stop when all five checks pass and the move is at the bar, or after about six rounds of improving one card. Then go on to the next card (step 0 again).
 
 If the harness itself fails (`bakeoff/out/<id>-report.json` has the error), the message usually names the problem: a part that doesn't exist, a keyframe outside 0..END, a property that can't move.
 
 ## When you're done
 
-Reply with a short report, per card: the move in one sentence; its parts; whether all four checks pass (paste the last check output's PASS/FAIL lines); anything you changed in the drawing besides tags; anything you're unsure about. Don't commit.
+Reply with a short report, per card: its role and element (and whether you changed the suggestion, and why); the move in one sentence; its parts; whether all five checks pass (paste the last check output's PASS/FAIL lines); anything you changed in the drawing besides tags; anything you're unsure about. Don't commit.
 
-## The cards
+## Moves by role
 
-Each card gets its own solo move: it doesn't interact with any other card. Keep to the brief's idea; the details are yours.
+Each card gets its own move, from its picture and its role. Nothing in it touches another card unless it's aimed (`k.aim`, `k.blows`). The worked example (`bakeoff/moves/ashmaw.js`) is an attacker. Give every move a beginning, a peak and an end:
 
-### `lightning-theorist`: Lightning Theorist (attacker; lightning)
+- **Attacker**: it gathers (anticipation: a wind-up, power building in its element), lets go (`release`), the attack travels to `T` and lands (`impact`) with a burst in its element at `T`, it recoils or follows through, and settles (`settle`). Its own figure acts: a head turns, an arm throws, a body lunges. Alone, its target is in or just beyond its own picture, where its picture suggests (the sea below a storm-caller, a foe it faces).
+- **Defender**: it braces (`release`), blows land on its guard (`impact`: the first), each with a jolt, a flash at the guard and sparks or splinters, it holds, then settles. Alone, the blows are the threat its picture shows (arrows, claws, a wave), or a generic strike in its opponent's direction.
+- **Support**: it gathers its gift (light, growth, water, a song), sends it (`release`) to `T`, where it blooms (`impact`): a glow, a ring, rising motes. Alone, `T` is in its own picture (the figure it tends, the ground it blesses, the sky).
+- **Aura** (fields and relics): the place itself comes alive: a pulse, a wave, weather, a light passing over it and spilling past its frame, then calm. BEATS: the swell (`release`), its peak (`impact`), calm (`settle`).
 
-Ember and Tide creature, 3/2, a Human Wizard. The picture: a wild-haired scholar on a sea cliff in a storm, arms raised, a jagged arc of lightning between her hands fed by a bolt from the clouds. Drawing: `js/art/scenes/multi.js`.
+Spells and Traps have a role too: a damage spell is an attacker (the spell is the attack: the bolt, the lance, the wave), a protective spell a defender, a buff or heal a support.
 
-**The move: she hurls the lightning.** The storm gathers into the arc between her hands until it blazes and crackles; she throws it, and a bolt leaps out from her hands across the sea, forking, striking the water in a burst of white light; every flash lights the clouds and the sea for an instant; then the storm dims, she comes back to her pose, and the arc between her hands is as drawn. Lightning is new: no other card has it. It should look like lightning (white-hot core, blue-violet or gold glow, jagged, instant, flickering on and off in strokes), not like fire.
+### Upgrading a card from the bake-off
 
-### `shieldbearer`: Shieldbearer (defender; Guard)
+`lightning-theorist`, `shieldbearer` and `bone-lance` were made before the contract existed: their drawing tags, puppet entry and move are in place and pass checks a-d. If one is in your batch, don't start over. Bring it up to the contract:
+- the puppet fields (role, element, facing, emit, hit, guard);
+- BEATS;
+- an attack built from `emit` to `k.aim` (or blocks driven by `k.blows`).
 
-Radiant creature, 1/4, with Guard (it blocks two attackers at once). The picture: a soldier down on one knee in profile behind a tall shield, spear upright, three arrows already stuck in the shield, three more in flight toward him from the upper right, sunlight behind. Drawing: `js/art/scenes/radiant.js`.
-
-**The move: he takes a volley on his shield.** He braces; the arrows in flight come on and strike the shield, one after another; each blow jolts the shield and him, and the arrow glances off or shatters with a flash of golden light along the shield's rim (a defender's block, like the golden edges of Home's angel's shield); grit kicks up at his knee; he holds; then he settles, and arrows are in flight again where they're drawn.
-
-### `bone-lance`: Bone Lance (spell)
-
-Umbral spell. The picture: a long lance of pale bone wreathed in violet fire, hurled across a misty graveyard under the moon, a trail of ghostly light with faces streaming behind it. Drawing: `js/art/scenes/ultra-d.js`.
-
-**The move: the lance strikes.** It surges forward along its flight, its violet fire roaring and the ghostly trail streaming after it, the faces in it stretching; it strikes home with a burst of violet spirit-fire and light that lights up the graveyard's stones; then the light dies, and the lance is back in flight where it's drawn.
+Improve it where you see a clear gap. Then all five checks must pass.

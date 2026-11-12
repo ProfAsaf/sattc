@@ -89,6 +89,72 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // War Drummer: the column marching past (one figure, from the road), the two banners (one piece, from between
+  // the poles) and the sun on them, the drum (shell, rope and legs, from its foot) and its skin (with the red
+  // ring), the drummer (from her feet, without her arms), her two arms with their sticks (the raised one from
+  // its shoulder, the one at the drum from its shoulder), her tabard (with its sun) and the rings of the beat
+  // in the air (from the drum's head). role: support (as suggested: her other creatures hit harder), element:
+  // light (the dawn gold of the beat); `emit`: the middle of the drum's head, where the boon leaves; `hit`:
+  // her chest; `skin`: the drum head's middle; `shoulderB`, `shoulderF`: the arms' joints (`B` the raised
+  // one); `tipF`: the stick's head on the drum; `feet`: her joint; `alone`: the column on the left, where
+  // the boon goes when nothing is aimed at
+  'war-drummer': {
+    role: 'support', element: 'light', facing: 'left', emit: [120, 142], hit: [170, 130], alone: [56, 150],
+    skin: [120, 142], shoulderB: [173, 107.5], shoulderF: [166.9, 109.5], tipF: [132.8, 138], tipB: [195.9, 68.3], feet: [172, 186], poles: [[210, 58], [242, 76]],
+    parts: [
+      { name: 'column', of: 'fig:0', pivot: [150, 168] },
+      { name: 'flags', of: '[data-part=flags]', pivot: [226, 70] },
+      { name: 'mark', of: '[data-part=mark]', pivot: [226, 70] },
+      { name: 'drum', of: '[data-part=drum]', pivot: [120, 190] },
+      { name: 'skin', of: '[data-part=skin]', pivot: [120, 190] },
+      { name: 'body', of: 'fig:2 [data-part=body]', pivot: [172, 186] },
+      { name: 'armB', of: 'fig:2 [data-part=armB]', pivot: [173, 107.5] },
+      { name: 'armF', of: 'fig:2 [data-part=armF]', pivot: [166.9, 109.5] },
+      { name: 'tabard', of: '[data-part=tabard]', pivot: [172, 186] },
+      { name: 'beat', of: '[data-part=beat]', pivot: [120, 142] },
+    ],
+  },
+  // Ash Squire: the boy himself (legs, body, head, hair and tunic, from his feet), his sword arm with its blade and
+  // the glint along it (from the shoulder), his torch arm (from the shoulder) and the torch's flame streaming back
+  // (from the torch's head). role: attacker (as suggested: Rush, he hits first), element: fire (the torch);
+  // `emit`: the sword's point, where his attack leaves; `hit`: his chest; `shoulder`, `shoulderT`: the arms'
+  // joints; `feet`: his joint; `torch`: the flame's root; `alone`: the ground ahead of him at the right,
+  // where his fire strikes when nothing is aimed at
+  'ash-squire': {
+    role: 'attacker', element: 'fire', facing: 'right', emit: [217.1, 135.8], hit: [159, 130], alone: [268, 140],
+    shoulder: [166.5, 116], shoulderT: [163.2, 114.9], feet: [150, 190], torch: [172.4, 62.1],
+    parts: [
+      { name: 'body', of: 'fig:0 [data-part=body]', pivot: [150, 190] },
+      { name: 'sword', of: ['fig:0 [data-part=sword]', '[data-part=bladeglint]'], pivot: [166.5, 116] },
+      { name: 'torch', of: 'fig:0 [data-part=torch]', pivot: [163.2, 114.9] },
+      { name: 'flame', of: '[data-part=flame]', pivot: [172.4, 62.1] },
+    ],
+  },
+  // The Eye of the Storm: the six walls of cloud (each from the middle of the eye, the nearer ones a little lower:
+  // inner wall first), the wind's spiral streaked through them, the lightning in the outer walls and the four gulls
+  // wheeling in the calm (each from its own middle). role: aura (a Field), element: lightning (as suggested: the
+  // storm's own flashes, and the gold light they pour into); `hit`: the eye's middle; `eye`: its centre and
+  // radii (the gold disc); `walls`: each wall's joint; `gulls`: each gull's middle; `bolts`: where the lightning
+  // strikes, as drawn
+  'the-eye-of-the-storm': {
+    role: 'aura', element: 'lightning', facing: 'front', hit: [150, 84], eye: [150, 84, 70, 54.6],
+    walls: [[150, 84], [150, 89], [150, 94], [150, 99], [150, 104], [150, 109]],
+    gulls: [[132, 72], [170, 92], [156, 62], [124, 98]], bolts: [[48, 39], [247, 168], [263, 39], [47, 159]],
+    parts: [
+      { name: 'wall0', of: '[data-part=wall0]', pivot: [150, 84] },
+      { name: 'wall1', of: '[data-part=wall1]', pivot: [150, 89] },
+      { name: 'wall2', of: '[data-part=wall2]', pivot: [150, 94] },
+      { name: 'wall3', of: '[data-part=wall3]', pivot: [150, 99] },
+      { name: 'wall4', of: '[data-part=wall4]', pivot: [150, 104] },
+      { name: 'wall5', of: '[data-part=wall5]', pivot: [150, 109] },
+      { name: 'spiral', of: '[data-part=spiral]', pivot: [150, 94] },
+      { name: 'bolts', of: '[data-part=bolts]', pivot: [150, 94] },
+      { name: 'gull0', of: '[data-part=gull0]', pivot: [132, 72] },
+      { name: 'gull1', of: '[data-part=gull1]', pivot: [170, 92] },
+      { name: 'gull2', of: '[data-part=gull2]', pivot: [156, 62] },
+      { name: 'gull3', of: '[data-part=gull3]', pivot: [124, 98] },
+    ],
+  },
   // Keeper of the Skies: the storm front piled against her ward (its two figures and its cloud lines, from the
   // ward's foot), her raised arm with its hand (from her shoulder), her hair and scarf blown back (from the nape);
   // she herself, the lighthouse, the ward's own lines and the rail stay in the picture. role: defender (as

@@ -810,9 +810,11 @@ export const ultra_f = {
       const d = ring(ro, amp, n, ph + 0.15, true, ccy) + ring(ri, amp, n, ph, false, ccy);
       const g = radE(s, cx, ccy, ro, ro * sq, [[0, mix2(fill, '#ffffff', 0.25)], [f2(ri / ro), mix2(fill, '#ffffff', 0.18)], [1, mix2(fill, '#000000', 0.4)]]);
       const id = s.uid('band');
+      s.add(`<g data-part="wall${j}">`);
       s.defs.push(`<path id="${id}" d="${d}" fill-rule="evenodd"/>`);
       s.add(`<use href="#${id}" fill="${rim}" opacity="${rop}" transform="translate(${cx} ${ccy}) scale(${(1 - (j < 2 ? 3.4 : 2.6) / ri).toFixed(4)}) translate(${-cx} ${-ccy})"/>`);
       s.add(`<use href="#${id}" fill="${g}"/>`);
+      s.add('</g>');
     });
     // the wind's spiral, streaked through the walls
     let sp = '';
@@ -821,13 +823,13 @@ export const ultra_f = {
       for (let k = 0; k <= 30; k++) { const th = rad(a * 51 + k * 5), r = 74 * Math.exp(0.0105 * k * 5); pts.push([cx + Math.cos(th) * r, cy + 10 + Math.sin(th) * r * sq]); }
       sp += polyline(pts);
     }
-    s.add(`<path d="${sp}" fill="none" stroke="#eef6f2" stroke-width=".9" opacity=".3" stroke-dasharray="12 5 4 5" stroke-linecap="round"/>`);
+    s.add(`<path data-part="spiral" d="${sp}" fill="none" stroke="#eef6f2" stroke-width=".9" opacity=".3" stroke-dasharray="12 5 4 5" stroke-linecap="round"/>`);
     // lightning in the outer walls
     const bolts = [bolt([34, 20], [62, 58], 16701, 6, 5), bolt([262, 150], [232, 186], 16702, 6, 5), bolt([280, 30], [246, 48], 16703, 5, 4), bolt([30, 168], [64, 150], 16704, 5, 4)];
-    s.bloom(bolts.map((b) => `<path d="${polyline(b)}" fill="none" stroke="#e6f6ff" stroke-width="1.3" stroke-linejoin="bevel"/>`).join('') +
+    s.bloom('<g data-part="bolts">' + bolts.map((b) => `<path d="${polyline(b)}" fill="none" stroke="#e6f6ff" stroke-width="1.3" stroke-linejoin="bevel"/>`).join('') + '</g>' +
       `<path d="${glint(cx, cy, 10, 0.12)}" fill="#ffffff" opacity=".7"/>`, { sd: 1.6, k: 1.5 });
     // gulls wheeling in the calm
-    s.path(U(gull(132, 72, 1.1, 14), gull(170, 92, 0.9, -20), gull(156, 62, 0.7, 40), gull(124, 98, 0.8, -30)), '#3a2c22');
+    [gull(132, 72, 1.1, 14), gull(170, 92, 0.9, -20), gull(156, 62, 0.7, 40), gull(124, 98, 0.8, -30)].forEach((g, i) => { s.add(`<g data-part="gull${i}">`); s.path(U(g), '#3a2c22'); s.add('</g>'); });
     s.motes({ seed: 16705, n: 18, x: [90, 210], y: [40, 130], r: [0.4, 1], fill: '#ffe39a', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },
@@ -867,22 +869,29 @@ export const ultra_f = {
       taper([[18, -74], [21, -79]], 4.6, { per: 2 }),
       profile(25, -85, 0.76, 10),
       taper([[22, -91], [12, -94], [4, -91], [-4, -94]], [7, 6, 3.6, 0.5]), taper([[20, -87], [10, -87], [2, -83]], [5, 3.6, 0.5]),
+    ));
+    // (his sword arm and his torch arm, each its own piece)
+    const swordArm = place(U(
       taper([[15, -70], [26, -63]], [5, 4.4], { per: 2 }), taper([[26, -63], [35, -60]], [4.4, 3.6], { per: 2 }), ell(37, -59.6, 3, 2.6),
       taper([[36.4, -64.4], [38.4, -54.4]], [1.8, 1.8], { per: 2 }), taper([[39, -59], [61, -52]], [2.8, 0.6], { per: 2 }),
+    ));
+    const torchArm = place(U(
       taper([[12, -71], [13, -86]], [4.8, 4], { per: 2 }), taper([[13, -86], [17, -100]], [4, 3.4], { per: 2 }), ell(17.6, -102, 2.8, 2.6),
       taper([[16, -96], [20, -114]], [2.4, 2.8], { per: 2 }), ell(20.4, -116, 3, 3.8, 10),
     ));
+    // (each piece spans the whole figure's box, so the figure's gradient runs across all of it as one: two points, no area)
+    const span = 'M118.5,61.2L118.5,61.2M217.2,192.1L217.2,192.1';
     // smoke dragged along behind him
     s.add(`<g class="drift">${[[128, 132, 12], [112, 116, 16], [98, 140, 14], [120, 96, 10]].map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="${r * 1.6}" ry="${r}" fill="${s.rad([[0, '#3a140c', 0.8], [0.7, '#2a0e08', 0.4], [1, '#2a0e08', 0]])}"/>`).join('')}</g>`);
-    s.figure(`<path d="${boy}"/>`, { fill: p.fig, rim: '#ffb060', offsets: [[-0.8, -1], [-1.2, 0], [0.6, -1]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [-0.4, -1] });
+    s.figure(`<g data-part="body"><path d="${boy + span}"/></g><g data-part="sword"><path d="${swordArm + span}"/></g><g data-part="torch"><path d="${torchArm + span}"/></g>`, { fill: p.fig, rim: '#ffb060', offsets: [[-0.8, -1], [-1.2, 0], [0.6, -1]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [-0.4, -1] });
     // the torch flame streaming back over his head, the blade catching it
     const [tx, ty] = [X + 20.4 * K, Y - 119 * K];
     const fire = U(plume(tx, ty, -92, -150, 40, [10, 12, 8, 3, 0.4]), plume(tx - 2, ty + 1, -120, -186, 34, [7, 8, 5, 0.4]), plume(tx + 2, ty, -74, -128, 26, [6, 6, 3, 0.4]),
       plume(tx - 1, ty - 4, -104, -172, 46, [5, 6, 4, 2, 0.3]), plume(tx - 4, ty + 2, -150, -200, 22, [5, 5, 3, 0.3]));
     const core = U(plume(tx, ty + 1, -94, -140, 22, [6, 6, 3, 0.4]));
     s.glow(tx - 10, ty - 10, 44, '#ff8a3a', 0.6, 'breathe');
-    s.bloom(`<path d="${fire}" fill="${s.linU(tx, ty, tx - 44, ty - 20, [[0, '#fff3c8'], [0.35, '#ffb04a', 0.95], [1, '#ff6a1f', 0.4]])}"/><path d="${core}" fill="#fff6dc"/>` +
-      `<path d="M${f1(X + 39.5 * K)},${f1(Y - 58.6 * K)}L${f1(X + 60 * K)},${f1(Y - 52.4 * K)}" stroke="#ffd6a0" stroke-width=".9" stroke-linecap="round"/>`, { sd: 1.8, k: 1.45, box: [100, 20, 140, 160] });
+    s.bloom(`<g data-part="flame"><path d="${fire}" fill="${s.linU(tx, ty, tx - 44, ty - 20, [[0, '#fff3c8'], [0.35, '#ffb04a', 0.95], [1, '#ff6a1f', 0.4]])}"/><path d="${core}" fill="#fff6dc"/></g>` +
+      `<path data-part="bladeglint" d="M${f1(X + 39.5 * K)},${f1(Y - 58.6 * K)}L${f1(X + 60 * K)},${f1(Y - 52.4 * K)}" stroke="#ffd6a0" stroke-width=".9" stroke-linecap="round"/>`, { sd: 1.8, k: 1.45, box: [100, 20, 140, 160] });
     s.motes({ seed: 16802, n: 28, x: [20, 200], y: [20, 180], r: [0.4, 1.2], fill: '#ffb04a', hot: '#fff0c0', cls: 'rise', t: [3, 7] });
     s.motes({ seed: 16803, n: 10, x: [100, 160], y: [50, 110], r: [0.4, 1], fill: '#ffd27a', hot: '#ffffff', cls: 'rise', t: [2.5, 5] });
     return s.svg();
@@ -921,10 +930,12 @@ export const ultra_f = {
     // banners flying behind her, the low sun through them
     const flags = pennant(210, 58, 70, 26, 1, 16905) + pennant(242, 76, 54, 22, 1, 16906);
     s.path(U(taper([[210, 190], [210, 52]], [2.6, 2.2], { per: 2 }), taper([[242, 190], [242, 70]], [2.4, 2], { per: 2 }), ell(210, 51, 2.4, 2.4), ell(242, 69, 2.2, 2.2)), '#2a1f15');
-    s.path(flags, s.linU(210, 0, 296, 0, [[0, '#c8642e', 0.95], [0.5, '#eaa04a', 0.9], [1, '#f6c96c', 0.85]]));
-    s.add(`<path d="${sunMark(240, 70, 4.6)}" fill="none" stroke="#8a3d16" stroke-width="1.4" opacity=".5"/>`);
+    const flagFill = s.linU(210, 0, 296, 0, [[0, '#c8642e', 0.95], [0.5, '#eaa04a', 0.9], [1, '#f6c96c', 0.85]]);
+    s.add('<g data-part="flags">'); s.path(flags, flagFill); s.add('</g>');
+    s.add(`<path data-part="mark" d="${sunMark(240, 70, 4.6)}" fill="none" stroke="#8a3d16" stroke-width="1.4" opacity=".5"/>`);
     // the war drum: a tall shell laced with rope, a painted sun on its head
     const dx = 120, dt = 142, db = 180, dr = 32, dry = 8.6;
+    s.add('<g data-part="drum">');
     s.path(U(taper([[dx - 22, db + 2], [dx - 27, 192]], [3.4, 3], { per: 2 }), taper([[dx + 22, db + 2], [dx + 27, 192]], [3.4, 3], { per: 2 }), taper([[dx, db + 6], [dx, 194]], [3.4, 3], { per: 2 })), '#1e140c');
     s.figure(`<path d="M${dx - dr},${dt}V${db}A${dr},${dry} 0 0 0 ${dx + dr},${db}V${dt}Z"/>`, { fill: '#3e2a18', rim: '#ffe7a8', offsets: [[1.2, -0.4], [0.6, -1]], rimOp: 0.9, shade: 0.45, light: [1, -0.3] });
     let rope = '';
@@ -934,8 +945,9 @@ export const ultra_f = {
     }
     s.add(`<path d="${rope}" fill="none" stroke="#d6b06a" stroke-width="1.2" opacity=".8"/>` +
       `<path d="M${dx - dr},${dt + 3}A${dr},${dry} 0 0 0 ${dx + dr},${dt + 3}M${dx - dr},${db - 3}A${dr},${dry} 0 0 0 ${dx + dr},${db - 3}" fill="none" stroke="#1a120a" stroke-width="2.4"/>`);
-    s.add(`<ellipse cx="${dx}" cy="${dt}" rx="${dr}" ry="${dry}" fill="${s.lin([[0, '#f2e2bc'], [1, '#c8ae80']])}" stroke="#2a1f15" stroke-width="1.4"/>` +
-      `<path d="${oval(dx - 4, dt, 7, 7 * (dry / dr))}" fill="none" stroke="#b8442a" stroke-width="1.6" opacity=".8"/>`);
+    s.add('</g>');
+    s.add(`<g data-part="skin"><ellipse cx="${dx}" cy="${dt}" rx="${dr}" ry="${dry}" fill="${s.lin([[0, '#f2e2bc'], [1, '#c8ae80']])}" stroke="#2a1f15" stroke-width="1.4"/>` +
+      `<path d="${oval(dx - 4, dt, 7, 7 * (dry / dr))}" fill="none" stroke="#b8442a" stroke-width="1.6" opacity=".8"/></g>`);
     // the drummer
     const her = U(
       taper([[-4, -44], [-8, -22], [-12, 0]], [8, 6.4, 5]), ell(-14, -1.4, 5.4, 2.2),
@@ -944,23 +956,31 @@ export const ultra_f = {
       taper([[1, -80], [2, -85]], 4.4, { per: 2 }),
       profile(4, -91, 0.78, -2),
       ell(-2, -94, 4.2, 4), taper([[-3, -92], [-6, -84], [-7, -74], [-6, -66]], [3.6, 3.2, 2.6, 1]),
+    );
+    // (her raised arm with its stick, and her arm at the drum with its stick, each its own piece)
+    const armB = U(
       taper([[-1, -77], [-10, -88], [-8, -101]], [4.8, 4.2, 3.6]), ell(-7.6, -103.4, 3, 3),
       taper([[-7.6, -103], [-22, -114]], [2, 1.6], { per: 2 }), ell(-23.4, -115.4, 3.2, 3.2),
+    );
+    const armF = U(
       taper([[5, -75], [14, -66], [22, -60]], [4.8, 4.2, 3.6]), ell(23, -59, 3, 3),
       taper([[23, -59], [37, -48]], [2, 1.6], { per: 2 }), ell(38.4, -47, 3.2, 3.2),
     );
     const place = at(172, 186, 1.02, -1);
-    s.figure(`<path d="${place(her)}"/>`, { fill: p.fig, rim: p.rim, offsets: [[1.2, -0.6], [0.4, -1.2], [-0.6, -1]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [0.6, -1] });
+    const span = 'M129.6,65L129.6,65M199.1,186.8L199.1,186.8'; // (each piece spans the figure's whole box, so its gradient runs across all of it as one: two points, no area)
+    s.figure(`<g data-part="body"><path d="${place(her) + span}"/></g><g data-part="armB"><path d="${place(armB) + span}"/></g><g data-part="armF"><path d="${place(armF) + span}"/></g>`, { fill: p.fig, rim: p.rim, offsets: [[1.2, -0.6], [0.4, -1.2], [-0.6, -1]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [0.6, -1] });
     // her tabard, gold, a sun on it
+    s.add('<g data-part="tabard">');
     const tab = place(blob([[-5.4, -77], [6.4, -77], [7.4, -62], [8, -46], [9, -34], [0, -32], [-9, -34], [-7.4, -46], [-6.4, -62]], 4));
     s.path(tab, s.linU(176, 108, 160, 156, [[0, '#c89238'], [0.45, '#8e6224'], [1, '#4e3412']]));
     s.path(tab, 'none', 'stroke="#ffe7a8" stroke-width=".7" opacity=".55"');
     s.add(`<path d="${place('M-7.2,-52L8.2,-52')}" stroke="#2a1f15" stroke-width="2.2"/><path d="${sunMark(172, 186 - 64 * 1.02, 2.6)}" fill="none" stroke="#ffe9a8" stroke-width=".9" opacity=".8"/>`);
+    s.add('</g>');
     // the beat: the head shivers, the air rings
     const [kx, ky] = [172 - 38.4 * 1.02, dt + 0.5];
     s.glow(kx, ky, 26, '#fff0c2', 0.6, 'breathe');
-    s.bloom(`<path d="${oval(kx, ky, 7, 1.8)}${oval(kx, ky, 13, 3.4)}" fill="none" stroke="#fff6d8" stroke-width="1"/>` +
-      [44, 56, 68].map((r, i) => `<path d="M${f1(dx + Math.cos(rad(200)) * r)},${f1(dt + Math.sin(rad(200)) * r)}A${r},${r} 0 0 1 ${f1(dx + Math.cos(rad(244)) * r)},${f1(dt + Math.sin(rad(244)) * r)}" fill="none" stroke="#ffe9b0" stroke-width="1.3" opacity="${0.8 - i * 0.22}" stroke-linecap="round"/>`).join(''),
+    s.bloom(`<g data-part="beat"><path d="${oval(kx, ky, 7, 1.8)}${oval(kx, ky, 13, 3.4)}" fill="none" stroke="#fff6d8" stroke-width="1"/>` +
+      [44, 56, 68].map((r, i) => `<path d="M${f1(dx + Math.cos(rad(200)) * r)},${f1(dt + Math.sin(rad(200)) * r)}A${r},${r} 0 0 1 ${f1(dx + Math.cos(rad(244)) * r)},${f1(dt + Math.sin(rad(244)) * r)}" fill="none" stroke="#ffe9b0" stroke-width="1.3" opacity="${0.8 - i * 0.22}" stroke-linecap="round"/>`).join('') + '</g>',
     { sd: 1.4, k: 1.4, box: [40, 60, 130, 100] });
     s.motes({ seed: 16907, n: 16, x: [40, 290], y: [40, 180], r: [0.4, 1], fill: '#ffe39a', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();

@@ -4,6 +4,7 @@
 export const LIVE = {
   "aegis-acolyte": { src: 'art/live/aegis-acolyte.webp?v=61c3a18d', live: 'art/live/aegis-acolyte.json?v=cb54e65c' },
   "ambush-at-dawn": { src: 'art/live/ambush-at-dawn.webp?v=acf62e50', live: 'art/live/ambush-at-dawn.json?v=522c8b2b' },
+  "ash-squire": { src: 'art/live/ash-squire.webp?v=6758dee2', live: 'art/live/ash-squire.json?v=b2148bd5' },
   "ashmaw": { src: 'art/live/ashmaw.webp?v=16617e99', live: 'art/live/ashmaw.json?v=650b0640' },
   "backdraft": { src: 'art/live/backdraft.webp?v=92fa0953', live: 'art/live/backdraft.json?v=032fe34a' },
   "banner-of-the-charge": { src: 'art/live/banner-of-the-charge.webp?v=18e29b0c', live: 'art/live/banner-of-the-charge.json?v=0d107f73' },
@@ -79,6 +80,7 @@ export const LIVE = {
   "sunglass-lancer": { src: 'art/live/sunglass-lancer.webp?v=508832b3', live: 'art/live/sunglass-lancer.json?v=ba28318a' },
   "the-arcane-well": { src: 'art/live/the-arcane-well.webp?v=e5a4ad48', live: 'art/live/the-arcane-well.json?v=a60a572d' },
   "the-barrow-queen": { src: 'art/live/the-barrow-queen.webp?v=6a8bcf18', live: 'art/live/the-barrow-queen.json?v=ac4ce372' },
+  "the-eye-of-the-storm": { src: 'art/live/the-eye-of-the-storm.webp?v=b7f44269', live: 'art/live/the-eye-of-the-storm.json?v=08594cc1' },
   "the-granary": { src: 'art/live/the-granary.webp?v=e2a2ebe2', live: 'art/live/the-granary.json?v=f7bf49fd' },
   "the-last-storm": { src: 'art/live/the-last-storm.webp?v=0cded4d3', live: 'art/live/the-last-storm.json?v=0aaba2c4' },
   "the-merchant-tortoise": { src: 'art/live/the-merchant-tortoise.webp?v=7a6e43f0', live: 'art/live/the-merchant-tortoise.json?v=9b169390' },
@@ -90,6 +92,7 @@ export const LIVE = {
   "tithe-of-light": { src: 'art/live/tithe-of-light.webp?v=373a4aee', live: 'art/live/tithe-of-light.json?v=a8de19b9' },
   "turnabout": { src: 'art/live/turnabout.webp?v=993d2c61', live: 'art/live/turnabout.json?v=1cb0e4c7' },
   "venom-shard": { src: 'art/live/venom-shard.webp?v=b676165f', live: 'art/live/venom-shard.json?v=401560d3' },
+  "war-drummer": { src: 'art/live/war-drummer.webp?v=2bd6b3bb', live: 'art/live/war-drummer.json?v=48af9218' },
   "ward-of-dawn": { src: 'art/live/ward-of-dawn.webp?v=8819d9be', live: 'art/live/ward-of-dawn.json?v=3f3acf05' },
   "wavewarden": { src: 'art/live/wavewarden.webp?v=ee173b96', live: 'art/live/wavewarden.json?v=32fadb6f' },
   "weatherwitch": { src: 'art/live/weatherwitch.webp?v=f896bc6c', live: 'art/live/weatherwitch.json?v=3b70e950' },

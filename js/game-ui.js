@@ -626,6 +626,9 @@ function begin(rec) {
   const state = replay(rec.setup, rec.actions);
   state.events = [];
   G = { ...rec, bots: new Set(rec.bots), state, view: state, lastShown: state, flow: null, atk: null, blk: null, sheet: null, timer: null, busy: false, chain: Promise.resolve(), sched: 0 };
+  // the last fight's line (and its replay), if it was still up when the page went
+  const f = keptFight();
+  if (f && f.seed === rec.setup.seed && f.n <= rec.actions.length) { G.fightNote = f.note; G.lastFight = f.story; }
   noteGameOver();
   mount();
   redraw();
@@ -683,6 +686,19 @@ function leave(goTo = '#/play') {
   else location.hash = goTo;
 }
 
+// The last fight's line under the table, and its story for ▶ Replay, kept
+// with a practice game while they're up, so they come back with it after the
+// phone closes the page (often in the middle of a fight). keepFight(null)
+// lets them go.
+const FIGHT_KEPT = 'collective.lastFight';
+function keepFight(g) {
+  try {
+    if (!g || g.mode !== 'practice') localStorage.removeItem(FIGHT_KEPT);
+    else localStorage.setItem(FIGHT_KEPT, JSON.stringify({ seed: g.setup.seed, n: g.actions.length, note: g.fightNote, story: g.lastFight || null }));
+  } catch { /* fine without */ }
+}
+function keptFight() { try { return JSON.parse(localStorage.getItem(FIGHT_KEPT) || 'null'); } catch { return null; } }
+
 function save() {
   if (G.mode !== 'practice') return;
   store.set({ mode: G.mode, setup: G.setup, actions: G.actions, me: G.me, bots: [...G.bots], over: G.state.phase === 'over', takebacks: G.takebacks || 0, level: G.level, at: Date.now(), ...(G.campaign ? { campaign: G.campaign } : {}) });
@@ -692,10 +708,12 @@ function save() {
 // (an iPhone may close a page in the background, or when it runs short of
 // memory, and open it afresh: a white flash, then the home screen). Not a game
 // you left on purpose, or one from more than 20 minutes ago (Resume on the
-// Play page still has it). True if it went back in.
-export function autoResume() {
+// Play page still has it), unless the phone closed the page under it
+// (`closed`, js/steady.js): then it goes back in however long the last move
+// was thought over. True if it went back in.
+export function autoResume(closed = false) {
   const saved = store.get();
-  if (!saved || saved.over || saved.left || !saved.at || Date.now() - saved.at > 20 * 60000 || G) return false;
+  if (!saved || saved.over || saved.left || !saved.at || (!closed && Date.now() - saved.at > 20 * 60000) || G) return false;
   const page = saved.campaign ? Camp.placeHash(saved.campaign.world, saved.campaign.stage) : '#/play'; // (a campaign fight comes back over its place)
   if (!['', '#', '#/', page, ...(saved.campaign ? ['#/campaign', Camp.mapHash(saved.campaign.world)] : [])].includes(location.hash)) return false; // (a page opened on purpose stays open)
   if (location.hash !== page) location.hash = page;
@@ -810,6 +828,7 @@ function commit(a) {
 function clearSelections() {
   if (!G) return;
   G.recap = null;
+  if (G.fightNote) keepFight(null);
   G.fightNote = null;
   G.atk = null;
   G.blk = null;
@@ -2552,7 +2571,7 @@ async function present(events, after, quick = false, a = null) {
     }
   } catch (e) { console.error(e); }
   if (!G) return;
-  if (events.some((e) => e.k === 'fight')) G.fightNote = fightNoteText(events);
+  if (events.some((e) => e.k === 'fight')) { G.fightNote = fightNoteText(events); keepFight(G); }
   G.showBlk = null;
   const before = FX.capture(root);
   G.view = after;

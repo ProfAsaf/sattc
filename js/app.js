@@ -570,21 +570,42 @@ Mode.paint();
 // on Back would jump the map first.
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 window.addEventListener('hashchange', route);
-// A page's title bar gets its backdrop once the page scrolls under it.
-window.addEventListener('scroll', () => document.body.classList.toggle('scrolled', window.scrollY > 4), { passive: true });
+// A page's title bar gets its backdrop once the page scrolls under it; and
+// where each page was scrolled to is kept (sessionStorage), so a page the phone
+// closes comes back where it was.
+const SCROLLS = 'collective.scrolls';
+let scrollKeep = 0;
+window.addEventListener('scroll', () => {
+  document.body.classList.toggle('scrolled', window.scrollY > 4);
+  clearTimeout(scrollKeep);
+  scrollKeep = setTimeout(() => {
+    try { const s = JSON.parse(sessionStorage.getItem(SCROLLS) || '{}'); s[location.hash || '#/'] = Math.round(window.scrollY); sessionStorage.setItem(SCROLLS, JSON.stringify(s)); } catch { /* fine without */ }
+  }, 250);
+}, { passive: true });
 // (the phone closed the last page under us, out of memory: the cards calm down for today, js/steady.js)
 const reopened = startSteady();
 route();
+if (reopened) {
+  try { const y = JSON.parse(sessionStorage.getItem(SCROLLS) || '{}')[location.hash || '#/']; if (y > 0) requestAnimationFrame(() => window.scrollTo(0, y)); } catch { /* (as above) */ }
+}
 startScreenAlive(); // (any page's cards act now and then while you leave them be: js/cards-alive.js)
 if (reopened) setTimeout(() => toast('Your phone closed the game (low on memory?). The cards will act less today to keep it steady.', 6000), 900);
 const params = new URLSearchParams(location.search);
+// The game's files kept on the phone, so it comes back at once (sw.js).
+// ?fresh=1 lets go of them all, and of the worker that keeps them.
+if ('serviceWorker' in navigator) {
+  if (params.has('fresh')) {
+    navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
+    caches?.delete('collective-files').catch(() => {});
+  } else navigator.serviceWorker.register('sw.js').catch((e) => console.warn('No service worker:', e.message));
+}
 Push.start(); // (the service worker for turn alerts, once they are set up)
 if (params.has('demo')) demo(params);
 else {
   // an invite tapped in an alert (sw.js) comes before the last room
   const tapped = params.get('invite');
   if (tapped) history.replaceState(null, '', location.pathname + location.hash);
-  Push.takeInvite().then((code) => (code || tapped ? acceptInvite(code || tapped) : autoResume() || autoRejoin()));
+  Push.takeInvite().then((code) => (code || tapped ? acceptInvite(code || tapped) : autoResume(reopened) || autoRejoin()));
 }
 Push.onInvite(acceptInvite); // (one tapped while the game is open)
 // an invite link (?room=CODE) opens the Play tab with the code filled in

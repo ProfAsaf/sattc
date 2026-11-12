@@ -61,17 +61,27 @@ const moveOf = (id) => {
   if (!mods.has(id)) mods.set(id, import(`../bakeoff/moves/${id}.js`).then((m) => (typeof m.build === 'function' ? m : null)).catch(() => null));
   return mods.get(id);
 };
-// its textures: the shared fire, smoke and gloom (js/fx-art.js) and its own, painted once a page
+// its textures: the shared fire, smoke and gloom (js/fx-art.js) and its own,
+// painted once a page; the last ARTS cards' kept, older ones let go (their
+// pictures freed), so a long session doesn't pile them up
+const ARTS = 24;
 function artOf(id, mod) {
-  if (!arts.has(id)) {
-    arts.set(id, (async () => {
-      const art = { ...(await fxArt()) };
-      for (const [name, [w, h, px]] of Object.entries(mod.textures || {})) { art[name] = paint(w, h, px); await sleep(0); }
-      await Promise.all(Object.values(art).map((src) => { const im = new Image(); im.src = src; return im.decode().catch(() => {}); }));
-      return art;
-    })());
+  let a = arts.get(id);
+  if (a) { arts.delete(id); arts.set(id, a); return a.ready; } // (the most recent last)
+  const own = [];
+  a = { own, ready: (async () => {
+    const art = { ...(await fxArt()) };
+    for (const [name, [w, h, px]] of Object.entries(mod.textures || {})) { art[name] = paint(w, h, px); own.push(art[name]); await sleep(0); }
+    await Promise.all(Object.values(art).map((src) => { const im = new Image(); im.src = src; return im.decode().catch(() => {}); }));
+    return art;
+  })() };
+  arts.set(id, a);
+  for (const [old, o] of arts) {
+    if (arts.size <= ARTS) break;
+    arts.delete(old);
+    o.ready.then(() => { for (const u of o.own) URL.revokeObjectURL(u); }).catch(() => {});
   }
-  return arts.get(id);
+  return a.ready;
 }
 // `card`: a card whose picture is in sprites (its .sp-art); what leaves the
 // picture goes on `over`. Null if it has no move (or it couldn't be built).
@@ -122,6 +132,7 @@ export function actInZoom(zoomEl, id) {
       if (!st.on) break;
       if (st.paused || document.hidden) continue;
       play(m);
+      watchFrames(m.END);
       await nap(m.END + 100);
       halt(m);
     }
@@ -156,6 +167,7 @@ export function actBig(host, card, id) {
       if (!st.on) break;
       if (document.hidden) continue;
       play(m);
+      watchFrames(m.END);
       await nap(m.END + 100);
       halt(m);
     }
@@ -183,8 +195,40 @@ const ROOM = { // by calm level: [screens, elements]
 };
 const used = { area: 0, n: 0 }; // what scenes and fights keep moving now
 function roomFor(kind) {
-  const [area, n] = ROOM[kind][calm()] || [0, 0];
+  const [a, n0] = ROOM[kind][calm()] || [0, 0], k = strained() ? 0.5 : 1, area = a * k, n = Math.round(n0 * k);
   return kind === 'scenes' ? { area: area - used.area, n: n - used.n } : { area, n };
+}
+
+// ── frames: a phone straining shows it in its frames first ───────────
+// While cards act, the time between frames is watched. When most of the last
+// 40 come over 45 ms apart (under ~22 a second; a phone saving power still
+// draws 30), the phone is struggling: for a minute (two the next time, and so
+// on) the cards take half the room, one scene at a time, and the scenes past
+// the first end now. A long task now and then (a bot thinking) doesn't count.
+const strain = { until: 0, times: 0, raf: 0, last: 0, gaps: [], playing: 0 };
+const strained = () => Date.now() < strain.until;
+function watchFrames(ms) {
+  strain.playing = Math.max(strain.playing, Date.now() + ms);
+  if (strain.raf) return;
+  const step = (t) => {
+    if (document.hidden) strain.last = 0;
+    else if (strain.last) {
+      strain.gaps.push(t - strain.last);
+      if (strain.gaps.length > 40) strain.gaps.shift();
+      const mid = [...strain.gaps].sort((x, y) => x - y)[20];
+      if (strain.gaps.length === 40 && mid > 45) {
+        strain.times++;
+        strain.until = Date.now() + 60e3 * strain.times;
+        strain.gaps = [];
+        note('last', `the phone's frames came slowly (${Math.round(mid)} ms): calmer for ${strain.times} min`);
+        for (const st of stages.values()) [...st.scenes].slice(1).forEach((sc) => endScene(st, sc));
+      }
+    }
+    strain.last = document.hidden ? 0 : t;
+    if (Date.now() < strain.playing) strain.raf = requestAnimationFrame(step);
+    else { strain.raf = 0; strain.last = 0; strain.gaps = []; }
+  };
+  strain.raf = requestAnimationFrame(step);
 }
 // what an element moving costs: its box, at the most its motion scales it, in screens (4 at most)
 function costOf(el, anim = null) {
@@ -261,10 +305,10 @@ function tick(st) {
   const now = Date.now();
   if (DIAG && (st.name === 'table' || !document.body.classList.contains('in-game'))) {
     note('where', st.name === 'table' ? 'in a game' : 'on a page');
-    note('why', (why || (st.scenes.size ? `at rest: ${st.scenes.size} acting, ${used.n} moving (${used.area.toFixed(1)} screens)` : now - st.last < st.idle ? 'touched just now' : 'at rest')) + (calm() ? ` · calm ${calm()} (the phone closed the game today)` : ''));
+    note('why', (why || (st.scenes.size ? `at rest: ${st.scenes.size} acting, ${used.n} moving (${used.area.toFixed(1)} screens)` : now - st.last < st.idle ? 'touched just now' : 'at rest')) + (calm() ? ` · calm ${calm()} (the phone closed the game today)` : '') + (strained() ? ' · frames slow: calmer for now' : ''));
   }
   if (why) { st.last = now; endAll(st); return; }
-  const most = [st.max, 1, 0][calm()] ?? 0;
+  const most = strained() ? Math.min(1, st.max) : [st.max, 1, 0][calm()] ?? 0;
   if (now - st.last < st.idle || now < st.next || st.scenes.size >= most || roomFor('scenes').n < 30) return;
   st.next = now + NEXT[0] + Math.random() * (NEXT[1] - NEXT[0]);
   scene(st).catch((e) => { console.warn('cards alive:', e); note('last', `went wrong: ${e?.message || e}`); });
@@ -498,6 +542,7 @@ async function scene(st) {
     used.area += f.area; used.n += f.n;
     // all from one start
     for (const m of sc.moves) play(m);
+    watchFrames(Math.max(...sc.moves.map((m) => m.END)));
     if (p.target && !b) sc.anims.push(jolt(p.target.el, a.END, impact, dir));
     note('last', `${who}: playing`);
     sc.timer = setTimeout(() => endScene(st, sc), Math.max(...sc.moves.map((m) => m.END)) + 150);
@@ -620,6 +665,7 @@ export async function fight(blows, { wait = 1600 } = {}) {
   cost = f;
   used.area += f.area; used.n += f.n;
   for (const m of moves) { play(m); if (speed !== 1) for (const a of m.anims) a.playbackRate = speed; }
+  watchFrames(Math.max(...moves.map((m) => m.END)) / speed);
   timer = setTimeout(end, Math.max(...moves.map((m) => m.END)) / speed + 120);
   watch = setInterval(() => { if (plan.some((b) => !b.from.isConnected)) end(); }, 120);
   // each blow lands at its move's impact; a defender's at the impact of the blow it blocks

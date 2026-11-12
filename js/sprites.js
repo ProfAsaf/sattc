@@ -30,10 +30,13 @@ const MOVES = { // -> [keyframes, seconds, back and forth?, easing]; u: px per u
   air: () => [sway('rotate(1.2deg) scale(1.03)', 'rotate(-1.2deg) scale(1.03)'), 5.6, false, 'linear'],
 };
 
-const files = new Map(); // a sprites file -> its contents, fetched once
+const files = new Map(); // a sprites file -> its contents, fetched once (the last 48 kept: a long session doesn't pile them up)
 export function fetchSprites(url) {
-  if (!files.has(url)) files.set(url, fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null));
-  return files.get(url);
+  let f = files.get(url);
+  if (f) { files.delete(url); files.set(url, f); return f; } // (the most recent last)
+  files.set(url, (f = fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
+  for (const k of files.keys()) { if (files.size <= 48) break; files.delete(k); }
+  return f;
 }
 const boxes = new Set(); // every box with moving parts, so none is left running once it's gone
 

@@ -1061,6 +1061,20 @@ Asaf: "sometimes it freezes with a white flash and takes me out of game".
 - **An empty deck says so** on your bar ("empty"; held: each draw costs 2 Life).
 - **The summary:** a game lost to empty draws now reads as the deck, not a spell.
 - **Noticing it (2026-11-12, `js/steady.js`).** Asaf, with every card acting: "Is there anything else you can add ... that steps in if the phone is about to run out of memory ... It was still doing that a lot?" No web API warns that iOS is about to close a page, so the game notices afterwards. While the page is open and in sight, a mark in sessionStorage is refreshed every 5 s; leaving or hiding the page clears it. A fresh mark found at start-up means iOS closed the page under the game. It then says so ("Your phone closed the game (low on memory?)...") and calms the living cards for the day: level 1 after one closing, 2 after two (`calm()`, read by `js/cards-alive.js`; `?calm=0|1|2` sets it by hand). A normal reload doesn't count. Untested on an iPhone: the test stops the mark's removal, then loads the page again. If iOS drops sessionStorage on such a closing, nothing is noticed and nothing changes.
+- **Stopping it before it starts, and coming back fast (2026-11-12).** Asaf: "Is there a way to have it clear cache or do something to stop crashes before they start? Then if they do have it always be able to super quickly come back to where it was?"
+  - A page can't empty the browser's caches or read the phone's memory, so the game frees what it holds itself.
+    - The living cards keep painted effects for the last 24 cards and sprite files for the last 48; older ones are let go, and their pictures freed.
+    - While cards act, the time between frames is watched. When most of the last 40 frames come over 45 ms apart, the phone is struggling: for a minute (two the next time, and so on) the cards take half the room and act one at a time, and the extra scenes end at once. Tested with the CPU slowed tenfold, it noticed in 3 s; at full speed it never triggered.
+  - **The game's files kept on the phone** (`sw.js`, registered for everyone now).
+    - The page comes from the network when it answers within a second, so a new version still shows at once. When the phone says it has no connection, the copy is used straight away.
+    - Scripts and stylesheets carry `?v=`, so they come from the phone. Pictures, sprites and moves come from the network as before, from the phone only when it fails or takes over 1.5 s.
+    - A fresh page clears out the old version's files. `?fresh=1` drops the copy and the worker.
+    - Tested with the test's own server: closed and opened again, the table was back in 0.06 s. With the server gone it was back in 1.07 s. A new version on the server was taken at once and the old file dropped.
+  - **Every start-up script is asked for at once** (`tools/stamp.mjs` writes a modulepreload link for each of the 56 modules app.js loads). With nothing cached, the last script used to be asked for 4.6 s in, one layer at a time; now it's 0.18 s in.
+  - **Exactly where it was:**
+    - after a closing, a practice game comes back however long ago its last move was (`autoResume(closed)`);
+    - the last fight's line and its ▶ Replay come back with it (`collective.lastFight`, kept while the line is up);
+    - a page comes back scrolled where it was (`collective.scrolls`, sessionStorage).
 - **A ceiling on what the cards set moving** (`js/cards-alive.js` `fit()`): before a move plays, it counts the elements it would set moving and how much screen they cover, and fits them to the room left. It first stills the picture's own lights, then drops the biggest effects, then every other spark; the creature's body always moves. Idle scenes together keep under 220 moving elements, about what the game's own effects allow. A fight that can't fit charges as it used to. Details and measurements are in living-cards.md.
 - Test: `.phone-tests/ui-resume.mjs`.
 

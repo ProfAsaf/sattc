@@ -419,9 +419,9 @@ export const ultra_b = {
     // the thread's near turns, and its glow; a drop of blood falling
     s.glow(150, 98, 46, '#ff5a6a', 0.32, 'breathe');
     for (const [x, h] of candles.filter((_, i) => i !== 1)) s.glow(x + 2, 156 - h - 6, 16, '#e6d2ff', 0.55);
-    s.bloom(`<path d="${front.join('')}" fill="none" stroke="#ff5068" stroke-width="2" stroke-linecap="round"/>` +
-      `<path d="${front.join('')}" fill="none" stroke="#ffd6dc" stroke-width=".7" stroke-linecap="round"/>` +
-      `<path d="${candles.filter((_, i) => i !== 1).map(([x, h]) => flame(x, 156 - h - 0.5, 8, 2.6)).join('')}" fill="#f2e8ff"/>` +
+    s.bloom(`<g data-part="thread"><path d="${front.join('')}" fill="none" stroke="#ff5068" stroke-width="2" stroke-linecap="round"/>` +
+      `<path d="${front.join('')}" fill="none" stroke="#ffd6dc" stroke-width=".7" stroke-linecap="round"/></g>` +
+      `<path data-part="flames" d="${candles.filter((_, i) => i !== 1).map(([x, h]) => flame(x, 156 - h - 0.5, 8, 2.6)).join('')}" fill="#f2e8ff"/>` +
       '<ellipse cx="150" cy="152.4" rx="4.4" ry="1" fill="#ff5068"/>', { sd: 1.4, k: 1.4, box: [60, 60, 180, 110] });
     s.add('<ellipse class="fall" style="--d:-.4s" cx="150" cy="124" rx="1.3" ry="2" fill="#ff5068"/>');
     // the snuffed candle's smoke
@@ -475,9 +475,11 @@ export const ultra_b = {
     ));
     s.figure(`<path d="${her}"/>`, { fill: '#0d0915', rim: '#d6c2fa', offsets: [[0, -1.3], [-1, -0.7], [1, -0.7]], rimOp: 0.9, shade: 0.45, edge: 0.3, light: [0.3, -1] });
     // her face and hand, pale in the moonlight
+    s.add('<g data-part="face">');
     s.path(place(profile(3.6, -97.5, 0.9, -4)), '#ddd2ec');
     s.path(place(U(ell(-2.4, -103.4, 4.8, 4, 0, 14), taper([[-3, -101], [-1, -95], [-2.6, -90]], [4, 3, 1]))), '#0d0915');
     s.add(`<circle cx="${f1(vx - 5.6 * K)}" cy="${f1(vy - 99 * K)}" r=".8" fill="#7a1430"/>`);
+    s.add('</g>');
     // the stream of red light, out of his chest and into her hand; her
     // wounds closing where it reaches her
     const ctrl = [[84, 171], [88, 156], [98, 142], [114, 130], [130, 121], [146, 116], [156, 115]];
@@ -485,9 +487,9 @@ export const ultra_b = {
     s.glow(84, 172, 30, '#ff4a5e', 0.35);
     s.glow(156, 115, 30, '#ff8a96', 0.5, 'breathe');
     const wounds = place('M10,-80L16,-77M20,-78L24,-75M2,-76L5,-70');
-    s.bloom(`<path d="${taper(ctrl, [1.4, 4, 6, 6, 5, 4, 1.6])}" fill="${red}" opacity=".85"/>` +
-      `<path d="${taper(ctrl, [0.4, 1.2, 1.6, 1.6, 1.4, 1.2, 0.6])}" fill="#ffe2e6"/>` +
-      `<path d="${wounds}" stroke="#ff5068" stroke-width="1.3" stroke-linecap="round"/>`, { sd: 1.6, k: 1.4, box: [60, 90, 140, 100] });
+    s.bloom(`<g data-part="stream"><path d="${taper(ctrl, [1.4, 4, 6, 6, 5, 4, 1.6])}" fill="${red}" opacity=".85"/>` +
+      `<path d="${taper(ctrl, [0.4, 1.2, 1.6, 1.6, 1.4, 1.2, 0.6])}" fill="#ffe2e6"/></g>` +
+      `<path data-part="wounds" d="${wounds}" stroke="#ff5068" stroke-width="1.3" stroke-linecap="round"/>`, { sd: 1.6, k: 1.4, box: [60, 90, 140, 100] });
     s.motes({ seed: 12003, n: 14, x: [86, 156], y: [112, 172], r: [0.4, 1], fill: '#ff6a7a', hot: '#ffe2e6', cls: 'float', t: [3, 6], op: [0.5, 1] });
     s.fog(184, '#8f7fc8', 0.24);
     s.motes({ seed: 12004, n: 10, x: [20, 290], y: [60, 180], r: [0.35, 0.9], fill: '#c9b0f4', cls: 'float', t: [6, 10], op: [0.3, 0.7] });
@@ -531,7 +533,7 @@ export const ultra_b = {
       taper([[147, 55], [150, 49], [156, 48], [160, 52], [159, 58]], [2.2, 2.1, 2, 1.8, 1.6]),
     );
     s.figure(`<path d="${shade}"/>`, { fill: '#09060e', rim: '#c9b0f4', offsets: [[0, -1.2], [1, -0.7], [-0.8, -0.6]], rimOp: 0.85, shade: 0.4, edge: 0.3, light: [0.4, -1] });
-    s.add('<path d="M101,52C104,58 105,66 103,72" stroke="#1d1630" stroke-width="2" fill="none"/>');
+    s.add('<path data-part="fold" d="M101,52C104,58 105,66 103,72" stroke="#1d1630" stroke-width="2" fill="none"/>');
     // its lantern, the grave's light, the streams running into the soldiers
     const lx = 159, ly = 70;
     s.glow(lx, ly, 60, '#b98cff', 0.45);
@@ -539,11 +541,11 @@ export const ultra_b = {
     s.glow(158, 178, 48, '#a46bff', 0.5, 'breathe');
     const streams = line.map(([x, b, k]) => `M160,176Q${f1((160 + x) / 2 - 10)},${f1(b - 46)} ${f1(x + 3 * k)},${f1(b - 20 * k)}`).join('');
     for (const [x, b, k] of line) s.glow(x + 3 * k, b - 20 * k, 9 * k, '#c9a6ff', 0.55);
-    s.bloom(`<path d="${streams}" fill="none" stroke="#b07cff" stroke-width="3" opacity=".35"/><path d="${streams}" fill="none" stroke="#e6d2ff" stroke-width=".9"/>` +
-      '<g stroke="#d2a8ff" stroke-width="1.2" fill="none" stroke-linecap="round"><path d="M134,178l8,-4l6,2l8,-5M168,174l6,4l9,-1M150,184l6,-6l8,3"/></g>' +
-      `<path d="M${lx},58V62" stroke="#09060e" stroke-width="1.1"/><path d="M${lx - 4.6},62H${lx + 4.6}L${lx + 3.4},65H${lx - 3.4}ZM${lx - 3.4},77H${lx + 3.4}L${lx + 4.6},80H${lx - 4.6}Z" fill="#09060e"/>` +
-      `<rect x="${lx - 3.4}" y="65" width="6.8" height="12" rx="1" fill="#f6eeff"/>` +
-      '<g fill="#e6d2ff"><circle cx="104.6" cy="56" r="1.1"/><circle cx="108.6" cy="57" r="1"/><circle cx="106.4" cy="61.4" r=".7"/></g>', { sd: 1.6, k: 1.4, box: [80, 30, 220, 170] });
+    s.bloom(`<g data-part="streams"><path d="${streams}" fill="none" stroke="#b07cff" stroke-width="3" opacity=".35"/><path d="${streams}" fill="none" stroke="#e6d2ff" stroke-width=".9"/></g>` +
+      '<g data-part="cracks" stroke="#d2a8ff" stroke-width="1.2" fill="none" stroke-linecap="round"><path d="M134,178l8,-4l6,2l8,-5M168,174l6,4l9,-1M150,184l6,-6l8,3"/></g>' +
+      `<g data-part="lantern"><path d="M${lx},58V62" stroke="#09060e" stroke-width="1.1"/><path d="M${lx - 4.6},62H${lx + 4.6}L${lx + 3.4},65H${lx - 3.4}ZM${lx - 3.4},77H${lx + 3.4}L${lx + 4.6},80H${lx - 4.6}Z" fill="#09060e"/>` +
+      `<rect x="${lx - 3.4}" y="65" width="6.8" height="12" rx="1" fill="#f6eeff"/></g>` +
+      '<g data-part="eyes" fill="#e6d2ff"><circle cx="104.6" cy="56" r="1.1"/><circle cx="108.6" cy="57" r="1"/><circle cx="106.4" cy="61.4" r=".7"/></g>', { sd: 1.6, k: 1.4, box: [80, 30, 220, 170] });
     s.fog(170, '#8f7fc8', 0.26).fog(194, '#7a68b0', 0.3);
     s.motes({ seed: 12103, n: 18, x: [130, 290], y: [100, 186], r: [0.35, 0.9], fill: '#c9b0f4', hot: '#ffffff', cls: 'rise', t: [5, 9], op: [0.35, 0.85] });
     return s.svg();

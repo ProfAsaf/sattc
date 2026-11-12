@@ -85,6 +85,59 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Gravewarden: the five soldiers (each split out of their line, standing from their feet), the fresh grave
+  // (mound and marker, with the light cracking its crown), the shade (hood, robe, sleeve and staff; its eyes
+  // and the fold in its hood), its lantern hanging from the staff's hook, and the streams of violet light
+  // running from the grave to the soldiers. `emit`: the heart of the grave, where the light wells up;
+  // `chests`: where each stream enters its soldier; `hook`: where the lantern hangs; `feet`: the shade's
+  gravewarden: {
+    role: 'support', element: 'spirit', facing: 'right', emit: [160, 176], hit: [95, 118],
+    hook: [159, 57], feet: [95, 190], lamp: [159, 71.5], tips: [[181.6, 88], [209.6, 92], [235.9, 96], [258.6, 99.5], [279.1, 103]],
+    chests: [[194.2, 134], [221.8, 134.4], [246.5, 134.6], [268.2, 135.1], [287.9, 135.4]],
+    parts: [
+      { name: 'sold0', of: 'fig:0', pivot: [190, 162], poly: [[175, 60], [204, 60], [204, 200], [175, 200]] },
+      { name: 'sold1', of: 'fig:0', pivot: [218, 160], poly: [[204, 60], [231, 60], [231, 200], [204, 200]] },
+      { name: 'sold2', of: 'fig:0', pivot: [243, 158], poly: [[231, 60], [254, 60], [254, 200], [231, 200]] },
+      { name: 'sold3', of: 'fig:0', pivot: [265, 156.5], poly: [[254, 60], [275, 60], [275, 200], [254, 200]] },
+      { name: 'sold4', of: 'fig:0', pivot: [285, 155], poly: [[275, 60], [300, 60], [300, 200], [275, 200]] },
+      { name: 'grave', of: 'fig:1', pivot: [160, 192] },
+      { name: 'cracks', of: '[data-part=cracks]', pivot: [150, 180] },
+      { name: 'shade', of: 'fig:2', pivot: [95, 190] },
+      { name: 'fold', of: '[data-part=fold]', pivot: [95, 190] },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [95, 190] },
+      { name: 'streams', of: '[data-part=streams]', pivot: [160, 176] },
+      { name: 'lantern', of: '[data-part=lantern]', pivot: [159, 57] },
+    ],
+  },
+  // Bloodbinder: the fallen knight, the vampire (her body and her reaching arm, split at her shoulder;
+  // her face; the wounds on her, one set on the sleeve and one on the breast), and the stream of red
+  // light running from him into her hand. `emit`: her palm, where the stream arrives and the gift
+  // leaves; `shoulder`: the arm's joint; `feet`: where she stands; `chest`: where the knight is drained
+  bloodbinder: {
+    role: 'support', element: 'blood', facing: 'left', emit: [152, 116], hit: [194, 140],
+    shoulder: [183, 103], feet: [188, 189], chest: [90, 176],
+    parts: [
+      { name: 'knight', of: 'fig:0', pivot: [90, 182] },
+      { name: 'body', of: 'fig:1', pivot: [188, 189], poly: [[-20, -20], [320, -20], [320, 230], [-20, 230], [-20, 135], [178, 135], [178, 95], [-20, 95]] },
+      { name: 'arm', of: 'fig:1', pivot: [183, 103], poly: [[-20, 95], [178, 95], [178, 135], [-20, 135]] },
+      { name: 'face', of: '[data-part=face]', pivot: [188, 189] },
+      { name: 'woundsB', of: '[data-part=wounds]', pivot: [188, 189], poly: [[178, 95], [320, 95], [320, 135], [178, 135]] },
+      { name: 'woundsA', of: '[data-part=wounds]', pivot: [183, 103], poly: [[-20, 95], [178, 95], [178, 135], [-20, 135]] },
+      { name: 'stream', of: '[data-part=stream]', pivot: [120, 140] },
+    ],
+  },
+  // Blood Pact: the two arms clasped over the altar (the whole figure, tightening on the clasp), the
+  // red thread binding the hands (its near turns) and the four candle flames. `emit`: the heart of
+  // the clasp, where the thread's gift is lifted from
+  'blood-pact': {
+    role: 'support', element: 'blood', facing: 'front', emit: [150, 98], hit: [150, 130],
+    clasp: [150, 98], flames: [[98, 142], [196, 144], [208, 150]],
+    parts: [
+      { name: 'arms', of: 'fig:0', pivot: [150, 98] },
+      { name: 'thread', of: '[data-part=thread]', pivot: [150, 98] },
+      { name: 'flames', of: '[data-part=flames]', pivot: [150, 146] },
+    ],
+  },
   // Wing Graft: the two great wings of spray and light (quills and drops with them), split down the
   // middle at x = 150 and each turning about its shoulder, and the woman on her rock (hair and hem
   // too), standing from her feet; the rock stays. `emit`: between the wings, where the volley of

@@ -697,11 +697,15 @@ const verdantScenes = {
     s.path(pines({ seed: 403, base: 186, h: [12, 24], gap: [5, 10] }), '#7f9a63');
     s.path('M-10,214L-10,184C50,181 110,182 160,183C220,184 260,181 310,183L310,214Z', '#3a5029');
     // roots heaving up out of the ground behind it
-    const roots = taper([[36, 196], [44, 168], [62, 154], [80, 162], [88, 188]], [9, 8, 7, 7, 8]) +
-      taper([[212, 196], [222, 166], [244, 150], [266, 160], [272, 190]], [10, 9, 8, 7, 8]) +
-      vine([70, 186], [36, 92], { side: 1, curl: 9, w: 7 }) + vine([94, 188], [70, 44], { side: -1, curl: 8, w: 6 }) +
+    const rootsL = taper([[36, 196], [44, 168], [62, 154], [80, 162], [88, 188]], [9, 8, 7, 7, 8]) +
+      vine([70, 186], [36, 92], { side: 1, curl: 9, w: 7 }) + vine([94, 188], [70, 44], { side: -1, curl: 8, w: 6 });
+    const rootsR = taper([[212, 196], [222, 166], [244, 150], [266, 160], [272, 190]], [10, 9, 8, 7, 8]) +
       vine([216, 186], [246, 52], { side: 1, curl: 9, w: 6 }) + vine([240, 188], [280, 104], { side: -1, curl: 9, w: 7 });
-    s.path(roots, '#4a6a33');
+    s.add('<g data-part="rootsL">');
+    s.path(rootsL, '#4a6a33');
+    s.add('</g><g data-part="rootsR">');
+    s.path(rootsR, '#4a6a33');
+    s.add('</g>');
     // the fox, sitting up suddenly enormous, tail flung high
     const fox = [
       taper([[178, 162], [160, 130], [148, 102]], [58, 46, 32]),
@@ -711,16 +715,22 @@ const verdantScenes = {
       taper([[146, 84], [153, 94], [152, 100]], [12, 7, 0.5]) + taper([[138, 88], [140, 98], [137, 104]], [10, 6, 0.5]),
       taper([[147, 100], [132, 110], [129, 126], [136, 140]], [16, 20, 15, 3]),
       limb([140, 128], [138, 156], [136, 182], 14, 9, 8), limb([153, 132], [152, 158], [151, 182], 13, 8.5, 7.5),
-      taper([[204, 172], [226, 156], [242, 128], [242, 98], [232, 74]], [16, 28, 32, 24, 5]),
     ].join('');
-    s.figure(P(fox) + E(142, 78, 15, 13, -12) + E(176, 160, 34, 24, -24) + E(132, 183, 8, 3) + E(149, 183, 7.5, 3) + E(198, 182, 14, 4.4),
+    const foxTail = taper([[204, 172], [226, 156], [242, 128], [242, 98], [232, 74]], [16, 28, 32, 24, 5]);
+    s.figure(P(fox + foxTail) + E(142, 78, 15, 13, -12) + E(176, 160, 34, 24, -24) + E(132, 183, 8, 3) + E(149, 183, 7.5, 3) + E(198, 182, 14, 4.4),
       { fill: p.fig, rim: p.rim, offsets: [[-1.1, -1], [1.1, -1], [0, -1.3], [-1.2, 0.4], [1.2, 0.4]], rimOp: 0.95, shade: 0.35, light: [0, -1], halo: { op: 0.5, sd: 3 } });
-    s.add('<ellipse cx="134" cy="77" rx="2" ry="1.3" fill="#f7ffc8" transform="rotate(-12 134 77)"/>');
+    s.add('<ellipse data-part="eye" cx="134" cy="77" rx="2" ry="1.3" fill="#f7ffc8" transform="rotate(-12 134 77)"/>');
     // buds blazing at every tip, vines whipping across the front
     const bud = s.rad([[0, '#fbffd0', 0.95], [0.35, '#e6f78f', 0.5], [1, '#e6f78f', 0]]);
-    s.add([[36, 92], [70, 44], [246, 52], [280, 104]].map(([x, y]) => `<circle class="breathe" cx="${x}" cy="${y}" r="8" fill="${bud}"/>`).join(''));
-    s.path(vine([-12, 206], [54, 176], { side: -1, curl: 7, w: 8, leaves: 2, lr: 12 }) + vine([312, 208], [244, 182], { side: 1, curl: 7, w: 8, leaves: 2, lr: 12 }), '#1c2913');
-    s.path([[28, 172, 3.4], [62, 160, 2.6], [244, 166, 3], [270, 150, 2.4], [90, 150, 2]].map(([x, y, r]) => circ(x, y, r)).join(''), '#2c2416');
+    const budAt = ([x, y]) => `<circle cx="${x}" cy="${y}" r="8" fill="${bud}"/>`;
+    s.add(`<g data-part="budsL">${[[36, 92], [70, 44]].map(budAt).join('')}</g><g data-part="budsR">${[[246, 52], [280, 104]].map(budAt).join('')}</g>`);
+    s.add('<g data-part="frontL">');
+    s.path(vine([-12, 206], [54, 176], { side: -1, curl: 7, w: 8, leaves: 2, lr: 12 }), '#1c2913');
+    s.path([[28, 172, 3.4], [62, 160, 2.6], [90, 150, 2]].map(([x, y, r]) => circ(x, y, r)).join(''), '#2c2416');
+    s.add('</g><g data-part="frontR">');
+    s.path(vine([312, 208], [244, 182], { side: 1, curl: 7, w: 8, leaves: 2, lr: 12 }), '#1c2913');
+    s.path([[244, 166, 3], [270, 150, 2.4]].map(([x, y, r]) => circ(x, y, r)).join(''), '#2c2416');
+    s.add('</g>');
     s.add(flyingLeaves(404, 16, [20, 280], [20, 170], '#5f7f3e', { len: [6, 10] }));
     s.add(flyingLeaves(405, 10, [40, 260], [30, 150], '#d6e89a', { len: [5, 8] }));
     s.add(particles({ seed: 406, n: 14, x: [40, 260], y: [30, 170], r: [0.6, 1.4], fill: '#fffbd0', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
@@ -738,9 +748,11 @@ const verdantScenes = {
     s.haze(150, 188, '#f8f6dc', 0.55);
     s.path(woods({ seed: 413, base: 206, top: 184, r0: 10, r1: 16 }), '#a8bc89');
     // the dark winged thing, crossing the sun
+    s.add('<g data-part="bird">');
     s.path(taper([[214, 31], [230, 29]], [5, 3]) + taper([[214, 31], [207, 33]], [4, 1.6]) + taper([[230, 29], [240, 33], [249, 29]], [2.6, 1.4, 0.3]) +
       taper([[219, 30], [209, 20], [197, 14]], [5, 3, 0.5]) + taper([[225, 29], [233, 15], [242, 8]], [5, 3, 0.5]), '#262a1c');
     s.path(poly([[219, 30], [197, 14], [201, 23], [195, 26], [207, 29]]) + poly([[225, 29], [242, 8], [240, 18], [246, 21], [231, 31]]), '#262a1c');
+    s.add('</g>');
     // the great tree: trunk at the left, the branch she is perched on
     const tree = taper([[14, 222], [20, 150], [17, 80], [24, 0], [22, -12]], [58, 46, 40, 36, 36]) +
       taper([[10, 192], [70, 190], [130, 185], [190, 178], [250, 170], [304, 166]], [32, 22, 18, 14, 9, 4]) +
@@ -765,12 +777,14 @@ const verdantScenes = {
     const hood = blob([[6, -64], [12, -68], [18, -64], [19, -56], [15, -52], [8, -52], [4, -58]]);
     const string = `M${pt(tip1)}L${pt(draw)}L${pt(tip2)}`;
     const arrow = `M${pt(draw)}L${pt([hand[0] + 7 * u[0], hand[1] + 7 * u[1]])}`;
-    s.figure(G('translate(96 177) scale(1.45)', P(archer, cloak, hood) + C(hand[0], hand[1], 2.4) + C(draw[0], draw[1], 2.2) +
-      `<path d="${string}" fill="none" stroke-width=".5"/><path d="${arrow}" fill="none" stroke-width=".8"/>`),
+    s.figure(G('translate(96 177) scale(1.45)', `<g data-part="abody">${P(archer, cloak, hood)}</g><g data-part="ahand">${C(hand[0], hand[1], 2.4)}</g>` +
+      `<g data-part="adraw">${C(draw[0], draw[1], 2.2)}</g><g data-part="astring"><path d="${string}" fill="none" stroke-width=".5"/></g><g data-part="aarrow"><path d="${arrow}" fill="none" stroke-width=".8"/></g>`),
     { fill: p.fig, rim: p.rim, offsets: [[0.9, -1.1], [-0.6, -1]], rimOp: 0.95, shade: 0.35, light: [1, -1], halo: { op: 0.4, sd: 2.4 } });
     const ah = [96 + (hand[0] + 7 * u[0]) * 1.45, 177 + (hand[1] + 7 * u[1]) * 1.45];
+    s.add('<g data-part="atip">');
     s.glow(ah[0], ah[1], 8, '#fbffd0', 0.9);
     s.add(`<path d="M${pt(ah)}l${f1(-5 * u[0] + 2 * n[0])},${f1(-5 * u[1] + 2 * n[1])}l${f1(-4 * n[0])},${f1(-4 * n[1])}Z" fill="#f7ffd8"/>`);
+    s.add('</g>');
     s.add(flyingLeaves(415, 6, [60, 280], [40, 160], '#4f6b38', { len: [5, 8] }));
     s.add(particles({ seed: 416, n: 14, x: [40, 280], y: [20, 170], r: [0.6, 1.4], fill: '#fffbd6', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
     return s.svg();
@@ -804,8 +818,8 @@ const verdantScenes = {
       taper([[164, 108], [156, 118], [152, 132], [150, 142]], [9, 10, 6, 1.5]),
     ].join('');
     const robe = blob([[112, 150], [124, 140], [140, 146], [152, 160], [162, 172], [158, 179], [130, 180], [100, 180], [96, 172], [102, 160]]);
-    s.figure(G('translate(168 114) rotate(28)', P(antlers) + `<path d="M-8,-3Q0,-9 8,-3" fill="none" stroke-width="3"/>`) + P(body, robe) + C(168, 114, 7) +
-      E(178, 164, 4, 2.8, 20) + E(172.5, 165, 3.6, 2.6, 20),
+    s.figure(`<g data-part="head">${G('translate(168 114) rotate(28)', P(antlers) + `<path d="M-8,-3Q0,-9 8,-3" fill="none" stroke-width="3"/>`)}</g><g data-part="body">${P(body, robe)}</g><g data-part="head">${C(168, 114, 7)}</g>` +
+      `<g data-part="body">${E(178, 164, 4, 2.8, 20) + E(172.5, 165, 3.6, 2.6, 20)}</g>`,
     { fill: p.fig, rim: p.rim, offsets: [[-1.1, -1], [0.6, -1.2]], rimOp: 0.9, shade: 0.35, light: [-0.5, -1], halo: { op: 0.35, sd: 2.4 } });
     // the seed, and the light and roots spreading out of it through the earth
     const roots = 'M182,173C168,178 152,180 136,184C116,188 96,190 74,194C52,197 30,196 6,194M136,184C130,192 128,200 122,212M98,190C92,198 84,204 76,212' +

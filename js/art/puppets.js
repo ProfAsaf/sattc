@@ -847,6 +847,61 @@ export const PUPPETS = {
       { name: 'pageB', of: '[data-part=pageB]', pivot: [151, 130] },
     ],
   },
+  // sudden growth (a Trick that makes a creature enormous, a support: its boon is the growth): the fox's body
+  // (head, chest, haunch and feet, squashing and rising from its feet), its tail (whipping up from its root) and
+  // its eye (with the body), the roots heaving up each side with the buds at their tips (one pivot each, so they
+  // move as one) and the two dark vines across the front with their berries; `emit`: the heart of the light at the
+  // fox's feet where the boon leaves from, `hit`: the fox's chest, `feet`: where it grows from, `rootL`, `rootR`:
+  // where each side's roots come out of the ground, `tailRoot`: the tail's joint, `head`: the fox's head
+  'sudden-growth': {
+    role: 'support', element: 'nature', facing: 'left', emit: [152, 176], hit: [156, 118],
+    feet: [150, 186], rootL: [62, 196], rootR: [240, 196], tailRoot: [206, 170], head: [141, 78],
+    parts: [
+      { name: 'rootsL', of: '[data-part=rootsL]', pivot: [62, 196] },
+      { name: 'rootsR', of: '[data-part=rootsR]', pivot: [240, 196] },
+      { name: 'body', of: 'fig:0', pivot: [150, 186], poly: [[0, 0], [212, 0], [212, 210], [0, 210]] },
+      { name: 'tail', of: 'fig:0', pivot: [206, 170], poly: [[212, 0], [300, 0], [300, 210], [212, 210]] },
+      { name: 'eye', of: '[data-part=eye]', pivot: [150, 186] },
+      { name: 'budsL', of: '[data-part=budsL]', pivot: [62, 196] },
+      { name: 'budsR', of: '[data-part=budsR]', pivot: [240, 196] },
+      { name: 'frontL', of: '[data-part=frontL]', pivot: [20, 200] },
+      { name: 'frontR', of: '[data-part=frontR]', pivot: [290, 200] },
+    ],
+  },
+  // canopy archer (a 2/2 with Reach that shoots down fliers, an attacker: the arrow is the attack): the dark winged
+  // thing across the sun (jolted and knocked about when the arrow lands), the archer's body (legs, cloak, hood,
+  // the draw arm: leaning and rocking from the hips) and what she aims, one joint for all (the bow, its arm cut
+  // off at the elbow, the hand on the grip, the drawing hand, the string, the arrow and its glowing head),
+  // so the bow turns toward the target as one; `emit`: the arrow's head, where the shot leaves from,
+  // `hit`: her chest, `hips`: where she leans from, `aimAt`: the joint the bow turns about, `drawHand`: where
+  // the string is drawn to, `tips`: the bow's tips, `mirrorX`: the line she is flipped about to face the other way
+  'canopy-archer': {
+    role: 'attacker', element: 'wind', facing: 'right', emit: [150, 82], hit: [106, 125],
+    hips: [103, 177], aimAt: [118, 98], drawHand: [115, 94], tips: [[151, 113], [121, 70]], mirrorX: 105, bird: [222, 29],
+    parts: [
+      { name: 'bird', of: '[data-part=bird]', pivot: [222, 30] },
+      { name: 'body', of: 'fig:1 [data-part=abody]', pivot: [103, 177], poly: [[0, 0], [127, 0], [127, 122], [200, 122], [200, 210], [0, 210]] },
+      { name: 'bow', of: 'fig:1 [data-part=abody]', pivot: [118, 98], poly: [[127, 40], [200, 40], [200, 122], [127, 122]] },
+      { name: 'hand', of: 'fig:1 [data-part=ahand]', pivot: [118, 98] },
+      { name: 'draw', of: 'fig:1 [data-part=adraw]', pivot: [118, 98] },
+      { name: 'string', of: 'fig:1 [data-part=astring]', pivot: [118, 98] },
+      { name: 'arrow', of: 'fig:1 [data-part=aarrow]', pivot: [118, 98] },
+      { name: 'tip', of: '[data-part=atip]', pivot: [118, 98] },
+    ],
+  },
+  // grove druid (a 1/2 that plants a seed to grow Energy or to uproot a Relic; the picture shows the planting, so a
+  // support: its boon is the growth): the druid's body (knees, robe, back, arms and hands: leaning in to the
+  // seed and rising from the hips) and her antlered head (nodding about the neck, with the crown's band);
+  // `emit`: the seed under her hands where the growth leaves from along the roots, `hit`: her back,
+  // `hips`: where she leans from, `neck`: the head's joint, `ground`: the earth's surface line
+  'grove-druid': {
+    role: 'support', element: 'nature', facing: 'right', emit: [183, 171], hit: [146, 138],
+    hips: [124, 176], neck: [162, 118], ground: 172,
+    parts: [
+      { name: 'body', of: 'fig:0 [data-part=body]', pivot: [124, 176] },
+      { name: 'head', of: 'fig:0 [data-part=head]', pivot: [162, 118] },
+    ],
+  },
   // ── end of lane A ──
 
   // the dragon's head and neck (its own pieces of the figure, and its eye),

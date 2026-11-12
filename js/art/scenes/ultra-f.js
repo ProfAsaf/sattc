@@ -1029,6 +1029,7 @@ export const ultra_f = {
     // the hoard heaped over the rim and spilling down the front
     const heap = blob([[L + 1, T + 1], [L + 8, T - 8], [122, T - 18], [140, T - 26], [158, T - 25], [178, T - 20], [Rt + 4, T - 12], [Rt + 8, T - 4], [Rt + 2, T + 2]], 5);
     const gold = s.radU(118, 110, 110, [[0, '#fff2b0'], [0.45, '#f0c050'], [1, '#a8741c']]);
+    s.add('<g data-part="hoard">');
     s.path(heap, gold);
     const Rc = rng(17001), coins = [];
     for (let i = 0; i < 34; i++) {
@@ -1039,14 +1040,18 @@ export const ultra_f = {
     for (let i = 0; i < 12; i++) coins.push([150 + (Rc() - 0.4) * 80, 198 + Rc() * 12, 3.4 + Rc(), 0.36, (Rc() - 0.5) * 30]);
     s.add(`<path d="${coins.map(([x, y, r, k, a]) => oval(x, y, r, r * k, a)).join('')}" fill="${gold}" stroke="#8a5c16" stroke-width=".5"/>` +
       `<path d="${coins.filter(([, , r]) => r > 3.4).map(([x, y, r, k, a]) => oval(x, y - 0.3, r * 0.6, r * k * 0.6, a)).join('')}" fill="none" stroke="#fff3c4" stroke-width=".5" opacity=".8"/>`);
+    s.add('</g>');
     // the captured banners: a red one thrown over the corner of the chest,
     // a blue one on its pole leaning against the side
+    s.add('<g data-part="redflag">');
     s.path(`M${L + 4},${T - 8}C${L - 2},${T - 2} ${L - 4},${T + 6} ${L - 6},${T + 14}L${L - 8},${B + 8}L${L},${B + 4}L${L + 6},${B + 10}L${L + 14},${B + 2}L${L + 16},${T + 20}C${L + 18},${T + 8} ${L + 22},${T - 4} ${L + 22},${T - 12}Z`,
       s.linU(L - 8, 0, L + 22, 0, [[0, '#4a0e12'], [0.5, '#8a1c1e'], [1, '#5a1214']]));
     s.add(`<path d="M${L - 2},${T + 18}L${L - 3},${B}M${L + 8},${T + 14}L${L + 7},${B}" stroke="#3a080c" stroke-width="1.2" opacity=".7"/><path d="${sunMark(L + 6, T + 34, 3)}" fill="none" stroke="#d89a8a" stroke-width=".9" opacity=".55"/>`);
+    s.add('</g><g data-part="blueflag">');
     s.path(U(taper([[238, 204], [200, 58]], [3, 2.4], { per: 2 }), taper([[194, 66], [228, 74]], [2, 2], { per: 2 })), '#1e140c');
     s.path(rot(`M198,68L226,76L222,126L214,118L208,130L200,120L192,124Z`, 212, 70, -14), s.lin([[0, '#2c3a6e'], [1, '#18204a']]));
     s.add(`<path d="${rot('M204,84L216,86L212,104L206,100Z', 212, 70, -14)}" fill="none" stroke="#b8c0e8" stroke-width=".9" opacity=".5"/>`);
+    s.add('</g>');
     // the lantern
     const lx = 92, ly = 64;
     s.glow(lx, ly, 34, '#fff0c2', 0.7, 'breathe');
@@ -1094,24 +1099,28 @@ export const ultra_f = {
       ell(-12, -139, 5.6, 6.4), poly([[-17, -141], [-11, -153], [-6, -141]]),
       taper([[-16, -138], [-26, -134], [-36, -136], [-44, -132]], [4, 3.4, 2.4, 0.5]),
       blob([[-18, -126], [-28, -124], [-42, -120], [-58, -122], [-70, -116], [-62, -110], [-70, -102], [-54, -104], [-44, -100], [-32, -106], [-22, -110]], 4),
-      taper([[-12, -124], [-6, -136], [-2, -148]], [4.6, 4, 3.6]), ell(-1.6, -150.6, 3, 3.2),
       taper([[-12, -120], [-2, -114], [6, -112]], [4.2, 3.6, 3]),
-      taper([[-7, -110], [6, -200]], [2.6, 2.2], { per: 2 }),
     ));
-    s.figure(`<path d="${steed}"/><path d="${rider}"/>`, { fill: p.fig, rim: '#ffc080', offsets: [[1.2, -0.5], [0.4, -1.2], [-0.6, -0.9]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [0.8, -1] });
+    const armP = place(U(taper([[-12, -124], [-6, -136], [-2, -148]], [4.6, 4, 3.6]), ell(-1.6, -150.6, 3, 3.2)));
+    const poleP = place(U(taper([[-7, -110], [6, -200]], [2.6, 2.2], { per: 2 })));
+    s.figure(`<g data-part="steed"><path d="${steed}"/></g><g data-part="rider"><path d="${rider}${armP}${poleP}"/></g>`, { fill: p.fig, rim: '#ffc080', offsets: [[1.2, -0.5], [0.4, -1.2], [-0.6, -0.9]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [0.8, -1] });
     s.add(`<circle cx="${f1(X + (300 - 125 - 150) * K)}" cy="${f1(Y + (46 - 186) * K)}" r="1" fill="#ffd0a0"/>`);
     // the banner, its tail on fire
     const flag = place(pennant(5, -198, 70, 28, -1, 17102, 4));
+    s.add('<g data-part="flag">');
     s.path(flag, s.linU(X, 0, X - 60, 0, [[0, '#f6c96c'], [0.6, '#e8913e'], [1, '#b84a1e']]));
     s.add(`<path d="${sunMark(X - 26 * K, Y - 184 * K, 3.6)}" fill="none" stroke="#8a3d16" stroke-width="1.3" opacity=".55"/>`);
+    s.add('</g>');
     const R = rng(17103), tongues = [];
     for (const [x, y, h] of [[-62, -194, 16], [-68, -186, 20], [-60, -180, 18], [-66, -174, 16], [-56, -170, 12], [-48, -168, 10]]) {
       const [ax, ay] = [X + x * K, Y + y * K];
       tongues.push(plume(ax, ay, -160 + R() * 20, -120 + R() * 20, h + R() * 6, [5, 6, 4, 2, 0.4]));
     }
     s.glow(X - 56 * K, Y - 184 * K, 34, '#ff8a3a', 0.55, 'breathe');
+    s.add('<g data-part="fire">');
     s.bloom(`<path d="${U(tongues)}" fill="${s.linU(0, Y - 160 * K, 0, Y - 220 * K, [[0, '#fff0b0'], [0.4, '#ffb04a', 0.95], [1, '#ff6a1f', 0.5]])}"/>` +
       `<path d="${polyline([[X - 64 * K, Y - 196 * K], [X - 58 * K, Y - 183 * K], [X - 62 * K, Y - 172 * K]])}" fill="none" stroke="#ffe08a" stroke-width="1.6" stroke-linejoin="round"/>`, { sd: 1.8, k: 1.45, box: [40, 6, 110, 80] });
+    s.add('</g>');
     s.add(particles({ seed: 17104, n: 22, x: [40, 110], y: [10, 60], r: [0.5, 1.3], fill: '#ffb05a', cls: 'rise', t: [3, 6], op: [0.6, 1] }));
     s.motes({ seed: 17105, n: 18, x: [0, 300], y: [60, 200], r: [0.4, 1.1], fill: '#ff9a3a', hot: '#ffe2a0', cls: 'rise', t: [4, 8], op: [0.4, 0.9] });
     return s.svg();
@@ -1161,9 +1170,13 @@ export const ultra_f = {
     s.figure(`<path d="${lead}"/>`, { fill: '#140604', rim: '#ffd890', offsets: [[-1, -0.8], [0, -1.2], [0.8, -0.6]], rimOp: 0.95, shade: 0.4, edge: 0.3, light: [-0.6, -1] });
     tips.push([lx + 22 * lk, ly - 84 * lk, lk]);
     const fx = lx - 12 * lk, fy = ly - 124 * lk, flen = 64, fh = 26;
-    flags.push(pennant(fx, fy, flen, fh, -1, 17203, 4));
-    s.path(flags.join(''), s.linU(lx, 0, 0, 0, [[0, '#ffe08a'], [0.4, '#f6b85a'], [1, '#e8813a']]));
+    const lflag = pennant(fx, fy, flen, fh, -1, 17203, 4);
+    const flagFill = s.linU(lx, 0, 0, 0, [[0, '#ffe08a'], [0.4, '#f6b85a'], [1, '#e8813a']]);
+    s.path(flags.join(''), flagFill);
+    s.add('<g data-part="banner">');
+    s.path(lflag, flagFill);
     s.add(`<path d="${sunMark(fx - 30, fy + 13, 4.4)}" fill="none" stroke="#8a3d16" stroke-width="1.4" opacity=".5"/>`);
+    s.add('</g>');
     // the light off their weapons, streaming back up the hill behind them
     const streaks = [], sparks = [];
     for (const [x, y, k] of tips) {
@@ -1175,8 +1188,10 @@ export const ultra_f = {
     const Rf = rng(17204);
     for (let i = 0; i < 6; i++) { const t = i / 5, x = fx - flen * (0.86 + 0.08 * Math.sin(t * 3)), y = fy + 2 + (fh - 2) * t; bannerFire.push(plume(x, y, -168 + Rf() * 16, -128 + Rf() * 16, 12 + Rf() * 8, [4, 5, 3, 0.4])); }
     s.glow(lx + 22 * lk, ly - 84 * lk, 24, '#ffe08a', 0.6, 'breathe');
+    s.add('<g data-part="streaks">');
     s.bloom(`<path d="${U(streaks)}" fill="#ffd27a" opacity=".85"/><path d="${dots(sparks)}" fill="#fff6dc"/>` +
       `<path d="${U(bannerFire)}" fill="${s.linU(fx - flen, 0, fx - flen - 24, 0, [[0, '#fff0b0'], [0.5, '#ffb04a', 0.9], [1, '#ff6a1f', 0.5]])}"/>`, { sd: 1.6, k: 1.45 });
+    s.add('</g>');
     s.motes({ seed: 17205, n: 30, x: [20, 300], y: [60, 200], r: [0.4, 1.2], fill: '#ffb04a', hot: '#fff0c0', cls: 'rise', t: [3, 7] });
     return s.svg();
   },

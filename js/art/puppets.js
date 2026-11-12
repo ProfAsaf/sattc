@@ -89,6 +89,51 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Hour of Glory: the leader out in front (one figure, with his pole; from his feet) and his banner (from the
+  // top of its pole). The ranks, the other banners and the light streaming off the weapons stay as drawn: the
+  // spell's light acts over them. role: support (as suggested: it gives every creature +3/+0 and Rush), element:
+  // light (the dawn gold streaming off the weapons; the embers ride on it); `emit`: the sun, where the boon is
+  // let go from; `hit`: the middle of the host; `alone`: the middle of the host, where the boon goes when nothing
+  // is aimed at; `tips`: the weapon points, where the light streams from (the leader's last)
+  'hour-of-glory': {
+    role: 'support', element: 'light', facing: 'right', emit: [58, 92], hit: [150, 150], alone: [170, 142], feet: [236, 204], pole: [223, 66],
+    tips: [[40, 98.6], [69.1, 113.9], [101.5, 101.1], [109.4, 83.3], [122.1, 103.8], [129.8, 81.2], [135.2, 97.1], [153.2, 91.2], [162.5, 106.2], [166.2, 87.8], [168.4, 101.6], [190, 98], [205.9, 100.8], [210.8, 117.2], [227.8, 98.8], [237.4, 121], [246.1, 108.2], [259.9, 111.3]],
+    parts: [
+      { name: 'leader', of: 'fig:3', pivot: [236, 204] },
+      { name: 'banner', of: '[data-part=banner]', pivot: [223, 70] },
+    ],
+  },
+  // Blitz Captain: the far riders (one figure), the near riders pouring past (one figure), her warhorse (from its
+  // hind hooves), she herself with her banner's pole in her fist (the whole rider, from her seat), the banner
+  // (from her seat, so it swings with her) and the flames on its tail. role: attacker (as suggested: Rush, she
+  // charges), element: fire (the burning banner, the red horizon); facing: right (the horse, the charge);
+  // `emit`: the banner's pole top, where the fire is flung from; `hit`: the horse's chest; `hoof`: the horse's
+  // joint; `seat`: hers; `alone`: the red horizon, where the charge goes when nothing is aimed at
+  'blitz-captain': {
+    role: 'attacker', element: 'fire', facing: 'right', emit: [130, 32], hit: [118, 140], alone: [262, 150],
+    hoof: [112, 194], seat: [114, 104], tip: [130, 32],
+    parts: [
+      { name: 'far', of: 'fig:0', pivot: [226, 172] },
+      { name: 'near', of: 'fig:1', pivot: [150, 190] },
+      { name: 'steed', of: 'fig:2 [data-part=steed]', pivot: [112, 194] },
+      { name: 'rider', of: 'fig:2 [data-part=rider]', pivot: [114, 104] },
+      { name: 'flag', of: '[data-part=flag]', pivot: [114, 104] },
+      { name: 'fire', of: '[data-part=fire]', pivot: [114, 104] },
+    ],
+  },
+  // War Chest: the hoard heaped over the chest's rim (its top, from the middle of the chest; the trickle down the
+  // front and the coins on the floor stay), the red banner thrown over the corner (from where it drapes over the rim),
+  // the blue banner on its pole leaning on the side (from the pole's foot). role: aura (as suggested: a relic, the
+  // place itself acts), element: light (the gold of the coins and the lantern); `heart`: the middle of the hoard,
+  // where the light swells from; `lantern`: the lantern; `hit`: the chest's front
+  'war-chest': {
+    role: 'aura', element: 'light', facing: 'front', hit: [150, 176], heart: [152, 138], lantern: [92, 64],
+    parts: [
+      { name: 'hoard', of: '[data-part=hoard]', pivot: [152, 156], poly: [[90, 100], [225, 100], [225, 160], [90, 160]], cut: true },
+      { name: 'redflag', of: '[data-part=redflag]', pivot: [118, 146] },
+      { name: 'blueflag', of: '[data-part=blueflag]', pivot: [238, 204] },
+    ],
+  },
   // War Drummer: the column marching past (one figure, from the road), the two banners (one piece, from between
   // the poles) and the sun on them, the drum (shell, rope and legs, from its foot) and its skin (with the red
   // ring), the drummer (from her feet, without her arms), her two arms with their sticks (the raised one from

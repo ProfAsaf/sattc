@@ -89,6 +89,51 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Keeper of the Skies: the storm front piled against her ward (its two figures and its cloud lines, from the
+  // ward's foot), her raised arm with its hand (from her shoulder), her hair and scarf blown back (from the nape);
+  // she herself, the lighthouse, the ward's own lines and the rail stay in the picture. role: defender (as
+  // suggested: she holds the storm back), element: wind (as suggested); `hit`: her chest; `guard`: where the storm's
+  // blows meet the ward (the ward is bowed toward the storm where her palm holds it), high to low; `palm`: her
+  // hand; `shoulder`, `nape`: the joints; `foot`: where the ward meets the sea; `storm`: the storm's middle, where
+  // its lightning gathers
+  'keeper-of-the-skies': {
+    role: 'defender', element: 'wind', facing: 'left', hit: [150, 96], guard: [[112.2, 48], [114.4, 74], [118.7, 100], [123.6, 120]],
+    palm: [120.9, 34.7], shoulder: [149.4, 66.9], nape: [154.9, 49.4], foot: [126, 138], storm: [45, 70],
+    parts: [
+      { name: 'storm', of: ['fig:0', 'fig:1', '[data-part=stormlines]'], pivot: [112, 80] },
+      { name: 'hair', of: 'fig:3 [data-part=hair]', pivot: [154.9, 49.4] },
+      { name: 'arm', of: 'fig:3 [data-part=arm]', pivot: [149.4, 66.9] },
+    ],
+  },
+  // Hallowed Ground: the far ring of standing stones with their lintels (one piece, from the ground at the
+  // ring's middle), the low stone in the middle (from its foot), the two great near stones (from their feet), the
+  // grass and flowers in the light (from the ground). role: aura (a Field), element: light (the suggestion was
+  // earth: the stones are only where the light gathers; what the move is made of is the dawn's gold);
+  // `hit`: the middle of the ring; `altar`: the top of the low stone, where the light rises from; `sun`: the
+  // dawn in the gate; `gate`: the gap it shines through
+  'hallowed-ground': {
+    role: 'aura', element: 'light', facing: 'front', hit: [150, 150], altar: [150, 164], sun: [150, 120], gate: [150, 122],
+    parts: [
+      { name: 'ring', of: 'fig:0', pivot: [150, 158] },
+      { name: 'altar', of: '[data-part=altar]', pivot: [150, 174] },
+      { name: 'near', of: 'fig:1', pivot: [150, 178] },
+      { name: 'grass', of: '[data-part=grass]', pivot: [150, 216] },
+    ],
+  },
+  // Rolling Fog: the spearman's spear (from his hand), the swordsman's sword with the arm that holds it (from his
+  // shoulder), the spearman's round shield (from its middle); the army and the fog bank stay in the picture
+  // (the fog is ambient). role: aura (a Field), element: water (the suggestion was shadow: sea fog is mist off
+  // the water); `hit`: the middle of the picture; `hand`, `shoulder`, `boss`: the joints; `front`: where the
+  // two stand (feet); `tips`: spear heads of the army lost in the fog, to show through it
+  'rolling-fog': {
+    role: 'aura', element: 'water', facing: 'left', hit: [150, 120],
+    hand: [95.3, 147.8], shoulder: [181.6, 126.7], boss: [118.4, 145.7], front: [[110, 194], [190, 196]],
+    parts: [
+      { name: 'spear', of: 'fig:0 [data-part=spear]', pivot: [95.3, 147.8] },
+      { name: 'sword', of: 'fig:0 [data-part=sword]', pivot: [181.6, 126.7] },
+      { name: 'shield', of: '[data-part=shield]', pivot: [118.4, 145.7] },
+    ],
+  },
   // Gale Winds: the lone tree grown flat on the cliff top (from its foot), the great curl of wind rolling up off
   // the cliff edge and over (from the edge), the seven gulls and the two kites riding it (each from its centre).
   // role: aura (a Field: the place itself acts), element: wind (the suggestion was water; what the place is made of

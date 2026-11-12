@@ -64,6 +64,11 @@ const rot = (d, ox, oy, deg) => {
 };
 const flipX = (d, ax) => d.replace(NUM, (_, x, y) => `${f1(2 * ax - x)},${y}`);
 const at = (x, y, k, dir = 1) => (d) => d.replace(NUM, (_, a, b) => `${f1(x + a * k * dir)},${f1(y + b * k)}`);
+// A tagged piece of a figure is a path of its own, and the figure's shading gradient is laid across each path's own
+// box: pin every piece to the whole figure's box [x0, y0, x1, y1], with points that draw nothing, so the shading
+// of the still picture stays exactly as it was.
+const bb = (d) => { const xs = [], ys = []; d.replace(NUM, (m, x, y) => { xs.push(+x); ys.push(+y); return m; }); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+const pin = (d, [x0, y0, x1, y1]) => `${d}M${x0},${y0}ZM${x1},${y1}Z`;
 
 // A smooth edge (hill, cliff, shore) closed off below the card, and its
 // height at x.
@@ -586,10 +591,10 @@ export const ultra_f = {
       taper([[0, -44], [0, -58], [0, -70]], [15, 16, 20]),
       taper([[0, -72], [0, -77]], 5, { per: 2 }), ell(0, -82, 5.6, 6), poly([[-6.2, -82], [0, -95], [6.2, -82]]),
       taper([[-9, -68], [-13, -56], [-14, -46]], [5, 4.4, 4]), ell(-14, -44, 3, 3.4),
-      taper([[-14, 2], [-14, -116]], [2.2, 1.7], { per: 2 }), lens(-14, -121, 12, 90, 0.34, 3),
       taper([[9, -68], [12, -58], [10, -50]], [5, 4.4, 4]),
       blob([[-10, -70], [-16, -62], [-19, -40], [-20, -26], [-14, -28], [-10, -48]], 4),
     );
+    const spear = U(taper([[-14, 2], [-14, -116]], [2.2, 1.7], { per: 2 }), lens(-14, -121, 12, 90, 0.34, 3));
     const swordsman = U(
       taper([[-4, -40], [-8, -20], [-11, 0]], [8, 6.4, 5]), ell(-13, -1.4, 5, 2.2),
       taper([[4, -40], [7, -20], [9, 0]], [8, 6.4, 5]), ell(11, -1.4, 5, 2.2),
@@ -597,16 +602,17 @@ export const ultra_f = {
       taper([[0, -44], [1, -58], [2, -70]], [15, 16, 19]),
       taper([[2, -72], [2.6, -77]], 5, { per: 2 }), ell(3.4, -82.4, 5.8, 6.2), ell(3, -85, 6.6, 4),
       blob([[-6, -72], [-14, -66], [-20, -50], [-24, -30], [-28, -16], [-18, -18], [-10, -24], [-6, -46]], 4),
-      taper([[8, -66], [14, -56], [16, -46]], [5, 4.4, 4]), ell(17, -44.4, 3.2, 3.2),
-      taper([[16.4, -47], [30, -84]], [2.6, 0.7], { per: 2 }), taper([[12, -48.6], [21, -42.6]], [1.8, 1.8], { per: 2 }),
       taper([[-7, -66], [-12, -56], [-14, -48]], [5, 4.4, 4]),
     );
+    const sword = U(taper([[8, -66], [14, -56], [16, -46]], [5, 4.4, 4]), ell(17, -44.4, 3.2, 3.2),
+      taper([[16.4, -47], [30, -84]], [2.6, 0.7], { per: 2 }), taper([[12, -48.6], [21, -42.6]], [1.8, 1.8], { per: 2 }));
     const A = at(110, 194, 1.05), B = at(190, 196, 1.05, -1);
-    s.figure(`<path d="${A(spearman)}"/><path d="${B(swordsman)}"/>`, { fill: p.fig, rim: '#e6fdfc', offsets: [[0.6, -1.2], [1, -0.4], [-0.8, -0.8]], rimOp: 0.9, shade: 0.4, edge: 0.3, light: [0.4, -1] });
+    const bA = bb(A(U(spearman, spear))), bB = bb(B(U(swordsman, sword)));
+    s.figure(`<path d="${pin(A(spearman), bA)}"/><g data-part="spear"><path d="${pin(A(spear), bA)}"/></g><path d="${pin(B(swordsman), bB)}"/><g data-part="sword"><path d="${pin(B(sword), bB)}"/></g>`, { fill: p.fig, rim: '#e6fdfc', offsets: [[0.6, -1.2], [1, -0.4], [-0.8, -0.8]], rimOp: 0.9, shade: 0.4, edge: 0.3, light: [0.4, -1] });
     // his shield, painted, catching the fog light
     const [shx, shy] = [110 + 8 * 1.05, 194 - 46 * 1.05];
-    s.add(`<path d="${oval(shx, shy, 12, 13)}" fill="#1e3a3e" stroke="#9cc8c8" stroke-width="1.1"/><path d="${oval(shx, shy, 8, 8.8)}" fill="none" stroke="#2e5052" stroke-width="1"/>` +
-      `<circle cx="${f1(shx)}" cy="${f1(shy)}" r="2.6" fill="#c6f4f6" opacity=".85"/>`);
+    s.add(`<g data-part="shield"><path d="${oval(shx, shy, 12, 13)}" fill="#1e3a3e" stroke="#9cc8c8" stroke-width="1.1"/><path d="${oval(shx, shy, 8, 8.8)}" fill="none" stroke="#2e5052" stroke-width="1"/>` +
+      `<circle cx="${f1(shx)}" cy="${f1(shy)}" r="2.6" fill="#c6f4f6" opacity=".85"/></g>`);
     // fog curling round their feet
     s.fog(186, '#d6e8e4', 0.32).fog(202, '#cfe2de', 0.3);
     s.motes({ seed: 16402, n: 12, x: [20, 280], y: [60, 190], r: [0.4, 0.9], fill: p.glow, cls: 'float', t: [6, 10], op: [0.3, 0.7] });
@@ -657,7 +663,9 @@ export const ultra_f = {
     s.figure(`<path d="${stones}"/>`, { fill: '#4e4032', rim: '#fff0c2', offsets: [[0, -1.2], [-1, -0.6], [1, -0.6]], rimOp: 0.95, shade: 0.4, edge: 0.3, light: [0, -1] });
     s.shafts({ cx: sx, cy: sy, n: 12, from: 20, to: 160, len: 200, spread: 3, color: '#fff3cc', op: 0.22, seed: 16511, sd: 2.6 });
     // the low stone in the middle of the ring, the light lying on it
+    s.add('<g data-part="altar">');
     s.path('M124,170L127,163L173,163L176,170L176,174L124,174Z', '#4a3c2a');
+    s.add('</g>');
     // two great near stones at the edges, dark against it all
     const near = stone(24, 176, 30, 112, 16512) + stone(278, 178, 32, 104, 16513);
     s.figure(`<path d="${near}"/>`, { fill: '#2a2014', rim: '#ffe7a8', offsets: [[0, -1.2], [-1, -0.4], [1, -0.4]], rimOp: 0.85 });
@@ -669,8 +677,10 @@ export const ultra_f = {
       blades.push(taper([[x, 216], [x + l * 0.4, 214 - h * 0.5], [x + l, 214 - h]], [1.8, 1.1, 0.3], { per: 3 }));
       if (G() < 0.18) flowers.push([x + l, 212 - h, 0.9]);
     }
+    s.add('<g data-part="grass">');
     s.path(U(blades), '#2a2214');
     s.add(`<path d="${dots(flowers)}" fill="#fff4d6" opacity=".8"/>`);
+    s.add('</g>');
     s.motes({ seed: 16515, n: 22, x: [60, 240], y: [100, 200], r: [0.4, 1.1], fill: '#ffe39a', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },
@@ -710,7 +720,7 @@ export const ultra_f = {
     s.figure(`<path d="${U(mass, billows)}"/>`, { fill: '#18263a', rim: '#ffe2a6', offsets: [[1.4, 0], [1, -0.8], [1, 0.8]], rimOp: 0.9, shade: 0.4, light: [1, 0] });
     const inner = puffs([[wardX(8) - 20, 8, 14], [wardX(52) - 22, 52, 13], [wardX(84) - 20, 84, 14], [wardX(114) - 24, 114, 12], [40, 24, 22], [62, 62, 20], [22, 96, 22], [56, 118, 16], [8, 54, 16]], 1.2);
     s.figure(`<path d="${inner}"/>`, { fill: '#1f3248', rim: '#9a8a74', offsets: [[1.2, 0.4], [0.6, -0.8]], rimOp: 0.55 });
-    s.add(`<g fill="none" stroke="#3a4e66" stroke-width="1.2" opacity=".7"><path d="${[[60, 30, 22], [24, 70, 26], [70, 96, 20], [30, 118, 18]].map(([x, y, r]) =>
+    s.add(`<g data-part="stormlines" fill="none" stroke="#3a4e66" stroke-width="1.2" opacity=".7"><path d="${[[60, 30, 22], [24, 70, 26], [70, 96, 20], [30, 118, 18]].map(([x, y, r]) =>
       `M${x - r},${y}a${r},${r * 0.6} 0 0 1 ${2 * r},0`).join('')}"/></g>`);
     let rain = '';
     const Rr = rng(16601);
@@ -725,22 +735,28 @@ export const ultra_f = {
     s.path('M182,95H230V142H182Z', s.lin([[0, '#fff2c4'], [0.6, '#ffd77a'], [1, '#e8a850']]));
     s.add('<path d="M198,95V142M214,95V142M182,118H230" stroke="#2e2a30" stroke-width="1.8"/><path d="M178,176H238M176,196H242" stroke="#1e1a20" stroke-width="2" opacity=".7"/>');
     // the keeper: a long robe blown back, hood down, her hand up
-    const her = place(U(
+    const arm = U(
+      taper([[5, -86], [14, -94], [22, -101]], [5, 4.4, 4]),
+      taper([[22, -101], [29, -110], [34, -117]], [4, 3.6, 3.2]),
+      ell(36, -121, 3, 4.4, -20), taper([[35, -124], [36, -130]], [1.4, 0.6], { per: 2 }), taper([[37.4, -124], [39.6, -129.4]], [1.4, 0.6], { per: 2 }),
+    );
+    const hair = U(
+      taper([[-1, -105], [-12, -105], [-24, -99], [-36, -101], [-48, -95]], [8, 7, 5, 3, 0.5]),
+      taper([[-2, -100], [-14, -97], [-26, -92], [-38, -94]], [6, 5, 3.4, 0.5]),
+    );
+    const body = U(
       blob([[6, -88], [-6, -88], [-10, -70], [-14, -50], [-20, -30], [-28, -12], [-40, -2], [-26, 0], [-10, 1], [8, 0], [12, -4], [10, -30], [9, -60]], 4),
       ell(10, -1.2, 5, 2),
       taper([[0, -60], [0, -76], [0, -88]], [12, 12, 15]),
       ell(-4, -89, 7, 4),
       taper([[1, -90], [1.5, -95]], 4, { per: 2 }),
       profile(3, -101, 0.78, -6),
-      taper([[-1, -105], [-12, -105], [-24, -99], [-36, -101], [-48, -95]], [8, 7, 5, 3, 0.5]),
-      taper([[-2, -100], [-14, -97], [-26, -92], [-38, -94]], [6, 5, 3.4, 0.5]),
-      taper([[5, -86], [14, -94], [22, -101]], [5, 4.4, 4]),
-      taper([[22, -101], [29, -110], [34, -117]], [4, 3.6, 3.2]),
-      ell(36, -121, 3, 4.4, -20), taper([[35, -124], [36, -130]], [1.4, 0.6], { per: 2 }), taper([[37.4, -124], [39.6, -129.4]], [1.4, 0.6], { per: 2 }),
       blob([[18, -98], [10, -92], [2, -80], [-4, -72], [4, -78], [14, -86]], 3),
       taper([[-3, -86], [-6, -70], [-6, -56]], [4.4, 3.8, 3.4]),
-    ));
-    s.figure(`<path d="${her}"/>`, { fill: '#101c28', rim: '#fff0c2', offsets: [[1.2, -0.4], [0.8, -1], [-0.6, -0.9]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [1, -0.6] });
+    );
+    const bH = bb(place(U(body, arm, hair)));
+    // (her blown hair and scarf, and her raised arm with its hand, are tagged to move)
+    s.figure(`<path d="${pin(place(body), bH)}"/><g data-part="hair"><path d="${pin(place(hair), bH)}"/></g><g data-part="arm"><path d="${pin(place(arm), bH)}"/></g>`, { fill: '#101c28', rim: '#fff0c2', offsets: [[1.2, -0.4], [0.8, -1], [-0.6, -0.9]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [1, -0.6] });
     // the gallery rail, in front of her
     let rail = 'M124,131H282M124,138.5H282';
     for (let x = 126; x <= 280; x += 8) rail += `M${x},131V146`;

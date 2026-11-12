@@ -399,10 +399,11 @@ export const multi = {
       taper([[184, 84], [188, 92], [186, 100]], [2.6, 1.8, 0.3]), taper([[194, 86], [196, 94]], [2.2, 0.3]),
       taper([[90, 106], [86, 114]], [2.2, 0.3]), taper([[200, 116], [206, 122]], [2.2, 0.3]),
     );
-    s.add(`<g ${tilt}><g ${s.fx('bloom', { sd: 1.4, k: 1.4 })}><path d="${stripes}" fill="#ff6a1f" opacity=".45" stroke="#ff7a2e" stroke-width="2.4" stroke-linejoin="round"/><path d="${stripes}" fill="#ffcc78"/></g>`);
+    s.add(`<g ${tilt}><g data-part="stripes" ${s.fx('bloom', { sd: 1.4, k: 1.4 })}><path d="${stripes}" fill="#ff6a1f" opacity=".45" stroke="#ff7a2e" stroke-width="2.4" stroke-linejoin="round"/><path d="${stripes}" fill="#ffcc78"/></g>`);
+    s.add('<g data-part="face">');
     s.glow(222, 92, 7, '#ffcf5a', 0.9);
     s.add(`<ellipse cx="222" cy="92" rx="2.8" ry="1.5" fill="#fff0b0" transform="rotate(12 222 92)"/>` +
-      `<path d="${U(taper([[227, 104], [228.5, 113], [230, 122]], [3, 2.2, 0.3]), taper([[220, 106], [221, 113], [222.5, 119]], [2.4, 1.8, 0.3]))}" fill="#f3e3c0"/></g>`);
+      `<path d="${U(taper([[227, 104], [228.5, 113], [230, 122]], [3, 2.2, 0.3]), taper([[220, 106], [221, 113], [222.5, 119]], [2.4, 1.8, 0.3]))}" fill="#f3e3c0"/></g></g>`);
     // big leaves in the foreground
     const R = rng(643);
     const fronds = [];
@@ -452,8 +453,8 @@ export const multi = {
       taper([[146, 113], [143.5, 121], [140, 126]], [5.4, 4.4, 3.6]), taper([[154, 113], [158, 120], [162.5, 124]], [5.4, 4.4, 3.6]),
       taper([[143, 92], [135, 95], [128.5, 92]], [4.4, 3.6, 3]), ell(127.5, 91.5, 2.6, 2.4),
       taper([[157, 92], [165, 95], [171.5, 92]], [4.4, 3.6, 3]), ell(172.5, 91.5, 2.6, 2.4));
-    s.bloom(`<path d="${wing(-1) + wing(1)}" fill="${wf}"/><path d="${child}" fill="#fffdf4"/>` +
-      '<ellipse cx="150" cy="69" rx="8" ry="2.4" fill="none" stroke="#fff3c6" stroke-width="1.2" opacity=".9"/>', { sd: 2, k: 1.2, box: [80, 36, 140, 110] });
+    s.bloom(`<g data-part="wingL"><path d="${wing(-1)}" fill="${wf}"/></g><g data-part="wingR"><path d="${wing(1)}" fill="${wf}"/></g><g data-part="child"><path d="${child}" fill="#fffdf4"/></g>` +
+      '<g data-part="halo"><ellipse cx="150" cy="69" rx="8" ry="2.4" fill="none" stroke="#fff3c6" stroke-width="1.2" opacity=".9"/></g>', { sd: 2, k: 1.2, box: [80, 36, 140, 110] });
     s.motes({ seed: 654, n: 22, x: [96, 204], y: [56, 150], r: [0.4, 1.1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [4, 8], op: [0.5, 1] });
     s.motes({ seed: 655, n: 10, x: [132, 168], y: [120, 175], r: [0.35, 0.8], fill: '#ffdf98', hot: '#ffffff', cls: 'rise', t: [3, 6], op: [0.5, 1] });
     return s.svg();
@@ -477,9 +478,11 @@ export const multi = {
     s.figure(`<path d="${hand}"/>`, { fill: '#120c07', rim: '#ffcf6a', offsets: [[0, -1.3], [-0.7, -1], [0.7, -1]], rimOp: 0.9, shade: 0.5, edge: 0.3, halo: 0.35 });
     s.add('<ellipse cx="178" cy="150" rx="30" ry="4.6" fill="#ffcf6a" opacity=".13"/>');
     // the spark
-    s.glow(152, 86, 18, '#fff6d8', 1, 'breathe');
+    s.add('<g data-part="spark">');
+    s.glow(152, 86, 18, '#fff6d8', 1);
     s.bloom(`<path d="${glint(152, 86, 15, 0.12)}" fill="#fffbea"/><path d="${rot(glint(152, 86, 8, 0.2), 152, 86, 45)}" fill="#fff3cc"/><circle cx="152" cy="86" r="2.6" fill="#ffffff"/>`,
       { sd: 2, k: 1.5, box: [112, 46, 80, 80] });
+    s.add('</g>');
     s.motes({ seed: 661, n: 16, x: [116, 190], y: [52, 126], r: [0.3, 0.75], fill: '#ffd27a', hot: '#fffaea', cls: 'twinkle', op: [0.3, 0.9], t: [1.5, 3.5] });
     return s.svg();
   },

@@ -21,6 +21,44 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // spark: the open hand (cupping and lifting from its wrist) and the spark above it (its glint,
+  // core and the bright glow round it, turning about its heart); `emit`: the spark's heart
+  // where the gift leaves from, `hit`: the palm, `wrist`: where the hand turns from, `palm`: its hollow
+  'spark': {
+    role: 'support', element: 'light', facing: 'left', emit: [152, 86], hit: [178, 150],
+    wrist: [238, 166], palm: [178, 148],
+    parts: [
+      { name: 'hand', of: 'fig:0', pivot: [238, 166] },
+      { name: 'spark', of: '[data-part=spark]', pivot: [152, 86] },
+    ],
+  },
+  // spirit: the winged child of light: each wing (turning from the shoulder), the child (leaning
+  // from its middle) and its halo (riding its head); `emit`: between its open hands where it
+  // gathers its light and throws it from, `hit`: its middle, `hands`: its two hands, `head`: its crown
+  'spirit': {
+    role: 'attacker', element: 'spirit', facing: 'front', emit: [150, 90], hit: [150, 102],
+    hands: [[127.5, 91.5], [172.5, 91.5]], head: [150, 72], shoulder: [150, 96],
+    parts: [
+      { name: 'wingL', of: '[data-part=wingL]', pivot: [146, 98] },
+      { name: 'wingR', of: '[data-part=wingR]', pivot: [154, 98] },
+      { name: 'child', of: '[data-part=child]', pivot: [150, 104] },
+      { name: 'halo', of: '[data-part=halo]', pivot: [150, 80] },
+    ],
+  },
+  // apex predator: the sabre-tooth as one body (leaping from its middle), its two front legs
+  // split off at the shoulder (a swipe), the smouldering stripes and the face (eye and sabres);
+  // `emit`: the claws' tips where the strike leaves from, `hit`: its chest, `shoulder`: where
+  // the front legs hang from, `jaws`: the sabres' tips, `mid`: the body's centre it leaps about
+  'apex-predator': {
+    role: 'attacker', element: 'fire', facing: 'right', emit: [234, 148], hit: [176, 110],
+    shoulder: [194, 133], jaws: [226, 128], mid: [150, 104],
+    parts: [
+      { name: 'body', of: 'fig:2', pivot: [150, 104], poly: [[-10, -10], [310, -10], [310, 137], [180, 137], [180, 220], [-10, 220]] },
+      { name: 'paws', of: 'fig:2', pivot: [194, 133], poly: [[180, 137], [310, 137], [310, 220], [180, 220]] },
+      { name: 'stripes', of: '[data-part=stripes]', pivot: [150, 104] },
+      { name: 'face', of: '[data-part=face]', pivot: [150, 104] },
+    ],
+  },
   // forbidden archivist: he (with his pale face, which is drawn over him) leaning from his feet, and
   // the book (and the black streams running off it) lifting from its near edge; `hit`: his chest,
   // `guard`: where the ward of ink-dark water he raises in front of the book takes blows,

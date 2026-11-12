@@ -4,6 +4,7 @@
 export const LIVE = {
   "a-thousand-lights": { src: 'art/live/a-thousand-lights.webp?v=a793f057', live: 'art/live/a-thousand-lights.json?v=53db8287' },
   "ancient-roots": { src: 'art/live/ancient-roots.webp?v=fa7a1887', live: 'art/live/ancient-roots.json?v=cf0e459b' },
+  "apex-predator": { src: 'art/live/apex-predator.webp?v=c1d2259b', live: 'art/live/apex-predator.json?v=5f0e4bf9' },
   "ash-collector": { src: 'art/live/ash-collector.webp?v=27e26590', live: 'art/live/ash-collector.json?v=8db44a09' },
   "ashmaw": { src: 'art/live/ashmaw.webp?v=16617e99', live: 'art/live/ashmaw.json?v=650b0640' },
   "bone-lance": { src: 'art/live/bone-lance.webp?v=f4da7f4c', live: 'art/live/bone-lance.json?v=5df1067f' },
@@ -36,7 +37,9 @@ export const LIVE = {
   "seraphine": { src: 'art/live/seraphine.webp?v=d5117d2b', live: 'art/live/seraphine.json?v=e3c89cbf' },
   "shieldbearer": { src: 'art/live/shieldbearer.webp?v=cd5ce854', live: 'art/live/shieldbearer.json?v=b8dcebd2' },
   "something-beneath": { src: 'art/live/something-beneath.webp?v=0500b32d', live: 'art/live/something-beneath.json?v=7a8ee56b' },
+  "spark": { src: 'art/live/spark.webp?v=d46f7bdc', live: 'art/live/spark.json?v=81cf0472' },
   "spark-runner": { src: 'art/live/spark-runner.webp?v=bdd556e0', live: 'art/live/spark-runner.json?v=4a6093ce' },
+  "spirit": { src: 'art/live/spirit.webp?v=40c70a0a', live: 'art/live/spirit.json?v=30bd5405' },
   "stand-together": { src: 'art/live/stand-together.webp?v=7c7f1a8f', live: 'art/live/stand-together.json?v=269ff766' },
   "standard-keeper": { src: 'art/live/standard-keeper.webp?v=ba9ca6a5', live: 'art/live/standard-keeper.json?v=2fc8152b' },
   "street-recruit": { src: 'art/live/street-recruit.webp?v=745af2f2', live: 'art/live/street-recruit.json?v=b282e49c' },

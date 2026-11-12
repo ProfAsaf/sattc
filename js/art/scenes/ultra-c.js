@@ -316,9 +316,9 @@ export const ultra_c = {
     s.figure(`<path d="${U(both.map(([x, b, k]) => man(x, b, k, x < 150 ? -1 : 1)))}"/>`, { fill: '#2e2818', rim: '#ffe7a8', offsets: [[0, -1.1], [-0.8, -0.6], [0.8, -0.6]], rimOp: 0.85 });
     const back = both.slice().sort((a, b) => a[2] - b[2]);
     s.figure(back.map(([x, b, k]) => `<path d="${board(x, b, k)}"/>`).join(''), { fill: s.lin([[0, '#5c4828'], [1, '#2e2618']]), rim: '#ffe7a8', offsets: [[0, -1], [-0.7, -0.6], [0.7, -0.6]], rimOp: 0.9 });
-    s.add(`<g fill="none" stroke="#1e160c" stroke-width="1.2" opacity=".85"><path d="${rank.slice(0, -1).map(([x, b, k]) =>
+    s.add(`<g data-part="rowdeco"><g fill="none" stroke="#1e160c" stroke-width="1.2" opacity=".85"><path d="${rank.slice(0, -1).map(([x, b, k]) =>
       `M${f1(x - 10 * k)},${f1(b - 9 * k)}L${f1(x - 10.6 * k)},${f1(b - 38 * k)}M${f1(300 - x + 10 * k)},${f1(b - 9 * k)}L${f1(300 - x + 10.6 * k)},${f1(b - 38 * k)}`).join('')}"/></g>` +
-      `<g fill="none" stroke="#c8a060" stroke-width=".8" opacity=".75">${both.map(([x, b, k]) => `<circle cx="${f1(x)}" cy="${f1(b - 26 * k)}" r="${f1(3.4 * k)}"/>`).join('')}</g>`);
+      `<g fill="none" stroke="#c8a060" stroke-width=".8" opacity=".75">${both.map(([x, b, k]) => `<circle cx="${f1(x)}" cy="${f1(b - 26 * k)}" r="${f1(3.4 * k)}"/>`).join('')}</g></g>`);
     // the ground he holds
     s.path(ledge([[-10, 190], [60, 188], [150, 195], [240, 188], [310, 190]]), s.lin([[0, '#2c2616'], [1, '#0e0c08']]));
     // Halvard: a cape falling wide behind him, a plumed great helm, leaves
@@ -345,7 +345,7 @@ export const ultra_c = {
     // the great shield, its point sunk in the earth
     const shield = place('M-34,-100Q0,-110 34,-100L33,-58Q30,-22 0,8Q-30,-22 -33,-58Z');
     s.figure(`<path d="${shield}"/>`, { fill: s.linU(fx - 34, 0, fx + 34, 0, [[0, '#6c5232'], [0.5, '#4c3a24'], [1, '#30261a']]), rim: '#ffe7a8', offsets: [[0, -1.3], [-1, -0.6], [1, -0.6]], rimOp: 0.95 });
-    s.add(`<path d="${place('M-29,-96Q0,-105 29,-96L28.4,-58Q25.6,-26 0,1Q-25.6,-26 -28.4,-58Z')}" fill="none" stroke="#b08a4e" stroke-width="1.3" opacity=".8"/>`);
+    s.add(`<path data-part="shieldline" d="${place('M-29,-96Q0,-105 29,-96L28.4,-58Q25.6,-26 0,1Q-25.6,-26 -28.4,-58Z')}" fill="none" stroke="#b08a4e" stroke-width="1.3" opacity=".8"/>`);
     // vines climbing the shield, his legs and both shoulders
     const vines = place(U(
       vine([[-1, 4], [-12, -12], [-22, -32], [-28, -54], [-27, -74], [-23, -92]], 2.6, 6, 9904),
@@ -359,18 +359,22 @@ export const ultra_c = {
     s.figure(`<path d="${place(U(ell(-19, -103, 6.8, 5.6), ell(19, -103, 6.8, 5.6), taper([[-24, -104], [-25, -97]], [3, 2.2], { per: 2 }), taper([[24, -104], [25, -97]], [3, 2.2], { per: 2 })))}"/>`,
       { fill: '#221d14', rim: '#fff0c2', offsets: [[0, -1.2]], rimOp: 0.9 });
     // roots running out from the shield's point
+    s.add('<g data-part="roots">');
     s.path(U(
       taper([[150, 199], [128, 203], [104, 202], [82, 209]], [5, 4, 2.6, 0.5]), taper([[150, 199], [172, 204], [198, 201], [222, 208]], [5, 4, 2.6, 0.5]),
       taper([[150, 200], [144, 210], [140, 218]], [4, 3, 1]), taper([[129, 193], [112, 195], [94, 193]], [3, 2, 0.5]), taper([[171, 193], [190, 196], [208, 194]], [3, 2, 0.5]),
     ), '#120f0a');
+    s.add('</g>');
     // the sun on his shield with a green shoot in it, his visor, the buds
     const buds = [[-27, -74], [30, -62], [-38, -124], [38, -126], [-12, -12], [-56, -44]].map(([x, y]) => [fx + x, fy + y]);
+    s.add('<g data-part="buds">');
     for (const [x, y] of buds) s.glow(x, y, 6, v.glow, 0.55);
+    s.add('</g>');
     s.glow(fx, fy - 62, 24, '#ffd77a', 0.55, 'breathe');
-    s.bloom(`<path d="${sunMark(fx, fy - 62, 6.4)}" fill="none" stroke="#ffd77a" stroke-width="1.6"/>` +
-      `<path d="${leafAt(fx, fy - 61, -62, 5.4, 0.5) + leafAt(fx, fy - 61, -118, 5.4, 0.5)}" fill="#effcaa"/>` +
+    s.bloom(`<g data-part="sunmark"><path d="${sunMark(fx, fy - 62, 6.4)}" fill="none" stroke="#ffd77a" stroke-width="1.6"/>` +
+      `<path d="${leafAt(fx, fy - 61, -62, 5.4, 0.5) + leafAt(fx, fy - 61, -118, 5.4, 0.5)}" fill="#effcaa"/></g>` +
       `<path d="M${fx - 7},${fy - 147}H${fx + 7}M${fx},${fy - 147}V${fy - 139}" stroke="#ffe9a8" stroke-width="1.3" stroke-linecap="round"/>` +
-      `<path d="${dots(buds.map(([x, y]) => [x, y, 1.2]))}" fill="${v.hot}"/>`, { sd: 1.4, k: 1.5, box: [70, 30, 160, 160] });
+      `<path data-part="buds" d="${dots(buds.map(([x, y]) => [x, y, 1.2]))}" fill="${v.hot}"/>`, { sd: 1.4, k: 1.5, box: [70, 30, 160, 160] });
     s.motes({ seed: 9909, n: 18, x: [30, 270], y: [30, 190], r: [0.4, 1], fill: '#ffe39a', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },
@@ -414,10 +418,12 @@ export const ultra_c = {
     // her cloak of wind: a loop of pale air from her shoulders, round under
     // her and up the far side, birds wheeling in it
     const band = [[148, 84], [124, 98], [102, 118], [90, 144], [100, 168], [126, 182], [162, 184], [196, 174], [222, 152], [232, 124], [228, 96], [214, 74]];
+    s.add('<g data-part="cloak">');
     s.path(taper(band, [3, 10, 16, 20, 22, 22, 20, 18, 14, 10, 6, 0.6]), s.radU(150, 128, 100, [[0, '#f2fffd', 0.62], [0.6, '#d6f6f4', 0.42], [1, '#a6e4ec', 0.22]]));
     const sb = spline(band, 6);
     const streak = (d, a, b) => 'M' + along(sb, d).slice(a, b).map(pt).join('L');
     s.add(`<path d="${streak(-7, 4, 40) + streak(-2, 14, 58) + streak(4, 8, 50) + streak(8, 26, 62)}" fill="none" stroke="#f4fffd" stroke-width=".8" opacity=".55" stroke-dasharray="14 4 6 3" stroke-linecap="round"/>`);
+    s.add('</g>');
     // Aeris: great pale wings lit through by the storm light, long flight
     // feathers hanging from an arm that arches up and out from her shoulders
     const fx = 150, fy = 106, place = at(fx, fy, 1);
@@ -433,11 +439,13 @@ export const ultra_c = {
     for (let i = 0; i < 8; i++) { const t = 0.1 + (0.8 * i) / 7, [x, y] = arm[Math.round(t * (arm.length - 1))]; feathers.push(leafAt(x, y, 96 - 76 * t, 12 + 10 * t, 0.42)); }
     feathers.push(taper(arm, [9, 8, 7, 5, 3, 1]));
     const wingR = U(feathers), wings = place(U(wingR, flipX(wingR, 0)));
-    s.glow(fx, fy - 30, 110, '#c6f4f6', 0.42);
+    s.add('<g data-part="wglow">'); s.glow(fx, fy - 30, 110, '#c6f4f6', 0.42); s.add('</g>');
+    s.add('<g data-part="wings">');
     s.path(wings, s.radU(fx, fy - 24, 118, [[0, '#ffffff', 0.97], [0.35, '#eafcf9', 0.93], [0.75, '#c2e8ea', 0.9], [1, '#98ced4', 0.88]]));
     s.path(wings, 'none', 'stroke="#76aeb6" stroke-width=".6" opacity=".55"');
     const qs = quills.join('');
     s.add(`<path d="${place(qs) + place(flipX(qs, 0))}" fill="none" stroke="#6ea4ac" stroke-width=".7" opacity=".6"/>`);
+    s.add('</g>');
     // her: a long gown blown back on the wind, one arm raised high, the
     // other flung out, hair streaming, a crown
     const her = place(U(
@@ -451,7 +459,9 @@ export const ultra_c = {
       taper([[5, -23], [15, -26], [25, -28]], [3.6, 3.2, 2.8]), taper([[25, -28], [34, -30], [42, -34]], [2.8, 2.4, 2]), ell(44, -35, 2.2, 1.8, -20),
     ));
     s.figure(`<path d="${her}"/>`, { fill: p.fig, rim: '#e6fdfc', offsets: [[0, -1.3], [-1, -0.7], [1, -0.7]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [0, -1] });
+    s.add('<g data-part="face">');
     s.path(place(blob([[0, -40.6], [3, -39], [3.4, -35.6], [1.8, -32.2], [0, -31.4], [-1.8, -32.2], [-3.4, -35.6], [-3, -39]], 4)), '#bcd8d8');
+    s.add('</g>');
     // birds wheeling in her cloak of wind
     const birds = [];
     [[10, 1.1, 0], [18, 1.15, 1], [26, 1.3, 0], [33, 1.1, 1], [41, 1.2, 0], [48, 1.05, 1], [55, 1.1, 0], [62, 0.95, 1]].forEach(([i, k, kind], j) => {
@@ -462,10 +472,10 @@ export const ultra_c = {
     birds.push(gull(56, 64, 1.1, -8), gull(250, 40, 1, 10), kestrel(84, 92, 1, -70));
     s.figure(`<path d="${U(birds)}"/>`, { fill: '#0b2229', rim: '#e6fdfc', offsets: [[0, -0.8]], rimOp: 0.7 });
     // a wisp of the cloak passing in front of her
-    s.add(`<path d="${streak(-1, 30, 44)}" fill="none" stroke="#f2fffd" stroke-width="1.6" opacity=".45" stroke-linecap="round"/>`);
+    s.add(`<path data-part="wisp" d="${streak(-1, 30, 44)}" fill="none" stroke="#f2fffd" stroke-width="1.6" opacity=".45" stroke-linecap="round"/>`);
     // her crown catches the storm light
     s.glow(fx, fy - 46, 16, '#f4f3d6', 0.6, 'breathe');
-    s.bloom(`<path d="${place('M-4.8,-41L-5.4,-48.4L-2.8,-44.8L0,-50.6L2.8,-44.8L5.4,-48.4L4.8,-41Z')}" fill="#f6f4dc"/>`, { sd: 1.3, k: 1.5, box: [125, 40, 50, 36] });
+    s.bloom(`<path data-part="crown" d="${place('M-4.8,-41L-5.4,-48.4L-2.8,-44.8L0,-50.6L2.8,-44.8L5.4,-48.4L4.8,-41Z')}" fill="#f6f4dc"/>`, { sd: 1.3, k: 1.5, box: [125, 40, 50, 36] });
     s.add([[118, 120], [184, 128], [100, 92], [206, 98]].map(([x, y], i) => `<ellipse class="fall" style="--d:${(-i * 0.4).toFixed(1)}s" cx="${x}" cy="${y}" rx=".9" ry="1.4" fill="#f2fdfb"/>`).join(''));
     s.motes({ seed: 9913, n: 16, x: [40, 260], y: [30, 190], r: [0.4, 1], fill: p.glow, hot: '#ffffff', cls: 'rise', t: [4, 8], op: [0.4, 0.9] });
     return s.svg();

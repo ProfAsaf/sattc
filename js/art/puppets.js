@@ -85,6 +85,71 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Aeris, Queen of the Winds: her cloak of wind (the loop of pale air, with its streaks), the glow behind
+  // her wings, the two great wings (split at her middle, each from its shoulder), the queen (all but her
+  // raised arm, with her face: the arm is what lies left of x=142.5 between y=30 and y=86; it turns from the
+  // shoulder), the gulls and kestrels (all together, wheeling about the loop's centre), the wisp of cloak
+  // across her, and her crown. `emit`: her raised hand, where the boon leaves; `hit`: her middle;
+  // `shoulder`: the raised arm's joint; `hand`: the hand as drawn; `alone`: the sky over the left cliff,
+  // where her gift goes when nothing is aimed at
+  'legend-aeris': {
+    role: 'support', element: 'wind', facing: 'front', emit: [130.6, 41], hit: [150, 100], shoulder: [146, 84], hand: [130.6, 41], alone: [58, 62], loop: [150, 128], crownAt: [150, 57],
+    parts: [
+      { name: 'cloak', of: '[data-part=cloak]', pivot: [150, 128] },
+      { name: 'wglow', of: '[data-part=wglow]', pivot: [150, 76] },
+      { name: 'wingL', of: '[data-part=wings]', pivot: [146, 84], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
+      { name: 'wingR', of: '[data-part=wings]', pivot: [154, 84], poly: [[150, -20], [320, -20], [320, 230], [150, 230]] },
+      { name: 'her', of: ['fig:2', '[data-part=face]'], pivot: [150, 106], poly: [[-20, -20], [320, -20], [320, 230], [-20, 230], [-20, 86], [142.5, 86], [142.5, 30], [-20, 30]] },
+      { name: 'armL', of: ['fig:2', '[data-part=face]'], pivot: [146, 84], poly: [[-20, 30], [142.5, 30], [142.5, 86], [-20, 86]] },
+      { name: 'birds', of: 'fig:3', pivot: [150, 128] },
+      { name: 'wisp', of: '[data-part=wisp]', pivot: [150, 128] },
+      { name: 'crown', of: '[data-part=crown]', pivot: [150, 57] },
+    ],
+  },
+  // Halvard, the Unbroken: the two ranks of shield-bearers behind him (ten a side, cut out of the men,
+  // their shields, and the seams and rings on them, in five pairs a side by vertical splits between
+  // spears; each pair stands from its feet), the warden (cape and all, from his feet), his great shield
+  // (from its point in the earth, with its inner rim), the vines climbing him and the shield, their
+  // buds and the light on them, his gauntlets on the rim, the roots running from the shield's point,
+  // and the sun on his shield. `hit`: his chest; `guard`: where blows land on the shield's face, high
+  // to low, left and right; `feet`/`point`: his joints; `rankFeet`: each pair's feet (left pairs, then
+  // right pairs), `rankPairs` how many pairs a side
+  'legend-halvard': (() => {
+    const LEFT = [[106, 182, 0.74], [91.2, 179.8, 0.688], [77.4, 177.6, 0.64], [64.6, 175.4, 0.595], [52.7, 173.2, 0.554], [41.7, 171, 0.515], [31.4, 168.8, 0.479], [21.8, 166.6, 0.445], [12.9, 164.4, 0.414], [4.6, 162.2, 0.385]];
+    // the cut between pair j and the next one out (left rank): half-way between the first one's spear and the next one's shield
+    const B = (j) => (j >= 4 ? -20 : +(((LEFT[2 * j + 1][0] - 12 * LEFT[2 * j + 1][2]) + (LEFT[2 * j + 2][0] + 10.6 * LEFT[2 * j + 2][2])) / 2).toFixed(1));
+    const lo = (j) => B(j), hi = (j) => (j === 0 ? 150 : B(j - 1));
+    const pairs = [];
+    for (let j = 0; j < 5; j++) pairs.push({ x0: lo(j), x1: hi(j), pv: [LEFT[2 * j][0], LEFT[2 * j][1]] });
+    const rank = (name, a, b, pv) => ({ name, of: ['fig:0', 'fig:1', '[data-part=rowdeco]'], pivot: pv, poly: [[a, -20], [b, -20], [b, 230], [a, 230]] });
+    return {
+      role: 'defender', element: 'nature', facing: 'front', hit: [150, 100], guard: [[150, 112], [128, 138], [172, 138], [150, 168]],
+      feet: [150, 195], point: [150, 203], sunmark: [150, 133], rankPairs: 5,
+      rankFeet: [...pairs.map((q) => q.pv), ...pairs.map((q) => [300 - q.pv[0], q.pv[1]])],
+      parts: [
+        ...pairs.map((q, j) => rank(`rankL${j}`, q.x0, q.x1, q.pv)),
+        ...pairs.map((q, j) => rank(`rankR${j}`, 300 - q.x1, 300 - q.x0, [300 - q.pv[0], q.pv[1]])),
+        { name: 'him', of: 'fig:2', pivot: [150, 195] },
+        { name: 'shield', of: ['fig:3', '[data-part=shieldline]'], pivot: [150, 203] },
+        { name: 'vines', of: 'fig:4', pivot: [150, 203] },
+        { name: 'hands', of: 'fig:5', pivot: [150, 203] },
+        { name: 'roots', of: '[data-part=roots]', pivot: [150, 200] },
+        { name: 'buds', of: '[data-part=buds]', pivot: [150, 203] },
+        { name: 'sunmark', of: '[data-part=sunmark]', pivot: [150, 133] },
+      ],
+    };
+  })(),
+  // Sanctuary Spring: the stag's head and neck (cut from the stag at the shoulder: what lies left of
+  // x=191, so his legs and body stay), turning about the shoulder to lift from the water. `emit`: the
+  // spring's heart, where the healing light wells; `hit`: the stag's middle; `drink`: the ring where he
+  // drinks; `pool2`: the second spring's ring; `wound`: the healing wound on his shoulder; `mouth`: the
+  // grotto's bright mouth
+  'sanctuary-spring': {
+    role: 'aura', element: 'water', facing: 'left', emit: [150, 168], hit: [222, 130], drink: [164, 166], pool2: [98, 178], wound: [222, 128], mouth: [168, 76], shoulder: [194, 128],
+    parts: [
+      { name: 'head', of: 'fig:0', pivot: [194, 128], poly: [[150, 100], [186, 100], [193, 125], [190.6, 138], [190.4, 160], [150, 175]], cut: true, joint: 4 },
+    ],
+  },
   // Lantern Moth: the great moth's right and left wings (each with its veins and rings; split at its
   // body's middle), its two feelers (cut from the body at the root), and the ribbed lantern it carries
   // (its caps and tassel too). `emit`: the lantern's middle, where its swarm leaves; `hit`: its body;

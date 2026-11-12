@@ -34,6 +34,7 @@ export function paint(w, h, px) {
   }
   g.putImageData(im, 0, 0);
   const bin = atob(c.toDataURL().split(',')[1]), bytes = new Uint8Array(bin.length);
+  c.width = c.height = 0; // (its memory goes now, not when it's collected: phones limit all canvases together)
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   return URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
 }

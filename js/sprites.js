@@ -75,8 +75,10 @@ export function move(box) {
     if (el.dataset.still) return null; // (stilled to save the phone's memory: js/cards-alive.js fit())
     const [frames, t, alt, easing = 'ease-in-out'] = MOVES[s.a](u, s);
     const a = el.animate(frames, { duration: t * 1000, delay: (s.d || 0) * 1000, iterations: Infinity, direction: alt ? 'alternate' : 'normal', easing });
-    if (old[k]) { if (old[k].currentTime != null) a.currentTime = old[k].currentTime; old[k].cancel(); }
-    if (box.held) a.pause();
+    const at = old[k] ? old[k].currentTime ?? old[k].at : null;
+    if (at != null) a.currentTime = at;
+    old[k]?.cancel();
+    if (box.held) { a.at = a.currentTime; a.cancel(); } // (held: let go, its moment kept; see hold())
     return a;
   });
 }
@@ -94,16 +96,34 @@ export function restart(box, clip = null) {
     const c = clip === true ? { left: 0, top: 0, right: innerWidth, bottom: innerHeight } : clip.getBoundingClientRect();
     box.querySelectorAll('.sp').forEach((el, k) => {
       const r = el.getBoundingClientRect();
-      if (r.bottom < c.top || r.top > c.bottom || r.right < c.left || r.left > c.right) box.anims[k]?.pause();
+      if (r.bottom < c.top || r.top > c.bottom || r.right < c.left || r.left > c.right) { const a = box.anims[k]; if (a) { a.at = a.currentTime; a.cancel(); } } // (let go, as hold() does)
     });
   }, 160);
 }
 
-// Pause them (a picture out of sight for a while), or go on.
+// Pause them (a picture out of sight for a while), or go on. On a phone a
+// paused motion still holds a layer of memory for nothing seen, so a held one
+// is let go (cancelled), its moment kept, and set going again from there.
 export function hold(box, on) {
   if (!box) return;
   box.held = on;
-  for (const a of box.anims || []) if (a) on ? a.pause() : a.play();
+  for (const a of box.anims || []) {
+    if (!a) continue;
+    if (on) { if (a.playState !== 'idle') { a.at = a.currentTime; a.cancel(); } }
+    else if (a.playState === 'idle') { a.currentTime = a.at ?? 0; a.play(); }
+  }
+}
+
+// Let pictures' memory go now: an <img> leaving the page keeps its decoded
+// picture (often megabytes) until the browser gets round to collecting it;
+// pointed at nothing first, it lets go at once. Only for what's leaving.
+const NOTHING = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+export function release(root) {
+  if (!root) return;
+  for (const im of root.tagName === 'IMG' ? [root] : root.querySelectorAll('img')) {
+    im.removeAttribute('srcset');
+    if (im.getAttribute('src') !== NOTHING) im.src = NOTHING;
+  }
 }
 
 // Stop them for good, the picture leaving the page: an animation left running

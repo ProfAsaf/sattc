@@ -17,6 +17,7 @@ import { hasKw, power, vitality } from './engine.js';
 import { esc } from './render.js';
 import * as FX from './fx.js';
 import { endFights, fight, readyToFight } from './cards-alive.js';
+import { release } from './sprites.js';
 
 const shortName = (n) => String(n ?? '').replace(/^Bot · /, '');
 const list = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
@@ -406,7 +407,7 @@ export function playStory(story, { stage = null, tap = false } = {}) {
       removeEventListener('keydown', key, true);
       FX.setStage(stage);
       box.classList.add('closing');
-      setTimeout(() => box.remove(), 160);
+      setTimeout(() => { release(box); box.remove(); }, 160); // (its pictures' memory goes now)
       resolve();
     }
     const key = (e) => {

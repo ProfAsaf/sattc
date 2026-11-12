@@ -3,7 +3,7 @@
 
 import { BY_ID, CARDS, CHAMPIONS, FACTIONS, FACTION_ORDER, KEYWORDS, LEGENDS, RULES, SET, STARTERS, TOKENS, ULTRA, ULTRA_OUT, ULTRA_POOL, ULTRA_RULES, ULTRA_STARTERS, ULTRA_V2, isTrick } from './cards.js';
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin, livenArt } from './render.js';
-import { hold, sweep } from './sprites.js';
+import { hold, release, sweep } from './sprites.js';
 import { gatherAlive } from './art/alive.js';
 import { startHomeAlive, stopHomeAlive } from './home-alive.js';
 import { actInZoom, canAct, startScreenAlive } from './cards-alive.js';
@@ -71,6 +71,7 @@ function closeZoom() {
   if (!zoomEl) return;
   zoomAct?.stop();
   zoomAct = null;
+  release(zoomEl); // (its pictures' memory goes now)
   zoomEl.remove();
   zoomEl = null;
   document.body.style.overflow = '';
@@ -557,7 +558,9 @@ function route() {
   closeCampaignSheet();
   if (path !== 'campaign') leaveCampaign(); // (its moving parts stop with it)
   stopHomeAlive();
-  document.body.dataset.page = path && ROUTES[path] ? path : 'home';
+  const next = path && ROUTES[path] ? path : 'home';
+  if (document.body.dataset.page && document.body.dataset.page !== next) release(view); // (the page going: its pictures' memory goes now, not when collected)
+  document.body.dataset.page = next;
   // ('kept': the page changed in place, as the campaign does going into a place and out)
   const kept = (ROUTES[path] || home)(arg ? decodeURIComponent(arg) : undefined) === 'kept';
   sweep(); // (moving pictures that went with the old page stop)

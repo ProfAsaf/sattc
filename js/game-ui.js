@@ -23,6 +23,7 @@ import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
 import { actBig, endFights, fight, hushTable, readyToFight, startTableAlive, stopTableAlive } from './cards-alive.js';
 import { CHOICES, choose, chosen, dayLevel, startFresh } from './steady.js';
+import { release } from './sprites.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
 import * as Camp from './campaign.js';
@@ -680,6 +681,7 @@ function leave(goTo = '#/play') {
   else if (G && G.mode === 'practice') { const sv = store.get(); if (sv) store.set({ ...sv, left: true }); } // (left on purpose: no going back in by itself)
   G = null;
   keepAwake('game', false);
+  release(document.getElementById('game')); // (its pictures' memory goes now)
   document.getElementById('game')?.remove();
   document.getElementById('fx-layer')?.replaceChildren();
   document.body.classList.remove('in-game');

@@ -17,7 +17,7 @@ import { artURL, esc } from './render.js';
 import * as Camp from './campaign.js';
 import { PICS } from './campaign-pics.js';
 import { startCampaign } from './game-ui.js';
-import { drop, fetchSprites, hold, liven, move, restart, still } from './sprites.js';
+import { drop, fetchSprites, hold, liven, move, release, restart, still } from './sprites.js';
 
 const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7.5a5 5 0 0 1 10 0V10" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="5" y="10" width="14" height="10" rx="2.2" fill="currentColor"/></svg>';
@@ -127,6 +127,7 @@ window.addEventListener('collective:game', () => {
   if (!ui) return;
   const root = ui.root;
   leaveCampaign();
+  release(root); // (its pictures are 11-15 MB each in a phone's memory: they go now, not when collected)
   root.remove();
 });
 
@@ -362,7 +363,7 @@ async function closePlace(swap = false) {
   hold(mapLive, false);
   root.classList.remove('placed');
   const node = root.querySelector(`.cp-node[data-stage="${pl.i}"] .cp-ring`);
-  if (still() || !node) { drop(el.querySelector('.cp-live')); el.remove(); return; }
+  if (still() || !node) { drop(el.querySelector('.cp-live')); release(el); el.remove(); return; }
   const r = node.getBoundingClientRect();
   if (r.top < 70 || r.bottom > innerHeight - 70) centerOn(pl.i);
   el.classList.remove('in');
@@ -373,6 +374,7 @@ async function closePlace(swap = false) {
   ];
   await done(anims);
   drop(el.querySelector('.cp-live'));
+  release(el);
   el.remove();
   anims.forEach((a) => a.cancel());
   wrap.style.transformOrigin = '';

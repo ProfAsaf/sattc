@@ -97,7 +97,11 @@ function tick(st) {
 function hold(st, on) {
   if (st.paused === on) return;
   st.paused = on;
-  for (const a of st.idle) on ? a.pause() : a.play();
+  // (held, a motion is let go, its moment kept: a paused one still holds a layer of the phone's memory)
+  for (const a of st.idle) {
+    if (on) { if (a.playState !== 'idle') { a.at = a.currentTime; a.cancel(); } }
+    else if (a.playState === 'idle') { a.currentTime = a.at ?? 0; a.play(); }
+  }
 }
 
 // ── between scenes: wings beat slowly, ghosts sway ────────────────────

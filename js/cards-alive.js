@@ -23,7 +23,7 @@ import { PUPPETS } from './art/puppets.js';
 import { fxArt } from './fx-art.js';
 import { H, W, loaded, makeKit, paint, sleep } from './puppet-kit.js';
 import { livenArt } from './render.js';
-import { drop, fetchSprites, still } from './sprites.js';
+import { drop, fetchSprites, release, still } from './sprites.js';
 import { getSpeed, isReduced } from './fx.js';
 import { calm } from './steady.js';
 
@@ -103,7 +103,7 @@ async function build(id, card, over, { aim = null, blows = null } = {}) {
 }
 const play = (m) => { for (const a of m.anims) { a.cancel(); a.play(); } };
 const halt = (m) => { for (const a of m?.anims || []) a.cancel(); };
-function dropMove(m) { halt(m); for (const el of m?.made || []) el.remove(); }
+function dropMove(m) { halt(m); for (const el of m?.made || []) { release(el); el.remove(); } }
 // every picture in `els` decoded, and two frames painted (a motion started on
 // a picture that isn't stays on the main thread)
 async function settle(els) {
@@ -476,7 +476,7 @@ function inSprites(card, id) {
     art.append(pp);
     livenArt(card);
   })();
-  return { ready, undo() { undone = true; drop(pp.querySelector('.sp-art')); pp.remove(); card.classList.remove('pp'); } };
+  return { ready, undo() { undone = true; drop(pp.querySelector('.sp-art')); release(pp); pp.remove(); card.classList.remove('pp'); } };
 }
 
 // A card taking a blow it doesn't block: a jolt along the blow (`dir`, a unit

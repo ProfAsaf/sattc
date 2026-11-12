@@ -85,6 +85,45 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Wing Graft: the two great wings of spray and light (quills and drops with them), split down the
+  // middle at x = 150 and each turning about its shoulder, and the woman on her rock (hair and hem
+  // too), standing from her feet; the rock stays. `emit`: between the wings, where the volley of
+  // feathers is flung from; `shoulders`: each wing's root
+  'wing-graft': {
+    role: 'attacker', element: 'water', facing: 'left', emit: [150, 104], hit: [150, 132],
+    shoulders: [[143, 112], [157, 112]],
+    parts: [
+      { name: 'wingL', of: '[data-part=wings]', pivot: [143, 112], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
+      { name: 'wingR', of: '[data-part=wings]', pivot: [157, 112], poly: [[150, -20], [320, -20], [320, 230], [150, 230]] },
+      { name: 'her', of: 'fig:1', pivot: [150, 177] },
+    ],
+  },
+  // Wavewarden: the merman (his tail, trident and eye), the scallop shield (shell and ribs), the little
+  // creatures sheltering behind him (fish and seahorse, with the fish's eyes) and the spear of water
+  // (its stream, strands, burst and drops) shattering on the shield. `guard`: where the shield takes
+  // blows (its face)
+  wavewarden: {
+    role: 'defender', element: 'water', facing: 'left', hit: [150, 118], guard: [[108, 102], [100, 112], [95, 124], [121, 96]],
+    hinge: [126, 134],
+    parts: [
+      { name: 'fish', of: ['fig:0', '[data-part=fisheyes]'], pivot: [225, 125] },
+      { name: 'man', of: ['fig:1', '[data-part=maneye]'], pivot: [152, 150] },
+      { name: 'shield', of: ['fig:2', '[data-part=ribs]'], pivot: [126, 134] },
+      { name: 'spear', of: '[data-part=spear]', pivot: [108, 104] },
+    ],
+  },
+  // Tide of Fortune: the burst of spray where the wave breaks on the rock (sheet, jets and drops),
+  // the gold (pile and strewn coins, with their glints) and the broken string of pearls, each cut
+  // whole. `emit`: the heart of the spray, where the gift is lifted from; `pile`: the heart of the gold
+  'tide-of-fortune': {
+    role: 'support', element: 'water', facing: 'right', emit: [78, 96], hit: [150, 170],
+    pile: [152, 170], shell: [112, 177],
+    parts: [
+      { name: 'spray', of: '[data-part=spray]', pivot: [78, 114] },
+      { name: 'gold', of: '[data-part=gold]', pivot: [152, 172] },
+      { name: 'pearls', of: '[data-part=pearls]', pivot: [200, 182] },
+    ],
+  },
   // Overgrowth: the great vine and tree-trunk (with the rim of light on them), its leaves and its
   // flowers, each cut whole and swaying together from the vine's foot; the tower, the ruins and
   // the canopy stay. `sun`: where the light pours in; `flowers`: each flower's heart, as drawn

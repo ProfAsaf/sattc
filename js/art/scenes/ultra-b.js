@@ -194,17 +194,17 @@ export const ultra_b = {
     s.glow(78, 76, 56, '#e9fcf8', 0.3);
     s.glow(152, 170, 34, '#ffe7a0', 0.5, 'breathe');
     const wash = s.linU(0, 36, 0, 116, [[0, '#f4fffd', 0], [0.4, '#e9fcf8', 0.3], [0.8, '#dcf6f2', 0.62], [1, '#c8eeea', 0.75]]);
-    s.bloom(`<path d="${plume}" fill="${wash}"/><path d="${jets}" fill="${wash}"/>` +
-      `<path d="${dots(spray)}" fill="#f2fffd" opacity=".85"/>` +
+    s.bloom(`<g data-part="spray"><path d="${plume}" fill="${wash}"/><path d="${jets}" fill="${wash}"/>` +
+      `<path d="${dots(spray)}" fill="#f2fffd" opacity=".85"/></g><g data-part="gold">` +
       `<path d="${pile}" fill="${gold}"/>` +
       `<path d="${coins.map(([x, y, r, k, a]) => oval(x, y, r, r * k, a)).join('')}" fill="${gold}" stroke="#9c6a1c" stroke-width=".5"/>` +
       `<path d="${coins.filter(([, , r]) => r > 3).map(([x, y, r, k, a]) => oval(x, y - 0.3, r * 0.6, r * k * 0.6, a)).join('')}" fill="none" stroke="#fff3c4" stroke-width=".5" opacity=".8"/>` +
-      `<path d="${glint(148, 161, 11) + glint(167, 166, 7) + glint(127, 174, 6)}" fill="#ffffff"/>`, { sd: 1.4, k: 1.3, box: [0, 20, 250, 180] });
+      `<path d="${glint(148, 161, 11) + glint(167, 166, 7) + glint(127, 174, 6)}" fill="#ffffff"/></g>`, { sd: 1.4, k: 1.3, box: [0, 20, 250, 180] });
     // a broken string of pearls trailing out of the pile
     const pearls = spline([[178, 178], [188, 183], [199, 181], [209, 185.5], [221, 183]], 12).filter((_, i) => i % 4 === 0);
-    s.add(`<path d="M176,177.5Q187,184.5 199,181T222,183" fill="none" stroke="#c9c2dc" stroke-width=".5" opacity=".8"/>` +
+    s.add(`<g data-part="pearls"><path d="M176,177.5Q187,184.5 199,181T222,183" fill="none" stroke="#c9c2dc" stroke-width=".5" opacity=".8"/>` +
       `<path d="${dots(pearls.map(([x, y]) => [x, y, 2.1]).concat([[228, 188, 2], [196, 191, 1.8], [134, 188, 1.9]]))}" fill="${s.radU(200, 178, 40, [[0, '#ffffff'], [0.6, '#efeafa'], [1, '#cfc8e2']])}"/>` +
-      `<path d="${dots(pearls.map(([x, y]) => [x - 0.6, y - 0.7, 0.7]))}" fill="#ffffff"/>`);
+      `<path d="${dots(pearls.map(([x, y]) => [x - 0.6, y - 0.7, 0.7]))}" fill="#ffffff"/></g>`);
     // the open shell and its pearl
     s.figure(`<path d="${U(blob([[100, 183], [104, 176], [112, 173], [120, 176], [123, 183], [112, 186]], 4), blob([[101, 176], [103, 168], [110, 163], [118, 165], [122, 172], [112, 174]], 4))}"/>`,
       { fill: '#2e5a60', rim: '#e6f8f4', offsets: [[0, -1]], rimOp: 0.8 });
@@ -243,7 +243,7 @@ export const ultra_b = {
     // the small creatures sheltering behind him
     s.figure(`<path d="${U(fish(204, 98, 15, 186), fish(228, 120, 13, 172), fish(198, 140, 11, 192), fish(248, 100, 9, 160), seahorse(236, 140, 1.25))}"/>`,
       { fill: '#123f4b', rim: '#a6e4ec', offsets: [[0, -1], [-0.7, -0.5]], rimOp: 0.65 });
-    s.add('<g fill="#c6f4f6"><circle cx="197.5" cy="97" r=".9"/><circle cx="222" cy="119.6" r=".8"/><circle cx="193.4" cy="139.6" r=".7"/><circle cx="232.6" cy="139.6" r=".7"/></g>');
+    s.add('<g data-part="fisheyes" fill="#c6f4f6"><circle cx="197.5" cy="97" r=".9"/><circle cx="222" cy="119.6" r=".8"/><circle cx="193.4" cy="139.6" r=".7"/><circle cx="232.6" cy="139.6" r=".7"/></g>');
     // the merman: tail curling away behind, a fin crest on his helm, his
     // trident held upright in the far hand
     const K = 1.0, mx = 156, my = 128, place = at(mx, my, K);
@@ -263,7 +263,7 @@ export const ultra_b = {
       taper([[-8, -42], [-18, -34], [-26, -27]], [7, 6, 5]),
     ));
     s.figure(`<path d="${man}"/>`, { fill: p.fig, rim: p.rim, offsets: [[0, -1.3], [-1, -0.7], [0.9, -0.7]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [0, -1] });
-    s.add(`<circle cx="${f1(mx - 6.6 * K)}" cy="${f1(my - 61.4 * K)}" r=".9" fill="#c6f4f6"/>`);
+    s.add(`<circle data-part="maneye" cx="${f1(mx - 6.6 * K)}" cy="${f1(my - 61.4 * K)}" r=".9" fill="#c6f4f6"/>`);
     // the shield: a scallop shell, ribs fanning out from the hinge
     const R0 = 36, sx = 126, sy = 134, tilt = -16, sq = 0.84;
     const edge = [];
@@ -273,7 +273,7 @@ export const ultra_b = {
     const shell = place2(blob(shellPts, 3));
     s.figure(`<path d="${shell}"/>`, { fill: s.linU(0, sy - 40, 0, sy + 4, [[0, '#3c7f86'], [0.6, '#1d5560'], [1, '#0d3540']]), rim: '#e3fbf6', offsets: [[0, -1.3], [-1, -0.7]], rimOp: 0.95 });
     const ribs = edge.filter((_, k) => k % 2 === 0 && k > 0 && k < 18).map(([x, y]) => `M0,-3L${f1(x * 0.94)},${f1(y * 0.94)}`).join('');
-    s.add(`<path d="${ribs}" transform="translate(${sx} ${sy}) rotate(${tilt})" fill="none" stroke="#bfeeee" stroke-width="1.1" opacity=".55" stroke-linecap="round"/>`);
+    s.add(`<g data-part="ribs"><path d="${ribs}" transform="translate(${sx} ${sy}) rotate(${tilt})" fill="none" stroke="#bfeeee" stroke-width="1.1" opacity=".55" stroke-linecap="round"/></g>`);
     // the spear of water and its shattering
     const ix = 108, iy = 104;
     s.glow(ix, iy, 44, '#e6fdfc', 0.6, 'breathe');
@@ -291,9 +291,9 @@ export const ultra_b = {
       for (let i = 0; i <= 14; i++) { const t = i / 14, x = -10 + (ix + 8) * t; pts.push([x, 74 + 29 * t + Math.sin(ph + t * 11) * (1.2 + 3.2 * t)]); }
       return `M${pts.map(pt).join('L')}`;
     };
-    s.bloom(`<path d="${taper([[-10, 74], [30, 86], [70, 95], [ix - 2, iy - 1]], [2, 7, 10, 12])}" fill="${jet}" opacity=".7"/>` +
+    s.bloom(`<g data-part="spear"><path d="${taper([[-10, 74], [30, 86], [70, 95], [ix - 2, iy - 1]], [2, 7, 10, 12])}" fill="${jet}" opacity=".7"/>` +
       `<path d="${strand(0)}${strand(Math.PI)}" fill="none" stroke="#ffffff" stroke-width="1.3" opacity=".75" stroke-linecap="round"/>` +
-      `<path d="${burst}" fill="#effefb" opacity=".85"/><path d="${dots(drops)}" fill="#f4fffd"/><circle cx="${ix}" cy="${iy}" r="5" fill="#ffffff"/>`, { sd: 1.6, k: 1.35, box: [-10, 50, 170, 100] });
+      `<path d="${burst}" fill="#effefb" opacity=".85"/><path d="${dots(drops)}" fill="#f4fffd"/><circle cx="${ix}" cy="${iy}" r="5" fill="#ffffff"/></g>`, { sd: 1.6, k: 1.35, box: [-10, 50, 170, 100] });
     // kelp close by at either edge
     s.path(U(kelp(-2, 216, 120, 0.5, 7), kelp(14, 216, 84, 2.2, 5.4), kelp(296, 216, 118, 1.6, 7), kelp(282, 216, 76, 3.4, 5)), '#041319');
     s.add(particles({ seed: 11704, n: 16, x: [90, 220], y: [40, 190], r: [0.6, 1.8], stroke: '#d6f6f4', cls: 'rise', t: [5, 9], op: [0.4, 0.8] }));
@@ -343,9 +343,9 @@ export const ultra_b = {
     const sprayAll = [...spray, ...spray.map(([x, y, r]) => [300 - x, y, r])];
     s.glow(150, 96, 96, '#c6f4f6', 0.55);
     const wf = s.radU(150, 112, 130, [[0, '#ffffff', 0.95], [0.3, '#e9fcf9', 0.8], [0.7, '#b4ebee', 0.5], [1, '#a6e4ec', 0.18]]);
-    s.bloom(`<path d="${wingR}${wingL}" fill="${wf}"/>` +
+    s.bloom(`<g data-part="wings"><path d="${wingR}${wingL}" fill="${wf}"/>` +
       `<path d="${qR}${qL}" fill="none" stroke="#ffffff" stroke-width=".7" opacity=".55"/>` +
-      `<path d="${dots(sprayAll)}" fill="#f2fffd" opacity=".85"/>`, { sd: 1.8, k: 1.25 });
+      `<path d="${dots(sprayAll)}" fill="#f2fffd" opacity=".85"/></g>`, { sd: 1.8, k: 1.25 });
     // her rock in the sea, surf round its foot
     s.figure(`<path d="${ledge([[104, 214], [110, 194], [120, 182], [136, 177], [156, 176], [174, 179], [186, 188], [194, 214]])}"/>`,
       { fill: '#05131a', rim: p.rim, offsets: [[0, -1.2]], rimOp: 0.8, shade: 0.5 });

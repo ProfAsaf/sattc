@@ -34,5 +34,8 @@ export const LIVE = {
   "the-barrow-queen": { src: 'art/live/the-barrow-queen.webp?v=6a8bcf18', live: 'art/live/the-barrow-queen.json?v=ac4ce372' },
   "the-pale-abbess": { src: 'art/live/the-pale-abbess.webp?v=8bdcdec7', live: 'art/live/the-pale-abbess.json?v=68fc7d71' },
   "thornback-archer": { src: 'art/live/thornback-archer.webp?v=ab1a1631', live: 'art/live/thornback-archer.json?v=f006ed2c' },
+  "tide-of-fortune": { src: 'art/live/tide-of-fortune.webp?v=87f1a377', live: 'art/live/tide-of-fortune.json?v=7c1290f9' },
   "tidecallers-library": { src: 'art/live/tidecallers-library.webp?v=360eb821', live: 'art/live/tidecallers-library.json?v=3c8930bb' },
+  "wavewarden": { src: 'art/live/wavewarden.webp?v=ee173b96', live: 'art/live/wavewarden.json?v=32fadb6f' },
+  "wing-graft": { src: 'art/live/wing-graft.webp?v=91267e32', live: 'art/live/wing-graft.json?v=8fa55d1c' },
 };

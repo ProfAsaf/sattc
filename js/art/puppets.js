@@ -21,6 +21,58 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // savage clash (a spell: a creature of yours fights an enemy creature, so an attacker whose attack is the clash itself): the
+  // great bear reared up on the left and the horned beast with its head down on the right, each one whole (the figure's
+  // two halves), rearing back and crashing together from their feet; `emit`: the heart of the clash where the
+  // shockwave of leaves and dust leaves from, `hit`: the beast's chest, `ground`: the clearing's floor,
+  // `feet`: where each leans from
+  'savage-clash': {
+    role: 'attacker', element: 'nature', facing: 'right', emit: [157, 99], hit: [190, 112],
+    ground: 185, feet: [[94, 184], [226, 184]],
+    parts: [
+      { name: 'bear', of: 'fig:0 [data-part=bear]', pivot: [94, 184] },
+      { name: 'beast', of: 'fig:0 [data-part=beast]', pivot: [226, 184] },
+    ],
+  },
+  // heartwood totem (a relic whose boon grows your weakest creature; an aura: the place itself acts): the owl's two wings
+  // (cut from the totem, each with its feather carving) turning from the shoulders, the sprout on its crown turning
+  // from its base, the heart-knot's burning green (swelling about its middle) and the little visitor's ears;
+  // `emit`: the heart-knot, `hit`: the trunk, `heart`: its middle, `eyes`: the owl's eyes, `face`: the carved face at the foot,
+  // `shoulders`: the wings' joints, `crown`: the sprout's base, `ground`: the moss
+  'heartwood-totem': {
+    role: 'aura', element: 'nature', facing: 'front', emit: [150, 120], hit: [150, 100],
+    heart: [150, 119], eyes: [[143, 44], [157, 44]], face: [150, 166], shoulders: [[135, 60], [165, 60]], crown: [150, 30], ground: 186,
+    parts: [
+      { name: 'wingL', of: 'fig:0', pivot: [135, 60], poly: [[84, 40], [135, 40], [135, 86], [84, 86]], cut: true, joint: 3 },
+      { name: 'wingR', of: 'fig:0', pivot: [165, 60], poly: [[165, 40], [216, 40], [216, 86], [165, 86]], cut: true, joint: 3 },
+      { name: 'linesL', of: '[data-part=carving]', pivot: [135, 60], poly: [[96, 52], [133, 52], [133, 78], [96, 78]], cut: true, joint: 1 },
+      { name: 'linesR', of: '[data-part=carving]', pivot: [165, 60], poly: [[167, 52], [204, 52], [204, 78], [167, 78]], cut: true, joint: 1 },
+      { name: 'sprout', of: 'fig:0', pivot: [150, 30], poly: [[137, -10], [163, -10], [163, 29], [137, 29]], cut: true, joint: 3 },
+      { name: 'heart', of: '[data-part=heart]', pivot: [150, 120] },
+      { name: 'ears', of: 'fig:1 [data-part=ears]', pivot: [201, 171] },
+    ],
+  },
+  // grandmother bramble (a creature that gives every boost +1/+1 more, a support: her boon is the growth she tends): her
+  // long reaching arm (turning from just clear of the shawl), her hand (turning from the wrist), the crown of twigs with the
+  // nests and chicks (swaying from the top of her head), the chicks' open beaks, the four glowing saplings, one each, and
+  // the birds in the sky; `emit`: her fingertips where the boon leaves from, `hit`: her back, `shoulder`: the arm's joint,
+  // `wrist`: the hand's joint, `crown`: the twigs' root, `saps`: each sapling's base and top, `ground`: the soil
+  'grandmother-bramble': {
+    role: 'support', element: 'nature', facing: 'right', emit: [181, 165], hit: [108, 132],
+    shoulder: [145, 121], wrist: [166, 148], crown: [138, 88], ground: 190,
+    saps: [[[188, 190], [189, 177]], [[212, 190], [213, 173]], [[236, 190], [237, 169]], [[260, 190], [261, 165]]],
+    parts: [
+      { name: 'crown', of: 'fig:0', pivot: [138, 88], poly: [[30, -10], [200, -10], [200, 83], [152, 83], [132, 85], [116, 90], [100, 99], [96, 102], [30, 102]], cut: true, joint: 5 },
+      { name: 'beaks', of: '[data-part=beaks]', pivot: [138, 88] },
+      { name: 'arm', of: 'fig:0', pivot: [145, 121], poly: [[135.5, 128.3], [154.5, 113.7], [176, 140.2], [157, 154.8]], cut: true, joint: 5 },
+      { name: 'hand', of: 'fig:0', pivot: [166, 148], poly: [[157, 154.8], [176, 140.2], [215, 140.2], [215, 205], [157, 205]], cut: true, joint: 3 },
+      { name: 'sap0', of: '[data-part=saplings]', pivot: [188, 190], poly: [[170, -10], [200, -10], [200, 220], [170, 220]] },
+      { name: 'sap1', of: '[data-part=saplings]', pivot: [212, 190], poly: [[200, -10], [224, -10], [224, 220], [200, 220]] },
+      { name: 'sap2', of: '[data-part=saplings]', pivot: [236, 190], poly: [[224, -10], [248, -10], [248, 220], [224, 220]] },
+      { name: 'sap3', of: '[data-part=saplings]', pivot: [260, 190], poly: [[248, -10], [290, -10], [290, 220], [248, 220]] },
+      { name: 'birds', of: '[data-part=birds]', pivot: [214, 42] },
+    ],
+  },
   // smoldering golem (an attacker that deals its damage as it falls: 3 Power, 4 Vitality): the hot stones stacked into
   // a body, in six pieces: the torso (squashing and stretching from its feet), the head with its eyes and seams,
   // each arm (shoulder, arm and fist, with their glowing seams: turning from the shoulder, raised overhead and

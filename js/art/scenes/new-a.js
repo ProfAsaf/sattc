@@ -869,8 +869,8 @@ const verdantScenes = {
       [[174, 104, 166, 102], [178, 120, 172, 132], [184, 126, 182, 140], [190, 130, 192, 142]].map(([x, y, tx, ty]) => taper([[x, y], [tx, ty]], [8, 0.5])).join(''),
     ].join('');
     const hulk = blob([[176, 110], [179, 92], [190, 78], [206, 73], [222, 78], [238, 90], [254, 98], [264, 110], [262, 127], [250, 136], [232, 137], [212, 135], [194, 138], [182, 132]]);
-    s.figure(P(bear, beast, hulk) + E(112, 106, 14, 11, -30) + C(130, 87, 4.4) + C(138, 85, 4) + E(166, 111, 13, 12) + E(266, 143, 3.6, 6.5) +
-      E(84, 185, 9, 3) + E(104, 185, 9, 3) + E(170, 183, 6, 2.4) + E(196, 183, 6, 2.4) + E(256, 183, 6, 2.4) + E(232, 183, 6, 2.4),
+    s.figure(`<g data-part="bear">${P(bear)}${E(112, 106, 14, 11, -30)}${C(130, 87, 4.4)}${C(138, 85, 4)}${E(84, 185, 9, 3)}${E(104, 185, 9, 3)}</g>` +
+      `<g data-part="beast">${P(beast, hulk)}${E(166, 111, 13, 12)}${E(266, 143, 3.6, 6.5)}${E(170, 183, 6, 2.4)}${E(196, 183, 6, 2.4)}${E(256, 183, 6, 2.4)}${E(232, 183, 6, 2.4)}</g>`,
     { fill: p.fig, rim: p.rim, offsets: [[-1, -1], [1, -1], [0, -1.3]], rimOp: 0.95, shade: 0.35, light: [0, -1], halo: { op: 0.45, sd: 2.8 } });
     s.add('<circle cx="142" cy="93" r="1.2" fill="#f1f6c8"/><circle cx="170" cy="106" r="1.2" fill="#f1f6c8"/>');
     // leaves and dust bursting off the impact
@@ -907,7 +907,7 @@ const verdantScenes = {
       leaf(120, 132, -2.1, 10, 5) + leaf(121, 135, -2.9, 9, 4.6) + leaf(92, 55, -2.8, 9, 4.6) + leaf(208, 55, -0.35, 9, 4.6));
     s.figure(totem, { fill: '#253420', rim: p.rim, offsets: [[-1, -1], [0.6, -1.2]], rimOp: 0.95, shade: 0.5, light: [-0.6, -1], halo: { op: 0.35, sd: 2.6 } });
     // its carving: the owl's face, feathered wings, bands, a stern face at the foot
-    s.add('<g fill="none" stroke="#5f7a44" stroke-width="1.3" opacity=".9" stroke-linecap="round">' +
+    s.add('<g data-part="carving" fill="none" stroke="#5f7a44" stroke-width="1.3" opacity=".9" stroke-linecap="round">' +
       '<circle cx="143" cy="44" r="4.2"/><circle cx="157" cy="44" r="4.2"/><path d="M150,47L147,53L150,57L153,53Z"/>' +
       '<path d="M133,84H167M133,88H167M133,150H167M133,154H167M104,59L128,62M100,66L128,67M110,72L130,72M196,59L172,62M200,66L172,67M190,72L170,72"/>' +
       '<path d="M139,163L146,166M161,163L154,166M140,176Q150,182 160,176M150,166V172"/></g>');
@@ -916,14 +916,16 @@ const verdantScenes = {
     s.glow(150, 119, 54, '#e6f78f', 0.7, 'breathe');
     const heart = 'M150,134C139,126 134,118 136,112C138,105 146,104 150,111C154,104 162,105 164,112C166,118 161,126 150,134Z';
     s.path(heart, '#1a2412');
+    s.add('<g data-part="heart">');
     s.bloom(`<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${heart}" stroke="#e6f78f" stroke-width="3.2"/>` +
       '<path d="M141,111C146,118 154,118 159,111M150,111V130M143,121C147,125 153,125 157,121" stroke="#f4ffc2" stroke-width="1.6"/></g>',
     { sd: 1.8, k: 1.6, box: [110, 90, 80, 60] });
+    s.add('</g>');
     // ferns at the edges; a very small visitor at its foot
     const fern = (pts, w) => taper(pts, w);
     s.path(fern([[-6, 214], [8, 194], [26, 182], [46, 178]], [8, 4, 2, 0.4]) + fern([[-4, 214], [2, 186], [8, 166], [20, 152]], [7, 4, 2, 0.4]) +
       fern([[306, 214], [292, 192], [276, 182], [258, 180]], [8, 4, 2, 0.4]) + fern([[304, 214], [298, 186], [300, 164], [290, 150]], [7, 4, 2, 0.4]), '#1b2714');
-    s.figure(`<path d="${blob([[198, 186], [197, 179], [200, 174], [205, 174], [208, 179], [209, 186]])}"/>${E(201, 171, 3.6, 3.2)}${E(199.5, 163, 1.3, 4.2, -14)}${E(203, 163.5, 1.3, 4, 12)}`,
+    s.figure(`<path d="${blob([[198, 186], [197, 179], [200, 174], [205, 174], [208, 179], [209, 186]])}"/>${E(201, 171, 3.6, 3.2)}<g data-part="ears">${E(199.5, 163, 1.3, 4.2, -14)}${E(203, 163.5, 1.3, 4, 12)}</g>`,
       { fill: p.fig, rim: p.rim, offsets: [[-0.8, -0.8]] });
     s.motes({ seed: 443, n: 14, x: [110, 190], y: [60, 170], r: [0.5, 1], fill: '#e6f78f', hot: '#fbffe0', cls: 'float', t: [5, 9], op: [0.5, 1] });
     s.add(particles({ seed: 444, n: 10, x: [20, 280], y: [20, 160], r: [0.6, 1.4], fill: '#fffbd6', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
@@ -971,7 +973,9 @@ const verdantScenes = {
     s.add('<path d="M143,91Q146,93.5 149,91M147,104Q151,106 154,104" stroke="#f7ffc8" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".9"/>');
     // the chicks, beaks wide open: "Eat. You're growing."
     const beak = (x, y, a) => taper([[x, y], [x + Math.cos(rad(a - 14)) * 5, y + Math.sin(rad(a - 14)) * 5]], [1.8, 0.3]) + taper([[x, y], [x + Math.cos(rad(a + 14)) * 5, y + Math.sin(rad(a + 14)) * 5]], [1.8, 0.3]);
+    s.add('<g data-part="beaks">');
     s.path(beak(80, 77.5, -110) + beak(88, 79, -70) + beak(160, 41.5, -90), p.fig);
+    s.add('</g>');
     // brambles curling in at the corners
     const thorns = (pts) => pts.map(([x, y, a]) => taper([[x, y], [x + Math.cos(rad(a)) * 5, y + Math.sin(rad(a)) * 5]], [2.4, 0.3])).join('');
     s.path(vine([-14, 196], [40, 168], { side: -1, curl: 8, w: 6, leaves: 2, lr: 10 }) + vine([-10, 170], [22, 132], { side: 1, curl: 6, w: 4.4, leaves: 1, lr: 8 }) +
@@ -979,9 +983,13 @@ const verdantScenes = {
     // the row of saplings she is feeding, glowing
     const sap = [[188, 13], [212, 17], [236, 21], [260, 25]];
     for (const [x, h] of sap) s.glow(x, 189 - h * 0.7, 13 + h * 0.3, '#e6f78f', 0.7, 'breathe');
+    s.add('<g data-part="saplings">');
     s.bloom(sap.map(([x, h]) => `<path d="${taper([[x, 190], [x + 1, 190 - h]], [2.4, 1.2])}" fill="#c9e070"/><path d="${leaf(x + 1, 190 - h, -2.3, 7 + h * 0.2, 3.6 + h * 0.08) + leaf(x + 1, 190 - h, -0.85, 7 + h * 0.2, 3.6 + h * 0.08) + leaf(x + 0.5, 192 - h * 0.5, -0.4, 5 + h * 0.1, 2.8)}" fill="#f2ffbc"/>`).join(''),
       { sd: 1.6, k: 1.5, box: [170, 150, 110, 50] });
+    s.add('</g>');
+    s.add('<g data-part="birds">');
     s.path(bird(196, 46, 1.1) + bird(214, 36, 0.9) + bird(232, 50, 0.8), p.fig);
+    s.add('</g>');
     s.motes({ seed: 454, n: 14, x: [176, 276], y: [120, 186], r: [0.5, 1], fill: '#e6f78f', hot: '#fbffe0', cls: 'rise', t: [4, 8], op: [0.5, 1] });
     s.add(particles({ seed: 455, n: 14, x: [20, 280], y: [10, 170], r: [0.6, 1.4], fill: '#fffbd6', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
     return s.svg();

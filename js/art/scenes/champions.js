@@ -441,10 +441,13 @@ export const champions = {
     s.add(`<g fill="none" stroke="#e6faf6" stroke-width="1" opacity=".35"><path d="M40,140C80,110 120,86 168,64C196,52 214,44 230,40M70,150C110,124 150,104 196,90C214,84 222,80 228,74M120,156C150,140 186,128 230,118"/></g>`);
     // what the wave is carrying
     for (const [x, y] of [[66, 122], [104, 92], [204, 54], [236, 104], [176, 112]]) s.glow(x, y, 20, '#f0f8e8', 0.45, 'breathe');
-    const fishes = U(fish(46, 136, 11, -24), fish(60, 128, 9, -30), fish(132, 70, 10, -40), fish(146, 82, 8, -34), fish(218, 80, 11, 20),
-      fish(250, 92, 9, 40), fish(196, 128, 10, -10), fish(214, 138, 8, -14), fish(90, 112, 9, -28));
-    s.bloom(scroll(66, 122, -24, 0.9) + scroll(104, 92, 16, 0.8) + scroll(204, 54, -32, 0.9) + scroll(236, 104, 28, 0.8) + scroll(176, 112, -8, 0.85) +
-      `<path d="${fishes}" fill="#e6f1f2"/>` +
+    const fishAt = [[46, 136, 11, -24], [60, 128, 9, -30], [132, 70, 10, -40], [146, 82, 8, -34], [218, 80, 11, 20],
+      [250, 92, 9, 40], [196, 128, 10, -10], [214, 138, 8, -14], [90, 112, 9, -28]];
+    const fishes = fishAt.map((f, i) => `<g data-part="fish${i}"><path d="${fish(...f)}" fill="#e6f1f2"/></g>`).join('');
+    const scrolls = [[66, 122, -24, 0.9], [104, 92, 16, 0.8], [204, 54, -32, 0.9], [236, 104, 28, 0.8], [176, 112, -8, 0.85]]
+      .map((a, i) => `<g data-part="scroll${i}">${scroll(...a)}</g>`).join('');
+    s.bloom(scrolls +
+      fishes +
       `<path d="M150,40C170,30 190,20 220,16C240,18 256,26 266,38C272,48 270,58 266,64" fill="none" stroke="#f3fcf6" stroke-width="2.4" stroke-linecap="round"/>` +
       `<g fill="#f8fdf9">${[[268, 66, 2.4], [262, 70, 1.8], [256, 64, 1.6], [272, 58, 1.8], [240, 18, 1.6], [208, 15, 1.4], [180, 22, 1.4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`, { sd: 1.6, k: 1.25 });
     // the sea in front, the rock, the surf round it
@@ -472,8 +475,8 @@ export const champions = {
     s.figure(`<path d="${her}"/>`, { fill: p.fig, rim: p.rim, offsets: [[0, -1.3], [-1, -0.7], [1, -0.7]], rimOp: 0.95, shade: 0.45, edge: 0.32, halo: { op: 0.3, sd: 2.6, color: '#c6f4f6' }, light: [0.3, -1] });
     // the light in her raised hand
     const [hx, hy] = [fx + 15.5 * K, fy - 124 * K];
-    s.glow(hx, hy, 26, '#e6fdfc', 0.9, 'breathe');
-    s.add(`<circle cx="${f1(hx)}" cy="${f1(hy)}" r="2.4" fill="#f6fffe"/>`);
+    s.add('<g data-part="handlight">'); s.glow(hx, hy, 26, '#e6fdfc', 0.9);
+    s.add(`<circle cx="${f1(hx)}" cy="${f1(hy)}" r="2.4" fill="#f6fffe"/>`); s.add('</g>');
     s.add([[212, 66], [222, 78], [230, 60], [258, 74]].map(([x, y], i) =>
       `<ellipse class="fall" style="--d:${(-i * 0.4).toFixed(1)}s" cx="${x}" cy="${y}" rx="1.2" ry="1.8" fill="#f4fcf6"/>`).join(''));
     s.motes({ seed: 9842, n: 16, x: [40, 270], y: [30, 160], r: [0.4, 1.1], fill: '#c6f4f6', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.9] });

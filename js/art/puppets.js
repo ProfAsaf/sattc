@@ -21,6 +21,82 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // The Bright Choir (a Relic, an aura: the place itself acts; whenever you make Spirits, make that many more, so the spirits
+  // its song wakes split in two as they climb): the pool of light on the floor, the column of song and the shafts of dawn
+  // falling on the ring, and the four rows of spirits (one, two, four, eight: each row's glows, and for the upper three the
+  // trails streaming up to it from the row below), each cut so the move can hide them and bring them back as they split;
+  // `emit`: the first spirit, where the song begins to split, `hit`: the middle of the ring, `levels`: where each spirit of
+  // each row hangs at rest (row 0 is the first), `singers`: the singers' heads, where the song rises from
+  'the-bright-choir': {
+    role: 'aura', element: 'spirit', facing: 'front', emit: [150, 100], hit: [150, 140],
+    levels: [[[150, 102]], [[124.0, 79.5], [176.0, 76.5]], [[97.0, 56.5], [132.3, 53.5], [167.7, 56.5], [203.0, 53.5]], [[72.0, 33.5], [94.3, 30.5], [116.6, 33.5], [138.9, 30.5], [161.1, 33.5], [183.4, 30.5], [205.7, 33.5], [228.0, 30.5]]], singers: [[104, 112], [196, 112], [70, 114], [230, 114], [126, 123], [174, 123]],
+    parts: [
+      { name: 'floor', of: '[data-part=floor]', pivot: [150, 172] },
+      { name: 'column', of: '[data-part=column]', pivot: [150, 182] },
+      { name: 'beams', of: '[data-part=beams]', pivot: [150, 150] },
+      { name: 'glow0', of: '[data-part=glow0]', pivot: [150, 102] },
+      { name: 'glow1', of: '[data-part=glow1]', pivot: [150, 78] },
+      { name: 'glow2', of: '[data-part=glow2]', pivot: [150, 55] },
+      { name: 'glow3', of: '[data-part=glow3]', pivot: [150, 32] },
+      { name: 'tail1', of: '[data-part=tail1]', pivot: [150, 78] },
+      { name: 'tail2', of: '[data-part=tail2]', pivot: [150, 55] },
+      { name: 'tail3', of: '[data-part=tail3]', pivot: [150, 32] },
+    ],
+  },
+
+  // Nim, the Tidecaller (a Champion creature, a support: a slender sea-mage on a rock in the surf, one hand raised to a great wave
+  // full of glowing scrolls and silver fish; her text is drawing extra cards, so her move is the gift: she sweeps her hand
+  // and the wave pours its scrolls and fish out in a stream to a friend): her raised arm (cut at the shoulder), the light in
+  // her hand (no longer a breathing ambient glow: it rides the hand), her other arm held out low, her streaming hair, the
+  // flare of her hem, the wave's five scrolls (scroll0-4) and nine fish (fish0-8), each its own part which leaves the wave
+  // when it flies; `emit`: her raised hand, where the gift leaves from, `hit`: her chest, `shoulder`: where the arm turns,
+  // `hand`: the hand at rest, `shoulderL`: where the low arm turns, `hair`/`hem`: where her hair and hem start, `scrolls`/`fish`:
+  // where each rests in the wave, `sea`: the surf in front of the wave's curl (the target when alone)
+  'champion-tide': {
+    role: 'support', element: 'water', facing: 'front', emit: [168.4, 37.2], hit: [153, 110],
+    shoulder: [154.4, 80], hand: [168.4, 37.2], shoulderL: [147, 82], hair: [146, 63], hem: [134, 138], sea: [258, 148],
+    scrolls: [[66, 122], [104, 92], [204, 54], [236, 104], [176, 112]], fish: [[46, 136], [60, 128], [132, 70], [146, 82], [218, 80], [250, 92], [196, 128], [214, 138], [90, 112]],
+    parts: [
+      { name: 'arm', of: 'fig:2', pivot: [154.4, 80], poly: [[152, 86], [164, 90], [180, 40], [180, 22], [160, 22], [160.2, 50], [158.6, 66]], cut: true, joint: 4 },
+      { name: 'handlight', of: '[data-part=handlight]', pivot: [154.4, 80] },
+      { name: 'armL', of: 'fig:2', pivot: [147, 82], poly: [[116, 90], [116, 104], [146, 104], [146, 76], [134, 76]], cut: true, joint: 4 },
+      { name: 'hair', of: 'fig:2', pivot: [146, 63], poly: [[98, 50], [146, 50], [146, 76], [98, 76]], cut: true, joint: 3 },
+      { name: 'hem', of: 'fig:2', pivot: [134, 138], poly: [[108, 118], [134, 118], [134, 150], [108, 150]], cut: true, joint: 3 },
+      { name: 'scroll0', of: '[data-part=scroll0]', pivot: [66, 122] },
+      { name: 'scroll1', of: '[data-part=scroll1]', pivot: [104, 92] },
+      { name: 'scroll2', of: '[data-part=scroll2]', pivot: [204, 54] },
+      { name: 'scroll3', of: '[data-part=scroll3]', pivot: [236, 104] },
+      { name: 'scroll4', of: '[data-part=scroll4]', pivot: [176, 112] },
+      { name: 'fish0', of: '[data-part=fish0]', pivot: [46, 136] },
+      { name: 'fish1', of: '[data-part=fish1]', pivot: [60, 128] },
+      { name: 'fish2', of: '[data-part=fish2]', pivot: [132, 70] },
+      { name: 'fish3', of: '[data-part=fish3]', pivot: [146, 82] },
+      { name: 'fish4', of: '[data-part=fish4]', pivot: [218, 80] },
+      { name: 'fish5', of: '[data-part=fish5]', pivot: [250, 92] },
+      { name: 'fish6', of: '[data-part=fish6]', pivot: [196, 128] },
+      { name: 'fish7', of: '[data-part=fish7]', pivot: [214, 138] },
+      { name: 'fish8', of: '[data-part=fish8]', pivot: [90, 112] },
+    ],
+  },
+
+  // Morwen, the Gravekeeper (a Champion creature, a defender: a cloaked woman bent over the grip of her long spade among the graves,
+  // her faint violet dead rising behind her; she is the keeper that is hard to move, so she plants the spade and the dead rise
+  // to take the blows): her figure without the spade's lower shaft (cloak, hood, hands, the grip), and the spade below her hands
+  // (shaft and blade); `hit`: her cloak's middle, `guard`: where blows land when she blocks (the cloak's front and the spade),
+  // `feet`: where she stands (she settles and leans about them), `blade`: the spade's tip, where it strikes the ground,
+  // `grip`: the top of the spade under her hands (the spade turns about the point just under it), `graves`: where her dead
+  // rise from (the six wisps of the drawing: they keep their own drifting; a ward of light is laid over each)
+  'champion-umbral': {
+    role: 'defender', element: 'spirit', facing: 'right', hit: [128, 140],
+    guard: [[152, 120], [150, 150], [164, 140], [164, 176], [146, 98]],
+    feet: [136, 195], blade: [164, 197], grip: [163, 112],
+    graves: [[49, 98], [80, 92], [202, 94], [227, 86], [272, 100], [15, 104]],
+    parts: [
+      { name: 'body', of: 'fig:1', pivot: [136, 195], poly: [[-10, -10], [310, -10], [310, 220], [176, 220], [176, 112], [156, 112], [156, 220], [-10, 220]] },
+      { name: 'spade', of: 'fig:1', pivot: [163, 112], poly: [[156, 112], [176, 112], [176, 220], [156, 220]] },
+    ],
+  },
+
   // Old Root, Grove Warden (a Champion creature, a defender: a tree-giant standing guard with a shield of woven roots on his
   // arm; Reach and a great deal of Vitality, so he is the wall: he plants himself and takes the blows on the shield): the
   // body (everything of him from the crown's base down: trunk, arms, legs, staff, and the bark seams and the carved

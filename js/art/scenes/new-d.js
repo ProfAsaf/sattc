@@ -198,15 +198,15 @@ export const new_d = {
     s.add('<path d="M38,18V102M22,60H54M262,18V102M246,60H278" stroke="#1d2140" stroke-width="2.2"/>');
     // the floor, polished, and the light the choir throws on it
     s.path('M-10,214L-10,150L310,150L310,214Z', s.lin([[0, '#4a3f50'], [0.4, '#2e2632'], [1, '#141016']]));
-    s.add(`<ellipse cx="150" cy="172" rx="112" ry="18" fill="${s.rad([[0, '#ffdc94', 0.62], [0.55, '#ffd27a', 0.25], [1, '#ffd27a', 0]])}"/>`);
+    s.add(`<ellipse data-part="floor" cx="150" cy="172" rx="112" ry="18" fill="${s.rad([[0, '#ffdc94', 0.62], [0.55, '#ffd27a', 0.25], [1, '#ffd27a', 0]])}"/>`);
     // shafts of dawn falling onto the ring, and the song rising out of it
     const beamL = s.linU(40, 40, 150, 190, [[0, '#fff1c8', 0.55], [1, '#fff1c8', 0.05]]);
     const beamR = s.linU(260, 40, 150, 190, [[0, '#fff4d0', 0.6], [1, '#fff4d0', 0.05]]);
     const column = s.linU(0, 178, 0, 92, [[0, '#fff3cc', 0.75], [1, '#fff3cc', 0.08]]);
     s.add(`<g ${s.fx('blur', { sd: 3 })}>` +
-      `<path d="M44,30L56,50L172,188L132,192Z" fill="${beamL}"/><path d="M36,62L50,100L116,194L92,192Z" fill="${beamL}" opacity=".7"/>` +
-      `<path d="M256,30L244,50L128,188L168,192Z" fill="${beamR}"/><path d="M264,62L250,100L184,194L208,192Z" fill="${beamR}" opacity=".7"/>` +
-      `<path d="M134,182L166,182L157,96L143,96Z" fill="${column}"/></g>`);
+      `<g data-part="beams"><path d="M44,30L56,50L172,188L132,192Z" fill="${beamL}"/><path d="M36,62L50,100L116,194L92,192Z" fill="${beamL}" opacity=".7"/>` +
+      `<path d="M256,30L244,50L128,188L168,192Z" fill="${beamR}"/><path d="M264,62L250,100L184,194L208,192Z" fill="${beamR}" opacity=".7"/></g>` +
+      `<path data-part="column" d="M134,182L166,182L157,96L143,96Z" fill="${column}"/></g>`);
     // the choir: six tall singers in a ring, faces turned up
     const ring = [[104, 158, 0.86, 1], [196, 158, 0.86, -1], [70, 167, 0.98, 1], [230, 167, 0.98, -1], [126, 182, 1.1, 1], [174, 182, 1.1, -1]];
     const back = s.uid('sb'), front = s.uid('sf');
@@ -237,10 +237,10 @@ export const new_d = {
         core += taper(pts, [0.3, 1.1 * k, 2.4 * k], { per: 5 });
       });
       const g = s.linU(0, ys[L - 1] - 4, 0, ys[L] + 4, [[0, '#fff4d2', 0], [1, '#fff4d2', 0.9]]);
-      tails += `<path d="${soft}" fill="${g}" opacity=".35"/><path d="${core}" fill="${g}"/>`;
+      tails += `<g data-part="tail${L}"><path d="${soft}" fill="${g}" opacity=".35"/><path d="${core}" fill="${g}"/></g>`;
     }
     s.bloom(tails, { sd: 1.6, k: 1.3, box: [50, 8, 200, 110] });
-    lv.forEach((row, L) => row.forEach(([x, y]) => s.glow(x, y - 2, 8 + 16 * ks[L], '#fff1c4', 0.8)));
+    lv.forEach((row, L) => { s.add(`<g data-part="glow${L}">`); row.forEach(([x, y]) => s.glow(x, y - 2, 8 + 16 * ks[L], '#fff1c4', 0.8)); s.add('</g>'); });
     const all = lv.flatMap((row, L) => row.map(([x, y]) => [x, y, ks[L]]));
     for (let g = 0; g < 3; g++) {
       s.path(U(all.filter((_, i) => i % 3 === g).map(([x, y, k]) => sprite(x, y, k))), '#fffcf0', `class="float" style="--t:${6 + g * 1.5}s;--d:-${g * 2}s"`);

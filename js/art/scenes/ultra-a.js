@@ -831,10 +831,10 @@ export const ultra_a = {
     // the arrow, halfway to the beast, a streak of light behind it
     const [ox, oy] = [fx + hx * K, fy + hy * K], [tx, ty] = [226, 60];
     const da = Math.atan2(ty - oy, tx - ox), u = [Math.cos(da), Math.sin(da)], hd = [ox + (tx - ox) * 0.66, oy + (ty - oy) * 0.66];
-    s.bloom(`<path d="${taper([[ox + u[0] * 10, oy + u[1] * 10], [hd[0] - u[0] * 14, hd[1] - u[1] * 14]], [0.3, 2.2], { per: 2 })}" fill="#fffbe2" opacity=".85"/>` +
-      `<path d="${taper([[hd[0] - u[0] * 16, hd[1] - u[1] * 16], [hd[0], hd[1]]], [1.3, 1.3], { per: 2 }) + poly([[hd[0] + u[0] * 5, hd[1] + u[1] * 5], [hd[0] - u[1] * 2.4, hd[1] + u[0] * 2.4], [hd[0] + u[1] * 2.4, hd[1] - u[0] * 2.4]])}" fill="#1b2714"/>`, { sd: 1.4, k: 1.3, box: [90, 40, 150, 70] });
+    s.bloom(`<g data-part="arrow"><path d="${taper([[ox + u[0] * 10, oy + u[1] * 10], [hd[0] - u[0] * 14, hd[1] - u[1] * 14]], [0.3, 2.2], { per: 2 })}" fill="#fffbe2" opacity=".85"/>` +
+      `<path d="${taper([[hd[0] - u[0] * 16, hd[1] - u[1] * 16], [hd[0], hd[1]]], [1.3, 1.3], { per: 2 }) + poly([[hd[0] + u[0] * 5, hd[1] + u[1] * 5], [hd[0] - u[1] * 2.4, hd[1] + u[0] * 2.4], [hd[0] + u[1] * 2.4, hd[1] - u[0] * 2.4]])}" fill="#1b2714"/></g>`, { sd: 1.4, k: 1.3, box: [90, 40, 150, 70] });
     // the beast's eyes
-    s.add(`<path d="${dots([[212, 38.5, 1.1], [215.5, 40.5, 1], [209, 41.5, 0.9], [213, 43.5, 0.8]])}" fill="#f4ff9a"/>`);
+    s.add(`<path data-part="beasteyes" d="${dots([[212, 38.5, 1.1], [215.5, 40.5, 1], [209, 41.5, 0.9], [213, 43.5, 0.8]])}" fill="#f4ff9a"/>`);
     s.add(particles({ seed: 11404, n: 14, x: [20, 280], y: [20, 170], r: [0.5, 1.1], fill: '#fffbe0', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
     s.add([[200, 56, 30], [190, 60, -20], [218, 30, 50], [186, 44, 10]].map(([x, y, a], i) =>
       `<path class="fall" style="--d:${(-i * 0.4).toFixed(1)}s" d="${lens(x, y, 6, a, 0.36)}" fill="#3a4a2a"/>`).join(''));
@@ -876,7 +876,7 @@ export const ultra_a = {
     };
     for (const [a, L, w] of [[90, 46, 9], [150, 50, 7], [30, 50, 7], [170, 40, 5], [10, 42, 5], [118, 40, 6], [62, 40, 6]]) grow(150, gy + 2, a, L, w, 3);
     s.figure(`<path d="${U(roots, taper([[146, gy + 6], [150, gy - 2], [154, gy + 6]], [10, 12, 10], { per: 2 }))}"/>`, { fill: '#18140c', rim: '#e6f0a8', offsets: [[0, 1], [-0.7, 0.7], [0.7, 0.7]], rimOp: 0.6, shade: 0.3, light: [0, 1] });
-    s.bloom(`<path d="${dots(tips)}" fill="#f2ffb8"/>`, { sd: 1.6, k: 1.5, box: [-10, 70, 320, 150] });
+    s.bloom(`<g data-part="tips"><path d="${dots(tips)}" fill="#f2ffb8"/></g>`, { sd: 1.6, k: 1.5, box: [-10, 70, 320, 150] });
     s.motes({ seed: 11510, n: 24, x: [10, 290], y: [100, 210], r: [0.4, 1], fill: '#eefaa6', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     // the meadow edge, and the young tree in the sun
     s.add(`<path d="M-10,${gy}L310,${gy}" stroke="#2e3a1c" stroke-width="2"/>`);
@@ -890,7 +890,9 @@ export const ultra_a = {
     for (const [x, y, n, a0] of [[134, gy - 34, 5, -150], [166, gy - 38, 5, -30], [150, gy - 41, 5, -90], [142, gy - 28, 3, 170], [158, gy - 32, 3, 0]]) {
       for (let i = 0; i < n; i++) leaves += leafAt(x, y, a0 + (i - (n - 1) / 2) * 32 + (G() - 0.5) * 14, 7 + G() * 3, 0.46);
     }
+    s.add('<g data-part="leaves">');
     s.path(leaves, s.radU(150, gy - 34, 24, [[0, '#fbffd8'], [0.6, '#dff09a'], [1, '#a8c264']]));
+    s.add('</g>');
     s.add(particles({ seed: 11512, n: 8, x: [20, 280], y: [6, gy - 6], r: [0.5, 1], fill: '#fffbe0', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
     return s.svg();
   },
@@ -937,16 +939,18 @@ export const ultra_a = {
     s.figure(`<path d="${U(plates)}"/>`, { fill: '#6a5434', rim: '#fff3c0', offsets: [[0, -1.2], [0.8, -0.8]], rimOp: 0.95, shade: 0.5, light: [0.5, -1] });
     // each lame's lit top edge, the seams between the scales, the grain
     const tops = [[128, 178, 120, 7, 9], [126, 172, 112, 7, 10], [128, 166, 103, 7, 9]].map(([x0, x1, y, h, bow]) => poly(spline([[x0 + 2, y + h * 0.5], [(x0 + x1) / 2, y - bow + 0.4], [x1 - 2, y + h * 0.5]], 6), false)).join('');
-    s.add(`<path d="${tops}" fill="none" stroke="#e8dca8" stroke-width="1.1" opacity=".85"/><path d="${scales.join('')}" fill="none" stroke="#2a2012" stroke-width=".8" opacity=".85"/>` +
-      `<path d="M134,112l4,8M146,108l2,9M158,110l-1,9M140,102l3,7M152,100l2,8M186,114q4,-3 8,0" fill="none" stroke="#2e2414" stroke-width="1" opacity=".75"/>`);
+    s.add(`<g data-part="bark"><path d="${tops}" fill="none" stroke="#e8dca8" stroke-width="1.1" opacity=".85"/><path d="${scales.join('')}" fill="none" stroke="#2a2012" stroke-width=".8" opacity=".85"/>` +
+      `<path d="M134,112l4,8M146,108l2,9M158,110l-1,9M140,102l3,7M152,100l2,8M186,114q4,-3 8,0" fill="none" stroke="#2e2414" stroke-width="1" opacity=".75"/></g>`);
     // moss along the edges, tendrils feeling their way on over his chest
+    s.add('<g data-part="moss">');
     s.path(dots([[133, 127, 1.6], [136, 128.4, 1.3], [139, 128, 1.5], [150, 129, 1.7], [153, 129.4, 1.3], [163, 128, 1.5], [171, 125, 1.6], [174, 124, 1.2],
       [184, 122, 1.6], [187, 123, 1.2], [199, 109, 1.3], [189, 90, 1.3], [192, 90.4, 1]]), '#7e9c50');
     s.path(U(tendril(126, 122, 150, 20, { bend: -50, w: 2, curl: 3 }), tendril(132, 128, 112, 16, { bend: 40, w: 1.8, curl: 3 }), tendril(136, 100, -140, 12, { bend: -40, w: 1.6, curl: 2.5 })), '#2c3a1c');
+    s.add('</g>');
     // new leaves unfurling out of the bark
     const leaves = U(leafAt(206, 86, -10, 14, 0.46), leafAt(206, 100, 14, 12, 0.46), leafAt(196, 126, 70, 12, 0.46), leafAt(176, 104, -60, 14, 0.46),
       leafAt(156, 98, -96, 13, 0.46), leafAt(134, 104, -150, 14, 0.46), leafAt(124, 120, -170, 11, 0.46), leafAt(186, 80, -150, 10, 0.46), leafAt(164, 96, -120, 9, 0.46));
-    s.bloom(`<path d="${leaves}" fill="${s.radU(170, 100, 60, [[0, '#fbffe0'], [0.5, '#eefaa6'], [1, '#c8de78']])}"/>`, { sd: 1.6, k: 1.35, box: [100, 60, 130, 90] });
+    s.bloom(`<g data-part="leaves"><path d="${leaves}" fill="${s.radU(170, 100, 60, [[0, '#fbffe0'], [0.5, '#eefaa6'], [1, '#c8de78']])}"/></g>`, { sd: 1.6, k: 1.35, box: [100, 60, 130, 90] });
     s.body.push(`<g transform="translate(160 130) scale(1.14) translate(-160 -130)">${s.body.splice(from).join('')}</g>`);
     s.motes({ seed: 11604, n: 16, x: [100, 240], y: [40, 150], r: [0.4, 1], fill: '#f2ffb8', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();

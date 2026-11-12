@@ -85,6 +85,53 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Bark Graft: the warrior with his bark pauldron (the body, the lames over his shoulder, with their
+  // grain; all left of the seam at x = 182, from his feet), his raised arm (the upper arm out from the
+  // seam, the fist, the elbow plate and the scales up the forearm, with their seams; it turns about
+  // the seam's heart), the moss and tendrils on him, and the new leaves unfurling from the bark. `guard`: where blows land on the bark (the forearm, the elbow, the pauldron);
+  // `seam`: the arm's joint; `feet`: where he stands
+  'bark-graft': {
+    role: 'defender', element: 'nature', facing: 'right', hit: [140, 150],
+    guard: [[201, 86], [193, 112], [148, 108]], seam: [182, 111], feet: [150, 214],
+    parts: [
+      { name: 'him', of: ['fig:0', 'fig:1', '[data-part=bark]'], pivot: [150, 214], poly: [[-20, -20], [182, -20], [182, 230], [-20, 230]] },
+      { name: 'arm', of: ['fig:0', 'fig:1', '[data-part=bark]'], pivot: [182, 111], poly: [[182, -20], [320, -20], [320, 230], [182, 230]] },
+      { name: 'moss', of: '[data-part=moss]', pivot: [150, 214] },
+      { name: 'leaves', of: '[data-part=leaves]', pivot: [175, 100] },
+    ],
+  },
+  // Deep Roots: the whole tangle of roots with the glowing tips at their ends (from the trunk's foot,
+  // where it meets the meadow), the young tree's stem (from its foot) and its leaves (from the crown,
+  // riding the stem). `base`: the stem's foot; `crown`: where the leaves meet, where the boon leaves
+  // (`emit`); `tips`: the glowing root tips (measured from the baked tips); `alone`: the meadow to
+  // its right, where the boon goes when nothing is aimed at
+  'deep-roots': {
+    role: 'support', element: 'nature', facing: 'front', emit: [150, 26], hit: [150, 46],
+    base: [150, 63], crown: [150, 32], alone: [236, 52], deep: [150, 214],
+    tips: [[72.5, 128.9], [50.1, 133.1], [61.6, 140.9], [97.2, 147.1], [102.8, 140], [206.5, 134], [184.3, 130.8], [230.5, 131.2], [230.5, 136.2], [236.5, 139.9], [219.8, 143.9], [227.3, 149.3], [196.4, 156], [185.3, 159], [215.5, 156.7], [124.4, 153.6], [128.9, 154.6], [147, 157.4], [135.1, 158.1], [157.1, 155.4], [125.2, 166.8], [120.2, 167.5], [110.6, 169.6], [126, 170.4], [152.9, 171.3], [96.1, 174.1], [73.8, 159.7]],
+    parts: [
+      { name: 'roots', of: ['fig:1', '[data-part=tips]'], pivot: [150, 64] },
+      { name: 'stem', of: 'fig:2', pivot: [150, 63] },
+      { name: 'leaves', of: '[data-part=leaves]', pivot: [150, 32] },
+    ],
+  },
+  // Thornback Archer: she (from her feet, all of her but the bow arm), the bow arm (the arm out to the
+  // grip, the bow and its string; it turns about the shoulder end of the cut), the arrow in flight (it
+  // fades out as she nocks the next), and the beast and the eagle above (the beast with its eyes), which
+  // jolt when her arrow lands on them. `feet`: her knee on the cliff; `shoulder`: the bow arm's joint;
+  // `grip`: her bow hand, where the arrow leaves (`emit`) at rest; `hand`: her string hand, drawn back past her ear;
+  // `aim`: the way the bow points at rest (degrees, 0 = right, 90 = down); `alone`: the beast's jaws, her target
+  'thornback-archer': {
+    role: 'attacker', element: 'nature', facing: 'right', emit: [107, 94], hit: [64, 128],
+    feet: [66, 182], shoulder: [83, 103], grip: [107, 94], hand: [38, 98], aim: -20, alone: [212, 44],
+    parts: [
+      { name: 'her', of: 'fig:4', pivot: [66, 182], poly: [[-20, -20], [83, -20], [83, 138], [320, 138], [320, 230], [-20, 230]] },
+      { name: 'bow', of: 'fig:4', pivot: [83, 103], poly: [[83, -20], [320, -20], [320, 138], [83, 138]] },
+      { name: 'arrow', of: '[data-part=arrow]', pivot: [150, 70] },
+      { name: 'beast', of: ['fig:3', '[data-part=beasteyes]'], pivot: [262, 96] },
+      { name: 'eagle', of: 'fig:2', pivot: [140, 40] },
+    ],
+  },
   // Sproutling: the stem (from its foot in the soil), the two leaves (the one drawing of both,
   // with its halo, split down the stem; each turns about the joint at the stem's top) and the
   // husk of its seed on the left leaf's tip (it turns with that leaf). `joint`: the stem's top,

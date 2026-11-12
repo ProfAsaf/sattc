@@ -89,6 +89,47 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // The Arcane Well: the rope and bucket on the winch (hanging from the beam), the water brimming at the
+  // top (the surface), the runes round the rim and the two threads of water running over it. `rim`: the
+  // middle of the rim's water, where the light rises from; `top`: the lip of the rim; `runeAt`: the
+  // runes' places round the rim, left to right
+  'the-arcane-well': {
+    role: 'aura', element: 'water', facing: 'front', hit: [150, 150], rim: [150, 122], beam: [150, 59],
+    runeAt: [[100, 127.8], [105, 131.2], [113.2, 134.2], [123.9, 136.5], [136.5, 137.9], [150, 138.4], [163.5, 137.9], [176.1, 136.5], [186.8, 134.2], [195, 131.2], [200, 127.8]],
+    parts: [
+      { name: 'bucket', of: 'fig:0 [data-part=bucket]', pivot: [150, 59] },
+      { name: 'water', of: '[data-part=water]', pivot: [150, 122] },
+      { name: 'runes', of: '[data-part=runes]', pivot: [150, 124] },
+      { name: 'spill', of: '[data-part=spill]', pivot: [147, 132] },
+    ],
+  },
+  // Static Spark: the hand (sleeve and pointing finger; it swings from the far end of the sleeve, off the
+  // picture's left), the crackling thread of lightning between fingertip and wick (with its glints and
+  // sparks) and the shimmer of air round it. `emit`: the fingertip, where the spark leaves; `alone`: the
+  // wick, where it lands when nothing is aimed at; `wrist`: the hand's joint
+  'static-spark': {
+    role: 'attacker', element: 'lightning', facing: 'right', emit: [149.6, 102], alone: [204.6, 99.4], wrist: [-4, 146],
+    parts: [
+      { name: 'hand', of: 'fig:1', pivot: [-4, 146] },
+      { name: 'spark', of: '[data-part=spark]', pivot: [149.6, 102] },
+      { name: 'shim', of: '[data-part=shim]', pivot: [177, 99] },
+    ],
+  },
+  // Spellwright Apprentice: she (the figure, from her feet), her near arm cut from her shoulder (the two
+  // parts split the figure at the shoulder's edge), the runes curling up out of the book (and the glow thread
+  // they run on) and the ones already settled on her sleeve. `emit`: her fingertip, where the runes leave
+  // her; `book`: the open book's heart, where the runes rise; `sleeve`: where they settle, and where
+  // they go when nothing is aimed at; `shoulder`: the arm's joint
+  'spellwright-apprentice': {
+    role: 'support', element: 'arcane', facing: 'right', emit: [151, 124], hit: [104, 150],
+    book: [168, 140], sleeve: [121, 114], shoulder: [125, 121], feet: [104, 192],
+    parts: [
+      { name: 'her', of: 'fig:1', pivot: [104, 192], poly: [[-20, -20], [320, -20], [320, 106], [125, 106], [125, 140], [320, 140], [320, 230], [-20, 230]] },
+      { name: 'arm', of: 'fig:1', pivot: [125, 121], poly: [[125, 106], [160, 106], [160, 140], [125, 140]] },
+      { name: 'curl', of: ['[data-part=thread]', '[data-part=curl]'], pivot: [168, 140] },
+      { name: 'settled', of: '[data-part=settled]', pivot: [104, 192] },
+    ],
+  },
   // Grand Illusion: the fighters still on the field at the right (the three of them, one figure), the curtain
   // of seawater (its wall, the ones it took shown as shapes of bubbles inside it, the foam at its foot; it
   // surges forward by stretching from its left edge, about the foot of the picture) and the spray that

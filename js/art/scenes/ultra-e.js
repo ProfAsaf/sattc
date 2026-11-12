@@ -697,8 +697,8 @@ export const ultra_e = {
     let runes = '';
     path.forEach(([x, y], i) => { if (i % 3 === 0) runes += rune(i, x, y, 0.95); });
     const settled = [[-6, 2], [0, -2], [-11, -4], [-4, -8], [4, -6]].map(([dxs, dys], i) => rune(i + 2, ex + dxs, ey + dys, 0.62)).join('');
-    s.add(`<path d="${poly(path, false)}" fill="none" stroke="#c6f4f6" stroke-width="5" opacity=".22" stroke-linecap="round"/><path d="${poly(path, false)}" fill="none" stroke="#effdfb" stroke-width="1" opacity=".35" stroke-linecap="round"/>`);
-    s.bloom(`<path d="${runes}" fill="none" stroke="#effdfb" stroke-width=".7" stroke-linecap="round"/><path d="${settled}" fill="none" stroke="#c6f4f6" stroke-width=".7" stroke-linecap="round"/>`, { sd: 1.2, k: 1.5, box: [100, 70, 110, 90] });
+    s.add(`<g data-part="thread"><path d="${poly(path, false)}" fill="none" stroke="#c6f4f6" stroke-width="5" opacity=".22" stroke-linecap="round"/><path d="${poly(path, false)}" fill="none" stroke="#effdfb" stroke-width="1" opacity=".35" stroke-linecap="round"/></g>`);
+    s.bloom(`<path data-part="curl" d="${runes}" fill="none" stroke="#effdfb" stroke-width=".7" stroke-linecap="round"/><path data-part="settled" d="${settled}" fill="none" stroke="#c6f4f6" stroke-width=".7" stroke-linecap="round"/>`, { sd: 1.2, k: 1.5, box: [100, 70, 110, 90] });
     s.motes({ seed: 15703, n: 14, x: [120, 200], y: [90, 150], r: [0.4, 0.9], fill: p.glow, hot: '#ffffff', cls: 'rise', t: [4, 8], op: [0.4, 0.9] });
     s.add(particles({ seed: 15704, n: 14, x: [20, 280], y: [40, 190], r: [0.5, 1.3], stroke: '#a6e4ec', cls: 'float', t: [7, 12], op: [0.2, 0.5] }));
     return s.svg();
@@ -737,7 +737,7 @@ export const ultra_e = {
     // the air shivering round the spark
     let shim = '';
     for (const [rx, ry, o] of [[16, 10, 0.4], [26, 16, 0.28], [38, 23, 0.18]]) shim += `<ellipse cx="${sx}" cy="${sy}" rx="${rx}" ry="${ry}" fill="none" stroke="#ffd27a" stroke-width=".6" stroke-dasharray="3 2.4 1 2.4" opacity="${o}"/>`;
-    s.add(shim);
+    s.add(`<g data-part="shim">${shim}</g>`);
     // the spark: a crackling thread from fingertip to wick, forks off it
     const main = bolt([149.4, 102], [204.6, 99.4], 15801, 9, 4.4);
     const forks = [bolt(main[3], [main[3][0] + 6, main[3][1] - 10], 15802, 3, 2), bolt(main[6], [main[6][0] + 4, main[6][1] + 9], 15803, 3, 2), bolt(main[5], [main[5][0] - 2, main[5][1] - 9], 15804, 3, 1.6)];
@@ -745,10 +745,12 @@ export const ultra_e = {
     const R = rng(15805), sparks = [];
     for (let i = 0; i < 16; i++) { const a = rad(R() * 360), d = 4 + R() * 18; sparks.push([sx + Math.cos(a) * d * 1.6, sy + Math.sin(a) * d, 0.4 + R() * 0.7]); }
     s.glow(sx, sy, 34, '#ffd27a', 0.7, 'breathe');
+    s.add('<g data-part="spark">');
     s.glow(149, 102, 12, '#fff0c8', 0.8);
     s.glow(205, 99, 10, '#ffd27a', 0.8);
     s.bloom(`<path d="${all}" stroke="#ff9a3c" stroke-width="3.6" fill="none" opacity=".45" stroke-linejoin="round"/><path d="${all}" stroke="#fffaea" stroke-width="1.1" fill="none" stroke-linejoin="round"/>` +
       `<path d="${dots(sparks)}" fill="#ffe2a0"/><path d="${glint(149.6, 102, 5) + glint(205, 99, 4)}" fill="#ffffff"/>`, { sd: 1.6, k: 1.5, box: [120, 60, 110, 80] });
+    s.add('</g>');
     s.motes({ seed: 15806, n: 12, x: [140, 220], y: [70, 130], r: [0.3, 0.8], fill: '#ffb04a', hot: '#fff6d8', cls: 'twinkle', t: [1.5, 3], op: [0.4, 1] });
     return s.svg();
   },
@@ -780,7 +782,7 @@ export const ultra_e = {
     s.add(`<ellipse cx="150" cy="166" rx="110" ry="22" fill="${s.rad([[0, '#c6f4f6', 0.4], [0.5, '#a6e4ec', 0.16], [1, '#a6e4ec', 0]])}"/>`);
     // the winch frame over it: two posts, a beam, the rope and bucket
     s.figure(`<path d="${U(poly([[103, 124], [103, 56], [108, 56], [108, 124]]), poly([[192, 124], [192, 56], [197, 56], [197, 124]]), poly([[96, 52], [204, 52], [204, 59], [96, 59]]),
-      poly([[92, 52], [150, 34], [208, 52]]), poly([[149.4, 59], [150.6, 59], [150.6, 84], [149.4, 84]]), poly([[142, 84], [158, 84], [156, 96], [144, 96]]))}"/>`,
+      poly([[92, 52], [150, 34], [208, 52]]))}"/><g data-part="bucket"><path d="${U(poly([[149.4, 59], [150.6, 59], [150.6, 84], [149.4, 84]]), poly([[142, 84], [158, 84], [156, 96], [144, 96]]))}"/></g>`,
       { fill: '#0c1e24', rim: '#c6f4f6', offsets: [[0, -1], [0.6, -0.8]], rimOp: 0.7 });
     // the well: a drum of stone, its rim, the water brimming at the top
     const cx = 150, top = 122, rx = 50, ry = 12, bot = 172;
@@ -795,13 +797,15 @@ export const ultra_e = {
     s.add(`<path d="${blocks}" fill="none" stroke="#0a1a1e" stroke-width=".9" opacity=".8"/>`);
     s.path(oval(cx, top, rx + 3, ry + 2.4), '#4a7e86');
     s.path(oval(cx, top + 2.6, rx + 3, ry + 2.4), '#2a525a', 'opacity=".6"');
+    s.add('<g data-part="water">');
     s.path(oval(cx, top, rx - 3, ry - 2.4), s.radU(cx, top, rx, [[0, '#ffffff'], [0.3, '#e6fffb'], [0.7, '#9ee6ea'], [1, '#4ab8c4']]));
+    s.add('</g>');
     s.glow(cx, top - 6, 70, '#c6f4f6', 0.55, 'breathe');
     // the runes round the rim, and the water running over it
     let runes = '';
     for (let i = 0; i < 11; i++) { const a = rad(166 - i * 15.2), x = cx + Math.cos(a) * (rx + 1.5), y = top + 2.4 + Math.sin(a) * (ry + 2); runes += rune(i, x, y, 0.56); }
     const spill = U(taper([[118, 132], [117, 146], [118, 160]], [2.4, 1.6, 0.4], { per: 3 }), taper([[176, 133], [177, 150], [176, 164]], [2.4, 1.6, 0.4], { per: 3 }));
-    s.bloom(`<path d="${runes}" fill="none" stroke="#effdfb" stroke-width=".75" stroke-linecap="round"/><path d="${spill}" fill="#c6f4f6" opacity=".85"/>` +
+    s.bloom(`<path data-part="runes" d="${runes}" fill="none" stroke="#effdfb" stroke-width=".75" stroke-linecap="round"/><path data-part="spill" d="${spill}" fill="#c6f4f6" opacity=".85"/>` +
       `<path d="${oval(cx, top, rx - 3, ry - 2.4)}" fill="none" stroke="#ffffff" stroke-width=".8" opacity=".7"/>`, { sd: 1.3, k: 1.45, box: [90, 100, 120, 70] });
     s.motes({ seed: 15903, n: 26, x: [110, 190], y: [36, 118], r: [0.4, 1.2], fill: p.glow, hot: '#ffffff', cls: 'rise', t: [4, 8], op: [0.45, 1] });
     s.add(particles({ seed: 15904, n: 10, x: [30, 270], y: [90, 200], r: [0.4, 0.9], fill: '#c6f4f6', cls: 'float', t: [6, 10], op: [0.2, 0.5] }));

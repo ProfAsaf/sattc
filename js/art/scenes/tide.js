@@ -433,7 +433,7 @@ export const tide = faction('tide', {
     // three scrolls rising out of the water, the last one reaching her
     s.add('<g fill="none" stroke="#e6faf6"><ellipse cx="170" cy="160" rx="16" ry="3" opacity=".5"/><ellipse cx="170" cy="161" rx="28" ry="5" opacity=".25"/></g>');
     for (const [x, y] of [[170, 154], [150, 124], [128, 92]]) s.glow(x, y, 24, '#f4f3d6', 0.62, 'breathe');
-    s.bloom(scroll(170, 154, 28) + scroll(150, 124, -14) + scroll(128, 92, 8), { sd: 1.8, k: 1.2, box: [100, 70, 100, 110] });
+    s.bloom(`<g data-part="scrollA">${scroll(170, 154, 28)}</g><g data-part="scrollB">${scroll(150, 124, -14)}</g><g data-part="scrollC">${scroll(128, 92, 8)}</g>`, { sd: 1.8, k: 1.2, box: [100, 70, 100, 110] });
     // the stair
     s.figure('<path d="M-10,214V158H108V166H122V175H136V186H150V214Z"/>', { fill: '#05131a', rim: p.rim, offsets: [[1, -1]], rimOp: 0.6, shade: 0.5 });
     // the archivist: bent back, bun, shawl, hands held out
@@ -443,11 +443,9 @@ export const tide = faction('tide', {
       taper([[78, 114], [80, 101], [86, 91]], [14, 14, 11]),
       taper([[87, 90], [92, 86]], [5, 4.4]),
       taper([[82, 89], [74, 99], [68, 113], [64, 124]], [8, 12, 9, 2]),
-      taper([[88, 93], [99, 97], [109, 91]], [5, 4.2, 3.4]),
-      taper([[86, 96], [96, 104], [106, 100]], [4.6, 4, 3.2]),
-      taper([[101, 83], [105, 86]], [2.8, 0.6]),
-    ]) + '<circle cx="78" cy="97" r="7"/><circle cx="96" cy="83" r="6.6"/><circle cx="90.5" cy="76.5" r="3.4"/>' +
-      '<ellipse cx="112" cy="89.5" rx="3.6" ry="2.2" transform="rotate(-20 112 89.5)"/><ellipse cx="108.5" cy="99" rx="3.2" ry="2" transform="rotate(-10 108.5 99)"/>' +
+    ]) + `<g data-part="arms">${parts([taper([[88, 93], [99, 97], [109, 91]], [5, 4.2, 3.4]), taper([[86, 96], [96, 104], [106, 100]], [4.6, 4, 3.2])])}</g>` +
+      parts([taper([[101, 83], [105, 86]], [2.8, 0.6])]) + '<circle cx="78" cy="97" r="7"/><circle cx="96" cy="83" r="6.6"/><circle cx="90.5" cy="76.5" r="3.4"/>' +
+      '<g data-part="arms"><ellipse cx="112" cy="89.5" rx="3.6" ry="2.2" transform="rotate(-20 112 89.5)"/><ellipse cx="108.5" cy="99" rx="3.2" ry="2" transform="rotate(-10 108.5 99)"/></g>' +
       '<ellipse cx="68.5" cy="157.5" rx="4.6" ry="1.9"/><ellipse cx="90" cy="157.5" rx="4.8" ry="1.9"/>';
     s.figure(keeper, { fill: p.fig, rim: p.rim, offsets: [[1.2, -0.6], [0.6, -1.1]], rimOp: 0.95, shade: 0.5, edge: 0.3, halo: 0.35 });
     s.add('<circle cx="99.6" cy="82.6" r="1.2" fill="#f4f3d6"/>');

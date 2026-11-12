@@ -21,6 +21,61 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // grave rat (a creature, an attacker with Venom: it digs at a grave, then lunges and bites): its
+  // body (with the haunch and the spine), the ribs over it, its head (snout and ear), its
+  // digging forelegs, its hind leg, its tail, its glowing eye and the bones on the heap; `emit`:
+  // the snout's tip, where its bite and what it flings leave from, `hit`: the middle of its body,
+  // `neck`: where the head turns, `hip`: where the rat rears from (its hind foot), `shoulder`:
+  // where the forelegs turn, `eye`: the eye's centre, `dig`: the hole it digs at
+  'grave-rat': {
+    role: 'attacker', element: 'bone', facing: 'left', emit: [138, 166], hit: [195, 140],
+    neck: [172, 134], hip: [227, 168], shoulder: [162, 150], eye: [154, 146], dig: [140, 178], tailRoot: [229, 143], bones: [242, 174],
+    parts: [
+      { name: 'body', of: ['fig:2 [data-part=body]'], pivot: [227, 168] },
+      { name: 'head', of: 'fig:2 [data-part=head]', pivot: [172, 134] },
+      { name: 'forelegs', of: 'fig:2 [data-part=forelegs]', pivot: [162, 150] },
+      { name: 'hind', of: 'fig:2 [data-part=hind]', pivot: [224, 152] },
+      { name: 'tail', of: 'fig:2 [data-part=tail]', pivot: [229, 143] },
+      { name: 'ribs', of: '[data-part=ribs]', pivot: [227, 168] },
+      { name: 'eye', of: '[data-part=eye]', pivot: [172, 134] },
+      { name: 'bone', of: '[data-part=bone]', pivot: [242, 174] },
+    ],
+  },
+  // something beneath (a creature, an attacker: a shadowy horror rising from the black lake): its
+  // great body (with the horns and the inner tentacle), the two great arms and the two small
+  // tentacles breaking the water at the edges (each about its foot at the waterline), the
+  // eyes (and their glows) and the seam of violet light in its maw; `emit`: the seam, where its
+  // darkness gathers and is breathed out, `hit`: the middle of its body, `waterline`: where it
+  // rises from the lake, `eyes`: the eyes' middle
+  'something-beneath': {
+    role: 'attacker', element: 'shadow', facing: 'front', emit: [148, 126], hit: [150, 100],
+    waterline: 151, eyes: [148, 92], feet: [150, 151], baseL: [100, 150], baseR: [200, 150],
+    parts: [
+      { name: 'body', of: 'fig:0 [data-part=body]', pivot: [150, 151] },
+      { name: 'armL', of: 'fig:0 [data-part=armL]', pivot: [100, 150] },
+      { name: 'armR', of: 'fig:0 [data-part=armR]', pivot: [200, 150] },
+      { name: 'tipL', of: 'fig:0 [data-part=tipL]', pivot: [54, 152] },
+      { name: 'tipR', of: 'fig:0 [data-part=tipR]', pivot: [268, 152] },
+      { name: 'eyes', of: ['[data-part=eyes]', '[data-part=eyeglow]'], pivot: [148, 92] },
+      { name: 'seam', of: '[data-part=seam]', pivot: [148, 126] },
+    ],
+  },
+  // perfect recall (a spell, a support: three spells come back from the discard pile to her hand):
+  // the archivist's reaching arms (both forearms and hands, turning from the shoulder) and the
+  // three scrolls rising out of the flood (each about its own middle); `emit`: her hands, where
+  // the scrolls are gathered and leave from, `hit`: her chest, where the boon lands when alone,
+  // `shoulder`: where the arms turn, `water`: where the scrolls rise from, `scrolls`: their
+  // resting places (the last is nearest her hands)
+  'perfect-recall': {
+    role: 'support', element: 'water', facing: 'right', emit: [111, 92], hit: [82, 122],
+    shoulder: [86, 94], water: [170, 160], scrolls: [[170, 154], [150, 124], [128, 92]],
+    parts: [
+      { name: 'arms', of: 'fig:1 [data-part=arms]', pivot: [86, 94] },
+      { name: 'scrollA', of: '[data-part=scrollA]', pivot: [170, 154] },
+      { name: 'scrollB', of: '[data-part=scrollB]', pivot: [150, 124] },
+      { name: 'scrollC', of: '[data-part=scrollC]', pivot: [128, 92] },
+    ],
+  },
   // the deepwater leviathan (a creature, an attacker: it rises beside the tiny ship and drowns it in
   // a wave): its head (hide, brow and jaw line), the spines along it, the fangs hanging from the
   // jaw, the great eye, the water pouring off the jaw, the ship (with its lantern) and the

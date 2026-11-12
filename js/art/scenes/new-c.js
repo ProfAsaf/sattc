@@ -152,9 +152,11 @@ export const new_c = {
     s.path('M-10,214L-10,185C60,182 140,181 200,183C250,184 282,182 310,184L310,214Z', s.lin([[0, '#4c3b28'], [1, '#1f160d']]));
     // the dome: faint inside, bright at its skin
     const cx = 126, cy = 186, rx = 94, ry = 122;
+    s.add('<g data-part="dome">');
     s.path(`M${cx - rx},${cy}A${rx},${ry} 0 0 1 ${cx + rx},${cy}Z`,
       radE(s, cx, cy, rx, ry, [[0, '#fff6d8', 0.62], [0.55, '#ffe6a6', 0.36], [0.86, '#ffd77a', 0.38], [0.965, '#fff2c8', 0.85], [1, '#fff2c8', 0]]));
     s.add(`<ellipse cx="${cx}" cy="${cy}" rx="${rx + 4}" ry="6" fill="#ffe39a" opacity=".55"/>`);
+    s.add('</g>');
     // the boy, braced behind his little shield
     const kid = sc(U(
       taper([[100, 152], [93, 167], [86, 181]], [8.4, 6.6, 5.4]),
@@ -174,9 +176,9 @@ export const new_c = {
       taper([[95, 148.5], [86, 157], [77, 164]], [2.6, 2.2, 0.6]),
     ), 104, 184, 1.3);
     s.figure(`<path d="${kid}"/>`, { fill: p.fig, rim: p.rim, offsets: [[1.2, -0.7], [0.5, -1.3]], rimOp: 0.95, shade: 0.5, edge: 0.32, light: [1, -0.6] });
-    s.add('<circle cx="143.4" cy="115.1" r="2.8" fill="#ffd77a"/>');
+    s.add('<circle data-part="boss" cx="143.4" cy="115.1" r="2.8" fill="#ffd77a"/>');
     // the dome's skin in front of him: a meridian, two latitudes, the lit rim
-    s.add(`<g fill="none" stroke="#fff3cc">` +
+    s.add(`<g data-part="skin" fill="none" stroke="#fff3cc">` +
       `<path d="M${cx - 58},${cy}A58,${ry} 0 0 1 ${cx + 58},${cy}" stroke-width=".8" opacity=".32"/>` +
       `<path d="M${cx - 81},125A81,7.5 0 0 0 ${cx + 81},125" stroke-width=".8" opacity=".32"/>` +
       `<path d="M${cx - 50},83A50,4.8 0 0 0 ${cx + 50},83" stroke-width=".7" opacity=".28"/>` +
@@ -184,6 +186,7 @@ export const new_c = {
     // the impact on the dome's shoulder
     const th = (34 * Math.PI) / 180, ix = cx + rx * Math.cos(th), iy = cy - ry * Math.sin(th);
     const ta = (Math.atan2(-ry * Math.cos(th), -rx * Math.sin(th)) * 180) / Math.PI + 180;
+    s.add('<g data-part="strike">');
     s.glow(ix, iy, 74, '#fff3cc', 0.8);
     s.shafts({ cx: ix, cy: iy, n: 11, from: -105, to: 70, len: 120, spread: 3, color: '#fff6d8', op: 0.3, seed: 7803, sd: 1.6 });
     s.add(`<g fill="none" stroke="#fff6dc">${[[9, 3.4, 1.3, 0.95], [17, 6.2, 1, 0.65], [27, 9.4, 0.8, 0.38]].map(([a, b, w, o]) =>
@@ -193,6 +196,7 @@ export const new_c = {
       return polyline(bolt([ix, iy], [ix + Math.cos(r) * l, iy + Math.sin(r) * l], 7804 + i, 4, 2.4));
     }).join('');
     s.add(`<path d="${cracks}" fill="none" stroke="#fffbe8" stroke-width=".8" opacity=".85"/>`);
+    s.add('</g>');
     // the spear, snapped short of the dome, its head in pieces
     const bx = 330, by = 38, ux = (ix - bx) / Math.hypot(ix - bx, iy - by), uy = (iy - by) / Math.hypot(ix - bx, iy - by);
     const ex = ix - ux * 13, ey = iy - uy * 13;
@@ -201,8 +205,10 @@ export const new_c = {
     const shard = (x, y, r, a) => rot(poly([[x - r, y - r * 0.3], [x + r, y], [x - r * 0.5, y + r * 0.5]]), x, y, a);
     const shards = U(shard(ix + 18, iy - 22, 4.6, -30), shard(ix + 24, iy + 6, 3.6, 40), shard(ix + 8, iy + 20, 3, 110),
       shard(ix + 32, iy - 8, 2.6, 10), shard(ix - 4, iy - 18, 2.4, -80), shard(ix + 40, iy - 30, 2, -20));
-    s.figure(`<path d="${shaft}"/><path d="${shards}"/>`, { fill: '#0f0a07', rim: '#ffe6a6', offsets: [[-0.7, 0.8], [-0.8, -0.4]], rimOp: 0.8 });
+    s.figure(`<g data-part="shaft"><path d="${shaft}"/></g><g data-part="shards"><path d="${shards}"/></g>`, { fill: '#0f0a07', rim: '#ffe6a6', offsets: [[-0.7, 0.8], [-0.8, -0.4]], rimOp: 0.8 });
+    s.add('<g data-part="flare">');
     s.bloom(`<path d="${glint(ix, iy, 15, 0.12)}" fill="#fffbea"/><path d="${rot(glint(ix, iy, 7, 0.2), ix, iy, 45)}" fill="#fff3cc"/><circle cx="${f1(ix)}" cy="${f1(iy)}" r="3.4" fill="#fff"/>`, { sd: 2, k: 1.5 });
+    s.add('</g>');
     // grass at the corners
     const R = rng(7805), blades = [];
     for (const [x0, x1] of [[-8, 40], [262, 310]]) {
@@ -245,23 +251,40 @@ export const new_c = {
       ell(118.4, 94.8, 6.6, 5.8),
       taper([[115.5, 92], [112.5, 100], [110, 110], [105.5, 120], [99, 127]], [9, 8.6, 7, 4.6, 0.6]),
       taper([[114, 97], [108, 106], [101, 112], [94, 114]], [4, 3.4, 2.4, 0.4]),
+    ), 118, 188, K);
+    const armU = sc(U(
       taper([[123, 114], [135, 110], [146, 97]], [4.6, 3.8, 3.2]), ell(147.5, 95.5, 2.6, 2.4),
-      taper([[118, 116], [132, 122], [148, 118]], [4.6, 3.8, 3.2]), ell(149.5, 117.5, 2.6, 2.4),
       blob([[127, 112], [137, 109.5], [138, 116], [133, 127], [127, 121]], 4),
+    ), 118, 188, K);
+    const armL = sc(U(
+      taper([[118, 116], [132, 122], [148, 118]], [4.6, 3.8, 3.2]), ell(149.5, 117.5, 2.6, 2.4),
       blob([[124, 119], [136, 123], [134, 133], [126, 130]], 4),
     ), 118, 188, K);
-    s.figure(`<path d="${girl}"/>`, { fill: '#433629', rim: '#fff3d0', offsets: [[-1.2, -0.4], [1.1, -0.6]], rimOp: 0.95, shade: 0.55, edge: 0.35, light: [1, -0.4] });
+    // (the figure is drawn from three pieces, and its shading gradient follows each shape's own box: each piece
+    // carries the whole figure's four extreme points as zero-length marks, which paint nothing, so the box is as it was)
+    const pts = [...(girl + armU + armL).matchAll(NUM)].map((m) => [+m[1], +m[2]]);
+    const ext = [(a, b) => a[0] - b[0], (a, b) => b[0] - a[0], (a, b) => a[1] - b[1], (a, b) => b[1] - a[1]].map((c) => pts.reduce((m, q) => (c(q, m) < 0 ? q : m)));
+    const pin = ext.map(([x, y]) => `M${x},${y}L${x},${y}`).join('');
+    s.figure(`<g data-part="body"><path d="${girl}${pin}"/></g><g data-part="armU"><path d="${armU}${pin}"/></g><g data-part="armL"><path d="${armL}${pin}"/></g>`, { fill: '#433629', rim: '#fff3d0', offsets: [[-1.2, -0.4], [1.1, -0.6]], rimOp: 0.95, shade: 0.55, edge: 0.35, light: [1, -0.4] });
     // the low sun through her pale robe
+    s.add('<g data-part="sun">');
     s.path(sc(robe, 118, 188, K), radE(s, 70, 196, 110, 90, [[0, '#ffe9b8', 0.75], [0.4, '#f6d79a', 0.4], [1, '#f6d79a', 0]]));
+    s.add('</g>');
     // the spirit she is weaving
     const sx = 182.7, sy = 84.3;
+    s.add('<g data-part="halo">');
     s.glow(sx, sy, 66, '#ffe6a6', 0.45);
+    s.add('</g>');
     s.glow(sx, sy, 26, '#fff1c2', 0.95, 'breathe');
     const threads = sc('M148,95C156,84 165,86 170,97M150,118C158,127 167,122 171,110M148,95C156,104 141,110 150,118M147,97C162,106 160,113 150,118' +
       'M146,96C150,88 158,90 168,100M151,117C160,112 164,110 169,106M150,118C140,110 151,102 148,95', 118, 188, K);
+    s.add('<g data-part="threads">');
     s.bloom(`<path d="${threads}" fill="none" stroke="#ffd77a" stroke-width="3" opacity=".4"/><path d="${threads}" fill="none" stroke="#fff4d0" stroke-width=".9"/>` +
       `<ellipse cx="${sx}" cy="${sy}" rx="21" ry="6" fill="none" stroke="#fff4d0" stroke-width=".7" opacity=".7" transform="rotate(-20 ${sx} ${sy})"/>`, { sd: 1.4, k: 1.4, box: [136, 50, 80, 80] });
+    s.add('</g>');
+    s.add('<g data-part="spirit">');
     s.path(sprite(sx, sy, 1.4), '#fffdf2');
+    s.add('</g>');
     s.motes({ seed: 7902, n: 18, x: [140, 214], y: [54, 118], r: [0.4, 1], fill: '#ffe39a', cls: 'float', t: [4, 8], op: [0.5, 1] });
     s.add(particles({ seed: 7903, n: 14, x: [30, 270], y: [40, 170], r: [0.5, 1.1], fill: '#fff6d8', cls: 'float', t: [5, 9], op: [0.3, 0.7] }));
     // meadow grass and flowers at the front
@@ -290,8 +313,8 @@ export const new_c = {
     s.path('M-10,214L-10,186C60,174 150,160 228,150L262,147L272,148C200,160 120,184 64,214Z', s.lin([[0, '#c9b38a'], [1, '#8a7656']], { x1: 1, y1: 0, x2: 0, y2: 1 }));
     // the riders, coming on
     const rd = horseman();
-    const riders = [[278, 150, 0.56], [254, 154.5, 0.76], [230, 160, 0.98]].map(([x, y, k]) =>
-      `<g transform="translate(${x} ${y}) scale(${-k} ${k})"><path d="${rd}"/></g>`).join('');
+    const riders = [[278, 150, 0.56], [254, 154.5, 0.76], [230, 160, 0.98]].map(([x, y, k], i) =>
+      `<g data-part="rider${i}" transform="translate(${x} ${y}) scale(${-k} ${k})"><path d="${rd}"/></g>`).join('');
     s.figure(riders, { fill: '#1a1310', rim: '#ffe6ad', offsets: [[1, -0.6], [0, -1.1]], rimOp: 0.85 });
     s.add('<ellipse cx="250" cy="161" rx="42" ry="2.6" fill="#2a2018" opacity=".35"/>');
     // dust kicked up behind them
@@ -311,14 +334,16 @@ export const new_c = {
       taper([[-22, -16], [52, -26]], [2, 1.6]),
       poly([[51, -28.4], [60, -27.2], [52, -23.6]]),
     );
-    const troop = [[38, 136, 0.86], [130, 143, 0.96], [84, 150, 1.44]].map(([x, y, k]) =>
-      `<g transform="translate(${x} ${y}) scale(${k})"><path d="${sol}"/></g>`).join('');
+    const troop = [[38, 136, 0.86], [130, 143, 0.96], [84, 150, 1.44]].map(([x, y, k], i) =>
+      `<g data-part="sol${i}" transform="translate(${x} ${y}) scale(${k})"><path d="${sol}"/></g>`).join('');
     s.glow(88, 118, 80, '#fff0c2', 0.5, 'breathe');
     s.blur(`<g fill="#ffcf6a" opacity=".9">${troop}</g>`, 3.6);
     const ghost = linU(s, 0, 70, 0, 178, [[0, '#fff9e2', 0.95], [0.35, '#ffe6a2', 0.85], [0.7, '#ffd77a', 0.45], [1, '#ffd77a', 0]]);
     s.add(`<g fill="${ghost}">${troop}</g>`);
     // the mist they come out of
+    s.add('<g data-part="mist">');
     s.haze(150, 196, '#f0e2c0', 0.4, 20);
+    s.add('</g>');
     s.fog(170, '#fff1cf', 0.55).fog(184, '#f6e4bf', 0.6).fog(198, '#e9d6b0', 0.5);
     s.add(`<g fill="#fff1cf" opacity=".5">${[[40, 176, 30], [96, 186, 38], [150, 178, 26], [70, 196, 30]].map(([x, y, r]) =>
       `<ellipse class="drift" cx="${x}" cy="${y}" rx="${r * 1.5}" ry="${r * 0.32}"/>`).join('')}</g>`);
@@ -345,10 +370,12 @@ export const new_c = {
     const topE = spline([[104, 28], [130, 21], [158, 29], [186, 23], [214, 31], [240, 27]], 5);
     const botE = spline([[104, 54], [130, 50], [158, 58], [186, 52], [212, 59]], 5);
     const flag = poly([...topE, [264, 33], [236, 42], [258, 51], [226, 56], ...botE.reverse()]);
+    s.add('<g data-part="banner">');
     s.path(flag, s.lin([[0, '#df9f4e'], [0.5, '#f5cb78'], [1, '#fff0c8']], { x1: 0, y1: 0, x2: 1, y2: 0 }), 'opacity=".97"');
     s.add(`<path d="${taper([[158, 30], [158, 44], [158, 57]], [7, 10, 7])}" fill="#9b5c22" opacity=".18"/>` +
       `<path d="${taper([[214, 32], [213, 45], [212, 58]], [6, 9, 6])}" fill="#9b5c22" opacity=".14"/>`);
     s.add(`<path d="${sunMark(126, 37, 5)}" fill="none" stroke="#9a6326" stroke-width="1.4" opacity=".55"/>`);
+    s.add('</g>');
     // the wall: a tower at the left, merlons either side of him
     let wall = 'M-10,214L-10,178L310,178L310,214Z';
     for (const [a, b] of [[52, 80], [160, 190], [228, 258], [296, 316]]) wall += `M${a},178L${a},157L${b},157L${b},178Z`;
@@ -373,11 +400,15 @@ export const new_c = {
       ell(102.5, 118.5, 3, 3),
       taper([[102.5, 178], [102.5, 100], [102.5, 30]], [2.6, 2.4, 2.2]),
       poly([[100, 31], [102.5, 17], [105, 31]]),
-      taper([[128, 106], [133, 118], [136, 126]], [6, 5, 4.6]),
-      kite(139, 105, 12.5, 44),
     );
-    s.figure(`<path d="${knight}"/>`, { fill: p.fig, rim: p.rim, offsets: [[1.3, -0.6], [0.4, -1.3], [-0.8, -0.8]], rimOp: 0.95, shade: 0.45, edge: 0.35, light: [1, -0.5] });
-    s.add(`<path d="${sunMark(139, 122, 4)}" fill="none" stroke="#e7b860" stroke-width="1.1" opacity=".8"/>`);
+    // (the shield, with the arm that holds it, is a moving piece of his own)
+    const shield = U(taper([[128, 106], [133, 118], [136, 126]], [6, 5, 4.6]), kite(139, 105, 12.5, 44));
+    // (its shading gradient follows each shape's own box, so each piece carries two dots at the corners of the whole's box: it shades as before)
+    const xs = (knight + shield).match(/-?\d+(\.\d+)?,-?\d+(\.\d+)?/g).map((q) => q.split(',').map(Number));
+    const box = [Math.min(...xs.map((q) => q[0])), Math.min(...xs.map((q) => q[1])), Math.max(...xs.map((q) => q[0])), Math.max(...xs.map((q) => q[1]))];
+    const pin = `M${box[0]},${box[1]}L${box[0]},${box[1]}ZM${box[2]},${box[3]}L${box[2]},${box[3]}Z`;
+    s.figure(`<g data-part="man"><path d="${knight}${pin}"/></g><g data-part="shield"><path d="${shield}${pin}"/></g>`, { fill: p.fig, rim: p.rim, offsets: [[1.3, -0.6], [0.4, -1.3], [-0.8, -0.8]], rimOp: 0.95, shade: 0.45, edge: 0.35, light: [1, -0.5] });
+    s.add(`<path data-part="shield" d="${sunMark(139, 122, 4)}" fill="none" stroke="#e7b860" stroke-width="1.1" opacity=".8"/>`);
     s.bloom(`<path d="${glint(102.5, 18, 6, 0.16)}" fill="#fffbea"/>`, { sd: 1.2, k: 1.4, box: [90, 6, 26, 26] });
     s.add(particles({ seed: 8104, n: 16, x: [40, 270], y: [40, 170], r: [0.5, 1.2], fill: '#fff6d8', cls: 'float', t: [5, 9], op: [0.4, 0.9] }));
     return s.svg();
@@ -470,8 +501,10 @@ export const new_c = {
       taper([[132, 114], [127, 142], [126, 166]], [8, 6.4, 1]),
     );
     const wings = wl + flipX(wl, 150);
+    s.add('<g data-part="wings">');
     s.path(wings, radE(s, 150, 92, 60, 90, [[0, '#ffe7a8', 0.9], [0.7, '#f5c66a', 0.78], [1, '#e9a94e', 0.6]]));
     s.add(`<path d="${wings}" fill="none" stroke="#fff3cc" stroke-width=".6" opacity=".7"/>`);
+    s.add('</g>');
     // the Choirmother
     const body = U(
       blob([[141, 84], [159, 84], [163, 100], [166, 122], [171, 146], [178, 168], [168, 172], [158, 169], [150, 173], [141, 169], [131, 172], [122, 168], [129, 146], [134, 122], [137, 100]], 5),
@@ -486,10 +519,12 @@ export const new_c = {
       blob([[126, 50], [131, 64], [138, 80], [130, 90], [121, 94], [117, 84], [120, 66]], 4),
       blob([[174, 50], [169, 64], [162, 80], [170, 90], [179, 94], [183, 84], [180, 66]], 4),
     );
+    s.add('<g data-part="her">');
     s.blur(`<path d="${body}" fill="#ffd77a" opacity=".85"/>`, 4);
     s.path(body, linU(s, 0, 40, 0, 186, [[0, '#fffef8'], [0.55, '#fff2cc'], [1, '#ffd994']]));
     s.add('<path d="M146,102Q143,132 137,166M154,102Q157,132 163,166M150,106V170M140,92Q150,96 160,92" fill="none" stroke="#dca752" stroke-width=".8" opacity=".45"/>');
-    s.add('<ellipse cx="152" cy="51" rx="10.5" ry="3.4" fill="none" stroke="#fff3c6" stroke-width="1.3" transform="rotate(-25 152 51)"/>');
+    s.add('</g>');
+    s.add('<g data-part="halo"><ellipse cx="152" cy="51" rx="10.5" ry="3.4" fill="none" stroke="#fff3c6" stroke-width="1.3" transform="rotate(-25 152 51)"/></g>');
     // the little ones, rising
     const kids = [[104, 166, 0.5], [90, 136, 0.62], [96, 102, 0.72], [102, 70, 0.62], [88, 42, 0.54], [118, 20, 0.46],
       [198, 158, 0.55], [212, 128, 0.66], [206, 94, 0.72], [198, 62, 0.6], [214, 36, 0.52], [182, 14, 0.44]];
@@ -522,9 +557,13 @@ export const new_c = {
     const sx = 212, sy = 42;
     s.blur(`<path d="M96,25L320,-34L320,122L96,37Z" fill="${linU(s, 96, 0, 320, 0, [[0, '#fff3cc', 0.8], [0.45, '#ffe6a6', 0.36], [1, '#ffe6a6', 0.04]])}"/>` +
       `<path d="M96,29L320,10L320,74L96,33Z" fill="${linU(s, 96, 0, 320, 0, [[0, '#fffbea', 0.8], [0.5, '#fff3cc', 0.3], [1, '#fff3cc', 0]])}"/>`, 2.6);
+    s.add('<g data-part="spirit">');
     s.glow(sx, sy, 40, '#fff1c4', 0.75);
+    s.add('</g>');
     s.glow(sx, sy, 16, '#fffaf0', 0.9, 'breathe');
+    s.add('<g data-part="spirit">');
     s.path(sprite(sx, sy, 1.3), '#fffdf2', 'opacity=".9"');
+    s.add('</g>');
     const R = rng(8403), ring = [];
     for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2 + R() * 0.3, rr = 14 + R() * 8; ring.push([sx + Math.cos(a) * rr, sy + Math.sin(a) * rr * 0.6, 0.5 + R() * 0.7]); }
     s.add(`<path class="twinkle" style="--t:2.6s" d="${dots(ring)}" fill="#fff6d8"/>`);
@@ -548,8 +587,10 @@ export const new_c = {
     s.glow(96, 34, 110, '#ffd27a', 0.55);
     s.glow(96, 36, 40, '#fff1c4', 0.8, 'breathe');
     const fire = U(flame(96, 54, 50, -3, 26), flame(86, 54, 34, -11, 15, -0.14), flame(106, 54, 38, 9, 17), flame(92, 52, 42, 6, 12, -0.16), flame(101, 52, 30, -8, 11));
+    s.add('<g data-part="fire">');
     s.bloom(`<path d="${fire}" fill="${linU(s, 0, 4, 0, 56, [[0, '#ffb347', 0.2], [0.35, '#ffcf6a', 0.95], [1, '#ffe7a8']])}"/>` +
       `<path d="${U(flame(96, 53, 28, 0, 14, 0.06), flame(90.5, 53, 18, -4, 8, -0.06), flame(101.5, 53, 20, 4, 8, 0.06))}" fill="#fff8e2"/>`, { sd: 2.4, k: 1.4, box: [50, -14, 92, 80] });
+    s.add('</g>');
     s.add(particles({ seed: 8405, n: 18, x: [78, 116], y: [6, 50], r: [0.5, 1.2], fill: '#ffd27a', cls: 'rise', t: [3, 6], op: [0.5, 1] }));
     return s.svg();
   },
@@ -647,10 +688,12 @@ export const new_c = {
     const tail = [[44, 21], [14, 33], [40, 58], [16, 82], [54, 103]];
     const flag = poly([...topE, ...tail.slice(1, 4), ...botE.slice().reverse()]);
     s.glow(96, 58, 100, '#ffcf7a', 0.4);
+    s.add('<g data-part="flag">');
     s.path(flag, s.lin([[0, '#e8913e'], [0.55, '#f6c96c'], [1, '#fff0c4']], { x1: 0, y1: 0, x2: 1, y2: 0 }));
     s.add(`<path d="${taper([[70, 15], [70, 54], [76, 93]], [9, 12, 8])}" fill="#8a3d16" opacity=".2"/>` +
       `<path d="${taper([[122, 14], [122, 52], [124, 91]], [9, 12, 8])}" fill="#8a3d16" opacity=".16"/>`);
     s.add(`<path d="${sunMark(97, 56, 9.5)}" fill="none" stroke="#8a4416" stroke-width="2.2" opacity=".55"/>`);
+    s.add('</g>');
     // its burning edge: char, then fire, flames streaming back
     const edge = polyline([...tail, ...botE.slice().reverse()].reverse());
     const R = rng(8603), tongues = [];
@@ -658,12 +701,14 @@ export const new_c = {
       [28, 92, 17], [41, 98, 15], [54, 103, 13], [66, 99, 11], [80, 95, 10], [96, 100, 9], [112, 97, 7]]) {
       tongues.push(flame(x, y + 1, h + R() * 5, -h * 0.8, 5 + R() * 3.4, (R() - 0.5) * 0.3));
     }
+    s.add('<g data-part="flame">');
     s.add(`<path d="${edge}" fill="none" stroke="#2e0d07" stroke-width="6" stroke-linejoin="round"/>`);
     s.glow(30, 66, 44, '#ff8a3a', 0.45);
     const cores = [[14, 33], [22, 42], [31, 50], [40, 58], [30, 70], [16, 82], [28, 92]].map(([x, y]) => flame(x, y + 1, 9, -7, 3));
     s.bloom(`<path d="${U(tongues)}" fill="${linU(s, 0, 10, 0, 106, [[0, '#ffe08a', 0.7], [0.45, '#ff8a3a', 0.95], [1, '#ff6a1f']])}"/>` +
       `<path d="${U(cores)}" fill="#fff0b0"/>` +
       `<path d="${edge}" fill="none" stroke="#ff7a2e" stroke-width="3.2" stroke-linejoin="round"/><path d="${edge}" fill="none" stroke="#ffe08a" stroke-width="1.1" stroke-linejoin="round"/>`, { sd: 2, k: 1.45, box: [-14, -6, 150, 124] });
+    s.add('</g>');
     s.add(particles({ seed: 8604, n: 26, x: [-6, 76], y: [4, 110], r: [0.5, 1.4], fill: '#ffb05a', cls: 'rise', t: [3, 6], op: [0.6, 1] }));
     // the line of riders behind him
     const lancer = U(horse(),
@@ -674,8 +719,8 @@ export const new_c = {
       taper([[1, -39], [-7, -37], [-15, -33]], [5, 4.4, 1.2]),
       taper([[6, -24], [22, -56], [30, -72]], [1.8, 1.5, 1.2]), poly([[28, -71], [32.6, -80], [32.4, -70]]),
     );
-    const line2 = [[30, 184, 0.78], [72, 189, 0.98], [226, 188, 0.94], [270, 183, 0.74]].map(([x, y, k]) =>
-      `<g transform="translate(${x} ${y}) scale(${k})"><path d="${lancer}"/></g>`).join('');
+    const line2 = [[30, 184, 0.78], [72, 189, 0.98], [226, 188, 0.94], [270, 183, 0.74]].map(([x, y, k], i) =>
+      `<g data-part="r${i}"><g transform="translate(${x} ${y}) scale(${k})"><path d="${lancer}"/></g></g>`).join('');
     s.figure(line2, { fill: '#2a120c', rim: '#ffb36a', offsets: [[1, -0.6], [0, -1.1]], rimOp: 0.8 });
     // the bearer, out in front, pole up
     const lead = U(horse(),
@@ -685,7 +730,7 @@ export const new_c = {
       taper([[6, -40], [8.5, -48], [7.6, -56]], [3, 2.6, 2.2]),
       taper([[1, -39], [-7, -37], [-15, -33]], [5, 4.4, 1.2]),
     );
-    s.figure(`<g transform="translate(150 198) scale(1.5)"><path d="${lead}"/></g><path d="${taper([[167, 160], [147, 14]], [3, 2.6])}"/>`,
+    s.figure(`<g data-part="lead"><g transform="translate(150 198) scale(1.5)"><path d="${lead}"/></g><path d="${taper([[167, 160], [147, 14]], [3, 2.6])}"/></g>`,
       { fill: '#1d0c08', rim: '#ffcf8a', offsets: [[1.2, -0.7], [0, -1.3]], rimOp: 0.9, shade: 0.4, edge: 0.3, light: [1, -0.5] });
     s.add(`<path d="${poly([[144, 15], [146.6, 4], [149.4, 15]])}" fill="#ffd27a"/>`);
     s.motes({ seed: 8605, n: 16, x: [60, 300], y: [90, 200], r: [0.4, 1.1], fill: '#ffcf7a', cls: 'float', t: [4, 8], op: [0.4, 0.9] });
@@ -724,10 +769,11 @@ export const new_c = {
         taper([P(-1, 1), P(-7, 3), P(-12, 4)], [3 * k, 2 * k, 0.4 * k])], eye: P(9.5, 1.8) };
     };
     const parts = [ell(150, 178, 36, 12), taper([[184, 182], [196, 168], [210, 165], [222, 171], [230, 182]], [10, 11, 10, 8, 5])];
-    const eyes = [], moss = [];
+    const eyes = [], mosses = [];
     for (const [pts, a] of necks) {
-      parts.push(taper(pts, [16, 13, 11, 9.5, 8.5]));
+      const moss = [];
       const h = head(...pts[pts.length - 1], a);
+      parts.push(taper(pts, [16, 13, 11, 9.5, 8.5]));
       parts.push(h.d);
       eyes.push(h.eye);
       const sp = spline(pts, 6);
@@ -737,11 +783,15 @@ export const new_c = {
         let nx = -(y1 - y0) / len, ny = (x1 - x0) / len; if (nx > 0) { nx = -nx; ny = -ny; }
         moss.push([x0 + nx * 3, y0 + ny * 3, 1 + (i % 3) * 0.3]);
       }
+      mosses.push(moss);
     }
     s.figure(`<path d="${U(parts)}"/>`, { fill: '#163b37', rim: '#fff3c0', offsets: [[-1.2, -1], [-0.3, -1.3]], rimOp: 0.95, shade: 0.5, edge: 0.3, light: [-0.6, -1] });
-    s.path(dots(moss), '#a9c97c', 'opacity=".55"');
-    for (const [x, y] of eyes) s.glow(x, y, 7, '#e6f78f', 0.8);
-    s.path(dots(eyes.map(([x, y]) => [x, y, 1.3])), '#f7ffc8');
+    s.add('<g data-part="moss">');
+    for (const moss of mosses) s.path(dots(moss), '#a9c97c', 'opacity=".55"');
+    s.add('</g>');
+    s.add('<g data-part="eyes">');
+    for (const [x, y] of eyes) { s.glow(x, y, 7, '#e6f78f', 0.8); s.path(dots([[x, y, 1.3]]), '#f7ffc8'); }
+    s.add('</g>');
     // the water over its body, rings where the necks break the surface
     s.path('M-10,214L-10,171C60,169 240,169 310,171L310,214Z', s.lin([[0, '#5f9f98', 0.72], [1, '#123c45', 0.92]]));
     s.add(`<g fill="none" stroke="#e9f6d6" opacity=".55">${[[126, 176, 9], [139, 172, 8], [150, 171, 9], [162, 172, 8], [173, 176, 9], [186, 179, 7], [228, 180, 6]].map(([x, y, r]) =>
@@ -807,7 +857,7 @@ export const new_c = {
         if (Rw() < 0.22) dew.push([a[0], a[1], 0.6 + Rw() * 0.6]);
       }
     }
-    s.add(`<path d="${spokes}" fill="none" stroke="#d8d0f0" stroke-width=".6" opacity=".55"/><path d="${spiral}" fill="none" stroke="#d8d0f0" stroke-width=".45" opacity=".5"/>`);
+    s.add(`<g data-part="web"><path d="${spokes}" fill="none" stroke="#d8d0f0" stroke-width=".6" opacity=".55"/><path d="${spiral}" fill="none" stroke="#d8d0f0" stroke-width=".45" opacity=".5"/></g>`);
     s.add(`<path class="twinkle" style="--t:3s" d="${dots(dew)}" fill="#f2eeff"/>`);
     // the spider, head down
     const legL = [
@@ -817,13 +867,23 @@ export const new_c = {
       [[145, 94], [126, 68], [106, 38]],
     ];
     const legs = legL.map(([r, k, t]) => [taper([r, k], [4.6, 3.6]), taper([k, [(k[0] + t[0]) / 2, (k[1] + t[1]) / 2], t], [3.6, 2.6, 0.8]), ell(k[0], k[1], 2.6, 2.6)]);
-    const halfL = U(legs, taper([[145, 110], [139, 116], [137, 123]], [2.6, 2, 0.6]), taper([[147, 111], [146, 117], [147.6, 122]], [3.4, 2.4, 0.5]));
-    const spider = U(halfL, flipX(halfL, 150), ell(150, 72, 17, 22), ell(150, 92, 5, 4), ell(150, 102, 10.5, 11.5), taper([[150, 52], [150, 46]], [4, 1]));
-    s.add('<path d="M150,48L150,-6" stroke="#d8d0f0" stroke-width=".6" opacity=".6"/>');
-    s.figure(`<path d="${spider}"/>`, { fill: '#0b0711', rim: '#c3b2f0', offsets: [[0, 1.2], [-1, 0.5], [1, 0.5]], rimOp: 0.85, shade: 0.4, halo: { op: 0.35, sd: 3, color: '#8f6ad8' }, light: [0, 1] });
+    const fangsL = U(taper([[145, 110], [139, 116], [137, 123]], [2.6, 2, 0.6]), taper([[147, 111], [146, 117], [147.6, 122]], [3.4, 2.4, 0.5]));
+    const body = U(ell(150, 72, 17, 22), ell(150, 92, 5, 4), ell(150, 102, 10.5, 11.5), taper([[150, 52], [150, 46]], [4, 1]));
+    // (each leg, the fangs and the body are their own pieces of the one figure, drawn as before; each carries two dots at the
+    // whole spider's corners, so the figure's shading gradient still spans all of it)
+    const all = U(legs, fangsL, flipX(U(legs, fangsL), 150), body), xs = [], ys = [];
+    all.replace(NUM, (_, x, y) => { xs.push(+x); ys.push(+y); });
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const pad = `M${x0},${y0}L${x0},${y0}M${x1},${y1}L${x1},${y1}`;
+    const tg = (n, d) => `<g data-part="${n}"><path d="${d}${pad}"/></g>`;
+    const spider = legs.map((l, i) => { const d = U(l); return tg('legL' + i, d) + tg('legR' + i, flipX(d, 150)); }).join('') + tg('fangs', U(fangsL, flipX(fangsL, 150))) + tg('body', body);
+    s.add('<g data-part="thread"><path d="M150,48L150,-6" stroke="#d8d0f0" stroke-width=".6" opacity=".6"/></g>');
+    s.figure(spider, { fill: '#0b0711', rim: '#c3b2f0', offsets: [[0, 1.2], [-1, 0.5], [1, 0.5]], rimOp: 0.85, shade: 0.4, halo: { op: 0.35, sd: 3, color: '#8f6ad8' }, light: [0, 1] });
+    s.add('<g data-part="marks">');
     s.add('<path d="M141,62L150,69L159,62M143,74L150,80L157,74M145.5,85L150,88.5L154.5,85" fill="none" stroke="#8d6ad8" stroke-width="1.2" opacity=".75"/>');
     s.glow(150, 107, 11, '#b07cff', 0.75);
     s.path(dots([[147.3, 107.5, 1.5], [152.7, 107.5, 1.5], [144.8, 104.6, 0.9], [155.2, 104.6, 0.9], [148.6, 104, 0.8], [151.4, 104, 0.8], [146, 110.6, 0.8], [154, 110.6, 0.8]]), '#efe2ff');
+    s.add('</g>');
     // mist rolling through the trees' feet
     s.fog(166, '#b8a8e8', 0.3).fog(182, '#a898dc', 0.38).fog(198, '#8f80c8', 0.4);
     s.add(particles({ seed: 8804, n: 12, x: [40, 260], y: [30, 170], r: [0.4, 1], fill: '#d9f27a', cls: 'float', t: [5, 9], op: [0.3, 0.7] }));
@@ -861,8 +921,10 @@ export const new_c = {
     }
     const knots = ang.map((a) => [hx + Math.cos(a) * 122, hy + Math.sin(a) * 122, 1.8]);
     s.glow(214, 166, 70, '#ffe39a', 0.35);
+    s.add('<g data-part="net">');
     s.bloom(`<path d="${rays2.join('') + net.join('')}" fill="none" stroke="#ffd77a" stroke-width="2.2" opacity=".45"/>` +
       `<path d="${rays2.join('') + net.join('')}" fill="none" stroke="#fff4cf" stroke-width=".8"/><path d="${dots(knots)}" fill="#fff6dc"/>`, { sd: 1.8, k: 1.4, box: [130, 96, 190, 130] });
+    s.add('</g>');
     // near clouds, dark, below
     s.path(puffs([[-10, 200, 22], [34, 206, 18], [80, 212, 20], [190, 214, 18], [236, 204, 20], [284, 198, 22], [316, 206, 18]]), '#1d3a55');
     // the griffin
@@ -888,23 +950,28 @@ export const new_c = {
     );
     const G = (d) => `<g transform="translate(118 96) rotate(28) scale(1.1)"><path d="${d}"/></g>`;
     // the far wing, fanned back behind the body, in shadow
-    s.add(`<g fill="#a7c1c2">${G(rot(wing, -4, -6, -18))}</g>`);
-    s.figure(G(body + wing), { fill: '#f2f6f0', rim: '#fffbe6', offsets: [[0.8, -1.2]], rimOp: 1, shade: 0.7, edge: 0.3, light: [0.5, -1] });
+    s.add(`<g data-part="wingF" fill="#a7c1c2">${G(rot(wing, -4, -6, -18))}</g>`);
+    // (the near wing and the body are their own pieces of the one figure; each carries two dots at the whole's corners, so the shading gradient still spans all of it)
+    const gx = [], gy = [];
+    (body + wing).replace(NUM, (_, x, y) => { gx.push(+x); gy.push(+y); });
+    const wr = wing.split('M').filter(Boolean).map((q) => 'M' + q); // (the feather at the wing's root, ring 2, stays with the body: it lies over its back)
+    const gpad = `M${Math.min(...gx)},${Math.min(...gy)}L${Math.min(...gx)},${Math.min(...gy)}M${Math.max(...gx)},${Math.max(...gy)}L${Math.max(...gx)},${Math.max(...gy)}`;
+    s.figure(`<g data-part="body" transform="translate(118 96) rotate(28) scale(1.1)"><path d="${body}${wr[2]}${gpad}"/></g><g data-part="wingN" transform="translate(118 96) rotate(28) scale(1.1)"><path d="${wr.filter((q, i) => i !== 2).join('')}${gpad}"/></g>`, { fill: '#f2f6f0', rim: '#fffbe6', offsets: [[0.8, -1.2]], rimOp: 1, shade: 0.7, edge: 0.3, light: [0.5, -1] });
     // its hooked gold beak and dark eye
-    s.add(`<g fill="#e2b257">${G(poly([[40, -16], [50, -13], [54.5, -8.5], [53, -4], [50.5, -6.5], [46, -6], [41.5, -7]]))}</g>`);
-    s.add(`<g fill="#1a2b38">${G(ell(38, -13.6, 1.5, 1.3))}</g>`);
+    s.add(`<g data-part="beak" fill="#e2b257">${G(poly([[40, -16], [50, -13], [54.5, -8.5], [53, -4], [50.5, -6.5], [46, -6], [41.5, -7]]))}</g>`);
+    s.add(`<g data-part="beak" fill="#1a2b38">${G(ell(38, -13.6, 1.5, 1.3))}</g>`);
     // the knight, low over its neck, casting
+    const knArm = U(taper([[14, -26], [22, -15], [27.5, -1]], [4.4, 3.8, 3.2]), ell(28.2, 1, 2.4, 2.2));
     const kn = U(
       taper([[4, -8], [9, -19], [14, -28]], [10, 9, 9.4]),
       taper([[5, -9], [13, -6]], [6, 5]),
       taper([[13, -6], [14, 2]], [4.4, 3.6]),
       ell(16.5, -33, 4.4, 4.8), ell(17, -35, 5.2, 3.8, -12),
       taper([[13, -37.5], [6, -40], [-1.5, -39]], [3, 2.4, 0.5]),
-      taper([[14, -26], [22, -15], [27.5, -1]], [4.4, 3.8, 3.2]), ell(28.2, 1, 2.4, 2.2),
       taper([[10, -24], [18, -19], [23, -17]], [4, 3.4, 3]),
       taper([[8, -26], [1, -27.5], [-6, -25]], [6, 6, 1]),
     );
-    s.figure(G(kn), { fill: '#13202f', rim: '#ffe9b0', offsets: [[0.8, -1.1]], rimOp: 0.95 });
+    s.figure(`<g data-part="arm" transform="translate(118 96) rotate(28) scale(1.1)"><path d="${knArm}"/></g><g data-part="rider" transform="translate(118 96) rotate(28) scale(1.1)"><path d="${kn}"/></g>`, { fill: '#13202f', rim: '#ffe9b0', offsets: [[0.8, -1.1]], rimOp: 0.95 });
     s.glow(hx, hy, 16, '#fff3cc', 0.9, 'breathe');
     s.add(particles({ seed: 8902, n: 18, x: [140, 290], y: [100, 210], r: [0.5, 1.2], fill: '#ffe9b0', cls: 'fall', t: [1.4, 2.2], op: [0.5, 1] }));
     s.fog(170, '#9cc3c6', 0.25);
@@ -962,28 +1029,40 @@ export const new_c = {
     }
     // the abbess: habit, a veil down her back, her lantern arm raised
     const robe = blob([[104, 90], [124, 88], [131, 108], [135, 136], [140, 166], [147, 194], [131, 197], [113, 198], [95, 198], [78, 196], [86, 168], [93, 138], [97, 112]], 5);
-    const her = U(
+    const herArm = U(
+      taper([[124, 92], [138, 78], [149, 58]], [7.4, 6, 4.6]), ell(150, 55.5, 3.2, 3.4),
+      blob([[128, 88], [138, 77], [144, 68], [145, 78], [142, 90], [135, 99], [128, 100]], 4),
+    );
+    const herBody = U(
       robe,
       ell(141, 197.5, 5.2, 2.2), ell(127, 198.5, 4.8, 2.2),
       blob([[105, 58], [113, 52], [122, 52], [128, 58], [127, 66], [119, 63], [113, 68], [110, 82], [104, 98], [96, 112], [88, 118], [92, 104], [98, 86], [100, 70]], 5),
       ell(120, 66, 6.4, 7.6),
-      taper([[124, 92], [138, 78], [149, 58]], [7.4, 6, 4.6]), ell(150, 55.5, 3.2, 3.4),
-      blob([[128, 88], [138, 77], [144, 68], [145, 78], [142, 90], [135, 99], [128, 100]], 4),
       taper([[106, 94], [112, 106], [121, 110]], [6.4, 5.6, 4.6]), ell(123, 110, 3.2, 3),
     );
-    s.path(mv(her, -1.3, -0.3), '#9d8ad6', 'opacity=".75"');
-    s.figure(`<path d="${her}"/>`, { fill: '#1c1430', rim: '#ffd98a', offsets: [[1.2, -0.8], [0.6, -1.3]], rimOp: 0.95, shade: 0.5, edge: 0.32, halo: { op: 0.3, sd: 3, color: '#ffcf7a' }, light: [1, -0.8] });
+    const her = herBody + herArm;
+    // (the raised arm is its own piece of the figure, and of the lavender shadow behind it; each piece of the figure carries
+    // two dots at the whole's corners, so the shading gradient still spans all of it)
+    const hx = [], hy = [];
+    her.replace(NUM, (_, x, y) => { hx.push(+x); hy.push(+y); });
+    const hpad = `M${Math.min(...hx)},${Math.min(...hy)}L${Math.min(...hx)},${Math.min(...hy)}M${Math.max(...hx)},${Math.max(...hy)}L${Math.max(...hx)},${Math.max(...hy)}`;
+    s.add(`<g data-part="shadow"><path d="${mv(herBody, -1.3, -0.3)}" fill="#9d8ad6" opacity=".75"/></g><g data-part="armShadow"><path d="${mv(herArm, -1.3, -0.3)}" fill="#9d8ad6" opacity=".75"/></g>`);
+    s.figure(`<g data-part="body"><path d="${herBody}${hpad}"/></g><g data-part="arm"><path d="${herArm}${hpad}"/></g>`, { fill: '#1c1430', rim: '#ffd98a', offsets: [[1.2, -0.8], [0.6, -1.3]], rimOp: 0.95, shade: 0.5, edge: 0.32, halo: { op: 0.3, sd: 3, color: '#ffcf7a' }, light: [1, -0.8] });
     // white wimple and a pale face, lit by the lantern
     const pale = linU(s, 106, 0, 132, 0, [[0, '#a89cd0'], [0.6, '#efe6f2'], [1, '#fff4dc']]);
+    s.add('<g data-part="face">');
     s.path(blob([[115, 59], [124, 57.5], [129, 61], [129.5, 71], [127, 77], [131, 84], [127, 93], [116, 95], [110, 87], [112, 74], [112.5, 64]], 5), pale);
     s.path(U(ell(123, 68, 4.4, 5.6), taper([[126.6, 66.5], [129.2, 68.8]], [2, 0.5])), '#f6ead8');
     s.path(dots([[123, 114.5, 1], [123.4, 118, 1], [123.9, 121.5, 1], [124.4, 125, 1], [124.9, 128.5, 1]]) + poly([[124.6, 130.5], [125.8, 130.5], [125.8, 137], [124.6, 137]]) + poly([[122.8, 132.5], [127.6, 132.5], [127.6, 133.7], [122.8, 133.7]]), '#e9ddc8');
+    s.add('</g>');
     // the lantern
     const L = (d) => sc(d, 151, 57, 1.25);
+    s.add('<g data-part="lantern">');
     s.add(`<path d="M146,57.5Q151,49 156,57.5" fill="none" stroke="#1c1430" stroke-width="1.3"/>`);
     s.path(L(poly([[145, 61], [157, 61], [155, 58], [147, 58]]) + poly([[144.6, 78], [157.4, 78], [156, 81], [146, 81]])), '#2a1f2c');
     s.bloom(`<path d="${L(poly([[146.2, 61], [155.8, 61], [155.8, 78], [146.2, 78]]))}" fill="#fff1c4"/><path d="${L(U(flame(151, 75, 10, 0, 4.6, 0.05)))}" fill="#ffffff"/>`, { sd: 2.4, k: 1.55, box: [116, 32, 70, 74] });
     s.add(`<path d="${L('M149.4,61L149.4,78M152.6,61L152.6,78')}" stroke="#2a1f2c" stroke-width=".9"/>`);
+    s.add('</g>');
     // mist across the front
     s.fog(184, '#a898dc', 0.32).fog(200, '#8f80c8', 0.38);
     s.motes({ seed: 9002, n: 16, x: [90, 220], y: [30, 120], r: [0.4, 1], fill: '#ffe2a0', cls: 'float', t: [5, 9], op: [0.4, 0.9] });

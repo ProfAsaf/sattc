@@ -326,12 +326,12 @@ export const ultra_d = {
     const domes = U(baskets.map(([x, b, w, h]) => ell(x, b - h, w * 0.47, h * 0.5, 0, 16)));
     const grain = s.linU(0, gb - 12, 0, gb + 26, [[0, '#fff4b8'], [0.5, '#ffd56c'], [1, '#e6a440']]);
     s.glow(gx, gb + 2, 44, '#ffcf6a', 0.55, 'breathe');
-    s.bloom(`<path d="${door}" fill="${s.linU(0, gb - 30, 0, gb + 2, [[0, '#6a3410'], [0.4, '#d07a26'], [0.7, '#ffcf6a'], [1, '#fff0b8']])}"/>` +
-      `<path d="${heap + spill + domes}" fill="${grain}"/>` +
+    s.bloom(`<g data-part="doorglow"><path d="${door}" fill="${s.linU(0, gb - 30, 0, gb + 2, [[0, '#6a3410'], [0.4, '#d07a26'], [0.7, '#ffcf6a'], [1, '#fff0b8']])}"/></g>` +
+      `<g data-part="grain"><path d="${heap + spill + domes}" fill="${grain}"/></g>` +
       `<path d="M${gx + 10.6},${gb - 36}V${gb - 41.6}a1.4,1.4 0 0 1 2.8,0V${gb - 36}Z" fill="#ffd77a"/>`, { sd: 1.6, k: 1.35, box: [80, 90, 100, 100] });
     s.figure(`<path d="${U(baskets.map(([x, b, w, h]) => poly([[x - w / 2, b - h], [x + w / 2, b - h], [x + w * 0.4, b - 1], [x + w * 0.3, b], [x - w * 0.3, b], [x - w * 0.4, b - 1]])))}"/>`,
       { fill: '#3a2c14', rim: '#ffe6a0', offsets: [[0.8, -0.8], [0, -1]], rimOp: 0.85 });
-    s.add(`<path d="${baskets.map(([x, b, w, h]) => `M${f1(x - w * 0.46)},${f1(b - h * 0.62)}H${f1(x + w * 0.46)}M${f1(x - w * 0.42)},${f1(b - h * 0.3)}H${f1(x + w * 0.42)}`).join('')}" stroke="#806024" stroke-width=".7" opacity=".7"/>`);
+    s.add(`<path data-part="hoops" d="${baskets.map(([x, b, w, h]) => `M${f1(x - w * 0.46)},${f1(b - h * 0.62)}H${f1(x + w * 0.46)}M${f1(x - w * 0.42)},${f1(b - h * 0.3)}H${f1(x + w * 0.42)}`).join('')}" stroke="#806024" stroke-width=".7" opacity=".7"/>`);
     // the landing at the foot of the hill: boats tied up, porters unloading
     s.figure(`<path d="${U(poly([[226, 197], [270, 193.4], [270, 196.4], [226, 200.4]]), [240, 256].map((x) => poly([[x - 0.9, 195], [x + 0.9, 195], [x + 0.9, 206], [x - 0.9, 206]])),
       boat(272, 208, 0.8, 0, -1), boat(294, 184, 0.62, 1, -1), porter(240, 197, 0.95, 1), ell(254, 194.4, 3.4, 2.4, 0, 10), ell(260, 194, 3, 2.2, 0, 10), ell(257, 190.6, 3, 2.2, 0, 10))}"/>`,
@@ -399,8 +399,8 @@ export const ultra_d = {
     // the pearl
     const [px, py] = P(30.4, -29);
     s.glow(px, py, 54, '#f4f3d6', 0.65, 'breathe');
-    s.bloom(`<circle cx="${f1(px)}" cy="${f1(py)}" r="6.2" fill="${s.radU(px - 1.8, py - 2, 8.4, [[0, '#ffffff'], [0.4, '#f8f4e6'], [0.8, '#d6eae6'], [1, '#b0c4d4']])}"/>` +
-      `<circle cx="${f1(px - 2)}" cy="${f1(py - 2.2)}" r="1.5" fill="#ffffff"/>`, { sd: 1.8, k: 1.5, box: [130, 80, 100, 90] });
+    s.bloom(`<g data-part="pearl"><circle cx="${f1(px)}" cy="${f1(py)}" r="6.2" fill="${s.radU(px - 1.8, py - 2, 8.4, [[0, '#ffffff'], [0.4, '#f8f4e6'], [0.8, '#d6eae6'], [1, '#b0c4d4']])}"/>` +
+      `<circle cx="${f1(px - 2)}" cy="${f1(py - 2.2)}" r="1.5" fill="#ffffff"/></g>`, { sd: 1.8, k: 1.5, box: [130, 80, 100, 90] });
     // her bubbles, rising to the surface
     const [mx, my] = P(6.7, -56.9), bub = [];
     for (let i = 0; i < 18; i++) { const t = i / 17; bub.push([mx + 2 + Math.sin(t * 5 + 1) * 5 + t * 4 + (R() - 0.5) * 7 * t, my - 3 - t * (my - 16) + (R() - 0.5) * 4, 0.7 + t * 2 + R() * 1.2]); }

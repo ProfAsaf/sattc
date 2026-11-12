@@ -1481,7 +1481,7 @@ export const ultra_c = {
     // a stack, each a little in front of the last; their light behind her
     const stack = [[22, 160, 21], [36, 164, 22], [52, 167, 23], [68, 170, 23]];
     s.glow(46, 160, 56, '#d6f6f4', 0.32);
-    const rims = stack.map(([x, y, r]) => shieldLight(s, x, y, r * 0.84, r, { light: -125, op: 0.85, boss: true })).join('');
+    const rims = '<g data-part="stack">' + stack.map(([x, y, r]) => shieldLight(s, x, y, r * 0.84, r, { light: -125, op: 0.85, boss: true })).join('') + '</g>';
     // the anvil, its face hot from the work
     s.glow(178, 160, 40, '#ff9a3a', 0.45);
     s.figure(`<path d="${U(poly([[146, 158], [206, 158], [224, 156], [214, 162], [206, 166], [148, 166]]), poly([[158, 166], [196, 166], [190, 176], [164, 176]]), poly([[152, 176], [202, 176], [206, 188], [148, 188]]))}"/>`,
@@ -1489,7 +1489,7 @@ export const ultra_c = {
     // the shield on it, stood on its rim and held in her tongs
     const wx = 182, wy = 139, wr = 19;
     s.glow(wx, wy, 50, '#e8fbff', 0.5, 'breathe');
-    const work = shieldLight(s, wx, wy, wr * 0.84, wr, { light: -125, boss: true });
+    const work = '<g data-part="forged">' + shieldLight(s, wx, wy, wr * 0.84, wr, { light: -125, boss: true }) + '</g>';
     // the smith: stout, a braid down her back, the hammer raised high in one
     // hand and the tongs in the other
     const smith = U(
@@ -1507,7 +1507,7 @@ export const ultra_c = {
       taper([[30, -39], [42, -42], [53, -45]], [2, 1.8, 1.4]), taper([[30, -37], [42, -38], [53, -41]], [2, 1.8, 1.4]),
     );
     s.figure(`<path d="${at(104, 190, 1.25)(smith)}"/>`, { fill: p.fig, rim: '#ffd8a0', offsets: [[1.2, -0.6], [-1, -0.8], [0, -1.2]], rimOp: 0.95, shade: 0.4, edge: 0.3, light: [0.6, -1] });
-    s.path(oval(wx, wy, wr * 0.2, wr * 0.2), '#fff6dc');
+    s.add('<g data-part="forged">'); s.path(oval(wx, wy, wr * 0.2, wr * 0.2), '#fff6dc'); s.add('</g>');
     // sparks off the shield from the last blow, the anvil's hot face
     const R = rng(14103), sparks = [];
     let streaks = '';
@@ -1515,7 +1515,7 @@ export const ultra_c = {
       const a = -100 - R() * 130, d = 8 + R() * 36, [x, y] = toward(wx - 4, wy - 10, a, d);
       if (i % 3) sparks.push([x, y, 0.5 + R() * 0.8]); else { const [x2, y2] = toward(x, y, a, 4 + R() * 4); streaks += `M${f1(x)},${f1(y)}L${f1(x2)},${f1(y2)}`; }
     }
-    s.bloom(rims + work + `<path d="${dots(sparks)}" fill="#ffe6a0"/><path d="${streaks}" stroke="#fff0c2" stroke-width="1" stroke-linecap="round"/>` +
+    s.bloom(rims + work + `<g data-part="sparks"><path d="${dots(sparks)}" fill="#ffe6a0"/><path d="${streaks}" stroke="#fff0c2" stroke-width="1" stroke-linecap="round"/></g>` +
       '<path d="M148,158H206L204,160.6H150Z" fill="#ffb04a"/>', { sd: 1.4, k: 1.45, box: [0, 80, 240, 120] });
     s.motes({ seed: 14104, n: 16, x: [130, 230], y: [60, 170], r: [0.4, 1], fill: '#ffc25a', hot: '#fff6d8', cls: 'rise', t: [3, 7], op: [0.4, 0.9] });
     return s.svg();

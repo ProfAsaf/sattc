@@ -85,6 +85,53 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Pearl Diver: her pearl arm (cut from her at the shoulder: what lies right of x=160 between y=92 and y=130),
+  // her legs (cut from her below the hip: everything below the line through the hip), and the pearl itself
+  // (cut from its bloom). `emit`: the pearl as drawn, where her gift leaves; `hit`: her chest; `shoulder`: the
+  // pearl arm's joint; `hip`: where the legs join; `alone`: open water up and to the right, where the
+  // gift goes when nothing is aimed at
+  'pearl-diver': {
+    role: 'support', element: 'water', facing: 'right', emit: [183, 118], hit: [150, 101], alone: [236, 66],
+    shoulder: [162, 91], hip: [141, 120],
+    parts: [
+      { name: 'arm', of: 'fig:0', pivot: [162, 91], poly: [[160, 92], [200, 92], [200, 130], [168, 130]], cut: true },
+      { name: 'legs', of: 'fig:0', pivot: [141, 120], poly: [[82, 83], [141, 120], [162, 133], [170, 200], [50, 200], [50, 83]], cut: true },
+      { name: 'pearl', of: '[data-part=pearl]', pivot: [183, 118] },
+    ],
+  },
+  // The Granary: the door's glow and the heap of grain spilling out of it (both from the glowing door and
+  // slope), the baskets (and their hoops) the grain pours into, the sheaves on the hill and the wheat
+  // standing in the near corner. `door`: the doorway's foot, where the grain spills out; `baskets`: their
+  // three mouths; `roof`: the finial's tip, where the stored light goes; `sun`: the sun on the delta; an
+  // aura isn't aimed: `hit`: the drum's middle
+  'the-granary': {
+    role: 'aura', element: 'earth', facing: 'front', hit: [124, 124],
+    door: [124, 148], baskets: [[100, 166], [126, 170], [151, 164]], roof: [124, 39], sun: [240, 100],
+    parts: [
+      { name: 'doorglow', of: '[data-part=doorglow]', pivot: [124, 146] },
+      { name: 'grain', of: '[data-part=grain]', pivot: [124, 148] },
+      { name: 'baskets', of: ['fig:4', '[data-part=hoops]'], pivot: [126, 176] },
+      { name: 'stooks', of: 'fig:1', pivot: [60, 196] },
+      { name: 'wheat', of: 'fig:6', pivot: [22, 216] },
+    ],
+  },
+  // Shieldwright: the smith's raised hammer arm and her tongs arm (each cut from her figure at the shoulder: the
+  // hammer, its handle and the arm up to it; the arm and tongs right of her torso), the shield on the anvil
+  // (its glassy pane is baked into the picture; the rim, its highlights and the boss are cut), the sparks off it
+  // and the stack of finished shields leaning behind her. `emit`: the shield on the anvil, where the gift
+  // leaves; `hit`: her chest; `anvil`: the anvil's hot face; `alone`: the warrior at the forge door, where
+  // the gift goes when nothing is aimed at
+  'shieldwright': {
+    role: 'support', element: 'light', facing: 'right', emit: [182, 139], hit: [104, 148], alone: [262, 128],
+    anvil: [177, 158], shoulder: [116.5, 132.5], tongs: [128, 138], stackAt: [46, 166],
+    parts: [
+      { name: 'hammer', of: 'fig:2', pivot: [116.5, 132.5], poly: [[88, 62], [134, 62], [134, 133], [117.5, 133], [116.5, 118], [114, 104], [104, 98], [88, 98]], cut: true },
+      { name: 'tongs', of: 'fig:2', pivot: [128, 138], poly: [[128, 124], [180, 124], [180, 152], [128, 152]], cut: true },
+      { name: 'forged', of: '[data-part=forged]', pivot: [182, 139] },
+      { name: 'sparks', of: '[data-part=sparks]', pivot: [182, 139] },
+      { name: 'stack', of: '[data-part=stack]', pivot: [46, 166] },
+    ],
+  },
   // Ward of Dawn: the huge claw out of the storm (its spined arm and talons, with the scales on it), the glow
   // on each talon's tip and the sparks flying where they strike (both ride the claw, about the cloud it
   // comes from), the soldier crouched under the dome (from his feet), the dome (its rim and rings, and its

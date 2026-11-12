@@ -85,6 +85,58 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Venom Shard: the black crystal (its faces, green seams and veins, the drop on its point; it
+  // turns about its middle), the green pool glowing in the palm, and the hand (palm up, from the
+  // wrist). `emit`: the shard's middle, where it is let go from; `tip`/`butt`: its point (down) and
+  // its upper end at rest; `alone`: the far right, where it flies when nothing is aimed at
+  'venom-shard': {
+    role: 'attacker', element: 'venom', facing: 'front', emit: [167.5, 90], hit: [150, 184],
+    tip: [159, 140], butt: [176, 40], pool: [164, 184], alone: [268, 128],
+    parts: [
+      { name: 'hand', of: 'fig:0', pivot: [110, 212] },
+      { name: 'pool', of: '[data-part=pool]', pivot: [164, 184] },
+      { name: 'shard', of: '[data-part=shard]', pivot: [167.5, 90] },
+    ],
+  },
+  // Shackles: the huge beast (its head and horns split off at the neck; the rest of him, standing on
+  // his feet), the three iron cuffs, the chains running from them down into the earth, the violet
+  // runes cut in the cuffs, and the pools of light where the chains are staked.
+  // `emit`: the middle cuff, where the binding leaves; `cuffs`: each cuff; `stakes`: where each chain
+  // is driven into the ground; `neck`: the head's joint; `head`: the head's middle; `alone`: the beast's
+  // head, which the binding closes on when nothing is aimed at
+  shackles: {
+    role: 'support', element: 'shadow', facing: 'left', emit: [163, 165], hit: [190, 100],
+    cuffs: [[127, 164], [163, 165], [278, 165]], stakes: [[84, 194], [206, 194], [238, 195]], neck: [118, 104], head: [88, 110], alone: [78, 112],
+    parts: [
+      { name: 'head', of: 'fig:0', pivot: [118, 104], poly: [[40, 55], [116, 55], [124, 100], [124, 125], [110, 150], [40, 150]] },
+      { name: 'beast', of: 'fig:0', pivot: [200, 186], poly: [[-20, -20], [320, -20], [320, 230], [-20, 230], [-20, 150], [110, 150], [124, 125], [124, 100], [116, 55], [-20, 55]] },
+      { name: 'cuffs', of: 'fig:1', pivot: [163, 165] },
+      { name: 'chains', of: '[data-part=chains]', pivot: [163, 175] },
+      { name: 'runes', of: '[data-part=runes]', pivot: [163, 165] },
+      { name: 'pads', of: '[data-part=pads]', pivot: [160, 194] },
+    ],
+  },
+  // Grave Rite: the moon (it swells), the ring of three rings cut in the turf, the three pale hands
+  // breaking up through the earth (split out of one path, each from its own wrist), the clods they
+  // throw up, and the four hooded figures (the two far, the two near), each standing from its feet.
+  // `emit`: the middle of the ring, where the hands rise and the drain leaves; `hands`: each hand's
+  // wrist; `tips`: each hand's fingertips; `alone`: the far right, where the drain goes when nothing is aimed at
+  'grave-rite': {
+    role: 'attacker', element: 'spirit', facing: 'front', emit: [150, 156], hit: [150, 168],
+    hands: [[126, 168], [152, 170], [177, 173]], tips: [[116, 134], [150, 120], [184, 142]], ring: [150, 166], moon: [150, 84], alone: [268, 140],
+    parts: [
+      { name: 'moon', of: '[data-part=moon]', pivot: [150, 84] },
+      { name: 'ring', of: '[data-part=ring]', pivot: [150, 166] },
+      { name: 'handL', of: '[data-part=hands]', pivot: [126, 170], poly: [[100, 100], [139, 100], [139, 200], [100, 200]] },
+      { name: 'handM', of: '[data-part=hands]', pivot: [152, 172], poly: [[139, 100], [167, 100], [167, 200], [139, 200]] },
+      { name: 'handR', of: '[data-part=hands]', pivot: [177, 174], poly: [[167, 100], [210, 100], [210, 200], [167, 200]] },
+      { name: 'clods', of: '[data-part=clods]', pivot: [150, 175] },
+      { name: 'farL', of: 'fig:0', pivot: [96, 150], poly: [[0, 0], [150, 0], [150, 230], [0, 230]] },
+      { name: 'farR', of: 'fig:0', pivot: [204, 150], poly: [[150, 0], [300, 0], [300, 230], [150, 230]] },
+      { name: 'nearL', of: 'fig:1', pivot: [34, 214], poly: [[0, 0], [150, 0], [150, 230], [0, 230]] },
+      { name: 'nearR', of: 'fig:1', pivot: [268, 214], poly: [[150, 0], [300, 0], [300, 230], [150, 230]] },
+    ],
+  },
   // Gravewarden: the five soldiers (each split out of their line, standing from their feet), the fresh grave
   // (mound and marker, with the light cracking its crown), the shade (hood, robe, sleeve and staff; its eyes
   // and the fold in its hood), its lantern hanging from the staff's hook, and the streams of violet light

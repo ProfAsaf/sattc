@@ -20,6 +20,7 @@ export const LIVE = {
   "ember-volley": { src: 'art/live/ember-volley.webp?v=ae675ffe', live: 'art/live/ember-volley.json?v=869c57ec' },
   "flood-rite": { src: 'art/live/flood-rite.webp?v=af230d2b', live: 'art/live/flood-rite.json?v=02dadb21' },
   "gloomweb-spider": { src: 'art/live/gloomweb-spider.webp?v=780296b2', live: 'art/live/gloomweb-spider.json?v=03f74ef2' },
+  "grave-rite": { src: 'art/live/grave-rite.webp?v=2254b2d7', live: 'art/live/grave-rite.json?v=796203ec' },
   "gravewarden": { src: 'art/live/gravewarden.webp?v=85165e8f', live: 'art/live/gravewarden.json?v=93a2879d' },
   "kindling-heart": { src: 'art/live/kindling-heart.webp?v=5bef09ce', live: 'art/live/kindling-heart.json?v=3340f011' },
   "lightning-theorist": { src: 'art/live/lightning-theorist.webp?v=721e5fbf', live: 'art/live/lightning-theorist.json?v=4ae52a1f' },
@@ -30,6 +31,7 @@ export const LIVE = {
   "rootmother": { src: 'art/live/rootmother.webp?v=e304be07', live: 'art/live/rootmother.json?v=a79f0de0' },
   "scorched-earth": { src: 'art/live/scorched-earth.webp?v=ca62ae4e', live: 'art/live/scorched-earth.json?v=ad599a44' },
   "seraphine": { src: 'art/live/seraphine.webp?v=d5117d2b', live: 'art/live/seraphine.json?v=e3c89cbf' },
+  "shackles": { src: 'art/live/shackles.webp?v=ebfe7d9c', live: 'art/live/shackles.json?v=f30be06d' },
   "shieldbearer": { src: 'art/live/shieldbearer.webp?v=cd5ce854', live: 'art/live/shieldbearer.json?v=b8dcebd2' },
   "sky-warden": { src: 'art/live/sky-warden.webp?v=0be3669e', live: 'art/live/sky-warden.json?v=eff88479' },
   "sproutling": { src: 'art/live/sproutling.webp?v=eed772bf', live: 'art/live/sproutling.json?v=5ff3ddac' },
@@ -39,6 +41,7 @@ export const LIVE = {
   "thornback-archer": { src: 'art/live/thornback-archer.webp?v=ab1a1631', live: 'art/live/thornback-archer.json?v=f006ed2c' },
   "tide-of-fortune": { src: 'art/live/tide-of-fortune.webp?v=87f1a377', live: 'art/live/tide-of-fortune.json?v=7c1290f9' },
   "tidecallers-library": { src: 'art/live/tidecallers-library.webp?v=360eb821', live: 'art/live/tidecallers-library.json?v=3c8930bb' },
+  "venom-shard": { src: 'art/live/venom-shard.webp?v=b676165f', live: 'art/live/venom-shard.json?v=401560d3' },
   "wavewarden": { src: 'art/live/wavewarden.webp?v=ee173b96', live: 'art/live/wavewarden.json?v=32fadb6f' },
   "wing-graft": { src: 'art/live/wing-graft.webp?v=91267e32', live: 'art/live/wing-graft.json?v=8fa55d1c' },
 };

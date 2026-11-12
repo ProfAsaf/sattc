@@ -561,8 +561,8 @@ export const ultra_b = {
     // the moon, huge and low
     const mx = 150, my = 84;
     s.glow(mx, my, 150, '#b98cff', 0.5);
-    s.add(`<circle cx="${mx}" cy="${my}" r="46" fill="${s.radU(mx - 10, my - 12, 60, [[0, '#f4ecff'], [0.6, '#dcc6fb'], [1, '#bb98ee']])}"/>` +
-      `<g fill="#b796e6" opacity=".45"><circle cx="${mx - 16}" cy="${my - 12}" r="7"/><circle cx="${mx + 18}" cy="${my + 14}" r="5"/><circle cx="${mx + 14}" cy="${my - 22}" r="3.4"/><circle cx="${mx - 22}" cy="${my + 18}" r="3"/></g>`);
+    s.add(`<g data-part="moon"><circle cx="${mx}" cy="${my}" r="46" fill="${s.radU(mx - 10, my - 12, 60, [[0, '#f4ecff'], [0.6, '#dcc6fb'], [1, '#bb98ee']])}"/>` +
+      `<g fill="#b796e6" opacity=".45"><circle cx="${mx - 16}" cy="${my - 12}" r="7"/><circle cx="${mx + 18}" cy="${my + 14}" r="5"/><circle cx="${mx + 14}" cy="${my - 22}" r="3.4"/><circle cx="${mx - 22}" cy="${my + 18}" r="3"/></g></g>`);
     // yews and the far hill
     s.layer(ridge({ seed: 12202, base: 134, amp: 12, freq: 2 }) + U(ell(30, 116, 7, 20), ell(44, 122, 5, 14), ell(262, 114, 7, 22), ell(278, 122, 5, 14)), '#2c2148', { blur: 0.7 });
     s.haze(108, 140, '#7a5cb0', 0.32);
@@ -590,11 +590,11 @@ export const ultra_b = {
     )), x, y, a);
     s.glow(150, 160, 70, '#a46bff', 0.45, 'breathe');
     const skin = s.linU(0, 112, 0, 172, [[0, '#f6f0ff'], [0.6, '#dccbf6'], [1, '#a98bd8']]);
-    s.bloom(`<g fill="none" stroke="#b98cff" stroke-linecap="round">${rings.map(([rx, ry, o]) => `<ellipse cx="150" cy="166" rx="${rx}" ry="${ry}" stroke-width="1.1" opacity="${o}"/>`).join('')}</g>` +
-      `<path d="${hand(152, 156, 4, 1.3, 14) + hand(126, 166, -12, 0.95, 4) + hand(177, 172, 14, 0.8, 2)}" fill="${skin}"/>` +
+    s.bloom(`<g data-part="ring" fill="none" stroke="#b98cff" stroke-linecap="round">${rings.map(([rx, ry, o]) => `<ellipse cx="150" cy="166" rx="${rx}" ry="${ry}" stroke-width="1.1" opacity="${o}"/>`).join('')}</g>` +
+      `<path data-part="hands" d="${hand(152, 156, 4, 1.3, 14) + hand(126, 166, -12, 0.95, 4) + hand(177, 172, 14, 0.8, 2)}" fill="${skin}"/>` +
       '<g stroke="#e0c4ff" stroke-width="1.2" fill="none" stroke-linecap="round"><path d="M140,172l-8,3l-9,-1M162,173l9,3l8,-2M150,175l1,6M120,170l-6,2M182,176l6,2"/></g>', { sd: 1.6, k: 1.35, box: [60, 90, 180, 110] });
     // clods thrown up by the hands
-    s.path(dots([[132, 175, 2], [168, 177, 1.8], [113, 172, 1.6], [190, 175, 1.5]]), '#120c1e');
+    s.add('<g data-part="clods">'); s.path(dots([[132, 175, 2], [168, 177, 1.8], [113, 172, 1.6], [190, 175, 1.5]]), '#120c1e'); s.add('</g>');
     // the two near figures, framing us, arms raised to the moon
     s.figure(`<path d="${at(34, 214, 1.5)(robed())}${at(268, 214, 1.5)(robed())}"/>`, { fill: '#07050b', rim: '#b8a6e2', offsets: [[0, -1.2], [1, -0.4], [-1, -0.4]], rimOp: 0.75 });
     s.fog(186, '#9a86c8', 0.16);
@@ -642,7 +642,7 @@ export const ultra_b = {
     const cuffs = [[127, 164, 27], [163, 165, 23], [278, 165, 24]];
     s.figure(`<path d="${cuffs.map(([x, y, w]) => cuff(x, y, w)).join('')}"/>`, { fill: s.lin([[0, '#4a3e62'], [1, '#1d1630']]), rim: '#e6d6ff', offsets: [[0, -1], [-0.8, -0.6]], rimOp: 0.9 });
     const links = [chain(116, 170, 84, 193, 9, 3), chain(172, 171, 206, 193, 8.4, 3), chain(268, 171, 238, 194, 8.4, 2)];
-    s.add(`<g fill="none" stroke-linecap="round"><path d="${links.map((c) => c[0]).join('')}" stroke="#463b62" stroke-width="2.6"/><path d="${links.map((c) => c[1]).join('')}" stroke="#463b62" stroke-width="3.6"/>` +
+    s.add(`<g data-part="chains" fill="none" stroke-linecap="round"><path d="${links.map((c) => c[0]).join('')}" stroke="#463b62" stroke-width="2.6"/><path d="${links.map((c) => c[1]).join('')}" stroke="#463b62" stroke-width="3.6"/>` +
       `<path d="${links.map((c) => c[0]).join('')}" stroke="#c9b8f2" stroke-width=".7" opacity=".7"/></g>`);
     // runes: forks, diamonds, hourglasses, a ring with a dot
     const glyphs = [(x, y) => `M${x},${y + 3}v-6M${x},${y}l-1.8,-2.6M${x},${y}l1.8,-2.6`, (x, y) => `M${x},${y - 3}l1.9,3l-1.9,3l-1.9,-3Z`,
@@ -655,9 +655,9 @@ export const ultra_b = {
     }).join('');
     s.glow(127, 164, 30, '#b07cff', 0.55, 'breathe');
     s.glow(163, 165, 26, '#b07cff', 0.5, 'breathe');
-    s.bloom(`<path d="${runes}" fill="none" stroke="#e2c8ff" stroke-width="1.1" stroke-linecap="round"/>` +
-      `<g fill="#c9a6ff">${[[84, 193], [206, 193], [238, 194]].map(([x, y]) => `<ellipse cx="${x}" cy="${y + 1}" rx="7" ry="2"/>`).join('')}</g>` +
-      '<g stroke="#b07cff" stroke-width="1" fill="none" stroke-linecap="round"><path d="M77,194l-8,3l-6,-1M91,195l8,2M199,194l-7,3M213,194l8,2l6,-1M231,196l-8,2M245,195l7,3"/></g>', { sd: 1.4, k: 1.5, box: [40, 140, 260, 70] });
+    s.bloom(`<path data-part="runes" d="${runes}" fill="none" stroke="#e2c8ff" stroke-width="1.1" stroke-linecap="round"/>` +
+      `<g data-part="pads" fill="#c9a6ff">${[[84, 193], [206, 193], [238, 194]].map(([x, y]) => `<ellipse cx="${x}" cy="${y + 1}" rx="7" ry="2"/>`).join('')}</g>` +
+      '<g data-part="pads" stroke="#b07cff" stroke-width="1" fill="none" stroke-linecap="round"><path d="M77,194l-8,3l-6,-1M91,195l8,2M199,194l-7,3M213,194l8,2l6,-1M231,196l-8,2M245,195l7,3"/></g>', { sd: 1.4, k: 1.5, box: [40, 140, 260, 70] });
     s.fog(188, '#8f7fc8', 0.24);
     s.motes({ seed: 12303, n: 16, x: [60, 300], y: [120, 196], r: [0.35, 0.9], fill: '#c9b0f4', hot: '#ffffff', cls: 'rise', t: [5, 9], op: [0.35, 0.85] });
     return s.svg();
@@ -693,13 +693,15 @@ export const ultra_b = {
     const sx = (top[0] + bot[0]) / 2, sy = (top[1] + bot[1]) / 2;
     s.glow(sx, sy, 80, '#7dff6a', 0.22);
     s.glow(166, 182, 26, '#8cff6a', 0.45, 'breathe');
+    s.add('<g data-part="shard">');
     s.path(poly([T, UL, LL, B, C2, C1]), '#0a0610');
     s.path(poly([T, C1, C2, B, LR, UR]), s.linU(UR[0], UR[1], LL[0], LL[1], [[0, '#2c2440'], [1, '#100a18']]));
     const veins = `M${pt(P(0.3, -2))}L${pt(P(0.42, 2))}L${pt(P(0.5, -1))}L${pt(P(0.62, 3))}M${pt(P(0.46, 0.5))}L${pt(P(0.52, 5))}`;
-    s.bloom(`<path d="M${pt(T)}L${pt(C1)}L${pt(C2)}L${pt(B)}M${pt(UL)}L${pt(LL)}L${pt(B)}L${pt(LR)}L${pt(UR)}L${pt(T)}L${pt(UL)}" fill="none" stroke="#9dff7a" stroke-width=".9" stroke-linejoin="round" opacity=".9"/>` +
+    s.add('</g>');
+    s.bloom(`<g data-part="shard"><path d="M${pt(T)}L${pt(C1)}L${pt(C2)}L${pt(B)}M${pt(UL)}L${pt(LL)}L${pt(B)}L${pt(LR)}L${pt(UR)}L${pt(T)}L${pt(UL)}" fill="none" stroke="#9dff7a" stroke-width=".9" stroke-linejoin="round" opacity=".9"/>` +
       `<path d="${veins}" fill="none" stroke="#c8ff9a" stroke-width=".8"/>` +
-      `<path d="M${f1(B[0] - 2.2)},${f1(B[1] - 1)}Q${f1(B[0])},${f1(B[1] + 9)} ${f1(B[0] + 2.2)},${f1(B[1] - 1)}Z" fill="#a8ff7a"/>` +
-      '<ellipse cx="164" cy="184" rx="11" ry="2.6" fill="#8cff6a" opacity=".85"/><ellipse cx="164" cy="183.6" rx="5" ry="1.2" fill="#e6ffcc"/>', { sd: 1.4, k: 1.5, box: [130, 30, 80, 170] });
+      `<path d="M${f1(B[0] - 2.2)},${f1(B[1] - 1)}Q${f1(B[0])},${f1(B[1] + 9)} ${f1(B[0] + 2.2)},${f1(B[1] - 1)}Z" fill="#a8ff7a"/></g>` +
+      '<g data-part="pool"><ellipse cx="164" cy="184" rx="11" ry="2.6" fill="#8cff6a" opacity=".85"/><ellipse cx="164" cy="183.6" rx="5" ry="1.2" fill="#e6ffcc"/></g>', { sd: 1.4, k: 1.5, box: [130, 30, 80, 170] });
     s.add([[B[0], B[1] + 14, 0], [B[0] + 1, B[1] + 28, -0.5], [B[0] + 2, B[1] + 38, -1]].map(([x, y, d]) =>
       `<ellipse class="fall" style="--d:${d}s" cx="${f1(x)}" cy="${f1(y)}" rx="1.4" ry="2.1" fill="#a8ff7a"/>`).join(''));
     // the fumes

@@ -636,9 +636,9 @@ const umbral = faction('umbral', {
     s.path(reeds(724, 40, 120, 160, 26, 52, 0.35) + reeds(725, 196, 276, 162, 24, 48, 0.35), '#251c38');
     // the adder: an S rising from its coils to a viper's head, jaws open
     const spine = [[96, 206], [112, 190], [136, 184], [156, 176], [162, 160], [150, 146], [134, 136], [130, 120], [140, 104], [158, 94], [172, 84], [179, 72]];
-    const snake = P(taper(spine, [12, 14, 15, 15, 14, 13, 12, 11, 10, 9, 8.4, 8], { per: 10 })) +
-      P(poly([[188, 66], [187, 57], [181, 51], [171, 48.5], [162, 50], [154, 53], [148, 56.5], [149, 59.2], [156, 60.2], [166, 61], [177, 64]])) +
-      P(taper([[184, 68], [170, 77], [156, 85]], [7.4, 4.6, 1.4]));
+    const snake = '<g data-part="body">' + P(taper(spine, [12, 14, 15, 15, 14, 13, 12, 11, 10, 9, 8.4, 8], { per: 10 })) + '</g>' +
+      '<g data-part="head">' + P(poly([[188, 66], [187, 57], [181, 51], [171, 48.5], [162, 50], [154, 53], [148, 56.5], [149, 59.2], [156, 60.2], [166, 61], [177, 64]])) +
+      P(taper([[184, 68], [170, 77], [156, 85]], [7.4, 4.6, 1.4])) + '</g>';
     s.figure(snake, { fill: p.fig, rim: '#d9cff2', offsets: [[0, -1.2], [-1, -0.6], [1, -0.6]], rimOp: 0.9, halo: 0.3 });
     // a violet zig-zag down its back
     const back = spline(spine, 10);
@@ -647,12 +647,13 @@ const umbral = faction('umbral', {
       const [x, y] = back[i], [x2, y2] = back[i + 1], l = Math.hypot(x2 - x, y2 - y) || 1;
       zig += `${zig ? 'L' : 'M'}${f1(x - ((y2 - y) / l) * 2.6 * k)},${f1(y + ((x2 - x) / l) * 2.6 * k)}`;
     }
-    s.add(`<path d="${zig}" fill="none" stroke="#a97cf6" stroke-width="1.7" stroke-linejoin="round" opacity=".75"/>`);
+    s.add(`<path data-part="zig" d="${zig}" fill="none" stroke="#a97cf6" stroke-width="1.7" stroke-linejoin="round" opacity=".75"/>`);
     // fangs, eye and tongue
+    s.add('<g data-part="face">');
     s.glow(172, 56, 8, '#b07cff', 0.8);
     s.bloom('<path d="M153.6,60Q153.8,65.6 156,68.6Q155.8,64 156.8,60.4Z" fill="#f6f0ff"/><path d="M158.8,60.8Q159,65.6 161,68.2Q160.8,64.2 161.8,61.2Z" fill="#f6f0ff"/>' +
       '<ellipse cx="172" cy="56" rx="2.4" ry="1.1" fill="#efe2ff"/>', { sd: 1, k: 1.3, box: [140, 44, 44, 34] });
-    s.add('<path d="M152,69L144,72M144,72L139.4,69.6M144,72L140.6,75.8" stroke="#c08cff" stroke-width=".9" fill="none" stroke-linecap="round"/><path d="M164,50.6Q170,48 177,50.6" stroke="#2b2140" stroke-width="1" fill="none"/>');
+    s.add('<path d="M152,69L144,72M144,72L139.4,69.6M144,72L140.6,75.8" stroke="#c08cff" stroke-width=".9" fill="none" stroke-linecap="round"/><path d="M164,50.6Q170,48 177,50.6" stroke="#2b2140" stroke-width="1" fill="none"/></g>');
     // reeds and cattails in front, and the dark water at its coils
     s.path(reeds(726, -10, 70, 214, 40, 78, 0.4) + reeds(727, 226, 310, 214, 36, 74, 0.4) + reeds(728, 104, 172, 214, 26, 54, 0.3), '#07050b');
     s.add('<g fill="none" stroke="#9a86c4" opacity=".4"><ellipse cx="112" cy="196" rx="20" ry="2.4"/><ellipse cx="112" cy="197" rx="32" ry="4" opacity=".5"/></g>');
@@ -739,13 +740,15 @@ const umbral = faction('umbral', {
     const wingR = 'M5,-6L26,-18L48,-27L90,-18Q77,-7 84,12Q70,6 64,31Q51,17 38,33Q26,20 11,22L6,8Z';
     const ears = 'M-6.5,-16L-9.5,-31L-1.5,-20Z', thumb = 'M48,-27L49,-34L52,-27Z';
     const bt = 'translate(150 82) scale(1.2)';
-    s.figure(`<g transform="${bt}">${P(wingR + flipX(wingR))}${P('M-9,4a9,15 0 1 1 18,0a9,15 0 1 1 -18,0Z' + disc(0, -14, 7.5) + ears + flipX(ears) + thumb + flipX(thumb) +
-      taper([[-4, 17], [-6, 24]], [2.6, 0.4]) + taper([[4, 17], [6, 24]], [2.6, 0.4]))}</g>`,
+    s.figure(`<g transform="${bt}">${`<g data-part="wings">${P(wingR + flipX(wingR))}</g>`}<g data-part="body">${P('M-9,4a9,15 0 1 1 18,0a9,15 0 1 1 -18,0Z' + disc(0, -14, 7.5) + ears + flipX(ears) + thumb + flipX(thumb) +
+      taper([[-4, 17], [-6, 24]], [2.6, 0.4]) + taper([[4, 17], [6, 24]], [2.6, 0.4]))}</g></g>`,
       { fill: s.radU(0, 4, 96, [[0, '#46142c'], [0.5, '#1c0914'], [1, '#0b0509']]), rim: '#ff9c8c', offsets: [[0, -1], [-1, 0], [1, 0], [0, 1]], rimOp: 0.7, halo: 0.3 });
     const veins = 'M5,-6L26,-18L48,-27L90,-18M48,-27L84,12M48,-27L64,31M48,-27L38,33M26,-18L11,22';
+    s.add('<g data-part="veins">');
     s.bloom(`<path d="${veins}${flipX(veins)}" transform="${bt}" fill="none" stroke="#b98cf6" stroke-width=".7" stroke-linecap="round" opacity=".7"/>`, { sd: 1, k: 1, box: [30, 30, 240, 120] });
+    s.add('</g><g data-part="eyes">');
     s.glow(150, 64.5, 10, '#d6a0ff', 0.7);
-    s.add('<g fill="#f3dcff"><circle cx="146.6" cy="64.4" r="1.1"/><circle cx="153.4" cy="64.4" r="1.1"/></g>');
+    s.add('<g fill="#f3dcff"><circle cx="146.6" cy="64.4" r="1.1"/><circle cx="153.4" cy="64.4" r="1.1"/></g></g>');
     s.add(particles({ seed: 734, n: 12, x: [40, 260], y: [30, 190], r: [0.4, 1.1], fill: '#e0a0c8', cls: 'float', t: [6, 10], op: [0.25, 0.7] }));
     return s.svg();
   },
@@ -771,7 +774,7 @@ const umbral = faction('umbral', {
     // bones laid in courses, a row of skulls between them
     s.figure(P(boneD(100, 150, 120, 6) + boneD(150, 200, 121, 6.4) + boneD(98, 136, 151, 6) + boneD(136, 172, 150, 6.4) + boneD(172, 202, 151, 5.6) +
       boneD(102, 158, 163, 6.4) + boneD(158, 198, 164, 6)), { fill: '#5a4e78', rim: '#d9c8f6', offsets: [[0, -1]], rimOp: 0.85 });
-    s.add(`<g fill="#7d7298">${skull(122, 143, 0.8)}${skull(150, 143, 0.85)}${skull(178, 143, 0.8)}</g>`);
+    s.add(`<g data-part="skulls" fill="#7d7298">${skull(122, 143, 0.8)}${skull(150, 143, 0.85)}${skull(178, 143, 0.8)}</g>`);
     // the top slab and the bowl
     s.figure('<path d="M96,114V106H204V114Z"/><path d="M128,97H172L165,104H135Z"/><path d="M125,94H175V97.4H125Z"/><path d="M145,103V106H155V103Z"/>', { fill: '#1d1630', rim: '#e6d6ff', offsets: [[0, -1.2]], rimOp: 0.9 });
     // candles, their wax running down over the bones
@@ -782,12 +785,14 @@ const umbral = faction('umbral', {
     // the cold flame
     s.glow(150, 64, 62, '#b07cff', 0.8, 'breathe');
     const tongue = (x, b) => `M${x},${b - 7}C${x + 2.4},${b - 3} ${x + 1.8},${b} ${x},${b}C${x - 1.8},${b} ${x - 2.4},${b - 3} ${x},${b - 7}Z`;
+    s.add('<g data-part="flames">');
     s.bloom(`<g fill="#9b6bff">${parts([
       taper([[150, 96], [144, 76], [153, 54], [146, 28]], [30, 21, 9, 0.6]),
       taper([[138, 96], [131, 80], [135, 62]], [13, 9, 0.5]),
       taper([[162, 96], [170, 80], [166, 60]], [13, 9, 0.5]),
     ])}</g><path d="${taper([[150, 96], [147.4, 78], [151.4, 54]], [17, 10, 0.5])}" fill="#dcc8ff"/><path d="${taper([[150, 96], [150, 86], [150.6, 72]], [8, 5, 0.4])}" fill="#ffffff"/>` +
       `<path d="${candles.map(([x, b, h]) => tongue(x, b - h - 1)).join('')}" fill="#efe2ff"/>`, { sd: 1.8, k: 1.3, box: [40, 20, 220, 190] });
+    s.add('</g>');
     s.add(particles({ seed: 754, n: 14, x: [128, 172], y: [16, 92], r: [0.4, 1.1], fill: '#d9c2ff', cls: 'rise', t: [4, 8], op: [0.4, 0.9] }));
     return s.svg();
   },

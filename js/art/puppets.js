@@ -21,6 +21,63 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Bone Altar (a relic, an aura: once each turn a creature is sacrificed to draw a card, so the place itself acts): the cold
+  // violet flame on the altar (its tongues, and the glow they throw), the little flames of the four candles on the altar and
+  // the two on the floor (candA-candD are the altar's, left to right, candE and candF the floor's), and the three skulls in
+  // the altar's front; `flame`: the flame's base, where it stands, `slab`: the middle of the altar's top, `skulls`: where the
+  // three skulls sit (their bases), `candles`: where each candle flame sits (their bases, in the order named above),
+  // `bowl`: the bowl the flame burns in
+  'bone-altar': {
+    role: 'aura', element: 'bone', facing: 'front', hit: [150, 150],
+    flame: [150, 97], slab: [150, 110], bowl: [150, 97], skulls: [[122, 150], [150, 150], [178, 150]],
+    candles: [[107, 90], [117, 96], [185, 92], [195, 97], [66, 175], [236, 179]],
+    parts: [
+      { name: 'flame', of: '[data-part=flames]', pivot: [150, 97], poly: [[124, -10], [176, -10], [176, 102], [124, 102]] },
+      { name: 'candA', of: '[data-part=flames]', pivot: [107, 90], poly: [[96, 76], [111, 76], [111, 100], [96, 100]] },
+      { name: 'candB', of: '[data-part=flames]', pivot: [117, 96], poly: [[111, 76], [124, 76], [124, 104], [111, 104]] },
+      { name: 'candC', of: '[data-part=flames]', pivot: [185, 92], poly: [[176, 76], [190, 76], [190, 102], [176, 102]] },
+      { name: 'candD', of: '[data-part=flames]', pivot: [195, 97], poly: [[190, 76], [204, 76], [204, 106], [190, 106]] },
+      { name: 'candE', of: '[data-part=flames]', pivot: [66, 175], poly: [[54, 158], [78, 158], [78, 182], [54, 182]] },
+      { name: 'candF', of: '[data-part=flames]', pivot: [236, 179], poly: [[224, 162], [248, 162], [248, 186], [224, 186]] },
+      { name: 'skull0', of: '[data-part=skulls]', pivot: [122, 150], poly: [[-10, -10], [136, -10], [136, 220], [-10, 220]] },
+      { name: 'skull1', of: '[data-part=skulls]', pivot: [150, 150], poly: [[136, -10], [164, -10], [164, 220], [136, 220]] },
+      { name: 'skull2', of: '[data-part=skulls]', pivot: [178, 150], poly: [[164, -10], [310, -10], [310, 220], [164, 220]] },
+    ],
+  },
+  // Vesper Bat (a creature, a support: it drains life: an opponent loses 1 and you gain 1): its two wings (the scalloped skin
+  // with its thumb-claw), its body (the head with ears, the belly, its two feet), the violet veins running through each wing
+  // and its two glowing eyes; `emit`: its mouth, where the drained life is taken from, `hit`: its belly, where it gets the
+  // life back, `shoulderL`/`shoulderR`: where the wings turn, `body`: where it tilts, `town`: the ruined arcade (the
+  // target when alone)
+  'vesper-bat': {
+    role: 'support', element: 'blood', facing: 'front', emit: [150, 71], hit: [150, 91],
+    shoulderL: [144, 76], shoulderR: [156, 76], body: [150, 90], town: [232, 146],
+    parts: [
+      { name: 'wingL', of: 'fig:1 [data-part=wings]', pivot: [144, 76], poly: [[-10, -10], [150, -10], [150, 220], [-10, 220]] },
+      { name: 'wingR', of: 'fig:1 [data-part=wings]', pivot: [156, 76], poly: [[150, -10], [310, -10], [310, 220], [150, 220]] },
+      { name: 'thumbL', of: 'fig:1 [data-part=body]', pivot: [144, 76], poly: [[-10, -10], [125, -10], [125, 220], [-10, 220]] },
+      { name: 'thumbR', of: 'fig:1 [data-part=body]', pivot: [156, 76], poly: [[175, -10], [310, -10], [310, 220], [175, 220]] },
+      { name: 'body', of: 'fig:1 [data-part=body]', pivot: [150, 90], poly: [[125, -10], [175, -10], [175, 220], [125, 220]] },
+      { name: 'veinsL', of: '[data-part=veins]', pivot: [144, 76], poly: [[-10, -10], [150, -10], [150, 220], [-10, 220]] },
+      { name: 'veinsR', of: '[data-part=veins]', pivot: [156, 76], poly: [[150, -10], [310, -10], [310, 220], [150, 220]] },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [150, 90] },
+    ],
+  },
+  // Marsh Adder (a creature, an attacker: a black snake rearing out of the reeds, its venom is the attack): the upper
+  // S of its body (cut at the reeds' height, with the violet zig-zag along it), its head (the hooded skull and jaw) and its
+  // face (eye with its glow, the two fangs, the flicking tongue); `emit`: between the fangs, where the venom leaves from,
+  // `hit`: its chest, `neck`: where the upper body bends from, `head`: where the head turns on the neck, `reeds`: where
+  // its venom lands when alone (the dark water to its left)
+  'marsh-adder': {
+    role: 'attacker', element: 'venom', facing: 'left', emit: [157, 68], hit: [140, 112],
+    neck: [132, 122], head: [180, 70], reeds: [92, 96],
+    parts: [
+      { name: 'neck', of: 'fig:0 [data-part=body]', pivot: [132, 122], poly: [[100, 114], [210, 114], [210, 30], [100, 30]], cut: true, joint: 4 },
+      { name: 'zig', of: '[data-part=zig]', pivot: [132, 122], poly: [[100, 114], [210, 114], [210, 30], [100, 30]], cut: true, joint: 1 },
+      { name: 'head', of: 'fig:0 [data-part=head]', pivot: [180, 70] },
+      { name: 'face', of: '[data-part=face]', pivot: [180, 70] },
+    ],
+  },
   // Kiss of Night (a Trick, a support: a creature you control gets Venom and Drain, so the boon is the kiss): the crescent
   // moon (with its glow), the hooded woman (her silhouette, and the sleeve of her raised arm), her pale hand with its glow
   // and the eight violet moths the kiss became (each its own, flying on their own now); `emit`: the palm's fingertips, where

@@ -109,6 +109,51 @@ export const PUPPETS = {
       { name: 'flames', of: '[data-part=flames]', pivot: [150, 187] },
     ],
   },
+  // the ash collector: him (coat, hat, legs, the lamp's pole) from his feet, his arms with the
+  // pole and the besom from the shoulder (they sweep together), and the ash-lantern from the
+  // pole's tip; `emit`: the besom's head, where the swept ash leaves, `grip`: his hands on the pole
+  'ash-collector': {
+    role: 'attacker', element: 'fire', facing: 'left', emit: [84, 184], hit: [160, 125],
+    feet: [160, 186], shoulder: [144, 99], lamp: [114, 62], tip: [114, 44], grip: [[141, 126], [121, 148]], heap: [62, 184],
+    parts: [
+      { name: 'body', of: 'fig:0 [data-part=body]', pivot: [160, 186] },
+      { name: 'sweep', of: 'fig:0 [data-part=sweep]', pivot: [144, 99] },
+      { name: 'lantern', of: '[data-part=lantern]', pivot: [114, 44] },
+    ],
+  },
+  // the wildfire (a spell, an attacker: the wall of fire is the attack): the far wall of
+  // flames and the near one, each from its base (the pines between them are cut too, so
+  // the far wall doesn't cover them), and the things running before it, each about its
+  // feet: the deer, the two birds, the soldiers and the fox; `emit`: the wall's heart,
+  // where the surge leaves, `front`: the line along the hill's crest the fire runs on
+  wildfire: {
+    role: 'attacker', element: 'fire', facing: 'right', emit: [150, 112], hit: [150, 125],
+    front: 146, base: [150, 146],
+    parts: [
+      { name: 'wallA', of: '[data-part=wallA]', pivot: [150, 142] },
+      { name: 'pines', of: '[data-part=pines]', pivot: [150, 146] },
+      { name: 'wallB', of: '[data-part=wallB]', pivot: [150, 146] },
+      { name: 'deer', of: 'fig:1 [data-part=deer]', pivot: [140, 126] },
+      { name: 'birds', of: 'fig:1 [data-part=birds]', pivot: [238, 100] },
+      { name: 'soldierL', of: 'fig:1 [data-part=soldierL]', pivot: [56, 149] },
+      { name: 'soldierR', of: 'fig:1 [data-part=soldierR]', pivot: [236, 160] },
+      { name: 'fox', of: 'fig:1 [data-part=fox]', pivot: [196, 157] },
+    ],
+  },
+  // the phoenix (rising from its ember): each wing with the fire running along it, at its
+  // shoulder, the tail (and its fire) from its root, and the bird himself (head, body, eye)
+  // from the base of his body; `emit`: his beak's tip, where the fireball leaves,
+  // `shoulders`: where the wings turn, `tips`: the wings' outer tips, `ember`: the last spark
+  'phoenix-of-the-last-spark': {
+    role: 'attacker', element: 'fire', facing: 'right', emit: [177, 59], hit: [150, 100],
+    shoulders: [[142, 90], [158, 90]], tips: [[42, 14], [258, 14]], ember: [150, 182], feet: [150, 176],
+    parts: [
+      { name: 'wingL', of: ['fig:0 [data-part=wingL]', '[data-part=fireL]'], pivot: [142, 90] },
+      { name: 'wingR', of: ['fig:0 [data-part=wingR]', '[data-part=fireR]'], pivot: [158, 90] },
+      { name: 'tail', of: ['fig:0 [data-part=tail]', '[data-part=fireT]'], pivot: [150, 124] },
+      { name: 'body', of: ['fig:0 [data-part=body]', '[data-part=eye]'], pivot: [150, 128] },
+    ],
+  },
   // ── end of lane A ──
 
   // the dragon's head and neck (its own pieces of the figure, and its eye),

@@ -266,19 +266,20 @@ export const ember = faction('ember', {
     // the collector: hunched, sweeping, his ash-lantern hung out ahead on a pole
     const coat = blob([[136, 96], [146, 89], [160, 89], [170, 97], [176, 114], [180, 136], [184, 158], [187, 170], [166, 171], [150, 168], [146, 152], [142, 128], [138, 110]]);
     const crown = blob([[124, 85], [125, 75], [131, 70], [139, 72], [142, 80], [141, 86]]);
-    const limbs = taper([[155, 162], [149, 175], [145, 186]], [10, 8, 6.5]) + taper([[174, 162], [176, 175], [178, 186]], [10, 8, 6.5]) +
-      taper([[146, 98], [149, 112], [142, 126]], [9, 7, 6]) + taper([[140, 100], [130, 118], [124, 134], [122, 146]], [8, 7, 6, 5.5]) +
-      taper([[166, 100], [100, 172]], [2.4, 2.2]) +
-      taper([[174, 116], [176, 92], [172, 70], [160, 54], [140, 45], [114, 44]], [3.2, 3, 2.6, 2.3, 2, 1.8]);
+    const legs = taper([[155, 162], [149, 175], [145, 186]], [10, 8, 6.5]) + taper([[174, 162], [176, 175], [178, 186]], [10, 8, 6.5]);
+    const arms = taper([[146, 98], [149, 112], [142, 126]], [9, 7, 6]) + taper([[140, 100], [130, 118], [124, 134], [122, 146]], [8, 7, 6, 5.5]) +
+      taper([[166, 100], [100, 172]], [2.4, 2.2]);
+    const lampPole = taper([[174, 116], [176, 92], [172, 70], [160, 54], [140, 45], [114, 44]], [3.2, 3, 2.6, 2.3, 2, 1.8]);
+    const box = boxOf(legs, arms, lampPole);
     const besom = poly([[97, 165], [104, 171], [106, 180], [104, 189], [100, 184], [97, 190], [92, 185], [88, 190], [84, 185], [79, 189], [77, 184], [70, 187], [80, 178], [90, 172]]);
-    s.figure(P(coat, crown, limbs, 'M125,90L119,94L125,96Z', besom) +
-      E(132, 85.5, 15, 3, -6) + C(131, 91, 6.5) + C(141, 126, 3.5) + C(121, 148, 3.5) + E(140, 187, 7, 2.6) + E(178, 187, 6.5, 2.6),
+    s.figure(`<g data-part="body">${P(coat, crown, padTo(box, legs), padTo(box, lampPole), 'M125,90L119,94L125,96Z')}${E(132, 85.5, 15, 3, -6)}${C(131, 91, 6.5)}${E(140, 187, 7, 2.6)}${E(178, 187, 6.5, 2.6)}</g>` +
+      `<g data-part="sweep">${P(padTo(box, arms), besom)}${C(141, 126, 3.5)}${C(121, 148, 3.5)}</g>`,
     { fill: p.fig, rim: p.rim, offsets: [[1.2, -0.9], [-1, -0.7]], rimOp: 0.85, shade: 0.45, edge: 0.3, halo: 0.3 });
     // the lantern of ash
     s.glow(114, 62, 50, '#ffb04a', 0.8, 'breathe');
-    s.bloom(`<path d="M114,44V52" stroke="${p.fig}" stroke-width="1"/><path d="M107.5,52H120.5L118.5,55.5H109.5ZM108,68.5H120L121.5,72H106.5Z" fill="${p.fig}"/>` +
+    s.bloom(`<g data-part="lantern"><path d="M114,44V52" stroke="${p.fig}" stroke-width="1"/><path d="M107.5,52H120.5L118.5,55.5H109.5ZM108,68.5H120L121.5,72H106.5Z" fill="${p.fig}"/>` +
       '<rect x="109" y="55.5" width="10" height="13" rx="1" fill="#ffe0a0"/><path d="M114,55.5V68.5" stroke="#3a1a0e" stroke-width=".9"/>' +
-      '<g fill="#ff7a2e"><circle cx="111.4" cy="65.5" r=".9"/><circle cx="116.6" cy="63" r=".8"/><circle cx="112" cy="60" r=".6"/></g>', { sd: 1.8, k: 1.2, box: [80, 30, 70, 70] });
+      '<g fill="#ff7a2e"><circle cx="111.4" cy="65.5" r=".9"/><circle cx="116.6" cy="63" r=".8"/><circle cx="112" cy="60" r=".6"/></g></g>', { sd: 1.8, k: 1.2, box: [80, 30, 70, 70] });
     // the swept heap, still glowing
     s.path(blob([[46, 190], [54, 183], [66, 181], [76, 185], [80, 190]]), '#2a120c');
     s.add('<g fill="#ff8a3a"><circle cx="58" cy="185" r=".9"/><circle cx="66" cy="183.5" r=".8"/><circle cx="71" cy="186.5" r=".9"/></g>');
@@ -296,9 +297,9 @@ export const ember = faction('ember', {
     for (let x = -20; x < 330; x += 22 + r() * 16) smoke += circ(x, 56 + r() * 30, 22 + r() * 18);
     s.add(`<path class="drift" d="${smoke}" fill="${s.lin([[0, '#160605', 0.85], [0.6, '#3c130a', 0.8], [1, '#8a3214', 0.45]])}"/>`);
     // the wall of fire on the far slope, bent by the wind
-    s.bloom(`<path d="${flameWall({ seed: 141, base: 140, h: [30, 74], w: [12, 22], lean: 16, gap: [6, 11] })}" fill="${s.lin([[0, '#ff4a12', 0], [0.3, '#ff6a1f', 0.8], [0.75, '#ffa040'], [1, '#ffd27a']])}"/>`, { sd: 3, k: 1.1, box: [-30, 30, 360, 140] });
-    s.path(pines({ seed: 142, base: 146, h: [26, 46], gap: [8, 14] }), '#140504');
-    s.bloom(`<path d="${flameWall({ seed: 143, base: 146, h: [8, 24], w: [8, 14], lean: 6, gap: [5, 9] })}" fill="${s.lin([[0, '#ff9a3a', 0.2], [0.5, '#ffc25a', 0.9], [1, '#fff0c0']])}"/>`, { sd: 2, k: 1.4, box: [-30, 90, 360, 90] });
+    s.bloom(`<g data-part="wallA"><path d="${flameWall({ seed: 141, base: 140, h: [30, 74], w: [12, 22], lean: 16, gap: [6, 11] })}" fill="${s.lin([[0, '#ff4a12', 0], [0.3, '#ff6a1f', 0.8], [0.75, '#ffa040'], [1, '#ffd27a']])}"/></g>`, { sd: 3, k: 1.1, box: [-30, 30, 360, 140] });
+    s.add(`<g data-part="pines"><path d="${pines({ seed: 142, base: 146, h: [26, 46], gap: [8, 14] })}" fill="#140504"/></g>`);
+    s.bloom(`<g data-part="wallB"><path d="${flameWall({ seed: 143, base: 146, h: [8, 24], w: [8, 14], lean: 6, gap: [5, 9] })}" fill="${s.lin([[0, '#ff9a3a', 0.2], [0.5, '#ffc25a', 0.9], [1, '#fff0c0']])}"/></g>`, { sd: 2, k: 1.4, box: [-30, 90, 360, 90] });
     // the near hill
     s.figure('<path d="M-10,214L-10,150C40,146 90,147 140,150C190,153 240,158 310,164L310,214Z"/>', { fill: '#170605', rim: '#ff8a3a', offsets: [[0, -1.2]], rimOp: 0.8 });
     // everything that can run, running
@@ -312,8 +313,8 @@ export const ember = faction('ember', {
       taper([[118, 110], [112, 104]], [4, 1]),
     ].join('');
     const bird = (x, y, k) => `M${x},${y}c${2 * k},${-2.6 * k} ${4.4 * k},${-2.6 * k} ${6 * k},0c${1.6 * k},${-2.6 * k} ${4 * k},${-2.6 * k} ${6 * k},0c${-2 * k},${-0.8 * k} ${-4 * k},0 ${-6 * k},${2 * k}c${-2 * k},${-2 * k} ${-4 * k},${-2.8 * k} ${-6 * k},${-2 * k}Z`;
-    s.figure(P(deer, blob([[164, 86], [170, 82], [180, 85], [186, 90], [180, 93], [168, 92]]), bird(228, 96, 1) + bird(248, 104, 0.8)) +
-      soldier(56, 149, 1.05) + soldier(236, 160, 0.9) + fox(196, 157, 1.1),
+    s.figure(`<g data-part="deer">${P(deer, blob([[164, 86], [170, 82], [180, 85], [186, 90], [180, 93], [168, 92]]))}</g><g data-part="birds">${P(bird(228, 96, 1) + bird(248, 104, 0.8))}</g>` +
+      `<g data-part="soldierL">${soldier(56, 149, 1.05)}</g><g data-part="soldierR">${soldier(236, 160, 0.9)}</g><g data-part="fox">${fox(196, 157, 1.1)}</g>`,
     { fill: '#120504', rim: '#ff9447', offsets: [[0, -1.2], [-1, -0.6]], rimOp: 0.9, edge: 0.3, halo: 0.4 });
     // foreground grass, black against the glow
     s.path(taper([[-4, 214], [4, 196], [16, 186]], [6, 3, 0.4]) + taper([[6, 214], [10, 194], [6, 178]], [5, 3, 0.4]) + taper([[300, 214], [292, 196], [280, 188]], [6, 3, 0.4]) + taper([[292, 214], [292, 196], [298, 182]], [5, 3, 0.4]), '#0a0302');
@@ -346,16 +347,20 @@ export const ember = faction('ember', {
       taper([[148, 124], [152, 142], [158, 156], [156, 168], [148, 173]], [8, 7, 5, 3, 0.4]) +
       taper([[152, 124], [168, 133], [184, 141], [194, 152], [193, 163], [186, 168]], [8, 7, 6, 4, 2, 0.4]);
     const fid = s.uid('ph');
-    s.defs.push(`<g id="${fid}">${P(wingL, mirror(wingL), tail)}</g>`);
+    s.defs.push(`<g id="${fid}L">${P(wingL)}</g><g id="${fid}R">${P(mirror(wingL))}</g><g id="${fid}T">${P(tail)}</g>`);
     const head = taper([[150, 86], [153, 73], [158, 63]], [13, 10, 8]) +
       taper([[155, 56], [145, 49], [134, 47], [122, 50]], [6.5, 5, 2.6, 0.4]) + taper([[158, 53], [152, 44], [142, 39], [131, 39]], [5.5, 4, 2.2, 0.3]) +
       taper([[159, 52], [157, 43], [151, 35], [145, 32]], [4, 3, 1.6, 0.3]);
-    s.figure(`<use href="#${fid}"/>` + P(head, blob([[150, 78], [159, 86], [161, 102], [157, 118], [150, 128], [143, 118], [139, 102], [141, 86]]), 'M165,54L178,59L171,60.5L166,63Z') + C(160, 58, 7),
+    s.figure(`<g data-part="wingL"><use href="#${fid}L"/></g><g data-part="wingR"><use href="#${fid}R"/></g><g data-part="tail"><use href="#${fid}T"/></g>` +
+      `<g data-part="body">${P(head, blob([[150, 78], [159, 86], [161, 102], [157, 118], [150, 128], [143, 118], [139, 102], [141, 86]]), 'M165,54L178,59L171,60.5L166,63Z') + C(160, 58, 7)}</g>`,
       { fill: PAL.ember.fig, rim: '#ffb04a', offsets: [[-1.2, -0.5], [1.2, -0.5], [0, 1.3]], rimOp: 0.9, shade: 0.4, halo: 0.35 });
     // fire runs out along the feathers
-    s.bloom(`<use href="#${fid}" fill="${radU(s, 150, 100, 112, [[0, '#ff6a1f', 0], [0.34, '#ff6a1f', 0], [0.62, '#ff7a2e', 0.8], [0.85, '#ffb04a', 0.95], [1, '#fff0c0']])}"/>`, { sd: 2.4, k: 1.2 });
+    const fireFill = radU(s, 150, 100, 112, [[0, '#ff6a1f', 0], [0.34, '#ff6a1f', 0], [0.62, '#ff7a2e', 0.8], [0.85, '#ffb04a', 0.95], [1, '#fff0c0']]);
+    s.bloom(`<g data-part="fireL"><use href="#${fid}L" fill="${fireFill}"/></g><g data-part="fireR"><use href="#${fid}R" fill="${fireFill}"/></g><g data-part="fireT"><use href="#${fid}T" fill="${fireFill}"/></g>`, { sd: 2.4, k: 1.2 });
+    s.add('<g data-part="eye">');
     s.glow(162, 57, 6, '#ffd27a', 0.9);
     s.add('<circle cx="162" cy="57" r="1.3" fill="#fff0c4"/>');
+    s.add('</g>');
     s.motes({ seed: 152, n: 30, x: [40, 260], y: [30, 200], r: [0.4, 1.3], fill: '#ffa040', hot: '#fff0c0', cls: 'rise', t: [4, 8] });
     return s.svg();
   },

@@ -451,19 +451,23 @@ export const ultra_e = {
     );
     const foot = U(taper([[166, 140], [172, 156], [177, 170]], [5, 3.6, 3]), ell(178.4, 171.4, 4, 1.8),
       taper([[180, 171.4], [189, 170], [195, 172.6]], [1.8, 1.3, 0.5], { per: 3 }), taper([[180, 172.6], [187, 174], [190, 177.4]], [1.6, 1.2, 0.5], { per: 3 }));
-    s.path(mv(handL + handR + foot, 4, 5), '#0c0818', 'opacity=".4"');
+    s.path(mv(handL, 4, 5), '#0c0818', 'opacity=".4" data-part="shadowL"');
+    s.path(mv(handR, 4, 5), '#0c0818', 'opacity=".4" data-part="shadowR"');
+    s.path(mv(foot, 4, 5), '#0c0818', 'opacity=".4" data-part="shadowF"');
     s.figure(`<path d="${handL + handR + foot}"/>`, { fill: '#07040e', rim: '#d6c8f6', offsets: [[-1, -1], [0, -1.2]], rimOp: 0.9, shade: 0.35, edge: 0.25, light: [-0.7, -1] });
     // the poison: beads at the fingertips, runs down the wall, drops, pools
     const tips = [[70, 87], [66, 102], [73, 121], [86, 131], [231, 115], [235, 132], [227, 153], [212, 162]];
     const runs = [[66, 103, 34], [73, 122, 26], [235, 133, 22], [212, 163, 8]].map(([x, y, l]) => taper([[x, y], [x + 0.4, y + l * 0.5], [x - 0.3, y + l]], [1.4, 1, 0.4], { per: 3 }));
+    const tipDots = (a) => dots(a.map(([x, y]) => [x, y + 0.6, 1.3]));
     s.glow(100, 176, 26, '#8aff5a', 0.3, 'breathe');
     s.glow(214, 178, 22, '#8aff5a', 0.28, 'breathe');
-    s.bloom(`<path d="${dots(tips.map(([x, y]) => [x, y + 0.6, 1.3]))}" fill="#b8ff7a"/><path d="${U(runs)}" fill="#8ae85a" opacity=".85"/>` +
+    s.bloom(`<g data-part="poisonL"><path d="${tipDots(tips.slice(0, 4))}" fill="#b8ff7a"/><path d="${U(runs.slice(0, 2))}" fill="#8ae85a" opacity=".85"/></g>` +
+      `<g data-part="poisonR"><path d="${tipDots(tips.slice(4))}" fill="#b8ff7a"/><path d="${U(runs.slice(2))}" fill="#8ae85a" opacity=".85"/></g>` +
       `<path d="${oval(100, 176, 9, 1.6) + oval(214, 177.6, 7, 1.4) + oval(150, 192, 5, 1)}" fill="#9cff6a" opacity=".7"/>`, { sd: 1.2, k: 1.4, box: [50, 80, 200, 120] });
     s.add([[66, 140, 0], [73, 150, 0.6], [235, 158, 1.1], [86, 140, 0.3]].map(([x, y, d]) => `<ellipse class="fall" style="--d:-${d}s" cx="${x}" cy="${y}" rx=".9" ry="1.5" fill="#b8ff7a"/>`).join(''));
     // the eyes in the blackness
     s.glow(147, 92, 20, '#d6c8f6', 0.35, 'breathe');
-    s.bloom(`<path d="${lens(142.4, 92.6, 4.4, 12, 0.36, 3) + lens(150.8, 90.6, 4.4, -18, 0.36, 3)}" fill="#f2ecff"/>`, { sd: 1.1, k: 1.5, box: [128, 80, 34, 24] });
+    s.bloom(`<g data-part="eyes"><path d="${lens(142.4, 92.6, 4.4, 12, 0.36, 3) + lens(150.8, 90.6, 4.4, -18, 0.36, 3)}" fill="#f2ecff"/></g>`, { sd: 1.1, k: 1.5, box: [128, 80, 34, 24] });
     s.motes({ seed: 15402, n: 10, x: [20, 280], y: [30, 190], r: [0.4, 0.9], fill: '#b8a6e2', cls: 'drift', t: [6, 10], op: [0.25, 0.6] });
     return s.svg();
   },
@@ -503,7 +507,8 @@ export const ultra_e = {
     // the control bars
     const bar = (x, y) => U(taper([[x - 15, y + 2], [x + 15, y - 2]], 2.4, { per: 2 }), taper([[x, y - 10], [x, y + 10]], 2.2, { per: 2 }));
     const cl = [PX - 66.4, PY - 150], cr = [PX + 66.4, PY - 150];
-    s.path(bar(...cl) + bar(...cr), '#3a2a20', 'stroke="#c8a6ff" stroke-width=".5"');
+    s.path(bar(...cl), '#3a2a20', 'stroke="#c8a6ff" stroke-width=".5" data-part="barL"');
+    s.path(bar(...cr), '#3a2a20', 'stroke="#c8a6ff" stroke-width=".5" data-part="barR"');
     // the spotlight, and the pool it makes
     s.path('M136,-12L164,-12L226,186L74,186Z', s.lin([[0, '#c9a6ff', 0.04], [0.6, '#b07cff', 0.14], [1, '#d6c0ff', 0.22]]));
     s.add(`<ellipse cx="150" cy="184" rx="78" ry="13" fill="${s.rad([[0, '#efe2ff', 0.55], [0.6, '#b07cff', 0.28], [1, '#b07cff', 0]])}"/>`);
@@ -525,14 +530,15 @@ export const ultra_e = {
     s.path(oval(120, 186, 14, 2.4) + oval(182, 186, 14, 2.4), '#0a0610', 'opacity=".55"');
     s.figure(`<path d="${kn}"/>`, { fill: '#3a2c50', rim: '#f2e8ff', offsets: [[0, -1.2], [-0.7, -0.7], [0.7, -0.7]], rimOp: 0.95, shade: 0.5, edge: 0.3, light: [0, -1] });
     const swL = [[120 + 19 * 1.12, 184 - 34.4 * 1.12], [158, 128]], swR = [[182 - 13 * 1.12, 184 - 43.4 * 1.12], [140, 126]];
-    s.path(U(taper(swL, [1.8, 0.5], { per: 2 }), taper(swR, [1.8, 0.5], { per: 2 })), '#e6dcf6');
+    s.path(U(taper(swL, [1.8, 0.5], { per: 2 })), '#e6dcf6', 'data-part="swordL"');
+    s.path(U(taper(swR, [1.8, 0.5], { per: 2 })), '#e6dcf6', 'data-part="swordR"');
     // the strings, from the bars to heads, hands and knees
     const lk = [[0.6, -43], [18, -34.4], [-11, -30], [-4.6, -10], [5, -10]].map(([x, y]) => [120 + x * 1.12, 184 + y * 1.12]);
     const rk = [[0.6, -43], [12.4, -43.4], [-11, -30], [-4.6, -10], [5, -10]].map(([x, y]) => [182 - x * 1.12, 184 + y * 1.12]);
     const ends = ([x, y]) => [[x - 15, y + 2], [x + 15, y - 2], [x, y - 10], [x, y + 10], [x + 7, y]];
     const str = (from, to) => from.map((a, i) => `M${pt(a)}L${pt(to[i])}`).join('');
-    s.bloom(`<path d="${str(ends(cl), lk) + str(ends(cr), rk)}" stroke="#e6d6ff" stroke-width=".45" opacity=".85"/>` +
-      `<path d="${glint(149, 127, 7) + rot(glint(149, 127, 4), 149, 127, 45)}" fill="#ffffff"/>`, { sd: 1, k: 1.4, box: [60, 20, 180, 170] });
+    s.bloom(`<path data-part="stringsL" d="${str(ends(cl), lk)}" stroke="#e6d6ff" stroke-width=".45" opacity=".85"/><path data-part="stringsR" d="${str(ends(cr), rk)}" stroke="#e6d6ff" stroke-width=".45" opacity=".85"/>` +
+      `<path data-part="glint" d="${glint(149, 127, 7) + rot(glint(149, 127, 4), 149, 127, 45)}" fill="#ffffff"/>`, { sd: 1, k: 1.4, box: [60, 20, 180, 170] });
     // the side curtains and the valance
     const drape = (x0, d) => U(poly([[x0, -10], [x0 + d * 46, -10], [x0 + d * 40, 60], [x0 + d * 30, 130], [x0 + d * 36, 214], [x0, 214]]));
     s.figure(`<path d="${drape(-10, 1) + drape(310, -1)}"/>`, { fill: '#2a0c22', rim: '#b07cff', offsets: [[0, 0]], rimOp: 0 });
@@ -584,6 +590,7 @@ export const ultra_e = {
     const front = [[178, 178], [176, 150], [176, 120], [179, 92], [185, 64], [193, 44], [203, 31], [214, 26], [223, 30], [225, 39], [221, 46]];
     const back = [[214, 38], [204, 32], [186, 26], [160, 24], [126, 27], [90, 23], [50, 25], [14, 21], [-12, 23]];
     const wall = poly([...spline(front, 6), ...spline(back, 6), [-12, 214], [176, 214]]);
+    s.add('<g data-part="curtain">');
     s.path(wall, s.linU(0, 20, 224, 0, [[0, '#0e3844', 0.97], [0.72, '#1a5864', 0.95], [0.9, '#4a9ca2', 0.93], [1, '#c6f2ea', 0.95]]));
     s.path(wall, s.lin([[0, '#e6fbf6', 0.3], [0.18, '#e6fbf6', 0.05], [1, '#03141a', 0.5]]));
     let flow = '';
@@ -609,8 +616,11 @@ export const ultra_e = {
     for (let i = 0; i < 40; i++) { const a = rad(-80 + R() * 110), d = 6 + R() * 40; spray.push([220 + Math.cos(a) * d, 34 + Math.sin(a) * d * 0.9, 0.5 + R() * 1.4]); }
     for (let i = 0; i < 24; i++) { const y = 40 + R() * 130, x = 178 + R() * 14 + (170 - y) * 0.06; spray.push([x, y, 0.4 + R() * 1.1]); }
     s.add(`<path d="${U(puffs([[184, 176, 6], [194, 178, 5], [204, 177, 4], [214, 179, 3], [178, 170, 5]], 1.6))}" fill="#e6fbf6" opacity=".8"/>`);
+    s.add('</g>');
     s.glow(204, 40, 54, '#effdf9', 0.6, 'breathe');
+    s.add('<g data-part="spray">');
     s.bloom(`<path d="${dots(spray)}" fill="#f4fffd"/><path d="${glint(222, 30, 7) + glint(188, 70, 4) + glint(181, 120, 5)}" fill="#ffffff"/>`, { sd: 1.3, k: 1.5, box: [150, 0, 130, 190] });
+    s.add('</g>');
     s.motes({ seed: 15603, n: 18, x: [10, 180], y: [30, 170], r: [0.4, 1.1], fill: p.glow, hot: '#ffffff', cls: 'rise', t: [4, 8], op: [0.4, 0.9] });
     return s.svg();
   },

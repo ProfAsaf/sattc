@@ -89,6 +89,70 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Grand Illusion: the fighters still on the field at the right (the three of them, one figure), the curtain
+  // of seawater (its wall, the ones it took shown as shapes of bubbles inside it, the foam at its foot; it
+  // surges forward by stretching from its left edge, about the foot of the picture) and the spray that
+  // flies off its crest and front (carried forward with the front). `emit`: the crest, where the sweep of
+  // spray leaves from; `alone`: the beast in the middle of the fighters, where the sweep lands when nothing
+  // is aimed at; `front`: the wall's front edge at rest; `bodies`: points on the fighters (left to right),
+  // where they come apart into bubbles
+  'grand-illusion': {
+    role: 'attacker', element: 'water', facing: 'right', emit: [222, 32], hit: [200, 100], alone: [262, 152],
+    front: [176, 120], crest: [220, 34], foot: [0, 214],
+    bodies: [[187, 114], [194, 136], [191, 160], [206, 168], [232, 160], [250, 146], [272, 148], [292, 156], [286, 130], [288, 152]],
+    parts: [
+      { name: 'fighters', of: 'fig:0', pivot: [255, 176] },
+      { name: 'curtain', of: '[data-part=curtain]', pivot: [0, 214] },
+      { name: 'spray', of: '[data-part=spray]', pivot: [220, 34] },
+    ],
+  },
+  // The Puppeteer: his figure in three (the torso with hat, and the two arms, each about its shoulder), the control bar in each
+  // hand, the two marionette knights (one figure, split down the middle at x=150, each about its feet) with
+  // their swords (each about its hand), the strings from each bar down to its knight, and the glint where
+  // the blades cross. `emit`: the right bar (`emitL`, the left's), where the thread of shadow leaves; `hit`:
+  // his middle; `alone`: where the blades cross, which is where it strikes when nothing is aimed at;
+  // `endsL`/`endsR`: where each bar's strings end on its knight; `handL`/`handR`: the sword bases;
+  // `tipL`/`tipR`: the sword points
+  'the-puppeteer': {
+    role: 'attacker', element: 'shadow', facing: 'front', emit: [216, 34], emitL: [84, 34], hit: [150, 112], alone: [149, 127],
+    barL: [83.6, 34], barR: [216.4, 34], shoulderL: [136, 58], shoulderR: [164, 58],
+    feetL: [120, 184], feetR: [182, 184], handL: [141.3, 145.5], handR: [167.4, 135.4], tipL: [158, 128], tipR: [140, 126], clash: [149, 127],
+    endsL: [[120.7, 135.8], [140.2, 145.5], [107.7, 150.4], [114.8, 172.8], [125.6, 172.8]],
+    endsR: [[181.3, 135.8], [168.1, 135.4], [194.3, 150.4], [187.2, 172.8], [176.4, 172.8]],
+    parts: [
+      { name: 'torso', of: 'fig:0', pivot: [150, 184], poly: [[128, -20], [172, -20], [172, 80], [320, 80], [320, 230], [-20, 230], [-20, 80], [128, 80]] },
+      { name: 'armL', of: 'fig:0', pivot: [136, 58], poly: [[-20, -20], [128, -20], [128, 80], [-20, 80]] },
+      { name: 'armR', of: 'fig:0', pivot: [164, 58], poly: [[172, -20], [320, -20], [320, 80], [172, 80]] },
+      { name: 'barL', of: '[data-part=barL]', pivot: [83.6, 34] },
+      { name: 'barR', of: '[data-part=barR]', pivot: [216.4, 34] },
+      { name: 'knightL', of: 'fig:1', pivot: [120, 184], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
+      { name: 'knightR', of: 'fig:1', pivot: [182, 184], poly: [[150, -20], [320, -20], [320, 230], [150, 230]] },
+      { name: 'swordL', of: '[data-part=swordL]', pivot: [141.3, 145.5] },
+      { name: 'swordR', of: '[data-part=swordR]', pivot: [167.4, 135.4] },
+      { name: 'stringsL', of: '[data-part=stringsL]', pivot: [83.6, 34] },
+      { name: 'stringsR', of: '[data-part=stringsR]', pivot: [216.4, 34] },
+      { name: 'glint', of: '[data-part=glint]', pivot: [149, 127] },
+    ],
+  },
+  // Gloom Stalker: the shade in its doorway (its body, and its pale eyes in the dark) and the long hands
+  // and the foot that have come out round the frame, each with its poison (the beads at the fingertips
+  // and the runs down from them) and the shadow it throws on the wall. One source, split in three by
+  // polygons: the left hand (and arm) about its shoulder, the right hand about its shoulder, and the foot
+  // about its knee. `emit`: the right hand's fingertips, where the thrown poison leaves from (`emitL`,
+  // the left's); `tipsL`/`tipsR`: all eight fingertips; `shoulderL`/`shoulderR`: the joints; `alone`: the
+  // corner below at the right, where it flings its poison when nothing is aimed at
+  'gloom-stalker': {
+    role: 'attacker', element: 'venom', facing: 'front', emit: [231, 124], emitL: [70, 98], hit: [152, 122], alone: [276, 182],
+    shoulderL: [126, 116], shoulderR: [172, 124], knee: [166, 140], eyes: [147, 92], mid: [150, 150],
+    tipsL: [[70, 87], [66, 102], [73, 121], [86, 131]], tipsR: [[231, 115], [235, 132], [227, 153], [212, 162]],
+    pools: [[100, 176], [214, 178]],
+    parts: [
+      { name: 'body', of: ['fig:0', '[data-part=eyes]'], pivot: [150, 150] },
+      { name: 'handL', of: ['fig:1', '[data-part=poisonL]', '[data-part=shadowL]', '[data-part=shadowR]', '[data-part=poisonR]', '[data-part=shadowF]'], pivot: [126, 116], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
+      { name: 'handR', of: ['fig:1', '[data-part=poisonL]', '[data-part=shadowL]', '[data-part=shadowR]', '[data-part=poisonR]', '[data-part=shadowF]'], pivot: [172, 124], poly: [[150, -20], [320, -20], [320, 230], [200, 230], [200, 139], [150, 139]] },
+      { name: 'foot', of: ['fig:1', '[data-part=poisonL]', '[data-part=shadowL]', '[data-part=shadowR]', '[data-part=poisonR]', '[data-part=shadowF]'], pivot: [166, 140], poly: [[150, 139], [200, 139], [200, 230], [150, 230]] },
+    ],
+  },
   // Reed Lurker: the merfolk hunter (his whole figure, with his eyes just above the water; both turn about
   // the middle of his coil) and the bone spear he holds (its shaft, its head and the pale line down it),
   // which turns about his hand and thrusts along its own length. `emit`: the spear's head, where the

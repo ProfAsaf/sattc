@@ -866,9 +866,9 @@ export const ultra_e = {
     const forks = [bolt(core[3], [core[3][0] - 34, core[3][1] + 44], 16003, 5, 5), bolt(core[6], [core[6][0] + 30, core[6][1] + 26], 16004, 4, 4),
       bolt(core[2], [core[2][0] + 44, core[2][1] - 10], 16005, 4, 4), bolt(core[8], [core[8][0] - 18, core[8][1] + 36], 16006, 4, 4), bolt(core[1], [core[1][0] - 30, core[1][1] + 6], 16008, 4, 4)];
     s.glow(ex, ey, 46, '#fff0c8', 0.65, 'breathe');
-    s.bloom(`<path d="${polyline(core)}" stroke="#bfefff" stroke-width="8" fill="none" opacity=".4" stroke-linejoin="round"/><path d="${fire}" fill="${s.linU(ex, ey, tx, ty, [[0, '#ffd27a'], [0.5, '#ff8a3a'], [1, '#ffb04a']])}"/>` +
-      `<path d="${polyline(core)}" stroke="#ffffff" stroke-width="2.6" fill="none" stroke-linejoin="round"/><path d="${forks.map(polyline).join('')}" stroke="#e6faff" stroke-width="1.1" fill="none" stroke-linejoin="round"/>` +
-      `<path d="${glint(tx, ty, 22, 0.12) + rot(glint(tx, ty, 11, 0.2), tx, ty, 45)}" fill="#ffffff"/>`, { sd: 2, k: 1.4, box: [30, 20, 260, 150] });
+    s.bloom(`<g data-part="bolt"><path d="${polyline(core)}" stroke="#bfefff" stroke-width="8" fill="none" opacity=".4" stroke-linejoin="round"/><path d="${fire}" fill="${s.linU(ex, ey, tx, ty, [[0, '#ffd27a'], [0.5, '#ff8a3a'], [1, '#ffb04a']])}"/>` +
+      `<path d="${polyline(core)}" stroke="#ffffff" stroke-width="2.6" fill="none" stroke-linejoin="round"/><path d="${forks.map(polyline).join('')}" stroke="#e6faff" stroke-width="1.1" fill="none" stroke-linejoin="round"/></g>` +
+      `<g data-part="glint"><path d="${glint(tx, ty, 22, 0.12) + rot(glint(tx, ty, 11, 0.2), tx, ty, 45)}" fill="#ffffff"/></g>`, { sd: 2, k: 1.4, box: [30, 20, 260, 150] });
     s.motes({ seed: 16007, n: 22, x: [180, 260], y: [80, 150], r: [0.4, 1.1], fill: '#ffb04a', hot: '#fff6d8', cls: 'rise', t: [3, 6], op: [0.4, 1] });
     return s.svg();
   },
@@ -941,9 +941,9 @@ export const ultra_e = {
     // the mask she holds: a half-mask glowing violet-white, a ribbon off it
     const mk = place(blob([[-10, -152.6], [-5, -156.4], [0, -154], [5, -156.4], [10, -152.6], [8, -145.4], [2.6, -144.8], [0, -146.6], [-2.6, -144.8], [-8, -145.4]], 3));
     s.glow(fx, fy - 150, 40, '#c9a6ff', 0.6, 'breathe');
-    s.bloom(`<path d="${mk}" fill="#f2ecff"/><path d="${place(lens(-4.2, -150.6, 3.8, 8, 0.5, 3) + lens(4.2, -150.6, 3.8, -8, 0.5, 3))}" fill="#3a2a5c"/>` +
+    s.bloom(`<g data-part="mask"><path d="${mk}" fill="#f2ecff"/><path d="${place(lens(-4.2, -150.6, 3.8, 8, 0.5, 3) + lens(4.2, -150.6, 3.8, -8, 0.5, 3))}" fill="#3a2a5c"/>` +
       `<path d="${place('M-1.6,-155.4Q0,-152 1.6,-155.4Q0,-153.4 -1.6,-155.4Z')}" fill="#9a7ad8"/>` +
-      `<path d="${place('M9.6,-151Q18,-150 22,-143T30,-134M9.2,-148Q15,-145 17,-139T23,-130')}" fill="none" stroke="#d6c0ff" stroke-width="1" opacity=".9"/>`, { sd: 1.4, k: 1.5, box: [120, 20, 80, 60] });
+      `<path d="${place('M9.6,-151Q18,-150 22,-143T30,-134M9.2,-148Q15,-145 17,-139T23,-130')}" fill="none" stroke="#d6c0ff" stroke-width="1" opacity=".9"/></g>`, { sd: 1.4, k: 1.5, box: [120, 20, 80, 60] });
     s.motes({ seed: 9641, n: 16, x: [40, 260], y: [30, 180], r: [0.4, 1], fill: '#c9b8f4', hot: '#ffffff', cls: 'float', t: [6, 10], op: [0.3, 0.8] });
     return s.svg();
   },
@@ -1012,7 +1012,7 @@ export const ultra_e = {
       { fill: s.lin([[0, '#1a1c1e'], [1, '#08090a']]), rim: '#ffcf8a', offsets: [[0, -1.2], [0.6, -0.8]], rimOp: 0.8 });
     // the staff
     const s0 = [fx + 28.4 * K, fy - 137.4 * K], s1 = [sx, sy], sb = [168.4, 142];
-    s.path(taper([sb, s0, s1], [3, 2.8, 2.4], { per: 2 }), '#1a1410');
+    s.path(taper([sb, s0, s1], [3, 2.8, 2.4], { per: 2 }), '#1a1410', 'data-part="staff"');
     // the book, its pages lit, and pages flying off it
     const bxk = fx - 38 * K, byk = fy - 96 * K;
     s.glow(bxk, byk, 34, '#ffe2b0', 0.55);
@@ -1031,12 +1031,12 @@ export const ultra_e = {
     const fire = coil(Math.PI, 11);
     const up = bolt(s1, [sx + 34, -12], 9661, 6, 6), up2 = bolt(s1, [sx - 30, -12], 9662, 6, 6), up3 = bolt(s1, [sx + 4, -14], 9664, 5, 5);
     s.glow(sx, sy + 4, 44, '#fff0c8', 0.75, 'breathe');
-    s.bloom(`<path d="${taper(fire, fire.map((_, i) => 1.4 + 4.4 * (i / 50)), { per: 1 })}" fill="${s.linU(s0[0], s0[1], s1[0], s1[1], [[0, '#ff6a1f'], [0.6, '#ff9a3a'], [1, '#ffd27a']])}"/>` +
+    s.bloom(`<g data-part="coil"><path d="${taper(fire, fire.map((_, i) => 1.4 + 4.4 * (i / 50)), { per: 1 })}" fill="${s.linU(s0[0], s0[1], s1[0], s1[1], [[0, '#ff6a1f'], [0.6, '#ff9a3a'], [1, '#ffd27a']])}"/>` +
       `<path d="${polyline(zap)}" stroke="#e6faff" stroke-width="1.4" fill="none"/>` +
       `<path d="${polyline(up) + polyline(up2) + polyline(up3)}" stroke="#ffffff" stroke-width="1.5" fill="none" stroke-linejoin="round"/>` +
-      `<path d="${glint(s1[0], s1[1], 12, 0.14)}" fill="#ffffff"/>` +
+      `<path d="${glint(s1[0], s1[1], 12, 0.14)}" fill="#ffffff"/></g>` +
       `<path d="${[-17, -10, -3, 4, 11, 18].map((x, i) => rune(i, fx + x * K, fy - 7 * K, 0.7)).join('')}" fill="none" stroke="#ffb35c" stroke-width=".7" stroke-linecap="round"/>` +
-      `<path d="M${f1(bxk - 13)},${f1(byk + 2)}L${f1(bxk)},${f1(byk - 4)}L${f1(bxk)},${f1(byk + 2.4)}L${f1(bxk - 12)},${f1(byk + 7.4)}ZM${f1(bxk)},${f1(byk - 4)}L${f1(bxk + 13)},${f1(byk - 2)}L${f1(bxk + 12)},${f1(byk + 5.4)}L${f1(bxk)},${f1(byk + 2.4)}Z" fill="#fff2d0"/>`, { sd: 1.6, k: 1.45, box: [50, -10, 240, 200] });
+      `<g data-part="book"><path d="M${f1(bxk - 13)},${f1(byk + 2)}L${f1(bxk)},${f1(byk - 4)}L${f1(bxk)},${f1(byk + 2.4)}L${f1(bxk - 12)},${f1(byk + 7.4)}ZM${f1(bxk)},${f1(byk - 4)}L${f1(bxk + 13)},${f1(byk - 2)}L${f1(bxk + 12)},${f1(byk + 5.4)}L${f1(bxk)},${f1(byk + 2.4)}Z" fill="#fff2d0"/></g>`, { sd: 1.6, k: 1.45, box: [50, -10, 240, 200] });
     s.motes({ seed: 9663, n: 20, x: [120, 270], y: [10, 120], r: [0.4, 1.1], fill: '#ffb04a', hot: '#fff6d8', cls: 'rise', t: [3, 7], op: [0.4, 1] });
     return s.svg();
   },

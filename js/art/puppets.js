@@ -89,6 +89,43 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Seren, the Storm-Scholar: she herself (robes, scarf and all, from her feet), the staff (from her grip), the
+  // coil of lightning and fire wound up it into the gap, and the open book in her other hand (from its middle).
+  // role: support (she counts Spells and draws), element: lightning; `emit`: the staff's tip, where the gift
+  // leaves; `hit`: her middle; `grip`: her hand on the staff; `book`: the book's middle; `feet`: her joint;
+  // `alone`: over the sea at the right, where her gift goes when nothing is aimed at
+  'legend-seren': {
+    role: 'support', element: 'lightning', facing: 'right', emit: [183, 6], hit: [150, 130], grip: [178.4, 50], book: [112, 98], feet: [150, 184], alone: [262, 128],
+    parts: [
+      { name: 'her', of: 'fig:2', pivot: [150, 184] },
+      { name: 'staff', of: '[data-part=staff]', pivot: [178.4, 50] },
+      { name: 'coil', of: '[data-part=coil]', pivot: [178.4, 50] },
+      { name: 'book', of: '[data-part=book]', pivot: [112, 98] },
+    ],
+  },
+  // Mirelle, the Mask-Maker: the half-mask she holds up before her face (with its glow and the ribbon off it) and
+  // she herself (the coat and all, from her feet). The masks on the walls are drawn with the room and stay.
+  // role: support (her Tricks and Traps cost less, she draws), element: arcane (the violet light of the masks);
+  // `emit`: the mask as she holds it, where the boon leaves; `hit`: her middle; `feet`: her joint; `alone`: the half-carved mask on the workbench, which she lends
+  // her light to when nothing is aimed at
+  'legend-mirelle': {
+    role: 'support', element: 'arcane', facing: 'front', emit: [150, 45], hit: [150, 130], feet: [150, 194], alone: [252, 154],
+    parts: [
+      { name: 'her', of: 'fig:1', pivot: [150, 194] },
+      { name: 'mask', of: '[data-part=mask]', pivot: [150, 45] },
+    ],
+  },
+  // The Last Storm: the one great bolt (the channel, the fire wound round it and its forks, out of the storm's
+  // eye) and the starburst where it strikes the tower. role: attacker (it deals damage), element: lightning;
+  // `emit`: the storm's eye, where the bolt leaves; `hit`: the eye too (a spell: its heart); `alone`: the
+  // tower's top, where it strikes when nothing is aimed at
+  'the-last-storm': {
+    role: 'attacker', element: 'lightning', facing: 'right', emit: [104, 64], hit: [104, 64], alone: [216, 112],
+    parts: [
+      { name: 'bolt', of: '[data-part=bolt]', pivot: [104, 64] },
+      { name: 'glint', of: '[data-part=glint]', pivot: [216, 112] },
+    ],
+  },
   // The Arcane Well: the rope and bucket on the winch (hanging from the beam), the water brimming at the
   // top (the surface), the runes round the rim and the two threads of water running over it. `rim`: the
   // middle of the rim's water, where the light rises from; `top`: the lip of the rim; `runeAt`: the

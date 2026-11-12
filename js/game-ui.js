@@ -21,6 +21,7 @@ import * as St from './stats.js';
 import * as Rating from './rating.js';
 import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
+import { hushTable, startTableAlive, stopTableAlive } from './cards-alive.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
 import * as Camp from './campaign.js';
@@ -595,7 +596,16 @@ function mount() {
   document.body.classList.add('in-game');
   window.dispatchEvent(new Event('collective:game')); // (a page under the game may let go of what it holds: the campaign's pictures)
   keepAwake('game', true);
+  startTableAlive(root, atRest); // (left be, the table's cards act now and then)
   return root;
+}
+
+// The table at rest: no move playing out, nothing open, nobody aiming or
+// choosing, no fight on, no lesson. Its cards then act now and then (js/cards-alive.js).
+function atRest() {
+  if (!G || G.busy || G.flow || G.sheet || G.atk || G.blk || G.viewer || G.skipping || G.stale || G.dirty) return false;
+  const s = S();
+  return s.phase !== 'over' && s.phase !== 'mulligan' && !s.combat && !tutStep() && !decision();
 }
 
 function begin(rec) {
@@ -643,6 +653,7 @@ function beginOnline(info, seat) {
 // Leave the table (a practice game stays saved and can be resumed;
 // an online game carries on and you can go back to it from Play).
 function leave(goTo = '#/play') {
+  stopTableAlive();
   clearTimeout(G?.timer);
   if (G?.mode === 'online' && Push.enabled()) { watchSeen(false); Net.markSeen(G.code, false).catch(() => {}); }
   G?.unsubActions?.();
@@ -2404,6 +2415,7 @@ function syncStyle(a, style) {
 
 // Draw the position in G.view. No animation here.
 function draw(root) {
+  hushTable(); // (a card acting on its own stops before the table changes)
   const s = S(), me = s.players[G.me];
   if (G.viewer && !G.sheet?.startsWith('<div class="hv"')) G.viewer = null; // (whatever took the big view's place ended it)
   syncBlocks();
@@ -2433,6 +2445,7 @@ function draw(root) {
 function redraw() {
   const root = document.getElementById('game');
   if (!root || !G) return;
+  hushTable(); // (before the table's places are noted for the glide)
   // (while a move waits for your tap the table holds still, so ☰ and its sheets can open over it)
   if (G.busy && !gates) { G.dirty = true; return; }
   const before = FX.capture(root);
@@ -2481,6 +2494,7 @@ const bigFights = () => { try { return localStorage.getItem('collective.bigFight
 async function present(events, after, quick = false, a = null) {
   const root = document.getElementById('game');
   if (!root || !G) return;
+  hushTable(); // (a move plays out: any card acting on its own stops first)
   // every fight is kept as a story, so the note after it can play it again
   let story = null;
   if (events.some((e) => e.k === 'fight')) { try { story = Fight.fightStory(S(), after, events, G.me); } catch (e) { console.error(e); } }

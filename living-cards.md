@@ -16,8 +16,14 @@ The history, with Asaf's words at each step, is in README.md under "Home's fan a
 - **The kit is shared.** `js/puppet-kit.js` builds a move. Both the harness (`bakeoff/harness.js`) and the game use it.
 - **In the game** (`js/cards-alive.js`):
   - **A card opened big** plays its move a moment after it opens, then every few seconds. It rests while turned over.
-  - **In Cards**, after 2 s untouched, one card acts at a time: an attacker or support aims its move at the card beside it (`k.aim` = that card's `hit`). A defender there takes the blow on its nearest guard point (`k.blows` at the attacker's impact); any other card jolts. Some scenes are a card on its own.
-  - Its picture is swapped to sprites for the scene only, and swapped back after. Any touch or scroll stops it. Nothing plays with Reduce Motion, and never inside a game.
+  - **In a game**, after the table has been at rest for 2.5 s, one card on the table acts at a time. Asaf asked for it: "I want it in games (and basically all the time somebody isn't touching the screen or another action isn't happening)".
+    - At rest means nobody touching, no move playing out (including the wait for a tap after an opponent's move), nothing open, nobody aiming or choosing, no fight on, no lesson, and the game not over. That's `atRest()` in `js/game-ui.js`.
+    - An attacker aims its move at a card on another side (`k.aim` = that card's `hit`). A support aims at the card nearest it on its own side.
+    - A defender it reaches takes the blow on its nearest guard point (`k.blows` at the attacker's impact). Any other card jolts along the blow; the jolt moves its `.tc-body`, as the game's own shakes do.
+    - A quarter of the time, and always for defenders and auras, a card acts alone.
+    - Any touch ends a scene. `draw()`, `redraw()` and `present()` call `hushTable()` first, so the game's own moves never meet one.
+  - **In Cards**, after 2 s untouched, one card acts at a time: an attacker or support aims its move at the card beside it. A defender there takes the blow on its guard; any other card jolts. Some scenes are a card on its own.
+  - A card's picture is swapped to sprites for its scene only, and swapped back after. Nothing plays with Reduce Motion. A test can set `window.__ppPicks = []` to note who acts on whom.
 - **The foil.** Legendaries in grids lost the moving foil. It moved a background, which repainted every legendary on screen every frame: 270 style recalcs in 3 s on Cards at rest, now 0. Shown big, the foil still slides as a transform.
 - **Cost, measured in headless Chrome:**
   - On its own, a move costs nothing on the main thread: 0 recalcs in the harness, and 0 on a page of 8 cards.

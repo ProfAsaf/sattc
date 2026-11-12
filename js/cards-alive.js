@@ -1,13 +1,15 @@
 // Cards acting out their moves in the game (each card's puppet and move, and
-// the kit that builds it: js/puppet-kit.js). Two places:
+// the kit that builds it: js/puppet-kit.js). Three places:
 //  - A card opened big (the zoom) plays its move, a moment after it opens and
 //    then every few seconds, and rests while it's turned over.
-//  - In Cards, while the page is left be, now and then one card acts on the
-//    card beside it: an attacker's or a support's move goes to that card,
-//    which takes the blow on its guard if it's a defender, or else jolts.
-//    Others play on their own. One scene at a time; any touch stops it.
-// Never inside a game (an idle card "attacking" could be taken for a move of
-// the game: living-cards.md). With Reduce Motion on, nothing plays.
+//  - In a game, while nothing else happens (nobody touching, no move playing
+//    out, nothing open, nobody choosing), now and then a card on the table
+//    acts: an attacker's move goes to a card on another side, a support's to
+//    the card nearest it on its own side; a defender it reaches takes the
+//    blow on its guard, any other card jolts; often a card acts alone.
+//  - In Cards, while the page is left be, one card acts on the card beside it.
+// One scene at a time; any touch stops it, and so does any move of the game.
+// With Reduce Motion on, nothing plays.
 
 import { LIVE } from './art-live.js';
 import { PUPPETS } from './art/puppets.js';
@@ -37,7 +39,7 @@ function artOf(id, mod) {
   }
   return arts.get(id);
 }
-// `card`: a .card whose picture is in sprites (its .sp-art); what leaves the
+// `card`: a card whose picture is in sprites (its .sp-art); what leaves the
 // picture goes on `over`. Null if it has no move (or it couldn't be built).
 async function build(id, card, over, { aim = null, blows = null } = {}) {
   const box = card.querySelector('.sp-art');
@@ -48,20 +50,22 @@ async function build(id, card, over, { aim = null, blows = null } = {}) {
   if (!mod) return null;
   const art = await artOf(id, mod);
   if (!card.isConnected || !over.isConnected) return null;
-  const m = makeKit({ id, mod, art, box, face: card.querySelector('.card-face'), over, aim, blows });
+  const face = card.querySelector('.card-face, .tc-face') || card;
+  const m = makeKit({ id, mod, art, box, face, over, aim, blows });
   try { mod.build(m.k); } catch (e) { console.warn(`${id}: its move didn't build`, e); dropMove(m); return null; }
   for (const a of m.anims) a.cancel();
   await Promise.all(m.made.filter((el) => el.tagName === 'IMG').map(loaded));
   return { id, END: m.END, BEATS: mod.BEATS || null, anims: m.anims, made: m.made };
 }
 const play = (m) => { for (const a of m.anims) { a.cancel(); a.play(); } };
-// every picture in `els` decoded, and two frames painted
+const halt = (m) => { for (const a of m?.anims || []) a.cancel(); };
+function dropMove(m) { halt(m); for (const el of m?.made || []) el.remove(); }
+// every picture in `els` decoded, and two frames painted (a motion started on
+// a picture that isn't stays on the main thread)
 async function settle(els) {
   await Promise.all(els.flatMap((el) => [...el.querySelectorAll('img')]).map((im) => im.decode().catch(() => {})));
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 }
-const halt = (m) => { for (const a of m?.anims || []) a.cancel(); };
-function dropMove(m) { halt(m); for (const el of m?.made || []) el.remove(); }
 
 // ── a card opened big ────────────────────────────────────────────────
 // Gives { pause(on), stop() }, or null when the card can't act.
@@ -93,79 +97,122 @@ export function actInZoom(zoomEl, id) {
   };
 }
 
-// ── Cards: one card acting on the card beside it ─────────────────────
-const IDLE = 2000; // ms without a touch before a scene
+// ── a stage: one card acting at a time, while nothing else happens ──
+// A game's table and Cards are stages, each with its own cards, its own way of
+// choosing who acts on whom, and its own overlay. A scene starts once the stage
+// has been quiet (no touch, and its own quiet()) for `idle` ms.
 const GAP = 1600; // ms from one scene's end to the next
-let run = null;
+const stages = new Map();
 
-export function startCardsAlive(view) {
-  stopCardsAlive();
-  const grid = view.querySelector('.grid');
-  if (!grid || still()) return;
-  const st = { grid, last: Date.now(), ended: 0, scene: null, busy: false, lastId: null };
+function startStage(name, o) {
+  stopStage(name);
+  if (still()) return;
+  const st = { ...o, name, last: Date.now(), ended: 0, scene: null, busy: false, lastEl: null };
   const touched = () => { st.last = Date.now(); endScene(st); };
   const evs = ['pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll'];
   for (const e of evs) window.addEventListener(e, touched, { passive: true, capture: true });
   st.off = () => { for (const e of evs) window.removeEventListener(e, touched, { capture: true }); };
   st.timer = setInterval(() => tick(st), 250);
-  run = st;
+  stages.set(name, st);
 }
-export function stopCardsAlive() {
-  if (!run) return;
-  const st = run;
-  run = null;
+function stopStage(name) {
+  const st = stages.get(name);
+  if (!st) return;
+  stages.delete(name);
   clearInterval(st.timer);
   st.off();
   endScene(st);
 }
-
 function tick(st) {
-  if (!st.grid.isConnected) { stopCardsAlive(); return; }
+  if (!st.root.isConnected) { stopStage(st.name); return; }
   if (window.__sceneHold) return; // (a test stepping through a scene: leave it be)
-  if (document.hidden || document.body.classList.contains('zoom-open')) { st.last = Date.now(); endScene(st); return; }
-  if (st.scene || st.busy || Date.now() - st.last < IDLE || Date.now() - st.ended < GAP) return;
+  if (document.hidden || document.body.classList.contains('zoom-open') || !st.quiet()) { st.last = Date.now(); endScene(st); return; }
+  if (st.scene || st.busy || Date.now() - st.last < st.idle || Date.now() - st.ended < GAP) return;
   st.busy = true;
   scene(st).catch((e) => { console.warn('cards alive:', e); endScene(st); }).finally(() => { st.busy = false; });
 }
 
-// The cards wholly on screen, each with the cards beside it in its row.
-function onScreen(grid) {
+// ── a game's table ───────────────────────────────────────────────────
+// `quiet()`: the game at rest (no move playing out, nothing open, nobody choosing).
+export function startTableAlive(root, quiet) {
+  startStage('table', {
+    root, quiet, idle: 2500, art: '.tc-art', overIn: root, overCls: 'pp-fx pp-game',
+    joltOf: (el) => el.querySelector('.tc-body') || el, // (the game's own shakes move .tc-body, never the tilted card)
+    pick: (st) => pickAcross(st, onScreen(root.querySelectorAll('.g-side .tcard.on-board[data-cid]'), (el) => el.dataset.cid)),
+  });
+}
+export const stopTableAlive = () => stopStage('table');
+// a move is about to play out, or the table to be drawn again: any scene ends now
+export function hushTable() {
+  const st = stages.get('table');
+  if (st) { st.last = Date.now(); endScene(st); }
+}
+
+// ── Cards ────────────────────────────────────────────────────────────
+export function startCardsAlive(view) {
+  const grid = view.querySelector('.grid');
+  if (!grid) { stopStage('cards'); return; }
+  startStage('cards', {
+    root: grid, quiet: () => true, idle: 2000, art: '.c-art', overIn: document.body, overCls: 'pp-fx pp-screen',
+    joltOf: (el) => el,
+    pick: (st) => pickBeside(st, onScreen(grid.querySelectorAll('.card[data-id]'), (el) => el.dataset.id)),
+  });
+}
+export const stopCardsAlive = () => stopStage('cards');
+
+// ── who acts on whom ─────────────────────────────────────────────────
+// The cards wholly on screen: { el, id, r, side } (side: the table's side it's on).
+function onScreen(els, idOf) {
   const vw = innerWidth, vh = innerHeight;
-  const cards = [...grid.querySelectorAll('.card[data-id]')].map((el) => ({ el, id: el.dataset.id, r: el.getBoundingClientRect() }))
-    .filter(({ r }) => r.top >= 0 && r.bottom <= vh && r.left >= 0 && r.right <= vw);
+  return [...els].map((el) => ({ el, id: idOf(el), r: el.getBoundingClientRect(), side: el.closest('.g-side') }))
+    .filter(({ r }) => r.width > 0 && r.top >= 0 && r.bottom <= vh && r.left >= 0 && r.right <= vw);
+}
+const one = (list) => list[Math.floor(Math.random() * list.length)];
+const mid = (c) => [c.r.left + c.r.width / 2, c.r.top + c.r.height / 2];
+// the cards that may act: not the one that acted last, unless it's the only one
+function actors(st, cards) {
+  const can = cards.filter((c) => canAct(c.id)), fresh = can.filter((c) => c.el !== st.lastEl);
+  return fresh.length ? fresh : can;
+}
+// a game: an attacker at a card on another side, a support at the card nearest
+// it on its own; a quarter of the time, and for anyone else, a card alone
+function pickAcross(st, cards) {
+  const pool = actors(st, cards);
+  if (!pool.length) return null;
+  const a = one(pool), role = PUPPETS[a.id].role, [ax] = mid(a);
+  const foes = cards.filter((c) => c.side !== a.side), mates = cards.filter((c) => c.side === a.side && c !== a);
+  const nearest = (list) => list.slice().sort((p, q) => Math.abs(mid(p)[0] - ax) - Math.abs(mid(q)[0] - ax))[0];
+  const target = Math.random() < 0.25 ? null : role === 'attacker' && foes.length ? one(foes) : role === 'support' && mates.length ? nearest(mates) : null;
+  return target ? { actor: a, target } : { actor: a };
+}
+// Cards: mostly an attacker or support on the card beside it in its row (either side), sometimes a card alone
+function pickBeside(st, cards) {
   for (const c of cards) {
     const row = cards.filter((o) => o !== c && Math.abs(o.r.top - c.r.top) < 6);
     c.left = row.filter((o) => o.r.right <= c.r.left + 1).sort((a, b) => b.r.right - a.r.right)[0] || null;
     c.right = row.filter((o) => o.r.left >= c.r.right - 1).sort((a, b) => a.r.left - b.r.left)[0] || null;
   }
-  return cards;
-}
-const one = (list) => list[Math.floor(Math.random() * list.length)];
-// Who acts: mostly an attacker or support on the card beside it (either side),
-// sometimes a card on its own; never the same card twice running.
-function pick(st) {
-  const cards = onScreen(st.grid).filter((c) => canAct(c.id));
-  const fresh = cards.filter((c) => c.id !== st.lastId), pool = fresh.length ? fresh : cards;
+  const pool = actors(st, cards);
   const reach = pool.filter((c) => ['attacker', 'support'].includes(PUPPETS[c.id].role) && (c.left || c.right));
   if (reach.length && Math.random() < 0.75) {
-    const a = one(reach), side = a.left && a.right ? (Math.random() < 0.5 ? -1 : 1) : a.left ? -1 : 1;
-    return { actor: a, target: side < 0 ? a.left : a.right, side };
+    const a = one(reach), left = a.left && a.right ? Math.random() < 0.5 : !!a.left;
+    return { actor: a, target: left ? a.left : a.right };
   }
   return pool.length ? { actor: one(pool) } : null;
 }
 
-// A card's picture: its drawing's units <-> screen px (the drawing cropped to
-// fill the frame, as livenArt lays it).
-function artBox(card) {
-  const f = card.querySelector('.c-art').getBoundingClientRect(), k = Math.max(f.width / W, f.height / H);
+// A card's picture (`sel`): its drawing's units <-> screen px (the drawing
+// cropped to fill the frame, as livenArt lays it).
+function artBox(card, sel) {
+  const f = card.querySelector(sel).getBoundingClientRect(), k = Math.max(f.width / W, f.height / H);
   const x0 = f.left + (f.width - W * k) / 2, y0 = f.top + (f.height - H * k) / 2;
   return { to: ([x, y]) => [x0 + x * k, y0 + y * k], from: ([X, Y]) => [(X - x0) / k, (Y - y0) / k] };
 }
-const nearest = (pts, p) => pts.reduce((b, q) => (Math.hypot(q[0] - p[0], q[1] - p[1]) < Math.hypot(b[0] - p[0], b[1] - p[1]) ? q : b));
+const nearestPt = (pts, p) => pts.reduce((b, q) => (Math.hypot(q[0] - p[0], q[1] - p[1]) < Math.hypot(b[0] - p[0], b[1] - p[1]) ? q : b));
 
-// A card's picture in sprites, laid over the picture it has, its pictures
-// loaded first so it shows whole at once; undo() takes it off again.
-function inSprites(card, id) {
+// A card's picture in sprites, laid over the picture it has (in `sel`), its
+// pictures loaded first so it shows whole at once; undo() takes it off again.
+function inSprites(card, id, sel) {
   const pp = document.createElement('div');
   pp.className = 'pp-art';
   pp.innerHTML = `<img class="art-img" src="${LIVE[id].src}" alt="" decoding="async"><div class="sp-art" data-live="${id}"></div>`;
@@ -174,50 +221,55 @@ function inSprites(card, id) {
     const L = await fetchSprites(LIVE[id].live);
     const srcs = [LIVE[id].src, ...(L?.sprites || []).filter((s) => s.img).map((s) => s.img)];
     await Promise.all(srcs.map((src) => { const im = new Image(); im.src = src; return im.decode().catch(() => {}); }));
-    if (undone || !card.isConnected) return;
+    const art = card.querySelector(sel);
+    if (undone || !card.isConnected || !art) return;
     card.classList.add('pp');
-    card.querySelector('.c-art').append(pp);
+    art.append(pp);
     livenArt(card);
   })();
   return { ready, undo() { undone = true; drop(pp.querySelector('.sp-art')); pp.remove(); card.classList.remove('pp'); } };
 }
 
-// A card taking a blow it doesn't block: a jolt away from the blow (dir +1:
-// the blow comes from its left), at `at` ms of an END ms scene.
-function jolt(card, END, at, dir) {
-  const t = (ms) => Math.min(1, Math.max(0, ms / END));
-  return card.animate([
+// A card taking a blow it doesn't block: a jolt along the blow (`dir`, a unit
+// vector from the one that struck), at `at` ms of an END ms scene.
+function jolt(el, END, at, [dx, dy]) {
+  const t = (ms) => Math.min(1, Math.max(0, ms / END)), r = dx >= 0 ? 1 : -1;
+  const by = (k, deg) => `translate(${(k * dx).toFixed(1)}px, ${(k * dy).toFixed(1)}px) rotate(${(deg * r).toFixed(1)}deg)`;
+  return el.animate([
     { transform: 'none', offset: 0 },
     { transform: 'none', offset: t(at) },
-    { transform: `translateX(${4 * dir}px) rotate(${1.2 * dir}deg)`, offset: t(at + 80), easing: 'ease-out' },
-    { transform: `translateX(${-1.5 * dir}px) rotate(${-0.4 * dir}deg)`, offset: t(at + 260), easing: 'ease-in-out' },
+    { transform: by(5, 1.2), offset: t(at + 80), easing: 'ease-out' },
+    { transform: by(-2, -0.4), offset: t(at + 260), easing: 'ease-in-out' },
     { transform: 'none', offset: t(at + 460) },
     { transform: 'none', offset: 1 },
   ], { duration: END, fill: 'forwards' });
 }
 
 async function scene(st) {
-  const p = pick(st);
+  const p = st.pick(st);
+  window.__ppPicks?.push(p ? [p.actor.id, p.target?.id ?? null] : null); // (a test noting who acts on whom)
   if (!p) { st.ended = Date.now(); return; }
-  st.lastId = p.actor.id;
+  st.lastEl = p.actor.el;
   const sc = { swaps: [], moves: [], anims: [], over: null, timer: 0 };
   st.scene = sc;
   const gone = () => st.scene !== sc;
   const tspec = p.target ? PUPPETS[p.target.id] || {} : null;
   const blocks = !!(p.target && tspec.role === 'defender' && canAct(p.target.id));
-  sc.swaps.push(inSprites(p.actor.el, p.actor.id));
-  if (blocks) sc.swaps.push(inSprites(p.target.el, p.target.id));
+  sc.swaps.push(inSprites(p.actor.el, p.actor.id, st.art));
+  if (blocks) sc.swaps.push(inSprites(p.target.el, p.target.id, st.art));
   await Promise.all(sc.swaps.map((s) => s.ready));
   if (gone()) return;
   sc.over = document.createElement('div');
-  sc.over.className = 'pp-fx pp-screen';
-  document.body.append(sc.over);
+  sc.over.className = st.overCls;
+  st.overIn.append(sc.over);
   // where the other card is, in the actor's drawing (and the actor in the other's): measured once, first
-  let aim = null, from = null;
+  let aim = null, from = null, dir = [0, 0];
   if (p.target) {
-    const A = artBox(p.actor.el), T = artBox(p.target.el);
+    const A = artBox(p.actor.el, st.art), T = artBox(p.target.el, st.art);
     aim = A.from(T.to(tspec.hit || tspec.guard?.[0] || [W / 2, H / 2]));
     from = T.from(A.to([W / 2, H / 2]));
+    const [ax, ay] = mid(p.actor), [tx, ty] = mid(p.target), d = Math.hypot(tx - ax, ty - ay) || 1;
+    dir = [(tx - ax) / d, (ty - ay) / d];
   }
   const a = await build(p.actor.id, p.actor.el, sc.over, { aim });
   if (gone() || !a) { dropMove(a); if (!gone()) endScene(st); return; }
@@ -225,16 +277,15 @@ async function scene(st) {
   const impact = a.BEATS?.impact ?? Math.round(a.END * 0.4);
   let b = null;
   if (blocks) {
-    b = await build(p.target.id, p.target.el, sc.over, { blows: [{ at: impact, to: nearest(tspec.guard?.length ? tspec.guard : [tspec.hit || [W / 2, H / 2]], from) }] });
+    b = await build(p.target.id, p.target.el, sc.over, { blows: [{ at: impact, to: nearestPt(tspec.guard?.length ? tspec.guard : [tspec.hit || [W / 2, H / 2]], from) }] });
     if (gone()) { dropMove(b); return; }
     if (b) sc.moves.push(b);
   }
-  // (every picture decoded and painted before anything moves: a motion started on one that isn't stays on the main thread)
   await settle([sc.over, p.actor.el, ...(b ? [p.target.el] : [])]);
   if (gone()) return;
   // all from one start
   for (const m of sc.moves) play(m);
-  if (p.target && !b) sc.anims.push(jolt(p.target.el, a.END, impact, p.side));
+  if (p.target && !b) sc.anims.push(jolt(st.joltOf(p.target.el), a.END, impact, dir));
   sc.timer = setTimeout(() => endScene(st), Math.max(...sc.moves.map((m) => m.END)) + 150);
 }
 

@@ -162,17 +162,19 @@ export const verdant = faction('verdant', {
       taper([[153, 106], [155, 95], [160, 88], [167, 85]], [3.4, 2.8, 2.2, 1.6]);
     s.figure(P(blob([[150, 110], [162, 114], [169, 127], [170, 146], [166, 162], [150, 168], [134, 162], [130, 146], [132, 127], [139, 114]]), arms),
       { fill: p.fig, rim: p.rim, offsets: [[1.2, -1.2], [-0.6, -1.2]], shade: 0.45, edge: 0.3, halo: 0.35 });
-    s.add('<path d="M131,121C131,108 145,99 160,102C166,103 171,108 172,113L167,111L164,116L159,111L154,116L149,111L144,117L139,113L135,119Z" fill="#4a3b22" stroke="#d9c98a" stroke-width=".6"/>');
+    s.add('<g data-part="face"><path d="M131,121C131,108 145,99 160,102C166,103 171,108 172,113L167,111L164,116L159,111L154,116L149,111L144,117L139,113L135,119Z" fill="#4a3b22" stroke="#d9c98a" stroke-width=".6"/>');
     // curious eyes, looking up at a mote of light
-    s.add(`<g fill="#f6f7dc">${E(143, 131, 4.2, 5.2)}${E(157.5, 130, 4.2, 5.2)}</g><g fill="${p.fig}">${C(141.6, 129.2, 2.4)}${C(156.2, 128.2, 2.4)}</g><g fill="#fff">${C(142.4, 128.2, 0.8)}${C(157, 127.2, 0.8)}</g>`);
+    s.add(`<g fill="#f6f7dc">${E(143, 131, 4.2, 5.2)}${E(157.5, 130, 4.2, 5.2)}</g><g fill="${p.fig}">${C(141.6, 129.2, 2.4)}${C(156.2, 128.2, 2.4)}</g><g fill="#fff">${C(142.4, 128.2, 0.8)}${C(157, 127.2, 0.8)}</g></g>`);
     s.glow(169, 84, 14, '#ecff8f', 0.85, 'breathe');
     s.glow(104, 62, 18, '#f4ffb0', 0.9, 'breathe');
+    s.add('<g data-part="sproutleaf">');
     s.bloom(`<path d="${leaf(166, 86, -0.5, 10, 6)}" fill="#effcaa"/><circle cx="104" cy="62" r="2.2" fill="#fbffe6"/>`, { sd: 1.6, k: 1.5, box: [80, 40, 110, 70] });
+    s.add('</g>');
     // the lip of soil it is pushing through, cracked, clods tumbling
     s.figure(P('M104,176C114,168 128,163 140,165L150,169L160,164C174,163 188,168 198,176C182,174 168,173 150,174C132,173 118,174 104,176Z'),
       { fill: '#2c2416', rim: '#a99a6a', offsets: [[0, -1]], rimOp: 0.7 });
     s.add('<path d="M128,170L118,180L112,186M174,169L184,178L192,182M150,174L151,184" stroke="#17130b" stroke-width="1.2" fill="none"/>');
-    s.add(`<g fill="#2c2416">${C(122, 163, 3.2)}${C(180, 162, 3)}${C(114, 153, 2.2)}${C(190, 150, 1.8)}${C(128, 149, 1.5)}</g>`);
+    s.add(`<g data-part="clods" fill="#2c2416">${C(122, 163, 3.2)}${C(180, 162, 3)}${C(114, 153, 2.2)}${C(190, 150, 1.8)}${C(128, 149, 1.5)}</g>`);
     s.motes({ seed: 202, n: 16, x: [30, 270], y: [20, 150], r: [0.5, 1.2], fill: '#fff6c8', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 1] });
     return s.svg();
   },
@@ -217,11 +219,13 @@ export const verdant = faction('verdant', {
     ].join('');
     s.figure(P(wolf) + head + E(124, 131, 9, 11.5) + E(120, 173, 5.5, 2.5) + E(134, 173, 5, 2.5) + E(201, 173, 5.5, 2.5) + E(180, 173, 5, 2.5),
       { fill: p.fig, rim: p.rim, offsets: [[0, 1.2], [-0.9, 0.6], [0.9, 0.6]], rimOp: 0.95, shade: 0.5, edge: 0.3, halo: 0.35 });
-    s.add('<path d="M140,113l6,4l7,-3l6,5M162,114l7,4l8,-2l7,5" stroke="#4f6b38" stroke-width="1.2" fill="none" opacity=".9"/>');
+    s.add('<path data-part="bark" d="M140,113l6,4l7,-3l6,5M162,114l7,4l8,-2l7,5" stroke="#4f6b38" stroke-width="1.2" fill="none" opacity=".9"/>');
     // new buds glowing at the tips
     const bud = s.rad([[0, '#fbffd0', 0.95], [0.35, '#e6f78f', 0.5], [1, '#e6f78f', 0]]);
-    s.add(tips.map(([x, y]) => `<circle class="breathe" cx="${x}" cy="${y}" r="8" fill="${bud}"/>`).join(''));
+    s.add('<g data-part="tips">');
+    s.add(tips.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8" fill="${bud}"/>`).join(''));
     s.bloom(tips.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.1" fill="#fdffe6"/>`).join(''), { sd: 1.6, k: 1.6 });
+    s.add('</g>');
     // dark vines in front, wrapping the frame
     s.path(vine([-12, 200], [44, 172], { side: -1, curl: 7, w: 7, leaves: 2, lr: 11 }) + vine([312, 204], [252, 180], { side: 1, curl: 7, w: 7, leaves: 2, lr: 11 }), '#121c0c');
     s.motes({ seed: 215, n: 22, x: [40, 260], y: [30, 175], r: [0.5, 1.2], fill: '#f2ffb8', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 1] });

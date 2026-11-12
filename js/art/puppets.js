@@ -21,6 +21,53 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // wild growth (a spell, a support: a creature gets +2/+2): the vines whipping out from under
+  // the wolf, the left three and the right three (split at the wolf's middle, behind it), the
+  // wolf itself with the bark on its back, and the buds glowing at the vines' tips (left, right,
+  // each with its vines); `emit`: the ground under the wolf, where the growth wells up and
+  // leaves from, `hit`: the wolf's chest, where its own boon lands, `tips`: the six vine-tips
+  'wild-growth': {
+    role: 'support', element: 'nature', facing: 'front', emit: [152, 168], hit: [160, 125],
+    feet: [160, 172], rootL: [124, 152], rootR: [176, 142], chest: [160, 125],
+    tips: [[40, 70], [104, 30], [198, 28], [262, 62], [284, 122], [22, 134]],
+    parts: [
+      { name: 'vinesL', of: 'fig:0', pivot: [124, 152], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
+      { name: 'vinesR', of: 'fig:0', pivot: [176, 142], poly: [[150, -20], [330, -20], [330, 230], [150, 230]] },
+      { name: 'wolf', of: ['fig:1', '[data-part=bark]'], pivot: [160, 172] },
+      { name: 'tipsL', of: '[data-part=tips]', pivot: [124, 152], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
+      { name: 'tipsR', of: '[data-part=tips]', pivot: [176, 142], poly: [[150, -20], [330, -20], [330, 230], [150, 230]] },
+    ],
+  },
+  // the seedling: its bean body (with the husk cap and eyes), its two leaf-arms from the
+  // shoulders, the shoot on its head (with its glowing leaf), each about its joint, and the
+  // lip of soil in front of it (and the clods) over all; `emit`: the shoot's tip, where its
+  // boon is gathered and leaves, `feet`: where it sits in the soil
+  'seedling': {
+    role: 'support', element: 'nature', facing: 'front', emit: [167, 85], hit: [150, 140],
+    feet: [150, 168], shoot: [153, 106], shoulderL: [134, 134], shoulderR: [166, 140], handL: [96, 98], handR: [208, 152], eyes: [[143, 131], [157.5, 130]],
+    parts: [
+      { name: 'body', of: 'fig:0', pivot: [150, 168], poly: [[126, 106], [172, 106], [172, 172], [126, 172]] },
+      { name: 'face', of: '[data-part=face]', pivot: [150, 168] },
+      { name: 'armL', of: 'fig:0', pivot: [134, 134], poly: [[80, 80], [136, 80], [136, 142], [80, 142]] },
+      { name: 'armR', of: 'fig:0', pivot: [166, 140], poly: [[164, 130], [222, 130], [222, 168], [164, 168]] },
+      { name: 'sprout', of: 'fig:0', pivot: [153, 106], poly: [[146, 66], [186, 66], [186, 110], [146, 110]] },
+      { name: 'tip', of: '[data-part=sproutleaf]', pivot: [153, 106], poly: [[150, 70], [186, 70], [186, 100], [150, 100]], cut: true },
+      { name: 'lip', of: ['fig:1', '[data-part=clods]'], pivot: [150, 172] },
+    ],
+  },
+  // the mountain's wrath (a spell, an attacker: the eruption is the attack): the mountain,
+  // its face (eyes, mouth and the lava running down) and the column of lava out of the
+  // crater; `emit`: the crater's mouth, where the bombs leave, `crater`: its lip,
+  // `base`: where the mountain turns about its foot, `village`: where its own fire falls
+  'the-mountain-is-angry': {
+    role: 'attacker', element: 'fire', facing: 'front', emit: [150, 58], hit: [150, 118],
+    crater: [150, 68], base: [150, 184], village: [78, 178], eyes: [[132, 92], [169, 92]], mouth: [150, 120],
+    parts: [
+      { name: 'mountain', of: 'fig:0', pivot: [150, 184] },
+      { name: 'face', of: '[data-part=face]', pivot: [150, 184] },
+      { name: 'eruption', of: '[data-part=eruption]', pivot: [150, 72] },
+    ],
+  },
   // the initiate: his body (robe, legs, arms), the spear sliding through his hands, his
   // streaming hair, the front of him (face, hands) and the torch's blade and flame, each
   // about its joint; `emit`: the torch's tip, `hand`: the rear hand the spear is levelled from

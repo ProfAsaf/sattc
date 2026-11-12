@@ -96,7 +96,6 @@ export const ember = faction('ember', {
       '<ellipse cx="150" cy="121" rx="14.5" ry="12.5"/><ellipse cx="134" cy="169" rx="6" ry="2.6"/><ellipse cx="166" cy="169" rx="6" ry="2.6"/>';
     s.figure(`<g data-part="tail">${tail}</g><g data-part="body">${imp}</g>`, { fill: p.fig, rim: p.rim, offsets: [[-0.8, -0.9], [0.8, -0.9]], rimOp: 0.85, shade: 0.45, edge: 0.28, halo: 0.3 });
     // glowing eyes, grin and cracks
-    s.add('<g data-part="face">');
     s.glow(144, 121, 9, '#ffb347', 0.8).glow(156, 121, 9, '#ffb347', 0.8);
     s.bloom('<ellipse cx="144.5" cy="121" rx="2.7" ry="1.6" fill="#ffe7a3" transform="rotate(14 144.5 121)"/><ellipse cx="155.5" cy="121" rx="2.7" ry="1.6" fill="#ffe7a3" transform="rotate(-14 155.5 121)"/>' +
       '<path d="M144.5,127.5Q150,131 155.5,127.5" stroke="#ffb34a" stroke-width="1" fill="none"/>' +
@@ -374,8 +373,10 @@ export const ember = faction('ember', {
     s.add(`<path class="drift" d="${plume}" fill="${s.lin([[0, '#1a0706'], [0.65, '#3e140b'], [1, '#8a3416']])}"/>`);
     // lava thrown up out of the crater, bombs arcing away
     s.glow(150, 50, 54, '#ffb04a', 0.75, 'breathe');
+    s.add('<g data-part="eruption">');
     s.bloom(`<path d="${taper([[150, 72], [148, 50], [152, 28], [147, 8]], [16, 11, 6, 0.5])}${taper([[146, 70], [134, 52], [124, 40]], [6, 4, 0.5])}${taper([[154, 70], [168, 54], [178, 44]], [6, 4, 0.5])}" fill="${s.lin([[0, '#ff6a1f', 0.3], [0.5, '#ffb04a'], [1, '#fff0c0']])}"/>` +
       `<path d="${taper([[140, 64], [122, 40], [104, 32], [90, 36]], [2.6, 2, 1.2, 0.3])}${taper([[160, 62], [182, 36], [200, 28], [212, 32]], [2.6, 2, 1.2, 0.3])}${taper([[146, 60], [138, 30], [128, 16]], [2.2, 1.4, 0.3])}" fill="#ffb04a" opacity=".9"/>`, { sd: 2.2, k: 1.3, box: [70, -20, 160, 110] });
+    s.add('</g>');
     s.path(ridge({ seed: 161, base: 178, amp: 14, freq: 3 }), '#4a170c');
     // the mountain
     s.figure('<path d="M-10,184C30,176 64,156 88,128C104,108 114,86 120,68L130,72L138,66L150,70L160,65L170,71L180,68C186,86 196,108 212,128C236,156 270,176 310,182L310,214L-10,214Z"/>',
@@ -384,12 +385,14 @@ export const ember = faction('ember', {
     s.glow(132, 92, 22, '#ff9a3a', 0.85, 'breathe').glow(169, 92, 20, '#ff9a3a', 0.8, 'breathe');
     s.glow(150, 128, 38, '#ff8a3a', 0.65);
     const lava = 'M149,150C140,158 128,164 116,170C108,174 100,177 94,180M151,158C160,164 172,170 186,174C194,177 200,180 206,182';
+    s.add('<g data-part="face">');
     s.bloom('<path d="M115,86L106,93L101,104M185,87L194,95L197,106M150,77L148,87L151,95M128,116L118,124M172,117L183,126" stroke="#ff7a2e" stroke-width="1" fill="none" opacity=".7"/>' +
       '<path d="M114,85L146,96.5C138,101 125,99 114,85ZM185,86.5L155,96.5C163,100 175,98.5 185,86.5Z" fill="#ffd77a"/>' +
       `<path d="M128,114C135,110 142,113 150,110C158,113 165,110 173,115C171,125 165,133 157,137C153,139 147,139 143,137C135,133 130,124 128,114Z" fill="${s.rad([[0, '#fff0c0'], [0.45, '#ff9a3a'], [1, '#5a1a0c']], { cy: 0.9, r: 0.8 })}"/>` +
       // lava pouring from the mouth, splitting as it runs towards the village
       `<path d="${taper([[150, 134], [149, 146], [152, 157], [148, 168], [150, 180]], [11, 8, 6, 4.5, 3])}" fill="${s.lin([[0, '#ffe08a'], [0.6, '#ff8a3a'], [1, '#ff5a1a', 0.7]])}"/>` +
       `<g fill="none" stroke-linecap="round"><path d="${lava}" stroke="#ff6a1f" stroke-width="2.6" opacity=".8"/><path d="${lava}" stroke="#ffd27a" stroke-width=".9"/></g>`, { sd: 1.8, k: 1.4, box: [80, 60, 140, 140] });
+    s.add('</g>');
     // the village, very small, against the lava-lit haze
     s.add(`<ellipse cx="80" cy="186" rx="84" ry="10" fill="${s.rad([[0, '#ff8a3a', 0.4], [1, '#ff8a3a', 0]])}"/>`);
     const house = (x, y, w, h) => `M${x},${y}L${x},${y - h}L${x + w / 2},${y - h - w * 0.55}L${x + w},${y - h}L${x + w},${y}Z`;

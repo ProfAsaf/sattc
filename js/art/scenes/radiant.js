@@ -457,8 +457,10 @@ export const radiant = faction('radiant', {
     for (const x of [84, 216]) s.glow(x, 140, 46, '#fff1c4', 0.75, 'breathe');
     const spL = U(soldier(84, 183, 0.92));
     const sp = spL + mirror(spL);
+    s.add('<g data-part="spirits">');
     s.path(sp, ghost);
     s.add(`<path d="${sp}" fill="none" stroke="${edge}" stroke-width=".8"/>`);
+    s.add('</g>');
     s.motes({ seed: 562, n: 14, x: [58, 112], y: [100, 190], r: [0.4, 1.1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [4, 7], op: [0.5, 1] });
     s.motes({ seed: 563, n: 14, x: [188, 242], y: [100, 190], r: [0.4, 1.1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [4, 7], op: [0.5, 1] });
     // the captain, sword planted
@@ -505,7 +507,9 @@ export const radiant = faction('radiant', {
       const y = 186 - 150 * Math.pow(R(), 1.2), up = 186 - y;
       big.push([168 + Math.sin(up / 26) * 10 + (R() + R() - 1) * (10 + up * 0.45), y, 1.1 + R() * 1]);
     }
+    s.add('<g data-part="river">');
     s.bloom(`<path d="${dots(small)}" fill="#ffe6a8" opacity=".85"/><path d="${dots(big)}" fill="#fff6dc"/>`, { sd: 1.5, k: 1.3, box: [60, 0, 220, 210] });
+    s.add('</g>');
     s.glow(168, 160, 44, '#fff0c0', 0.55, 'breathe');
     s.motes({ seed: 573, n: 30, x: [118, 222], y: [60, 190], r: [0.5, 1.2], fill: '#ffe2a0', hot: '#ffffff', cls: 'rise', t: [5, 10], op: [0.5, 1] });
     s.path(poly([...spline([[-10, 140], [40, 146], [92, 166], [130, 182], [168, 190], [206, 182], [246, 162], [280, 150], [310, 144]], 6), [310, 214], [-10, 214]]), '#171a2c');

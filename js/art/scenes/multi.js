@@ -80,12 +80,13 @@ export const multi = {
     s.add(`<g fill="#2e1d34" opacity=".55">${[[150, 44, 40], [112, 24, 34], [192, 20, 38], [150, 2, 48]].map(([x, y, r]) =>
       `<ellipse class="drift" cx="${x}" cy="${y}" rx="${r * 1.3}" ry="${r * 0.8}"/>`).join('')}</g>`);
     const gfill = s.lin([[0, '#d6c4f6', 0.42], [0.4, '#a98fdc', 0.2], [1, '#a98fdc', 0]]);
+    let gi = 0;
     for (const [x, y, k, lean, up, t] of [[96, 40, 1, 7, 1, 9], [206, 30, 0.95, -7, -1, 11], [156, 12, 0.72, 4, 1, 8]]) {
       // long heads, hollow slanted eyes, mouths stretched open, bodies
       // unravelling into the smoke
       const body = U(ell(x, y, 5.2 * k, 11 * k), taper([[x, y + 6 * k], [x + lean, y + 24 * k], [x - lean * 0.7, y + 44 * k], [x + lean * 0.5, y + 66 * k], [x - lean * 0.2, y + 80 * k]], [10 * k, 8 * k, 5 * k, 2 * k, 0.3 * k]),
         taper([[x - up * 3 * k, y + 12 * k], [x - up * 9 * k, y + 22 * k], [x - up * 8 * k, y + 34 * k]], [3 * k, 2 * k, 0.3 * k]));
-      s.add(`<g class="float" style="--t:${t}s;--d:-${t / 3}s"><path d="${body}" fill="${gfill}"/><g fill="#0b0810" opacity=".8">` +
+      s.add(`<g data-part="ghost${gi++}"><path d="${body}" fill="${gfill}"/><g fill="#0b0810" opacity=".8">` +
         `<ellipse cx="${f1(x - 2.4 * k)}" cy="${f1(y - 2 * k)}" rx="${f1(1.1 * k)}" ry="${f1(2.6 * k)}" transform="rotate(-18 ${f1(x - 2.4 * k)} ${f1(y - 2 * k)})"/>` +
         `<ellipse cx="${f1(x + 2.4 * k)}" cy="${f1(y - 2 * k)}" rx="${f1(1.1 * k)}" ry="${f1(2.6 * k)}" transform="rotate(18 ${f1(x + 2.4 * k)} ${f1(y - 2 * k)})"/>` +
         `<ellipse cx="${f1(x)}" cy="${f1(y + 5.4 * k)}" rx="${f1(1.4 * k)}" ry="${f1(3.6 * k)}"/></g></g>`);
@@ -97,9 +98,11 @@ export const multi = {
     const outer = U(flame(150, 150, 122, -8, 36), flame(130, 150, 94, -18, 26, -0.14), flame(171, 150, 102, 16, 27),
       flame(114, 154, 66, -14, 19), flame(187, 154, 74, 16, 19, -0.14), flame(141, 142, 108, 12, 16, -0.16), flame(160, 144, 88, -12, 15),
       flame(104, 160, 40, -10, 13), flame(198, 160, 46, 12, 13, -0.14));
+    s.add('<g data-part="flames">');
     s.bloom(`<path d="${outer}" fill="${s.lin([[0, '#9a5cf0', 0], [0.2, '#a868f4', 0.85], [0.48, '#d65aa6', 0.92], [0.7, '#ff7a2e', 1], [1, '#ffc35a', 1]])}"/>` +
       `<path d="${U(flame(150, 148, 82, -5, 21), flame(135, 148, 58, -10, 13, -0.14), flame(165, 148, 64, 10, 14))}" fill="${s.lin([[0, '#efe2ff', 0], [0.3, '#e7d2ff', 0.8], [0.7, '#ffd27a', 1], [1, '#fff6de', 1]])}"/>`,
     { sd: 2.6, k: 1.2, box: [60, -10, 180, 200] });
+    s.add('</g>');
     // the pyre and the shrouded body on it
     s.glow(150, 162, 58, '#ffb347', 0.95);
     const pyre = U(
@@ -110,8 +113,10 @@ export const multi = {
       ell(121.5, 130, 6, 5),
     );
     s.figure(`<path d="${pyre}"/>`, { fill: '#120708', rim: '#ff9447', offsets: [[0, -1.2], [-0.8, -0.6], [0.8, -0.6]], rimOp: 0.9, shade: 0.5, halo: 0.3 });
+    s.add('<g data-part="tongues">');
     s.bloom(`<path d="${U(flame(118, 172, 12, -3, 5), flame(184, 172, 13, 3, 5, -0.14), flame(132, 161, 11, -2, 4.4, -0.14), flame(166, 161, 12, 2, 4.4), flame(146, 150.5, 10, 2, 4))}" fill="${s.lin([[0, '#ffe8a0', 0.85], [1, '#ff7a2e', 1]])}"/>`,
       { sd: 1.4, k: 1.4, box: [96, 126, 110, 60] });
+    s.add('</g>');
     // mourners at the edges, hoods bowed
     const mourner = U(
       blob([[24, 214], [26, 178], [30, 152], [36, 134], [46, 128], [56, 134], [62, 156], [67, 214]]),

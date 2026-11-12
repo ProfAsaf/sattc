@@ -2,6 +2,7 @@
 // baked picture without its moving parts or characters, with those as
 // sprites over it (js/sprites.js): nothing redrawn while they move.
 export const LIVE = {
+  "a-thousand-lights": { src: 'art/live/a-thousand-lights.webp?v=a793f057', live: 'art/live/a-thousand-lights.json?v=53db8287' },
   "ancient-roots": { src: 'art/live/ancient-roots.webp?v=fa7a1887', live: 'art/live/ancient-roots.json?v=cf0e459b' },
   "ash-collector": { src: 'art/live/ash-collector.webp?v=27e26590', live: 'art/live/ash-collector.json?v=8db44a09' },
   "ashmaw": { src: 'art/live/ashmaw.webp?v=16617e99', live: 'art/live/ashmaw.json?v=650b0640' },
@@ -11,9 +12,11 @@ export const LIVE = {
   "cinderling": { src: 'art/live/cinderling.webp?v=6d89b188', live: 'art/live/cinderling.json?v=87aced68' },
   "countercurrent": { src: 'art/live/countercurrent.webp?v=d759aaa6', live: 'art/live/countercurrent.json?v=f4523617' },
   "curious-wisp": { src: 'art/live/curious-wisp.webp?v=9bd3594a', live: 'art/live/curious-wisp.json?v=7794ede9' },
+  "dawn-captain": { src: 'art/live/dawn-captain.webp?v=8aca738a', live: 'art/live/dawn-captain.json?v=a37d476e' },
   "death-is-a-door": { src: 'art/live/death-is-a-door.webp?v=0d54668d', live: 'art/live/death-is-a-door.json?v=a916464e' },
   "deepwater-leviathan": { src: 'art/live/deepwater-leviathan.webp?v=e1164903', live: 'art/live/deepwater-leviathan.json?v=09816b92' },
   "feed-the-flame": { src: 'art/live/feed-the-flame.webp?v=47c84314', live: 'art/live/feed-the-flame.json?v=966a71f3' },
+  "funeral-pyre": { src: 'art/live/funeral-pyre.webp?v=7bef8bcd', live: 'art/live/funeral-pyre.json?v=bc8d1e59' },
   "grave-rat": { src: 'art/live/grave-rat.webp?v=2cb3571a', live: 'art/live/grave-rat.json?v=04e86fba' },
   "kindly-undertaker": { src: 'art/live/kindly-undertaker.webp?v=7550017d', live: 'art/live/kindly-undertaker.json?v=9dd6307f' },
   "lightning-theorist": { src: 'art/live/lightning-theorist.webp?v=721e5fbf', live: 'art/live/lightning-theorist.json?v=4ae52a1f' },

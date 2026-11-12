@@ -21,6 +21,52 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // funeral pyre: the three ghosts in the smoke (each from its middle), the column of fire (from
+  // its base), the pyre and its shrouded body (cut so the flames behind it stay behind), the
+  // little tongues of flame on its logs, and the two mourners (from their feet); `emit`: the
+  // crown of the fire where the ghosts gather and the blast leaves, `hit`: the middle of the pyre,
+  // `body`: the shrouded body (where the soul rises from), `ghosts`: each ghost's middle
+  'funeral-pyre': {
+    role: 'attacker', element: 'fire', facing: 'front', emit: [150, 62], hit: [150, 150],
+    body: [150, 130], base: [150, 172], ghosts: [[96, 62], [206, 52], [156, 28]], feet: [[45, 214], [255, 214]],
+    parts: [
+      { name: 'ghost0', of: '[data-part=ghost0]', pivot: [96, 62] },
+      { name: 'ghost1', of: '[data-part=ghost1]', pivot: [206, 52] },
+      { name: 'ghost2', of: '[data-part=ghost2]', pivot: [156, 28] },
+      { name: 'flames', of: '[data-part=flames]', pivot: [150, 172] },
+      { name: 'pyre', of: 'fig:0', pivot: [150, 177] },
+      { name: 'tongues', of: '[data-part=tongues]', pivot: [150, 165] },
+      { name: 'mournerL', of: 'fig:1', pivot: [45, 214] },
+      { name: 'mournerR', of: 'fig:2', pivot: [255, 214] },
+    ],
+  },
+  // a thousand lights: the river of lights rising from the valley (turning about its mouth), the
+  // watcher on the crag (from his feet) and his cloak (from his shoulders; one drawing, split
+  // along the cloak's front edge); `emit`: the valley's mouth where the lights leave from,
+  // `hit`: the watcher's chest, `feet`: where he stands, `head`: his hood's peak, `staff`: its top
+  'a-thousand-lights': {
+    role: 'support', element: 'spirit', facing: 'left', emit: [168, 150], hit: [82, 118],
+    mouth: [168, 186], feet: [82, 152], head: [84, 90], staff: [94, 83], shoulder: [78, 100],
+    parts: [
+      { name: 'river', of: '[data-part=river]', pivot: [168, 188] },
+      { name: 'watcher', of: 'fig:0', pivot: [82, 152], poly: [[-10, -10], [310, -10], [310, 220], [-10, 220], [-10, 142], [60, 142], [70, 142], [72, 132], [75, 128], [75, 96], [60, 96], [-10, 96]] },
+      { name: 'cloak', of: 'fig:0', pivot: [78, 100], poly: [[60, 96], [75, 96], [75, 128], [72, 132], [70, 142], [60, 142]] },
+    ],
+  },
+  // dawn captain: the captain's cloak (cut from her figure along its inner edge, swinging from her
+  // shoulder) and the two spirit soldiers (one drawing, split down the middle, each turning from
+  // his feet); `hit`: her chest, `guard`: where blows are taken (the cloak's face and hem, each
+  // soldier's body, her chest), `spearTips`: the spears' heads, `gems`: each soldier's heart
+  'dawn-captain': {
+    role: 'defender', element: 'spirit', facing: 'front', hit: [150, 108],
+    guard: [[181, 112], [187, 136], [216, 130], [84, 130], [150, 106]],
+    shoulder: [160, 90], feet: [[84, 183], [216, 183]], spearTips: [[73, 87], [227, 87]],
+    parts: [
+      { name: 'cloak', of: 'fig:0', pivot: [160, 90], poly: [[163, 82], [205, 82], [205, 172], [176, 172], [171, 134], [170, 116], [166, 100]], cut: true, joint: 3 },
+      { name: 'spiritL', of: '[data-part=spirits]', pivot: [84, 183], poly: [[-10, -10], [150, -10], [150, 220], [-10, 220]] },
+      { name: 'spiritR', of: '[data-part=spirits]', pivot: [216, 183], poly: [[150, -10], [310, -10], [310, 220], [150, 220]] },
+    ],
+  },
   // stand together: the wall of knights cut into ten slices, one to a knight (each rising from his
   // feet in a wave as the light reaches him), the two banks of storm cloud (drawn apart from their
   // far edges) and the gap between them; `emit`: the heart of the light in the gap, `hit`: the

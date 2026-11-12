@@ -21,6 +21,63 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // blight beetle (a 1/3 whose ability saps an enemy creature's lasting growth; the picture shows it gnawing the great
+  // tree's glowing root with the leaves above withering: the blight is its attack, so an attacker, not the suggested
+  // defender): the beetle in three pieces (its body, wing case and legs, rearing on its hind legs; the head with its jaws,
+  // turning on the neck; the two antennae) and its shell's painted colours riding the body; `emit`: its jaws, where the blight
+  // leaves from, `hit`: the middle of its wing cases, `rear`: where it rears from (the hind feet), `neck`: the head's
+  // joint, `feelers`: where the antennae grow from, `bough`: the withering leaves above it (the target when alone)
+  'blight-beetle': {
+    role: 'attacker', element: 'nature', facing: 'left', emit: [104, 142], hit: [190, 108],
+    rear: [232, 152], neck: [126, 122], feelers: [121, 114], bough: [150, 36],
+    parts: [
+      { name: 'body', of: 'fig:3', pivot: [232, 152], poly: [[131, 60], [320, 60], [320, 220], [80, 220], [80, 160], [108, 160], [112, 143], [131, 141]] },
+      { name: 'head', of: 'fig:3', pivot: [126, 122], poly: [[80, 112], [131, 112], [131, 141], [112, 143], [108, 160], [80, 160]] },
+      { name: 'ant', of: 'fig:3', pivot: [121, 114], poly: [[80, 60], [131, 60], [131, 112], [80, 112]] },
+      { name: 'shell', of: '[data-part=shell]', pivot: [232, 152] },
+    ],
+  },
+  // whispered doubt (a spell: the foe's costly card goes to the bottom of their deck, they draw, you draw: a boon of
+  // cards, so a support; the picture shows the whisper itself): the shadow's upper body (leaning in at his ear from
+  // the waist, sheared, not turned, so the cut stays seamless) with its two glowing eyes, its hand on the plans, the
+  // sleeping king's head (nodding on its neck) and his slipping crown with the glint on it, the violet wisp that
+  // curls out of the hood, in at his ear and up out of his head, and the candle's flame; `emit`: where the wisp rises
+  // out of his head to carry the boon away, `hit`: his shoulder, `waist`: the line the shadow leans from, `neck`:
+  // the king's neck joint, `dream`: where the wisp ends up (the target when alone)
+  'whispered-doubt': {
+    role: 'support', element: 'spirit', facing: 'right', emit: [190, 78], hit: [186, 130],
+    waist: [110, 130], neck: [194, 119], dream: [244, 44], hood: [164, 96], ear: [190, 94],
+    parts: [
+      { name: 'torso', of: 'fig:0', pivot: [110, 130], poly: [[0, -20], [200, -20], [200, 130], [0, 130]], cut: true },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [110, 130] },
+      { name: 'hand', of: 'fig:3', pivot: [118, 150] },
+      { name: 'head', of: 'fig:1', pivot: [194, 119], poly: [[185, 60], [230, 60], [230, 118], [185, 118]], cut: true },
+      { name: 'crown', of: '[data-part=crown]', pivot: [202, 95] },
+      { name: 'twink', of: '[data-part=twink]', pivot: [208, 83] },
+      { name: 'wisp', of: '[data-part=wisp]', pivot: [164, 96] },
+      { name: 'flame', of: '[data-part=flame]', pivot: [279.5, 151] },
+    ],
+  },
+  // pickpocket (a 1/2 flyer that, when it hits, makes the foe discard: the picture shows the magpie darting off with
+  // the purse, so an attacker: its dive-bomb is the attack, the coins it flings are its element's... wind's gust and
+  // glints): the magpie in pieces (the far wing, the body with eye, tail and belly, the little red cloak, the near
+  // wing, the purse swinging from its beak) all turning, tilting and flipping as one body about `body`; the
+  // merchant's shaking fist (his raised arm cut off at the shoulder, with the little marks of its shaking);
+  // `emit`: its beak, where the strike leaves from, `hit`: its breast, `shoulderF`/`shoulderN`: where the far and
+  // near wings turn, `beak`: where the purse hangs from, `merchant`: his head (the target when alone)
+  'pickpocket': {
+    role: 'attacker', element: 'wind', facing: 'left', emit: [87, 65], hit: [124, 78],
+    body: [136, 80], shoulderF: [125, 69], shoulderN: [135, 72], beak: [90, 67], merchant: [240, 138],
+    parts: [
+      { name: 'farwing', of: '[data-part=farwing]', pivot: [125, 69] },
+      { name: 'body', of: '[data-part=body]', pivot: [136, 80] },
+      { name: 'cloak', of: '[data-part=cloak]', pivot: [136, 80] },
+      { name: 'nearwing', of: '[data-part=nearwing]', pivot: [135, 72] },
+      { name: 'purse', of: '[data-part=purse]', pivot: [90, 67] },
+      { name: 'arm', of: 'fig:2', pivot: [236, 153], poly: [[215, 100], [235.5, 100], [235.5, 153], [215, 153]], cut: true },
+      { name: 'shake', of: '[data-part=shake]', pivot: [236, 153] },
+    ],
+  },
   // Grave Robber (a 2/2 that, when played, sends each opponent's three costliest creatures from their discard pile to the bottom of their
   // deck: an attacker whose attack is the earth he heaves, and the graves it buries what was in them; a hooded robber climbing out of an open
   // crypt, a sack of grave goods over his shoulder and a hand on his shovel): his body from the ankles up (hood, back, the arm

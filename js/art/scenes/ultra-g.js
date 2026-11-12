@@ -468,7 +468,9 @@ export const ultra_g = {
     ));
     s.figure(`<path d="${man}"/>`, { fill: '#0a2026', rim: '#e8fbf6', offsets: [[0, -1.2], [0.6, -0.8]], rimOp: 0.9, shade: 0.4, light: [0.2, -1] });
     s.path(M('M-8,-42L10,-42L12,-24L0,-22L-10,-24Z'), '#cfd8cc', 'opacity=".85"');
+    s.add('<g data-part="shake">');
     s.add(`<path d="M${f1(244 - 12.6 * 0.95 - 7)},${f1(203 - 92 * 0.95)}q-3,4 0,8M${f1(244 - 12.6 * 0.95 + 6)},${f1(203 - 94 * 0.95)}q3,4 0,8" fill="none" stroke="#0a2026" stroke-width=".9" opacity=".7"/>`);
+    s.add('</g>');
     // the magpie (drawn facing left about the middle of its body, then
     // tipped up into its climb): both wings up over its back, a long tail,
     // a little red cloak streaming off its shoulders
@@ -481,27 +483,35 @@ export const ultra_g = {
       taper([[16, -1], [30, 2], [44, 5.4], [56, 8]], [6, 7.2, 8, 7.6]), ell(57, 8.4, 4.6, 3.8, 14),
       taper([[-6, 6], [-4, 12], [-8, 15]], [2.2, 1.8, 1]), taper([[0, 6], [3, 12], [0, 15.6]], [2.2, 1.8, 1]),
     );
+    s.add('<g data-part="farwing">');
     s.figure(`<path d="${place(far.d)}"/>`, { fill: '#173a42', rim: '#e8fbf6', offsets: [[0, -1]], rimOp: 0.8 });
     s.path(place(far.patch), '#b8d0cc');
+    s.add('</g><g data-part="body">');
     s.figure(`<path d="${place(bird)}"/>`, { fill: '#08161c', rim: '#f2fffc', offsets: [[0, -1.2], [-0.8, -0.8], [0.8, -0.8]], rimOp: 0.95, shade: 0.4, light: [0, -1] });
     s.path(place(blob([[-17, 2.6], [-6, 7.4], [8, 5.4], [6, 0.6], [-8, 0.4]], 3)), '#eef6f2');
     s.path(place(taper([[18, 0.4], [32, 3], [46, 6.2], [56, 8.4]], [2, 3, 3.4, 2])), '#2a8078', 'opacity=".8"');
+    s.add('</g><g data-part="cloak">');
     const cloak = U(taper([[-21, -7], [-12, -11], [-1, -11], [10, -10], [22, -13], [32, -19], [41, -20]], [4, 9, 11, 12, 11, 8, 2]), taper([[22, -10], [30, -12], [38, -10]], [6, 4, 0.6]));
     s.figure(`<path d="${place(cloak)}"/>`, { fill: '#7a2a30', rim: '#ffe0d8', offsets: [[0, -1]], rimOp: 0.8, shade: 0.4, light: [0, -1] });
     s.add(`<path d="${place('M-10,-9Q2,-6 14,-10M2,-10Q14,-8 26,-14')}" fill="none" stroke="#4a1418" stroke-width=".8" opacity=".7"/>`);
+    s.add('</g><g data-part="nearwing">');
     s.figure(`<path d="${place(near.d)}"/>`, { fill: '#08161c', rim: '#f2fffc', offsets: [[0, -1.1], [-0.8, -0.6], [0.8, -0.6]], rimOp: 0.9, shade: 0.4, edge: 0.3, light: [0, -1] });
     s.path(place(U(near.patch, lens(4, -10, 16, -60, 0.36, 3))), '#eef6f2');
+    s.add('</g><g data-part="body">');
     s.add(`<circle cx="${f1(P(-26.6, -6.4)[0])}" cy="${f1(P(-26.6, -6.4)[1])}" r="1.2" fill="#ffffff"/><path d="${dots([[...P(-21, -6), 1.3]])}" fill="#ffd77a"/>`);
+    s.add('</g>');
     // the purse dangling from its beak, its neck gathered, a coin falling
     // out of it
     const [tx, ty] = P(-38, -3.6);
     const pouch = blob([[tx - 3, ty + 11], [tx + 3, ty + 11], [tx + 7, ty + 16], [tx + 6, ty + 22], [tx, ty + 25], [tx - 6, ty + 22], [tx - 7, ty + 16]], 4);
     const frill = poly([[tx - 4.6, ty + 11.4], [tx - 5.4, ty + 7.6], [tx - 2, ty + 9.4], [tx, ty + 6.6], [tx + 2, ty + 9.4], [tx + 5.4, ty + 7.6], [tx + 4.6, ty + 11.4]]);
+    s.add('<g data-part="purse">');
     s.add(`<path d="M${f1(tx)},${f1(ty)}L${f1(tx - 1.4)},${f1(ty + 9)}M${f1(tx + 0.6)},${f1(ty)}L${f1(tx + 1.8)},${f1(ty + 9)}" stroke="#3a2a1a" stroke-width=".8"/>`);
     s.path(U(pouch, frill), s.radU(tx - 2, ty + 15, 13, [[0, '#b08a52'], [1, '#4a3018']]));
     s.path(`M${f1(tx - 4.6)},${f1(ty + 11.4)}L${f1(tx + 4.6)},${f1(ty + 11.4)}`, 'none', 'stroke="#2a1a0a" stroke-width="1.4"');
-    s.glow(tx, ty + 14, 26, '#ffe08a', 0.45, 'breathe');
+    s.glow(tx, ty + 14, 26, '#ffe08a', 0.45);
     s.bloom(`<path d="${dots([[tx - 1.6, ty + 9.4, 1.6], [tx + 1.8, ty + 9, 1.4]])}" fill="#ffd77a"/><path d="${glint(tx + 1.4, ty + 8.6, 6, 0.15)}" fill="#ffffff"/>`, { sd: 1.3, k: 1.5, box: [tx - 30, ty - 20, 60, 60] });
+    s.add('</g>');
     s.add([[tx - 4, ty + 36, 0], [tx + 6, ty + 54, -0.6], [tx - 1, ty + 74, -1.1]].map(([x, y, d]) =>
       `<ellipse class="fall" style="--d:${d}s" cx="${f1(x)}" cy="${f1(y)}" rx="2" ry="1.2" fill="#ffd77a"/>`).join(''));
     s.motes({ seed: 17603, n: 12, x: [40, 260], y: [20, 150], r: [0.4, 0.9], fill: '#effcf8', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.8] });
@@ -543,7 +553,7 @@ export const ultra_g = {
     );
     const shade = { fill: '#06040b', rim: '#b8a6e2', offsets: [[0.8, -1], [0, -1.2], [-0.8, -0.8]], rimOp: 0.8 };
     s.figure(`<path d="${shadow}"/>`, { ...shade, shade: 0.3, light: [0.5, -1] });
-    s.add('<path d="M163.6,88.6l3,.8M162.4,93.4l2.4,.6" stroke="#c49cff" stroke-width="1" stroke-linecap="round" opacity=".9"/>');
+    s.add('<g data-part="eyes"><path d="M163.6,88.6l3,.8M162.4,93.4l2.4,.6" stroke="#c49cff" stroke-width="1" stroke-linecap="round" opacity=".9"/></g>');
     // the king behind his table (facing right): fur on his shoulders, a
     // beard, head dropped forward asleep, the crown slipping off it
     const king = U(
@@ -557,7 +567,9 @@ export const ultra_g = {
     s.figure(`<path d="${king}"/>`, { fill: '#130d20', rim: '#d6c8f6', offsets: [[0, -1.2], [-1, -0.6], [1, -0.6]], rimOp: 0.9, shade: 0.4, edge: 0.3, light: [0, -1] });
     s.path(dots([[176, 128, 0.9], [182, 131, 0.9], [190, 131, 0.9], [197, 128, 0.9], [179, 124, 0.8], [192, 124, 0.8]]), '#d8cff0', 'opacity=".7"');
     const crownD = rot(poly([[193, 95], [192.2, 83.6], [197.4, 89.4], [202, 80.6], [206.6, 89.4], [211.8, 83.6], [211, 95]]), 202, 95, 26);
+    s.add('<g data-part="crown">');
     s.path(crownD, s.linU(192, 82, 212, 96, [[0, '#f6dc94'], [1, '#a8782e']]));
+    s.add('</g>');
     // the table and the plans scattered over it, under both their hands
     s.path('M-10,162L310,158L310,186L-10,188Z', s.lin([[0, '#3a2c48'], [1, '#221a2e']]));
     s.path('M-10,188L310,186L310,214L-10,214Z', '#0c0814');
@@ -583,9 +595,9 @@ export const ultra_g = {
     const wd = taper(sw, sw.map((_, i) => 0.4 + 2.6 * Math.sin((Math.PI * i) / (sw.length - 1))), { per: 1 });
     const wd2 = taper(sw2, sw2.map((_, i) => 0.3 + 1.6 * Math.sin((Math.PI * i) / (sw2.length - 1))), { per: 1 });
     s.glow(180, 98, 26, '#b07cff', 0.55, 'breathe');
-    s.bloom(`<path d="${wd + wd2}" fill="#d2b0ff" opacity=".9"/><path d="${polyline(sw)}" fill="none" stroke="#f6eeff" stroke-width=".6" opacity=".9"/>` +
-      `<path d="${lens(279.5, 147, 9, -90, 0.44, 3)}" fill="#e6d2ff"/><path d="${lens(279.5, 148, 4, -90, 0.5, 3)}" fill="#ffffff"/>` +
-      `<path d="${glint(208, 83, 3.6, 0.16)}" fill="#fff6dc"/>`, { sd: 1.4, k: 1.5, box: [150, 26, 150, 140] });
+    s.bloom(`<g data-part="wisp"><path d="${wd + wd2}" fill="#d2b0ff" opacity=".9"/><path d="${polyline(sw)}" fill="none" stroke="#f6eeff" stroke-width=".6" opacity=".9"/></g>` +
+      `<g data-part="flame"><path d="${lens(279.5, 147, 9, -90, 0.44, 3)}" fill="#e6d2ff"/><path d="${lens(279.5, 148, 4, -90, 0.5, 3)}" fill="#ffffff"/></g>` +
+      `<g data-part="twink"><path d="${glint(208, 83, 3.6, 0.16)}" fill="#fff6dc"/></g>`, { sd: 1.4, k: 1.5, box: [150, 26, 150, 140] });
     s.add(page(64, 198, -24, 0.85, 6, -1.2) + page(214, 204, 18, 0.7, 7, -3.4));
     s.motes({ seed: 17704, n: 14, x: [160, 250], y: [30, 110], r: [0.35, 0.9], fill: '#c9b0f4', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.35, 0.85] });
     return s.svg();
@@ -652,10 +664,12 @@ export const ultra_g = {
     const [bx, by] = [X - 57 * K, Y + 26 * K];
     s.figure(`<path d="${place(beetle)}"/>`, { fill: '#0c140e', rim: '#fff3c0', offsets: [[0.8, -1], [1.2, -0.2], [-0.4, -1]], rimOp: 0.9, shade: 0.4, edge: 0.3, light: [0.7, -1] });
     // its shell: green, blue and violet shifting over it, a seam down it
+    s.add('<g data-part="shell">');
     s.path(place(elytra), s.linU(X - 24 * K, Y - 22 * K, X + 44 * K, Y + 14 * K, [[0, '#2a7a58'], [0.35, '#1a5c70'], [0.65, '#333278'], [1, '#4a1e56']]));
     s.path(place(pron), s.linU(X - 40 * K, Y - 14 * K, X - 16 * K, Y + 10 * K, [[0, '#348a60'], [0.5, '#1a5064'], [1, '#262652']]));
     s.add(`<path d="${place('M-18,-9Q8,-24 44,-6')}" fill="none" stroke="#0c140e" stroke-width="1.2"/>` +
       `<path d="${place(U(lens(6, -17, 28, -8, 0.16, 3), lens(30, -12, 14, 20, 0.2, 3), lens(-30, -8, 10, -30, 0.24, 3)))}" fill="#d8fff0" opacity=".45"/>`);
+    s.add('</g>');
     s.glow(bx, by, 36, '#e6f78f', 0.65, 'breathe');
     const cut = vein.findIndex(([x]) => x >= bx - 2);
     s.bloom(`<path d="${polyline(vein.slice(0, cut))}" fill="none" stroke="#efffb0" stroke-width="1.6" stroke-linecap="round" opacity=".9"/>` +

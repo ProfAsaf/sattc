@@ -132,12 +132,12 @@ const tide = faction('tide', {
     const tail = taper([[0, 32], [0.6, 48], [-1.2, 68], [-4.5, 92]], [3, 1.9, 1, 0.25]);
     const tf = 'translate(150 84) rotate(-18) scale(.92 .86)';
     const mist = s.lin([[0, '#f6efd8', 0.8], [1, '#f6efd8', 0]]);
-    s.add(`<g transform="${tf}" fill="${mist}">${[1, -1].map((k) =>
+    s.add(`<g data-part="mist" transform="${tf}" fill="${mist}">${[1, -1].map((k) =>
       `<path d="${taper([[91 * k, 25], [95 * k, 46], [99 * k, 72], [102 * k, 108]], [9, 6.5, 4, 0.8])}" opacity=".42"/>` +
       `<path d="${taper([[91 * k, 25], [95 * k, 46], [99 * k, 72], [102 * k, 108]], [2.8, 1.9, 1.1, 0.2])}" opacity=".95"/>` +
       `<path d="${taper([[66 * k, 19], [68 * k, 40], [71 * k, 64]], [3.4, 1.8, 0.3])}" opacity=".3"/>`).join('')}</g>`);
     s.figure(`<g transform="${tf}">${P(body)}${P(tail)}</g>`, { fill: p.fig, rim: '#f0e3bf', offsets: [[1, 0.8], [1.2, -0.3]], rimOp: 0.9, shade: 0.5, halo: 0.3 });
-    s.add(`<g transform="${tf}" fill="#f4f3d6"><circle cx="-15.6" cy="-13" r="1.1"/><circle cx="15.6" cy="-13" r="1.1"/></g>`);
+    s.add(`<g data-part="eyes" transform="${tf}" fill="#f4f3d6"><circle cx="-15.6" cy="-13" r="1.1"/><circle cx="15.6" cy="-13" r="1.1"/></g>`);
     // wisps it is gliding through
     s.add(`<g fill="#d8e6d8">${[[64, 118, 52, 3.2, 0.32], [236, 56, 40, 2.4, 0.22], [112, 34, 30, 2, 0.18], [196, 128, 34, 2.4, 0.26]].map(([x, y, rx, ry, o]) =>
       `<ellipse class="drift" cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" opacity="${o}"/>`).join('')}</g>`);

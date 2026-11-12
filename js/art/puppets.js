@@ -21,6 +21,49 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // cloud ray (a creature that glides over the clouds, an attacker: a sweep of its wing throws the water it carries): the
+  // manta as one body (banking, diving and spreading and folding its wings by stretching along its span, about its middle),
+  // the mist trailing from its wing-tips (behind it) and its two eyes; `emit`: its right wing-tip, `tipL`: its left (a
+  // blow to its left leaves from this one), `hit`: its back, `mid`: the body's middle it turns about, `axis`: the angle
+  // of its span (degrees), `sea`: the horizon it glides over
+  'cloud-ray': {
+    role: 'attacker', element: 'water', facing: 'front', emit: [236, 78], hit: [150, 84],
+    tipL: [77, 129], mid: [150, 84], axis: -18, sea: 148,
+    parts: [
+      { name: 'mist', of: '[data-part=mist]', pivot: [150, 84] },
+      { name: 'ray', of: 'fig:2', pivot: [150, 84] },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [150, 84] },
+    ],
+  },
+  // stampede (a Trick: your creatures get +2/+2 and Overrun, a support: the herd's charge is the boon): the lead beast whole
+  // (with its eye, drawn over it), the nearer herd behind it (the second figure), the far herd, and the bolt in the storm;
+  // `emit`: the lead beast's brow where the boon leaves from, `hit`: its shoulder, `feet`: where each group gallops from,
+  // `ground`: the plain's floor
+  'stampede': {
+    role: 'support', element: 'earth', facing: 'left', emit: [54, 136], hit: [105, 150],
+    ground: 190, feet: [[118, 190], [240, 182], [240, 160]],
+    parts: [
+      { name: 'far', of: '[data-part=far]', pivot: [240, 160] },
+      { name: 'mid', of: 'fig:0', pivot: [240, 182] },
+      { name: 'lead', of: 'fig:1', pivot: [118, 190] },
+      { name: 'eye', of: '[data-part=eye]', pivot: [118, 190] },
+      { name: 'bolt', of: '[data-part=bolt]', pivot: [244, 34] },
+    ],
+  },
+  // ironhide charger (a creature that charges through whatever it picks, an attacker: the charge is the attack): the beast
+  // split at the neck, its body (with the great plates, drawn over it) lunging from its middle, its head
+  // tossing from the neck; `emit`: the horn's tip where the blow leaves from, `hit`: its plated flank, `mid`: the body's
+  // middle it lunges about, `neck`: the head's joint, `ground`: its feet's floor
+  'ironhide-charger': {
+    role: 'attacker', element: 'earth', facing: 'left', emit: [22, 120], hit: [150, 128],
+    mid: [150, 130], neck: [86, 140], ground: 186,
+    parts: [
+      { name: 'body', of: 'fig:0', pivot: [150, 130], poly: [[84, -10], [310, -10], [310, 220], [78, 220]] },
+      { name: 'head', of: 'fig:0', pivot: [86, 140], poly: [[-10, -10], [84, -10], [78, 220], [-10, 220]] },
+      { name: 'plates', of: '[data-part=plates]', pivot: [150, 130] },
+      { name: 'eye', of: '[data-part=eye]', pivot: [86, 140] },
+    ],
+  },
   // savage clash (a spell: a creature of yours fights an enemy creature, so an attacker whose attack is the clash itself): the
   // great bear reared up on the left and the horned beast with its head down on the right, each one whole (the figure's
   // two halves), rearing back and crashing together from their feet; `emit`: the heart of the clash where the

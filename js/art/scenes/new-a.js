@@ -1026,11 +1026,13 @@ const verdantScenes = {
     const X = (x) => 118 + x * k, Y = (y) => 186 + y * k;
     const plateEdge = (x0, x1) => `M${f1(X(x0))},${f1(Y(-69))}Q${f1(X(x0 + 9))},${f1(Y(-46))} ${f1(X(x1))},${f1(Y(-23))}`;
     const edges = plateEdge(-14, -18) + plateEdge(10, 6) + plateEdge(34, 30) + plateEdge(58, 56) + `M${f1(X(-28))},${f1(Y(-50))}Q${f1(X(-20))},${f1(Y(-37))} ${f1(X(-30))},${f1(Y(-26))}`;
+    s.add('<g data-part="plates">');
     s.add(`<path d="${edges}" transform="translate(${f1(-2.2)} 0)" stroke="#0e150a" stroke-width="2.6" fill="none" opacity=".8"/><path d="${edges}" stroke="#d6e2a0" stroke-width="1.2" fill="none" opacity=".7"/>`);
     let studs = '';
     for (const x0 of [-14, 10, 34]) for (const t of [0.25, 0.5, 0.75]) studs += circ(X(x0 + 5 + 9 * Math.sin(Math.PI * t) * 0.6), Y(-69 + 46 * t), 1.1);
     s.path(studs, '#a9be7a');
-    s.add(`<circle cx="${f1(X(-52))}" cy="${f1(Y(-32))}" r="1.4" fill="#f1f6c8"/>`);
+    s.add('</g>');
+    s.add(`<g data-part="eye"><circle cx="${f1(X(-52))}" cy="${f1(Y(-32))}" r="1.4" fill="#f1f6c8"/></g>`);
     // clods kicked up, dust boiling round its feet
     s.path([[52, 168, 3], [40, 158, 2.2], [66, 154, 2], [186, 168, 2.6], [200, 158, 2]].map(([x, y, r]) => circ(x, y, r)).join(''), '#2c3a1e');
     let puffs = '';
@@ -1050,7 +1052,7 @@ const verdantScenes = {
     const R = rng(471);
     for (let x = -30; x < 330; x += 22 + R() * 16) storm += circ(x, 14 + R() * 30, 26 + R() * 18);
     s.blur(`<path d="${storm}" fill="${s.linU(0, -20, 0, 80, [[0, '#262f20'], [0.6, '#3c4732'], [1, '#7d8660']])}"/>`, 3.2);
-    s.add('<path d="M244,34L238,56L247,58L236,90" stroke="#fbffe0" stroke-width="1.6" fill="none" stroke-linejoin="round" opacity=".9"/>');
+    s.add('<path data-part="bolt" d="M244,34L238,56L247,58L236,90" stroke="#fbffe0" stroke-width="1.6" fill="none" stroke-linejoin="round" opacity=".9"/>');
     // the wall of dust the herd raises, towering behind it
     let wall = '';
     for (let x = -20; x < 330; x += 16 + R() * 12) wall += circ(x, 128 + R() * 20, 22 + R() * 18);
@@ -1073,13 +1075,13 @@ const verdantScenes = {
       };
     };
     const far = [beast(206, 158, 0.4), beast(244, 156, 0.44), beast(284, 160, 0.46), beast(162, 160, 0.38)];
-    s.add(`<g fill="#8a9668">${far.map((b) => `<path d="${b.d}"/><path d="${b.b}"/>${b.h}`).join('')}</g>`);
+    s.add(`<g data-part="far" fill="#8a9668">${far.map((b) => `<path d="${b.d}"/><path d="${b.b}"/>${b.h}`).join('')}</g>`);
     s.haze(130, 168, '#f2e8c0', 0.35);
     const mid = [beast(270, 184, 0.72), beast(186, 176, 0.58), beast(226, 180, 0.64), beast(306, 178, 0.6)];
     s.figure(mid.map((b) => P(b.d, b.b) + b.h).join(''), { fill: '#3a4c2c', rim: p.rim, offsets: [[0, -1.1], [-0.8, -0.6]], rimOp: 0.8 });
     const lead = beast(118, 198, 1.16);
     s.figure(P(lead.d, lead.b) + lead.h, { fill: p.fig, rim: p.rim, offsets: [[1.1, -0.9], [0, -1.3], [-0.8, -1]], rimOp: 0.95, shade: 0.4, light: [0.6, -1], halo: { op: 0.45, sd: 2.8 } });
-    s.add('<circle cx="62.5" cy="150.5" r="1.2" fill="#f1f6c8"/>');
+    s.add('<circle data-part="eye" cx="62.5" cy="150.5" r="1.2" fill="#f1f6c8"/>');
     // dust thrown up at the front, rain in the storm light
     let puffs = '';
     for (const [x, y, r] of [[46, 204, 15], [96, 208, 13], [150, 206, 15], [204, 198, 13], [256, 200, 15], [300, 196, 12]]) puffs += circ(x, y, r);

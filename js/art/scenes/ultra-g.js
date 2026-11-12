@@ -208,8 +208,8 @@ export const ultra_g = {
     s.figure(`<path d="${thick}"/>`, { fill: '#130605', rim: '#ff8a3c', offsets: [[0, 1.5], [-1, 1.1], [1, 0.8]], rimOp: 0.75, shade: 0.4, light: [-0.3, 1] });
     // its billows: shadowed folds, and the lit curl under each
     const fold = (list, a, b) => list.map(([x, y, r]) => `M${f1(x - r)},${y}a${r},${f1(r * a)} 0 0 ${b} ${2 * r},0`).join('');
-    s.add(`<path d="${fold([[176, 0, 9], [122, 8, 15], [70, 36, 13], [30, 70, 16], [-2, 98, 12], [98, 22, 8]], 0.6, 1)}" fill="none" stroke="#050202" stroke-width="1.4" stroke-linecap="round" opacity=".5"/>` +
-      `<path d="${fold([[200, 24, 7], [154, 18, 13], [104, 42, 15], [58, 80, 12], [24, 114, 14], [92, 112, 8], [40, 132, 9]], 0.45, 0)}" fill="none" stroke="#b4481c" stroke-width="1.1" stroke-linecap="round" opacity=".38"/>`);
+    s.add(`<g data-part="folds"><path d="${fold([[176, 0, 9], [122, 8, 15], [70, 36, 13], [30, 70, 16], [-2, 98, 12], [98, 22, 8]], 0.6, 1)}" fill="none" stroke="#050202" stroke-width="1.4" stroke-linecap="round" opacity=".5"/>` +
+      `<path d="${fold([[200, 24, 7], [154, 18, 13], [104, 42, 15], [58, 80, 12], [24, 114, 14], [92, 112, 8], [40, 132, 9]], 0.45, 0)}" fill="none" stroke="#b4481c" stroke-width="1.1" stroke-linecap="round" opacity=".38"/></g>`);
     // the village of workshops; the forge and its tall chimney
     const village = U(
       house(-14, 204, 30, 30, 13, 9), house(14, 204, 24, 22, 11), house(36, 204, 34, 36, 15, 10),
@@ -239,8 +239,8 @@ export const ultra_g = {
     s.add(`<ellipse cx="205" cy="207" rx="46" ry="5" fill="${s.rad([[0, '#ff7a2e', 0.4], [1, '#ff7a2e', 0]])}"/>`);
     s.glow(205, 198, 30, '#ff5a1e', 0.55, 'breathe');
     const heap = blob([[189, 205], [193, 198], [200, 194.6], [208, 194], [215, 196.6], [221, 205]], 4);
-    s.bloom(`<path d="${heap}" fill="${s.radU(205, 200, 16, [[0, '#ffc060'], [0.4, '#f06a24'], [1, '#7a1a08']])}"/>` +
-      `<path d="${dots([[198, 199, 0.9], [204, 197, 1.1], [211, 198.6, 0.9], [207, 201, 0.8], [216, 201, 0.7], [194, 202, 0.7]])}" fill="#fff0b0"/>`, { sd: 1.4, k: 1.4, box: [170, 170, 70, 44] });
+    s.bloom(`<g data-part="embers"><path d="${heap}" fill="${s.radU(205, 200, 16, [[0, '#ffc060'], [0.4, '#f06a24'], [1, '#7a1a08']])}"/>` +
+      `<path d="${dots([[198, 199, 0.9], [204, 197, 1.1], [211, 198.6, 0.9], [207, 201, 0.8], [216, 201, 0.7], [194, 202, 0.7]])}" fill="#fff0b0"/></g>`, { sd: 1.4, k: 1.4, box: [170, 170, 70, 44] });
     // the street
     s.path('M-10,204H310V214H-10Z', '#120504');
     // ash coming down; the last sparks going up the chimney
@@ -314,14 +314,18 @@ export const ultra_g = {
       `<path d="${dots([[X + 6.4 * K, Y - 82 * K, 0.9], [X + 6.8 * K, Y - 76 * K, 0.9], [X + 7.2 * K, Y - 70 * K, 0.9]])}" fill="#ffe39a"/>`);
     // the ledger, open
     const bx = X + 20 * K, by = Y - 73 * K;
+    s.add('<g data-part="ledger">');
     s.path(`M${f1(bx - 1)},${f1(by - 6)}L${f1(bx - 12)},${f1(by - 3)}L${f1(bx - 11)},${f1(by + 7)}L${f1(bx)},${f1(by + 4)}ZM${f1(bx - 1)},${f1(by - 6)}L${f1(bx + 11)},${f1(by - 7)}L${f1(bx + 11.6)},${f1(by + 3)}L${f1(bx)},${f1(by + 4)}Z`, '#f6ecd0');
     s.add(`<path d="M${f1(bx - 9)},${f1(by - 1)}l6,-1.6M${f1(bx - 9)},${f1(by + 1.6)}l6,-1.6M${f1(bx - 8.6)},${f1(by + 4.2)}l5,-1.4M${f1(bx + 2)},${f1(by - 4)}l7,-.6M${f1(bx + 2)},${f1(by - 1.4)}l7,-.6M${f1(bx + 2.2)},${f1(by + 1.2)}l5,-.4" stroke="#8a7458" stroke-width=".6"/>`);
+    s.add('</g>');
     // the lantern's light, and the coins catching the dawn
+    s.add('<g data-part="lampglow">');
     s.glow(lamp.c[0], lamp.c[1], 60, '#ffd98a', 0.5);
-    s.glow(lamp.c[0], lamp.c[1], 18, '#fff4d0', 0.75, 'breathe');
-    s.bloom(`<path d="${lamp.glass}" fill="${s.radU(lamp.c[0], lamp.c[1], 8, [[0, '#ffffff'], [0.5, '#fff0c0'], [1, '#ffc060']])}"/>` +
-      `<path d="${coins}" fill="${s.linU(40, 0, 64, 0, [[0, '#c8902e'], [0.5, '#ffe08a'], [1, '#b07a26']])}"/><path d="${coins}" fill="none" stroke="#7a5418" stroke-width=".35"/>` +
-      `<path d="${glint(53, 79.6, 5, 0.16)}" fill="#ffffff"/>`, { sd: 1.4, k: 1.5, box: [20, 50, 160, 80] });
+    s.glow(lamp.c[0], lamp.c[1], 18, '#fff4d0', 0.75);
+    s.add('</g>');
+    s.bloom(`<g data-part="lamp"><path d="${lamp.glass}" fill="${s.radU(lamp.c[0], lamp.c[1], 8, [[0, '#ffffff'], [0.5, '#fff0c0'], [1, '#ffc060']])}"/></g>` +
+      `<g data-part="coins"><path d="${coins}" fill="${s.linU(40, 0, 64, 0, [[0, '#c8902e'], [0.5, '#ffe08a'], [1, '#b07a26']])}"/><path d="${coins}" fill="none" stroke="#7a5418" stroke-width=".35"/>` +
+      `<path d="${glint(53, 79.6, 5, 0.16)}" fill="#ffffff"/></g>`, { sd: 1.4, k: 1.5, box: [20, 50, 160, 80] });
     s.motes({ seed: 17404, n: 16, x: [60, 280], y: [30, 160], r: [0.4, 1], fill: '#ffe39a', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },
@@ -386,9 +390,11 @@ export const ultra_g = {
       ell(-22, -30, 5, 6, 20, 14), ell(-12, -12, 6, 4, 0, 14),
       taper([[1, -47], [-2, -45], [-4, -43]], [3.4, 4, 5], { per: 2 }),
     ));
+    s.add('<g data-part="under">');
     s.path(mv(man, 0.6, 1.8), '#c9a6ff', 'opacity=".75"');
+    s.add('</g>');
     s.figure(`<path d="${sack}"/>`, { fill: '#3a3046', rim: '#d6c8f6', offsets: [[0, -1.2], [-1, -0.6]], rimOp: 0.85, shade: 0.45, light: [-0.3, -1] });
-    s.add(`<path d="${place('M-8,-40Q-14,-30 -12,-18M-18,-40Q-22,-34 -22,-26M-4,-30Q-8,-22 -14,-16M-3,-42.6L-0.6,-44.6M-4.4,-41L-1.6,-43')}" fill="none" stroke="#120d1c" stroke-width=".9" opacity=".75"/>`);
+    s.add(`<g data-part="creases"><path d="${place('M-8,-40Q-14,-30 -12,-18M-18,-40Q-22,-34 -22,-26M-4,-30Q-8,-22 -14,-16M-3,-42.6L-0.6,-44.6M-4.4,-41L-1.6,-43')}" fill="none" stroke="#120d1c" stroke-width=".9" opacity=".75"/></g>`);
     s.figure(`<path d="${U(man, shovel)}"/>`, { fill: '#0b0812', rim: '#d6c8f6', offsets: [[0, -1.3], [-1, -0.8], [1, -0.8]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [0, -1] });
     // the ground this side of the grave, over his other leg, and the slab
     // he heaved off it, a cross cut in it
@@ -397,7 +403,7 @@ export const ultra_g = {
     s.add('<path d="M50,188L74,181M60,180L64,190" stroke="#08060e" stroke-width="1.6" stroke-linecap="round"/>');
     // the gleam of stolen gold at the neck of the sack
     const [gx, gy] = [X - 1 * K, Y - 50 * K];
-    s.bloom(`<path d="${oval(gx - 1.6, gy + 1, 3, 1.4, -24)}" fill="#ffd77a"/><path d="${glint(gx - 2.4, gy, 4.6, 0.16)}" fill="#ffffff"/>`, { sd: 1.2, k: 1.4, box: [gx - 30, gy - 25, 60, 50] });
+    s.bloom(`<g data-part="gleam"><path d="${oval(gx - 1.6, gy + 1, 3, 1.4, -24)}" fill="#ffd77a"/><path d="${glint(gx - 2.4, gy, 4.6, 0.16)}" fill="#ffffff"/></g>`, { sd: 1.2, k: 1.4, box: [gx - 30, gy - 25, 60, 50] });
     s.fog(204, '#8f7fc8', 0.24);
     s.motes({ seed: 17504, n: 14, x: [100, 196], y: [120, 186], r: [0.35, 0.9], fill: '#c9b0f4', hot: '#ffffff', cls: 'rise', t: [4, 8], op: [0.4, 0.9] });
     return s.svg();

@@ -21,6 +21,59 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Grave Robber (a 2/2 that, when played, sends each opponent's three costliest creatures from their discard pile to the bottom of their
+  // deck: an attacker whose attack is the earth he heaves, and the graves it buries what was in them; a hooded robber climbing out of an open
+  // crypt, a sack of grave goods over his shoulder and a hand on his shovel): his body from the ankles up (hood, back, the arm
+  // that holds the shovel, the raised foot, with the violet light under it), the shovel (shaft, grip and blade, cut from the figure
+  // beside the hand, turning about it), the sack (with its creases, swinging from his shoulder) and the gleam of stolen gold at its
+  // neck; `emit`: the shovel's blade at rest, where the earth is flung from, `hit`: his back, `hand`: where the shovel is held
+  // (it turns about it), `ankles`: where he leans from (the body is cut at the ankles; the legs below stay), `neck`: the sack's
+  // neck, where it hangs, `grave`: the stair of the open crypt, `ground`: the cemetery to the right (the target when alone)
+  'grave-robber': {
+    role: 'attacker', element: 'earth', facing: 'right', emit: [221, 190], hit: [128, 118],
+    hand: [166.8, 140.6], ankles: [120, 186], neck: [120.6, 86], grave: [144, 190], ground: [268, 170],
+    parts: [
+      { name: 'sack', of: 'fig:1', pivot: [120.6, 94.4] },
+      { name: 'creases', of: '[data-part=creases]', pivot: [120.6, 94.4] },
+      { name: 'under', of: '[data-part=under]', pivot: [120, 186], poly: [[-10, -10], [158, -10], [158, 126], [162.5, 134.6], [190, 161], [190, 186], [-10, 186]], cut: true, joint: 1 },
+      { name: 'body', of: 'fig:2', pivot: [120, 186], poly: [[-10, -10], [158, -10], [158, 126], [162.5, 134.6], [190, 161], [190, 186], [-10, 186]], cut: true, joint: 2 },
+      { name: 'shovel', of: 'fig:2', pivot: [166.8, 140.6], poly: [[158, 124], [172, 122], [240, 180], [240, 210], [190, 210], [190, 161], [162.5, 134.6], [158, 126]], cut: true, joint: 2 },
+      { name: 'gleam', of: '[data-part=gleam]', pivot: [120.6, 86] },
+    ],
+  },
+  // Tollkeeper (a 2/3 who draws a card whenever an opponent Invests: the toll paid is the card drawn, so a support whose boon is a
+  // card of light sent from his lantern: a stern man in a gold-trimmed coat at the bridge gate, lantern raised in one hand and the
+  // ledger open in the other, coins stacked on the gatepost): his lantern arm (cut from his figure at the shoulder, past the coat),
+  // the lantern's glass and the glow round it (no longer a breathing ambient glow: it rides the lantern), the open ledger and
+  // the coins stacked on the post (with their glint); `emit`: the lantern's heart, where the card of light leaves from, `hit`:
+  // his chest, `shoulder`: where the arm turns (the lantern and its glow turn with it), `hand`: the ring the lantern hangs from,
+  // `ledger`: the ledger's middle, `coins`: the stack on the post, `road`: the bridge's road ahead (the target when alone)
+  'tollkeeper': {
+    role: 'support', element: 'light', facing: 'front', emit: [142, 90], hit: [114, 126],
+    shoulder: [116.6, 107], hand: [141.9, 77.8], ledger: [129.6, 123], coins: [52, 84], road: [226, 170],
+    parts: [
+      { name: 'arm', of: 'fig:1', pivot: [116.6, 107], poly: [[120.5, 111.5], [120.5, 101], [133, 97], [135, 70], [150, 70], [150, 104], [141, 108], [132, 111.5]], cut: true, joint: 3 },
+      { name: 'lamp', of: '[data-part=lamp]', pivot: [116.6, 107] },
+      { name: 'lampglow', of: '[data-part=lampglow]', pivot: [116.6, 107] },
+      { name: 'ledger', of: '[data-part=ledger]', pivot: [129.6, 123] },
+      { name: 'coins', of: '[data-part=coins]', pivot: [52, 93] },
+    ],
+  },
+  // Choking Smoke (a Spell that takes 2 Energy from each opponent: a curse thrown at them, an attacker, its element the smoke itself,
+  // shadow: the forge's chimney belches black smoke that rolls over the village and the forge-fire below chokes down to embers):
+  // the great rolling mass of smoke left of the chimney (cut at the chimney, turning about the seam; the lit curls drawn on it
+  // go with it) and the heap of embers in the forge's mouth; `emit`: the chimney's mouth, where the smoke pours from, `hit`:
+  // the forge's body, `chimney`: the mouth, `seam`: where the mass is cut and turns, `embers`: the heap, `roofs`: the village's
+  // roofs to the left (the target when alone)
+  'choking-smoke': {
+    role: 'attacker', element: 'shadow', facing: 'left', emit: [205, 46], hit: [190, 170],
+    chimney: [205, 46], seam: [188, 24], embers: [205, 200], roofs: [56, 160],
+    parts: [
+      { name: 'smoke', of: 'fig:0', pivot: [188, 24], poly: [[-12, -12], [188, -12], [188, 150], [-12, 150]], cut: true, joint: 3 },
+      { name: 'folds', of: '[data-part=folds]', pivot: [188, 24], poly: [[-12, -12], [188, -12], [188, 150], [-12, 150]], cut: true, joint: 1 },
+      { name: 'embers', of: '[data-part=embers]', pivot: [205, 200] },
+    ],
+  },
   // Wild Bloom (a Trick that doubles a creature's Power and Vitality for the turn: a boon, a support: a little fern bursts in an
   // instant into a towering flowering plant; its spring is the boon, so the plant crouches, the bloom closes to a bud and
   // flings open, and the burst of petals and light goes out to the creature): the stalk with its leaves, tendrils and the ferns

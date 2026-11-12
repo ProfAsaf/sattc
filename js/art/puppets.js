@@ -89,6 +89,28 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Oriel, Lady of Storms: her four wings (a pair each side, from the shoulders), her cloak of cloud (from
+  // its middle), she herself (from her hips) with her raised arm (from its shoulder; the hand she calls the
+  // rain with, up in the rain cloud) and her palm arm (the hand held out for the sun), her circlet and the
+  // light in her palm. role: attacker (the suggestion was defender: she never blocks; her text counts Fields
+  // and, at last, deals 2 to each opponent: the Lady of Storms hurls the storm), element: lightning (the storm
+  // gathered in the rain cloud over her head); facing: front. `emit`: her raised hand, where the bolt leaves
+  // (as drawn); `hit`: her middle; `shoulder`/`palmShoulder`: the arms' joints; `palm`: her open hand;
+  // `cloud`: the heart of the rain cloud, where the storm gathers; `sun`: the sun she calls up; `alone`: the
+  // sea under the rain, where her bolt strikes when nothing is aimed at
+  'legend-oriel': {
+    role: 'attacker', element: 'lightning', facing: 'front', emit: [118.5, 32.5], hit: [150, 100], shoulder: [143.4, 73.8], palmShoulder: [156.6, 73.8], palm: [184, 82], crownAt: [150, 52], cloud: [52, 32], sun: [252, 142], alone: [62, 150],
+    parts: [
+      { name: 'wingL', of: '[data-part=wings]', pivot: [146, 76], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
+      { name: 'wingR', of: '[data-part=wings]', pivot: [154, 76], poly: [[150, -20], [320, -20], [320, 230], [150, 230]] },
+      { name: 'cape', of: 'fig:1', pivot: [150, 140] },
+      { name: 'torso', of: 'fig:2', pivot: [150, 150], poly: [[141, -20], [320, -20], [320, 73.6], [160, 73.6], [160, 92], [320, 92], [320, 230], [-20, 230], [-20, 77], [141, 77]] },
+      { name: 'armUp', of: 'fig:2', pivot: [143.4, 73.8], poly: [[-20, -20], [141, -20], [141, 77], [-20, 77]] },
+      { name: 'armP', of: 'fig:2', pivot: [156.6, 73.8], poly: [[160, 73.6], [320, 73.6], [320, 92], [160, 92]] },
+      { name: 'crown', of: '[data-part=crown]', pivot: [150, 52] },
+      { name: 'palmlight', of: '[data-part=palmlight]', pivot: [184, 82] },
+    ],
+  },
   // Hour of Glory: the leader out in front (one figure, with his pole; from his feet) and his banner (from the
   // top of its pole). The ranks, the other banners and the light streaming off the weapons stay as drawn: the
   // spell's light acts over them. role: support (as suggested: it gives every creature +3/+0 and Rush), element:
@@ -1670,6 +1692,25 @@ export const PUPPETS = {
       { name: 'hair', of: ['fig:1', '[data-part=bark]'], pivot: [130, 60], poly: [[0, 0], [150, 0], [150, 54], [133, 57], [128, 64], [118, 76], [110, 88], [107, 104], [107, 116], [0, 116]] },
       { name: 'vines', of: '[data-part=vines]', pivot: [200, 150] },
       { name: 'wounds', of: '[data-part=wounds]', pivot: [226, 170] },
+    ],
+  },
+  // Kasimir, the First Blade: the knight himself (legs, body, head and scarf, with the soot and gold trim
+  // drawn on him) leaping from the middle of his body; his sword arm (from its shoulder) and the blazing
+  // sword it holds (flames and blade, about the same shoulder); his banner arm with the pole (from its
+  // shoulder) and the banner on the pole's top. role: attacker (as suggested), element: fire (the sword
+  // blazes; the suggestion was earth), facing: right; `emit`: the sword's tip, where the slash of fire leaves;
+  // `hit`: his chest; `shoulder`/`bshoulder`: the sword arm's and the banner arm's joints; `grip`: his fist
+  // on the sword; `top`: the banner pole's top; `mid`: his body's joint; `alone`: the enemy line below
+  // in the smoke, where the slash lands when nothing is aimed at
+  'legend-kasimir': {
+    role: 'attacker', element: 'fire', facing: 'right', emit: [214.8, 24.8], hit: [156, 108], shoulder: [164.4, 96.8], bshoulder: [154.8, 96.8], grip: [189.6, 65.6], top: [94.8, 44], mid: [150, 128], alone: [236, 172],
+    parts: [
+      { name: 'banner', of: '[data-part=banner]', pivot: [94.8, 44] },
+      { name: 'body', of: 'fig:2', pivot: [150, 128], poly: [[-20, -20], [320, -20], [320, 58], [184, 58], [186, 64], [180, 76], [173.5, 82], [166, 95], [166, 100], [320, 100], [320, 230], [-20, 230], [-20, 118], [145, 118], [145, 101], [150, 101], [150, 89], [127, 89], [127, 30], [-20, 30]] },
+      { name: 'armB', of: 'fig:2', pivot: [154.8, 96.8], poly: [[-20, 30], [127, 30], [127, 89], [150, 89], [150, 101], [145, 101], [145, 118], [-20, 118]] },
+      { name: 'armS', of: 'fig:2', pivot: [164.4, 96.8], poly: [[166, 100], [166, 95], [173.5, 82], [180, 76], [186, 64], [184, 58], [320, 58], [320, 100]] },
+      { name: 'decor', of: '[data-part=decor]', pivot: [150, 128] },
+      { name: 'sword', of: '[data-part=sword]', pivot: [164.4, 96.8] },
     ],
   },
   // ── end of lane B ──

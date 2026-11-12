@@ -966,17 +966,17 @@ export const ultra_b = {
     s.figure(`<path d="${wings}"/>`, { fill: s.radU(mx, my + 12, 84, [[0, '#8a6038'], [0.3, '#4a3424'], [1, '#1e1610']]), rim: '#ffe7b0', offsets: [[0, -1.2], [-0.8, -0.7], [0.8, -0.7]], rimOp: 0.85, edge: 0.3, light: [0, -1] });
     const veins = [[162, 90, 228, 56], [160, 88, 210, 64], [162, 92, 222, 72], [160, 100, 202, 116], [158, 104, 190, 126]].map(([a, b, c, d]) =>
       `M${a},${b}Q${(a + c) / 2},${(b + d) / 2 - 6} ${c},${d}M${2 * mx - a},${b}Q${2 * mx - (a + c) / 2},${(b + d) / 2 - 6} ${2 * mx - c},${d}`).join('');
-    s.add(`<path d="${veins}" fill="none" stroke="#d8a860" stroke-width=".8" opacity=".5"/>` +
-      `<g fill="none" stroke="#e8b870" stroke-width="1.2" opacity=".55"><circle cx="196" cy="70" r="6"/><circle cx="104" cy="70" r="6"/><circle cx="186" cy="112" r="4"/><circle cx="114" cy="112" r="4"/></g>`);
+    s.add(`<path data-part="veins" d="${veins}" fill="none" stroke="#d8a860" stroke-width=".8" opacity=".5"/>` +
+      `<g data-part="rings" fill="none" stroke="#e8b870" stroke-width="1.2" opacity=".55"><circle cx="196" cy="70" r="6"/><circle cx="104" cy="70" r="6"/><circle cx="186" cy="112" r="4"/><circle cx="114" cy="112" r="4"/></g>`);
     const feeler = (dir) => [taper([[mx + 2 * dir, 72], [mx + 9 * dir, 58], [mx + 18 * dir, 48]], [1.6, 1.2, 0.5], { per: 4 }),
       ...[0.3, 0.5, 0.7, 0.88].map((t) => { const x = mx + 2 * dir + 16 * dir * t, y = 72 - 24 * t; return leafAt(x, y, dir > 0 ? -20 : 200, 5 - 2 * t, 0.36, 3) + leafAt(x, y, dir > 0 ? 70 : 110, 4 - 1.6 * t, 0.36, 3); })];
     s.figure(`<path d="${U(ell(mx, 82, 6, 7.4), ell(mx, 72.6, 4.4, 4), feeler(1), feeler(-1), taper([[mx, 88], [mx, 92]], 6, { per: 2 }))}"/>`, { fill: '#241a12', rim: '#ffe7b0', offsets: [[0, -1.1]], rimOp: 0.9 });
     // the lantern: ribbed, all light, a dark cap and a little tassel
     s.glow(mx, 108, 30, '#fff0c2', 0.85, 'breathe');
     const lb = s.radU(mx, 106, 16, [[0, '#ffffff'], [0.45, '#fff4cc'], [1, '#ffcf6a']]);
-    s.bloom(`<ellipse cx="${mx}" cy="107" rx="8.4" ry="14" fill="${lb}"/>` +
+    s.bloom(`<g data-part="lantern"><ellipse cx="${mx}" cy="107" rx="8.4" ry="14" fill="${lb}"/>` +
       `<path d="M${mx - 7.4},100H${mx + 7.4}M${mx - 8.4},106H${mx + 8.4}M${mx - 7.8},112H${mx + 7.8}M${mx - 5.6},117H${mx + 5.6}" stroke="#e0a040" stroke-width=".7" opacity=".8"/>` +
-      `<path d="M${mx - 4},93H${mx + 4}L${mx + 3},95.6H${mx - 3}ZM${mx - 3.4},120H${mx + 3.4}L${mx + 2.4},122.6H${mx - 2.4}Z" fill="#3a2a1a"/><path d="M${mx},122.6V129" stroke="#ffd77a" stroke-width="1"/>`, { sd: 1.6, k: 1.5, box: [110, 70, 80, 80] });
+      `<path d="M${mx - 4},93H${mx + 4}L${mx + 3},95.6H${mx - 3}ZM${mx - 3.4},120H${mx + 3.4}L${mx + 2.4},122.6H${mx - 2.4}Z" fill="#3a2a1a"/><path d="M${mx},122.6V129" stroke="#ffd77a" stroke-width="1"/></g>`, { sd: 1.6, k: 1.5, box: [110, 70, 80, 80] });
     // grass and seed heads in front
     const G = rng(12803), blades = [];
     for (let x = -8; x < 312; x += 3 + G() * 4) {
@@ -1091,7 +1091,7 @@ export const ultra_b = {
       wicks.push(`M${f1(x - 1.4)},${f1(y)}h2.8v-3h-2.8Z`);
     }
     s.glow(150, 120, 60, '#fff0c2', 0.8, 'breathe');
-    s.bloom(`<path d="${oval(150, 126, 52, 8.6)}" fill="#ffe7a0"/><path d="${wicks.join('')}" fill="#fff4dc"/><path d="${flames.join('')}" fill="#fffaf0"/>` +
+    s.bloom(`<path d="${oval(150, 126, 52, 8.6)}" fill="#ffe7a0"/><path d="${wicks.join('')}" fill="#fff4dc"/><path data-part="flames" d="${flames.join('')}" fill="#fffaf0"/>` +
       `<path d="${oval(150, 126, 52, 8.6)}" fill="none" stroke="#fff6d8" stroke-width="1.2"/>`, { sd: 1.8, k: 1.4, box: [80, 90, 140, 60] });
     // the villagers: a woman reaching up to set her candle in, a child
     // holding one up, an old man with his stick waiting his turn
@@ -1118,9 +1118,11 @@ export const ultra_b = {
     s.figure(`<path d="${woman}${child}${old}"/>`, { fill: p.fig, rim: '#ffe7b0', offsets: [[1.2, -0.6], [-1.2, -0.6], [0, -1.2]], rimOp: 0.9, shade: 0.4, light: [0, -1] });
     // their candles
     const held = [[107, 101, 7], [183, 138, 5], [204, 136, 6]];
-    s.add(`<g fill="#e8dcc4">${held.map(([x, y, h]) => `<rect x="${x - 1.6}" y="${y}" width="3.2" height="${h}" rx=".6"/>`).join('')}</g>`);
+    s.add(`<g data-part="hr" fill="#e8dcc4">${held.map(([x, y, h]) => `<rect x="${x - 1.6}" y="${y}" width="3.2" height="${h}" rx=".6"/>`).join('')}</g>`);
+    s.add('<g data-part="hg">');
     for (const [x, y] of held) s.glow(x, y - 4, 12, '#fff0c2', 0.8);
-    s.add(`<path d="${held.map(([x, y]) => flame(x, y - 0.5, 6, 0.6)).join('')}" fill="#fffaf0"/>`);
+    s.add('</g>');
+    s.add(`<path data-part="hf" d="${held.map(([x, y]) => flame(x, y - 0.5, 6, 0.6)).join('')}" fill="#fffaf0"/>`);
     s.motes({ seed: 13003, n: 22, x: [100, 200], y: [20, 124], r: [0.4, 1.1], fill: '#ffe39a', hot: '#ffffff', cls: 'rise', t: [4, 8], op: [0.5, 1] });
     return s.svg();
   },

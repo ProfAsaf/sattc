@@ -85,6 +85,55 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Lantern Moth: the great moth's right and left wings (each with its veins and rings; split at its
+  // body's middle), its two feelers (cut from the body at the root), and the ribbed lantern it carries
+  // (its caps and tassel too). `emit`: the lantern's middle, where its swarm leaves; `hit`: its body;
+  // `root`: where the wings join; `lamp`: the lantern's middle; `alone`: where its swarm goes when
+  // nothing is aimed at: up and away over the meadow's far side
+  'lantern-moth': {
+    role: 'attacker', element: 'light', facing: 'front', emit: [150, 108], hit: [150, 98], root: [150, 88], lamp: [150, 108], alone: [262, 70],
+    parts: [
+      { name: 'wingR', of: ['fig:0', '[data-part=veins]', '[data-part=rings]'], pivot: [153, 88], poly: [[150, -20], [320, -20], [320, 230], [150, 230]] },
+      { name: 'wingL', of: ['fig:0', '[data-part=veins]', '[data-part=rings]'], pivot: [147, 88], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
+      { name: 'feelR', of: 'fig:1', pivot: [155, 70], poly: [[155, 30], [200, 30], [200, 71], [155, 71]], cut: true },
+      { name: 'feelL', of: 'fig:1', pivot: [145, 70], poly: [[100, 30], [145, 30], [145, 71], [100, 71]], cut: true },
+      { name: 'lantern', of: '[data-part=lantern]', pivot: [150, 106] },
+    ],
+  },
+  // Mender's Hymn: the priestess (all but her raised arms, which turn from the shoulder: the arms are what
+  // lies right of x=99 above y=100) and the kneeling soldier (his head split off at the neck; the rest of
+  // him, sword and all, from his seat). `emit`: between her raised hands, where the notes leave; `hit`:
+  // her middle; `alone`: the soldier's heart, where the song settles; `shoulder`, `seat`, `neck`: joints
+  'menders-hymn': {
+    role: 'support', element: 'light', facing: 'right', emit: [110, 70], hit: [92, 140], alone: [201, 130],
+    shoulder: [97, 99], seat: [200, 186], neck: [200, 123], feet: [92, 189],
+    parts: [
+      { name: 'her', of: 'fig:0', pivot: [92, 189], poly: [[-20, -20], [99, -20], [99, 100], [320, 100], [320, 230], [-20, 230]] },
+      { name: 'arms', of: 'fig:0', pivot: [97, 99], poly: [[99, -20], [320, -20], [320, 100], [99, 100]] },
+      { name: 'soldier', of: 'fig:1', pivot: [200, 186], poly: [[-20, -20], [183, -20], [183, 123], [215, 123], [215, -20], [320, -20], [320, 230], [-20, 230]] },
+      { name: 'sHead', of: 'fig:1', pivot: [200, 123], poly: [[183, 85], [215, 85], [215, 123], [183, 123]] },
+    ],
+  },
+  // Tithe of Light: the great bowl's crowd of candle flames (in three groups, left to right), the three
+  // villagers (the woman, the child, the old man: each cut from the one figure, about their feet) and
+  // the candles they hold (rod, flame and glow, split by whose it is). `emit`: the bowl's heart, where its
+  // light leaves; `hit`: the bowl; `alone`: the rafters, where the light climbs to; `rim`: the bowl's
+  // lip; `held`: where each held candle is as drawn
+  'tithe-of-light': {
+    role: 'support', element: 'light', facing: 'front', emit: [150, 122], hit: [150, 140], alone: [150, 24], rim: [150, 126],
+    held: [[107, 101], [183, 138], [204, 136]],
+    parts: [
+      { name: 'flamesL', of: '[data-part=flames]', pivot: [114, 126], poly: [[-20, -20], [128, -20], [128, 230], [-20, 230]] },
+      { name: 'flamesM', of: '[data-part=flames]', pivot: [150, 126], poly: [[128, -20], [172, -20], [172, 230], [128, 230]] },
+      { name: 'flamesR', of: '[data-part=flames]', pivot: [186, 126], poly: [[172, -20], [320, -20], [320, 230], [172, 230]] },
+      { name: 'woman', of: 'fig:3', pivot: [82, 192], poly: [[-20, -20], [128, -20], [128, 230], [-20, 230]] },
+      { name: 'child', of: 'fig:3', pivot: [196, 192], poly: [[128, -20], [203, -20], [203, 230], [128, 230]] },
+      { name: 'old', of: 'fig:3', pivot: [226, 192], poly: [[203, -20], [320, -20], [320, 230], [203, 230]] },
+      { name: 'candleW', of: ['[data-part=hr]', '[data-part=hf]', '[data-part=hg]'], pivot: [107, 108], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
+      { name: 'candleC', of: ['[data-part=hr]', '[data-part=hf]', '[data-part=hg]'], pivot: [183, 142], poly: [[150, -20], [194, -20], [194, 230], [150, 230]] },
+      { name: 'candleO', of: ['[data-part=hr]', '[data-part=hf]', '[data-part=hg]'], pivot: [204, 140], poly: [[194, -20], [320, -20], [320, 230], [194, 230]] },
+    ],
+  },
   // Field Medic: the medic (kneeling, from her knee, with the tabard sewn on her), her two arms (from the
   // shoulder), the four turns of golden bandage round the knight's forearm (each its own, split out of
   // one), the loose end of the roll and the curl of light lifting off it, and the wounded knight (his head

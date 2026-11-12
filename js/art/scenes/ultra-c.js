@@ -810,8 +810,9 @@ export const ultra_c = {
     const tip = (d) => rot(at(228 - 42 * 1.1, 172 - 22 * 1.1, 1.1)(d), 228, 172, -22);
     s.figure(`<path d="${tip(bull)}"/>`, { fill: '#141c0e', rim: p.rim, offsets: [[-1.1, -1], [0, -1.3], [1, -0.7]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [-0.5, -1] });
     const [ex, ey] = tip('M-54,-34').slice(1).split(',').map(Number);
-    s.add(`<circle cx="${f1(ex)}" cy="${f1(ey)}" r="1.2" fill="#f2f6d8"/>`);
+    s.add(`<circle data-part="eye" cx="${f1(ex)}" cy="${f1(ey)}" r="1.2" fill="#f2f6d8"/>`);
     // the near lip of the pit: the torn carpet of leaves sagging over it
+    s.add('<g data-part="lip">');
     const lip = [];
     for (let i = 0; i <= 26; i++) { const a = rad((180 * i) / 26); lip.push([px - Math.cos(a) * (rx + 1), py + Math.sin(a) * (ry + 1) + (i % 2 ? 2.2 : 0)]); }
     s.path(poly([[px - rx - 30, 214], [px - rx - 30, py], ...lip, [px + rx + 30, py], [px + rx + 30, 214]]), s.lin([[0, '#5e7440'], [0.3, '#4a6032'], [1, '#2e4020']]));
@@ -820,14 +821,17 @@ export const ultra_c = {
     s.path(U(flaps), '#4e6434');
     // sticks of the hidden lattice, snapped
     s.add('<g stroke="#2e2414" stroke-width="1.6" stroke-linecap="round"><path d="M42,174L54,158M206,176L196,160M70,196L80,182M180,198L172,182"/></g>');
+    s.add('</g>');
     // vines lashing up out of the edge at either side, curling in over it
     const v1 = tendril(42, 178, -78, 46, { bend: 72, w: 3, curl: 5 }), v2 = tendril(74, 200, -64, 36, { bend: 64, w: 2.8, curl: 4 });
     const v3 = tendril(186, 200, -116, 40, { bend: -70, w: 2.8, curl: 4.4 }), v4 = tendril(212, 182, -70, 30, { bend: 60, w: 2.4, curl: 4 });
     const vl = [v1, v2, v3, v4];
     const vleaves = [[44, 160, -150, 7], [50, 144, -30, 6], [80, 184, -150, 6], [178, 184, -30, 6], [214, 168, -150, 5]].map(([x, y, a, l]) => leafAt(x, y, a, l, 0.5));
     s.figure(`<path d="${U(vl.map((t) => t.d), vleaves)}"/>`, { fill: '#2a3e1c', rim: '#f2ffc0', offsets: [[0, -1], [-0.8, -0.6]], rimOp: 0.9 });
+    s.add('<g data-part="vtips">');
     for (const t of vl) s.glow(t.tip[0], t.tip[1], 7, p.glow, 0.75);
     s.bloom(`<path d="${dots(vl.map((t) => [t.tip[0], t.tip[1], 1.4]))}" fill="${p.hot}"/>`, { sd: 1.2, k: 1.6, box: [40, 100, 220, 110] });
+    s.add('</g>');
     // leaves bursting up into the air all round it
     const flying = [[], [], []];
     for (let i = 0; i < 32; i++) {
@@ -887,6 +891,7 @@ export const ultra_c = {
     // polished face turned a little toward the brute
     const kite = 'M154,62Q194,50 234,62L236,96Q232,142 196,178Q158,142 154,96Z';
     const inner = 'M158,66Q194,55 230,66L232,96Q228,139 196,172Q162,139 158,96Z';
+    s.add('<g data-part="shield">');
     s.figure(`<path d="${mv(kite, 5, 0)}"/>`, { fill: '#4a3018', rim: '#ffe7a8', offsets: [[1, -1], [0, -1.3]], rimOp: 0.9 });
     s.path(kite, s.radU(176, 82, 120, [[0, '#fff8dc'], [0.22, '#ffe08a'], [0.6, '#d6a040'], [1, '#7a5420']]));
     // in its face, the brute coming the other way, reaching for the same
@@ -898,12 +903,14 @@ export const ultra_c = {
       '<path d="M146,130L206,40L222,40L162,130ZM170,160L230,70L236,70L176,160Z" fill="#fffbe8" opacity=".22"/></g>');
     s.add(`<path d="${kite}" fill="none" stroke="#f6d27a" stroke-width="2.6"/><path d="${inner}" fill="none" stroke="#9a6a28" stroke-width="1" opacity=".8"/>` +
       `<path d="${dots([[161, 68, 1.1], [194, 59.6, 1.1], [227, 68, 1.1], [231, 100, 1.1], [218, 134, 1.1], [196, 166, 1.1], [174, 134, 1.1], [161, 100, 1.1]])}" fill="#fff0c2"/>`);
+    s.add('</g>');
     s.path(U(ell(196, 177, 18, 4.4), ell(184, 178, 10, 3), ell(210, 178, 9, 3)), '#2a1c10');
     // the brute itself, and the dust it kicks up
     s.add(`<g class="drift">${[[18, 166, 26, 9], [42, 172, 18, 6], [0, 174, 16, 6]].map(([x, y, rx, ry]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${s.rad([[0, '#ecd0a2', 0.5], [1, '#ecd0a2', 0]])}"/>`).join('')}</g>`);
     s.figure(`<path d="${at(P[0] - claw[0], P[1] - claw[1], 1)(brute)}"/>`, { fill: '#1e1610', rim: p.rim, offsets: [[0.9, -1], [0, -1.3], [-0.8, -0.8]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [0.6, -1] });
-    s.add(`<circle cx="${f1(P[0] - claw[0] + 57)}" cy="${f1(P[1] - claw[1] - 90)}" r="1.3" fill="#ff9a4a"/>`);
+    s.add(`<circle data-part="eye" cx="${f1(P[0] - claw[0] + 57)}" cy="${f1(P[1] - claw[1] - 90)}" r="1.3" fill="#ff9a4a"/>`);
     // the burst where the claws meet
+    s.add('<g data-part="burst">');
     s.glow(P[0], P[1], 70, '#fff6dc', 0.85);
     s.glow(P[0], P[1], 26, '#ffffff', 0.9, 'breathe');
     let rays = '';
@@ -912,6 +919,7 @@ export const ultra_c = {
     for (let i = 0; i < 18; i++) { const a = rad(R() * 360), d = 12 + R() * 34; sparks.push([P[0] + Math.cos(a) * d, P[1] + Math.sin(a) * d * 0.8, 0.5 + R() * 0.9]); }
     s.bloom(`<path d="${rays}" stroke="#fff6dc" stroke-width="1.3" stroke-linecap="round"/><path d="${glint(P[0], P[1], 24, 0.12) + rot(glint(P[0], P[1], 12, 0.2), P[0], P[1], 45)}" fill="#ffffff"/>` +
       `<path d="${dots(sparks)}" fill="#fff0c2"/>`, { sd: 1.6, k: 1.5, box: [100, 40, 110, 110] });
+    s.add('</g>');
     s.motes({ seed: 13304, n: 16, x: [30, 280], y: [30, 180], r: [0.4, 1], fill: '#ffe39a', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },
@@ -940,13 +948,18 @@ export const ultra_c = {
     ];
     for (const [list, c] of rows) s.figure(`<path d="${row(list)}"/>`, { fill: c, rim: '#f6fffd', offsets: [[-0.9, -1], [0, -1.2]], rimOp: 0.9, shade: 0.35, light: [-0.6, -1] });
     // the shore: dark rocks, the beach
+    s.add('<g data-part="shore">');
     s.path(ledge([[-10, 152], [30, 148], [70, 152], [110, 158], [160, 162], [220, 160], [310, 156]]), s.lin([[0, '#26464c'], [1, '#0a1c22']]));
     s.add('<g fill="none" stroke="#e9f8f2" stroke-linecap="round" opacity=".6"><path d="M18,149q10,-3 22,0M68,153q12,-3 24,0" stroke-width="1.2"/></g>');
+    s.add('</g>');
     // sheets of fog drifting over the warriors running into it
     const sheet = (list) => U(puffs(list, 1.25), poly([[list[0][0], -30], [340, -30], [340, 230], [list[list.length - 1][0], 230], ...list.slice().reverse().map(([x, y]) => [x, y])]));
+    let vn = 0;
     const veil = (d, a) => {
+      s.add(`<g data-part="veil${vn++}">`);
       s.path(mv(d, -0.9, -1), '#f4fffd', `opacity="${f1(a * 0.5)}"`);
       s.path(d, s.lin([[0, '#d6ecea', a], [1, '#a2c8ca', a * 0.85]]));
+      s.add('</g>');
     };
     // one charging warrior, facing right, feet on y = 0: round shield
     // before him, a spear or a raised sword
@@ -962,9 +975,13 @@ export const ultra_c = {
     );
     const men = [[244, 151, 0.42], [218, 156, 0.5], [188, 163, 0.62], [150, 172, 0.78], [104, 184, 0.98], [52, 199, 1.2]];
     const man = (i) => { const [x, b, k] = men[i]; return at(x, b, k)(charger(i)); };
+    s.add('<g data-part="farmen">');
     s.path(man(0) + man(1), '#46747a', 'opacity=".55"');
+    s.add('</g>');
     veil(sheet([[272, -16, 30], [256, 18, 28], [244, 50, 26], [236, 80, 24], [222, 102, 22], [212, 122, 20], [204, 140, 18], [196, 158, 16], [186, 172, 14]]), 0.6);
+    s.add('<g data-part="man2">');
     s.path(man(2), '#24505a', 'opacity=".85"');
+    s.add('</g>');
     veil(sheet([[284, -12, 30], [268, 22, 28], [254, 50, 26], [242, 74, 24], [230, 96, 22], [214, 116, 20], [202, 134, 20], [192, 150, 18], [182, 166, 16], [168, 178, 14], [150, 188, 12]]), 0.5);
     s.figure(`<path d="${man(3)}"/>`, { fill: '#10262e', rim: '#d8f6f1', offsets: [[-0.8, -0.8], [0, -1.1]], rimOp: 0.7 });
     veil(U(puffs([[300, 168, 24], [262, 176, 22], [226, 182, 20], [192, 188, 18], [160, 194, 16], [130, 198, 14], [104, 202, 12]], 1.4), poly([[104, 202], [300, 168], [340, 168], [340, 230], [100, 230]])), 0.55);

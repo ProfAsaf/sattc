@@ -85,6 +85,57 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Fog Bank: the towering bank of fog (its three rows of billows, rolling in about its far corner),
+  // the shore, then the charging warriors, each in its depth with the sheets of fog drifting over
+  // it: the two far ones, a veil, the third, a veil, the fourth, a veil, the two near ones, and the
+  // rocks (shore and rocks stay still, but must lie in their place over the others). `hit`: the
+  // bank's middle; `guard`: where blows meet the face of the bank (high to low); `feet`: each
+  // warrior's feet as drawn (far to near); `corner`: the bank's far corner
+  'fog-bank': {
+    role: 'defender', element: 'water', facing: 'left', hit: [230, 100], guard: [[156, 70], [160, 112], [148, 152]],
+    corner: [318, 160], feet: [[244, 151], [218, 156], [188, 163], [150, 172], [104, 184], [52, 199]],
+    parts: [
+      { name: 'bank', of: ['fig:0', 'fig:1', 'fig:2'], pivot: [318, 160] },
+      { name: 'shore', of: '[data-part=shore]', pivot: [150, 160] },
+      { name: 'farmen', of: '[data-part=farmen]', pivot: [231, 153] },
+      { name: 'veil0', of: '[data-part=veil0]', pivot: [250, 150] },
+      { name: 'man2', of: '[data-part=man2]', pivot: [188, 163] },
+      { name: 'veil1', of: '[data-part=veil1]', pivot: [250, 150] },
+      { name: 'man3', of: 'fig:3', pivot: [150, 172] },
+      { name: 'veil2', of: '[data-part=veil2]', pivot: [200, 190] },
+      { name: 'near', of: 'fig:4', pivot: [78, 191] },
+      { name: 'rocks', of: 'fig:5', pivot: [150, 200] },
+    ],
+  },
+  // Mirror Shield: the tall golden kite shield with its reflection and rim (it rocks about its point
+  // in the earth), the horned brute charging it (with its eye, standing on its feet), and the burst
+  // of light where the claws meet. `hit`: the shield's middle; `guard`: where blows land on its
+  // face (the claw's meeting point, the upper face, the lower face); `point`: the shield's foot;
+  // `claw`: where the brute's claws meet the shield; `feet`: the brute's feet
+  'mirror-shield': {
+    role: 'defender', element: 'light', facing: 'left', hit: [196, 110], guard: [[158, 96], [186, 72], [194, 132]],
+    point: [196, 176], claw: [154, 96], feet: [46, 169],
+    parts: [
+      { name: 'shield', of: ['fig:0', '[data-part=shield]'], pivot: [196, 176] },
+      { name: 'brute', of: ['fig:1', '[data-part=eye]'], pivot: [46, 169] },
+      { name: 'burst', of: '[data-part=burst]', pivot: [154, 96] },
+    ],
+  },
+  // Pitfall: the aurochs pitching into the pit (with its eye), the torn leaf-carpet lip and the
+  // snapped sticks in front of the pit, the vines on the pit's left and on its right (with the
+  // lights on their tips), each turning about its root. `hit`: the beast's flank; `guard`: where
+  // blows meet the pit (its left lip, its middle, its right lip); `pit`: its middle; `hoof`: the
+  // beast's planted hoof; `roots`: where each side's vines come out of the edge
+  'pitfall': {
+    role: 'defender', element: 'nature', facing: 'left', hit: [165, 135], guard: [[48, 178], [124, 170], [200, 184]],
+    pit: [124, 178], hoof: [228, 172], roots: [[58, 190], [199, 191]],
+    parts: [
+      { name: 'bull', of: ['fig:0', '[data-part=eye]'], pivot: [228, 172] },
+      { name: 'lip', of: '[data-part=lip]', pivot: [124, 190] },
+      { name: 'vinesL', of: ['fig:1', '[data-part=vtips]'], pivot: [58, 190], poly: [[-20, -20], [110, -20], [110, 230], [-20, 230]] },
+      { name: 'vinesR', of: ['fig:1', '[data-part=vtips]'], pivot: [199, 191], poly: [[110, -20], [320, -20], [320, 230], [110, 230]] },
+    ],
+  },
   // Lumen, Mother of Moths: her two wings (split down the middle, each beating about its root;
   // her body stays), and each of the fourteen little moths that spiral
   // out from under her wings (with the glow behind it), each about its own middle.

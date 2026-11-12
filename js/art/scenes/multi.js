@@ -265,13 +265,17 @@ export const multi = {
     );
     s.figure(`<g ${big}><path d="${man}"/></g>`, { fill: '#070b13', rim: '#a6e4ec', offsets: [[1.3, 0.5], [0.8, 1], [0, -1]], rimOp: 0.85, shade: 0.5, edge: 0.3, halo: 0.35 });
     s.add(`<g ${big}>`);
+    s.add('<g data-part="face">');
     s.path(poly([[160.5, 96], [163.5, 98], [165.5, 102.5], [163.8, 103.4], [164.3, 105.6], [161, 106.4], [158.4, 102]]), '#cfe3e8', 'opacity=".9"');
+    s.add('</g>');
     // the open book, pages lit from within, black water running off them
+    s.add('<g data-part="book">');
     s.add(`<g ${s.fx('bloom', { sd: 1.4, k: 1.3 })}><path d="${poly([[159, 112.5], [172, 116.5], [172, 121.5], [160, 118]])}" fill="#effdfb"/>` +
       `<path d="${poly([[172, 116.5], [186, 111.5], [185, 117], [172, 121.5]])}" fill="#def8f5"/>` +
       '<path d="M162,114.6L170,117M162,116.4L169,118.6M174.5,116.8L183,113.8M174.5,118.6L182,115.8" stroke="#7fa7b0" stroke-width=".5"/></g>');
     s.path(U(taper([[164, 118.6], [164.4, 124], [164.8, 129]], [2, 1.4, 0.4]), taper([[177, 119.6], [177.3, 126], [177.6, 133]], [2.2, 1.5, 0.4]),
       taper([[183, 117.6], [183.2, 122], [183.4, 126]], [1.6, 1.1, 0.3])), '#05070d', 'stroke="#8d6ad8" stroke-width=".4"');
+    s.add('</g>');
     s.add([[164.8, 140, 0], [177.6, 148, 0.5], [183.4, 136, 1.1], [177.6, 160, 0.8]].map(([x, y, d]) =>
       `<ellipse class="fall" style="--d:-${d}s" cx="${x}" cy="${y}" rx="1.1" ry="1.7" fill="#05070d" stroke="#8d6ad8" stroke-width=".4"/>`).join(''));
     s.add('</g>');

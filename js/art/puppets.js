@@ -21,6 +21,29 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // forbidden archivist: he (with his pale face, which is drawn over him) leaning from his feet, and
+  // the book (and the black streams running off it) lifting from its near edge; `hit`: his chest,
+  // `guard`: where the ward of ink-dark water he raises in front of the book takes blows,
+  // `ward`: the foot of that ward, `book`: the open book's middle
+  'forbidden-archivist': {
+    role: 'defender', element: 'water', facing: 'right', hit: [145, 132],
+    guard: [[217, 110], [220, 132], [217, 154]], ward: [208, 172], book: [180, 103], feet: [143, 172],
+    parts: [
+      { name: 'man', of: ['fig:0', '[data-part=face]'], pivot: [143, 172] },
+      { name: 'book', of: '[data-part=book]', pivot: [168, 106] },
+    ],
+  },
+  // we grow together: the pair is one silhouette joined at the hands; it's split down the clasp
+  // into the dryad and the knight, each leaning in and growing from her / his feet;
+  // `emit`: the clasped hands where the boon leaves, `hit`: their middle, `feet`: each one's feet
+  'we-grow-together': {
+    role: 'support', element: 'nature', facing: 'front', emit: [150, 118], hit: [150, 132],
+    feet: [[132, 182], [169, 182]], heads: [[133, 90], [166, 88]],
+    parts: [
+      { name: 'dryad', of: 'fig:0', pivot: [132, 182], poly: [[-10, -10], [150, -10], [150, 220], [-10, 220]] },
+      { name: 'knight', of: 'fig:0', pivot: [169, 182], poly: [[150, -10], [310, -10], [310, 220], [150, 220]] },
+    ],
+  },
   // funeral pyre: the three ghosts in the smoke (each from its middle), the column of fire (from
   // its base), the pyre and its shrouded body (cut so the flames behind it stay behind), the
   // little tongues of flame on its logs, and the two mourners (from their feet); `emit`: the
@@ -725,8 +748,11 @@ export const PUPPETS = {
     parts: COURT.map(([x, y, k, d], i) => ({ name: `ghost${i}`, of: '[data-part=court]', pivot: [x + k * d, y + 2 * k], poly: GHOST_POLYS[i] })),
   },
   // the theorist: the arc held between her hands (and the bolt feeding it), and
-  // she herself, leaning from her feet; `hands`: where the arc springs from
+  // she herself, leaning from her feet; `hands`: where the arc springs from (`emit`: the right
+  // one, where the bolt leaves when it goes right; the move uses the left when it goes left),
+  // `hit`: her chest, `sea`: where the bolt strikes the water when it has no other target
   'lightning-theorist': {
+    role: 'attacker', element: 'lightning', facing: 'front', emit: [149, 67], hit: [118, 112],
     hands: [[95, 66], [149, 68]], feet: [120, 152], sea: [240, 142],
     parts: [
       { name: 'arc', of: '[data-part=arc]', pivot: [122, 66] },

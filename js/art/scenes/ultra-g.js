@@ -736,7 +736,9 @@ export const ultra_g = {
       if (Math.hypot(x - 214, y - 60) < 18) continue;
       petals.push(bloomAt(x, y, 2.6 + Rb() * 1.6, Rb() * 72));
     }
+    s.add('<g data-part="blossom">');
     s.path(U(petals), '#c88a9c', 'opacity=".55"');
+    s.add('</g>');
     // Ione (facing right, feet at the origin): a long dress, a hooded cloak
     // thrown back off her shoulders, hair loose with a wreath in it, the open
     // book held out in both hands
@@ -756,7 +758,9 @@ export const ultra_g = {
     ));
     s.figure(`<path d="${her}"/>`, { fill: '#142018', rim: '#fff6d0', offsets: [[-1.2, -0.6], [0, -1.3], [1, -0.8]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [-0.5, -1] });
     // the wreath in her hair
+    s.add('<g data-part="wreath">');
     s.path(U([[-5, -117.4, 2], [0, -119.2, 2.2], [5, -117.4, 2], [-9.6, -114.6, 1.8]].map(([x, y, r], i) => bloomAt(X + x * K, Y + y * K, r, i * 30))), '#f6d8e0');
+    s.add('</g>');
     // the book: its pages lit, pressed flowers on them
     const bkx = X + 30 * K, bky = Y - 92 * K;
     const pages = `M${f1(bkx)},${f1(bky + 2)}L${f1(bkx - 11)},${f1(bky - 2)}L${f1(bkx - 10)},${f1(bky - 9)}L${f1(bkx)},${f1(bky - 5)}ZM${f1(bkx)},${f1(bky + 2)}L${f1(bkx + 10)},${f1(bky - 3)}L${f1(bkx + 9)},${f1(bky - 10)}L${f1(bkx)},${f1(bky - 5)}Z`;
@@ -777,6 +781,7 @@ export const ultra_g = {
     const flowers = U([[216, 60, 6], [205, 71, 4.6], [228, 49, 5.4], [233, 68, 4.6], [199, 60, 4], [243, 57, 4.2], [220, 78, 4], [210, 48, 3.6]].map(([x, y, r], i) => bloomAt(x, y, r, i * 23)));
     s.glow(bkx, bky - 4, 32, '#fff6c0', 0.7, 'breathe');
     s.glow(end[0], end[1], 46, '#fff0d8', 0.65, 'breathe');
+    s.add('<g data-part="spell">');
     s.bloom(`<path d="${polyline(Array.from({ length: 41 }, (_, i) => axis(i / 40)))}" fill="none" stroke="#f7ffc8" stroke-width="10" stroke-linecap="round" opacity=".2"/>` +
       `<path d="${rib(sa, 4)}" fill="#e6f78f"/><path d="${rib(sb, 3.4)}" fill="#c6f4f6"/>` +
       `<path d="${polyline(sa)}" fill="none" stroke="#ffffff" stroke-width=".6" opacity=".8"/>` +
@@ -784,6 +789,7 @@ export const ultra_g = {
       `<path d="${pages}" fill="#fffbea"/>`, { sd: 1.5, k: 1.5, box: [120, 10, 150, 110] });
     s.add(`<path d="${along.slice(0, 5).map(([x, y], i) => rune(i, x + (i % 2 ? -12 : 12), y + 3, 0.8)).join('')}" fill="none" stroke="#fffbe0" stroke-width=".6" opacity=".8"/>`);
     s.path(dots([[bkx - 6, bky - 4, 1.1], [bkx + 5, bky - 5, 1.1], [bkx - 4, bky - 1.6, 0.8], [bkx + 4, bky - 2, 0.8]]), '#c87a8a', 'opacity=".75"');
+    s.add('</g>');
     // petals coming down off the tree
     const Rp = rng(9723);
     s.add(Array.from({ length: 8 }, () => {
@@ -805,6 +811,7 @@ export const ultra_g = {
     const mx = 46, my = 26;
     s.glow(mx, my, 130, '#d8e2f6', 0.5);
     s.add(`<circle cx="${mx}" cy="${my}" r="11" fill="#eef2fa"/>`);
+    s.add('<g data-part="fogwall">');
     // the wall of fog standing up out of the sea, towering higher to the
     // right: great billows piled on each other, lit along the top by the moon
     const tops = [[-24, 70, 26], [12, 62, 22], [46, 54, 22], [80, 44, 26], [116, 32, 30], [154, 22, 32], [194, 14, 34], [236, 8, 34], [276, 4, 34], [316, 8, 34],
@@ -834,6 +841,7 @@ export const ultra_g = {
     s.add(mist(s, '#d0d6e4', 0.6, [[60, 116, 80, 10], [236, 112, 90, 9], [150, 134, 100, 9], [20, 148, 70, 10], [280, 150, 70, 10]]));
     // here and there a pair of eyes in it
     s.add(`<path d="${heads.filter((_, i) => [2, 9, 13, 15, 17].includes(i)).map(([x, y, k]) => `M${f1(x - 2.4 * k)},${f1(y)}h${f1(1.4 * k)}M${f1(x + 1 * k)},${f1(y)}h${f1(1.4 * k)}`).join('')}" stroke="#e0fbff" stroke-width="1" stroke-linecap="round" opacity=".6"/>`);
+    s.add('</g>');
     // the sea at the foot of the fog, the shore
     s.path('M-10,156H310V214H-10Z', s.lin([[0, '#5a6e88'], [0.2, '#24344c'], [1, '#0c1420']]));
     s.add(glitter([[90, 160, 40, 0.35], [210, 163, 50, 0.3], [150, 166, 70, 0.25]], '#cfe2ee'));
@@ -869,8 +877,10 @@ export const ultra_g = {
     // the lantern: a cold green-white witchlight
     s.glow(lamp.c[0], lamp.c[1], 70, '#c6f4f6', 0.5);
     s.glow(lamp.c[0], lamp.c[1], 20, '#effffc', 0.75, 'breathe');
+    s.add('<g data-part="lantern">');
     s.bloom(`<path d="${lamp.glass}" fill="${s.radU(lamp.c[0], lamp.c[1], 8, [[0, '#ffffff'], [0.5, '#dcfff8'], [1, '#8adcd0']])}"/>` +
       `<path d="${glint(lamp.c[0], lamp.c[1], 9, 0.12)}" fill="#ffffff" opacity=".85"/>`, { sd: 1.6, k: 1.5, box: [140, 100, 70, 70] });
+    s.add('</g>');
     s.motes({ seed: 9742, n: 16, x: [20, 280], y: [60, 200], r: [0.35, 0.9], fill: '#c6f4f6', hot: '#ffffff', cls: 'float', t: [6, 10], op: [0.3, 0.8] });
     return s.svg();
   },

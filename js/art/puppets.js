@@ -21,6 +21,38 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Ione, the Bloomcaller (a legend whose Spells discount and grow creatures for good: she gives boons, so a support,
+  // not the suggested defender; the picture is her reading a spell out of the book into the blossoming tree): she
+  // herself (rocking, turning to her target) with her wreath, the spell's two light strands rising off the pages
+  // (they ride with her), and the tree's crown with its blossom; `emit`: the book's pages, where her gift leaves,
+  // `hit`: her chest, `book`: the pages, `bough`: the crown where the spell lands when alone, `root`: her feet and
+  // the line she turns about
+  'legend-ione': {
+    role: 'support', element: 'nature', facing: 'right', emit: [158, 92], hit: [128, 132],
+    book: [158, 96], bough: [216, 60], root: [126, 194],
+    parts: [
+      { name: 'her', of: 'fig:2', pivot: [126, 194] },
+      { name: 'wreath', of: '[data-part=wreath]', pivot: [126, 194] },
+      { name: 'spell', of: '[data-part=spell]', pivot: [126, 194] },
+      { name: 'crown', of: 'fig:1', pivot: [244, 96] },
+      { name: 'blossom', of: '[data-part=blossom]', pivot: [244, 96] },
+    ],
+  },
+  // Hush, the Fog Witch (a legend that stalls attacks on her: a defender; the fog is her water): she herself (a
+  // body, her pale face and her long hair blown back, each its own piece), her lantern's glass, and the whole wall of
+  // fog with the lost warriors in it; `hit`: her chest, `guard`: where blows are taken as she throws the fog up
+  // before her (the lantern, her breast, the cloak's front; measured from her cut parts), `lamp`: the glass, `facing` her right
+  'legend-hush': {
+    role: 'defender', element: 'water', facing: 'right', hit: [140, 126], guard: [[177, 140], [155, 112], [148, 152]],
+    lamp: [178, 140], root: [146, 194], head: [152, 78],
+    parts: [
+      { name: 'fog', of: '[data-part=fogwall]', pivot: [150, 120] },
+      { name: 'her', of: 'fig:2', pivot: [146, 194] },
+      { name: 'face', of: 'fig:3', pivot: [146, 194] },
+      { name: 'hair', of: 'fig:4', pivot: [150, 80] },
+      { name: 'lantern', of: '[data-part=lantern]', pivot: [146, 194] },
+    ],
+  },
   // blight beetle (a 1/3 whose ability saps an enemy creature's lasting growth; the picture shows it gnawing the great
   // tree's glowing root with the leaves above withering: the blight is its attack, so an attacker, not the suggested
   // defender): the beetle in three pieces (its body, wing case and legs, rearing on its hind legs; the head with its jaws,

@@ -45,6 +45,8 @@ export const LIVE = {
   "kindly-undertaker": { src: 'art/live/kindly-undertaker.webp?v=7550017d', live: 'art/live/kindly-undertaker.json?v=9dd6307f' },
   "kiss-of-night": { src: 'art/live/kiss-of-night.webp?v=841cbd3f', live: 'art/live/kiss-of-night.json?v=a0d0cacd' },
   "lantern-ferryman": { src: 'art/live/lantern-ferryman.webp?v=7c9b295d', live: 'art/live/lantern-ferryman.json?v=6d926b86' },
+  "legend-hush": { src: 'art/live/legend-hush.webp?v=b80f0834', live: 'art/live/legend-hush.json?v=d7a8682c' },
+  "legend-ione": { src: 'art/live/legend-ione.webp?v=621ac1e3', live: 'art/live/legend-ione.json?v=aa873fb6' },
   "lightning-theorist": { src: 'art/live/lightning-theorist.webp?v=721e5fbf', live: 'art/live/lightning-theorist.json?v=4ae52a1f' },
   "little-gardener": { src: 'art/live/little-gardener.webp?v=c9ae332e', live: 'art/live/little-gardener.json?v=6bea9ed0' },
   "marsh-adder": { src: 'art/live/marsh-adder.webp?v=cd7db840', live: 'art/live/marsh-adder.json?v=63399451' },

@@ -21,6 +21,61 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // the windborne sage (a creature, a support: when played she draws a card): her hair and her scarf
+  // streaming on the wind, her billowing robe, her book-arm (sleeve and hand), her far sleeve, the
+  // open glowing book, and the five gulls (each its own); the rest of her (head, body, legs) stays;
+  // `emit`: the book, where the card she draws is gathered and leaves from, `hit`: her chest,
+  // `book`: the book's centre, `shoulder`: where the book-arm turns, `head`: her head, `feet`: her
+  // bare feet, `gulls`: where the five gulls are drawn (their middles)
+  'windborne-sage': {
+    role: 'support', element: 'wind', facing: 'left', emit: [107, 79], hit: [141, 90],
+    book: [107, 79], shoulder: [134, 78], head: [130, 60], feet: [149, 160],
+    gulls: [[65, 28], [231, 22], [253, 62], [199, 148], [99, 140]],
+    parts: [
+      { name: 'hair', of: 'fig:1 [data-part=hair]', pivot: [131, 58] },
+      { name: 'scarf', of: 'fig:1 [data-part=scarf]', pivot: [136, 70] },
+      { name: 'robe', of: 'fig:1 [data-part=robe]', pivot: [140, 98] },
+      { name: 'arm', of: 'fig:1 [data-part=arm]', pivot: [134, 78] },
+      { name: 'sleeve', of: 'fig:1 [data-part=sleeve]', pivot: [140, 75] },
+      { name: 'book', of: '[data-part=book]', pivot: [107, 80] },
+      { name: 'bird0', of: '[data-part=bird0]', pivot: [65, 28] },
+      { name: 'bird1', of: '[data-part=bird1]', pivot: [231, 22] },
+      { name: 'bird2', of: '[data-part=bird2]', pivot: [253, 62] },
+      { name: 'bird3', of: '[data-part=bird3]', pivot: [199, 148] },
+      { name: 'bird4', of: '[data-part=bird4]', pivot: [99, 140] },
+    ],
+  },
+  // sea change (a Trick, a support: a creature becomes a small fish): the roaring horned monster (with
+  // its eye), the four streams of sea-magic winding in from it to the bubble, the bubble, the fish in
+  // it (with its face) and the bubble's shine; `emit`: the bubble's heart, where the spell is gathered
+  // and leaves from, `hit`: the monster's chest, where the magic takes hold of it (the target when
+  // alone), `bubble`: the bubble's centre and radius, `mouth`: the monster's open mouth, `eye`: its eye
+  'sea-change': {
+    role: 'support', element: 'water', facing: 'left', emit: [212, 124], hit: [96, 96],
+    bubble: [212, 124], radius: 22, mouth: [148, 60], eye: [114, 50], feet: [212, 150],
+    parts: [
+      { name: 'monster', of: '[data-part=monster]', pivot: [100, 100] },
+      { name: 'spiral', of: '[data-part=spiral]', pivot: [212, 124] },
+      { name: 'bubble', of: '[data-part=bubble]', pivot: [212, 124] },
+      { name: 'fish', of: '[data-part=fish]', pivot: [212, 126] },
+      { name: 'shine', of: '[data-part=shine]', pivot: [212, 124] },
+    ],
+  },
+  // riptide (a Trap, a defender: the wave takes the attacker and drags it back to the sea): the great wave
+  // (hide, lit lip, streaks and spray), the knight (with his blade's glow), the white water round his legs
+  // and the backwash drawn toward the wave; `hit`: the knight's chest, `guard`: where blows are taken (the
+  // lip's tip, the underside of the curl, the face of the wave), `base`: the wave's foot it swells from,
+  // `feet`: where the knight stands, `blade`: the sword's tip, `fist`: his empty hand
+  'riptide': {
+    role: 'defender', element: 'water', facing: 'left', hit: [124, 118],
+    guard: [[92, 86], [160, 58], [208, 130]], base: [300, 214], feet: [125, 176], blade: [114, 27], fist: [86, 123],
+    parts: [
+      { name: 'wave', of: '[data-part=wave]', pivot: [300, 214] },
+      { name: 'wash', of: '[data-part=wash]', pivot: [180, 186] },
+      { name: 'knight', of: '[data-part=knight]', pivot: [125, 176] },
+      { name: 'foam', of: '[data-part=foam]', pivot: [125, 176] },
+    ],
+  },
   // cloud ray (a creature that glides over the clouds, an attacker: a sweep of its wing throws the water it carries): the
   // manta as one body (banking, diving and spreading and folding its wings by stretching along its span, about its middle),
   // the mist trailing from its wing-tips (behind it) and its two eyes; `emit`: its right wing-tip, `tipL`: its left (a

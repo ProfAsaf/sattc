@@ -42,8 +42,10 @@ export const LIVE = {
   "phoenix-of-the-last-spark": { src: 'art/live/phoenix-of-the-last-spark.webp?v=c36d264e', live: 'art/live/phoenix-of-the-last-spark.json?v=8bcd37e9' },
   "rally": { src: 'art/live/rally.webp?v=68eeb719', live: 'art/live/rally.json?v=f65e1726' },
   "reckless-initiate": { src: 'art/live/reckless-initiate.webp?v=9ca29763', live: 'art/live/reckless-initiate.json?v=10a094c4' },
+  "riptide": { src: 'art/live/riptide.webp?v=6e561050', live: 'art/live/riptide.json?v=2f851996' },
   "savage-clash": { src: 'art/live/savage-clash.webp?v=c71ec393', live: 'art/live/savage-clash.json?v=6e1f80df' },
   "scorch": { src: 'art/live/scorch.webp?v=82e843ed', live: 'art/live/scorch.json?v=7db0562c' },
+  "sea-change": { src: 'art/live/sea-change.webp?v=bcca780c', live: 'art/live/sea-change.json?v=4bfa7515' },
   "second-thought": { src: 'art/live/second-thought.webp?v=bd7a7c07', live: 'art/live/second-thought.json?v=71f03827' },
   "seedling": { src: 'art/live/seedling.webp?v=3f61d810', live: 'art/live/seedling.json?v=8651d7fb' },
   "seraphine": { src: 'art/live/seraphine.webp?v=d5117d2b', live: 'art/live/seraphine.json?v=e3c89cbf' },
@@ -68,5 +70,6 @@ export const LIVE = {
   "we-grow-together": { src: 'art/live/we-grow-together.webp?v=4ad6ab06', live: 'art/live/we-grow-together.json?v=a8e6e783' },
   "wild-growth": { src: 'art/live/wild-growth.webp?v=09658169', live: 'art/live/wild-growth.json?v=948caea4' },
   "wildfire": { src: 'art/live/wildfire.webp?v=61516967', live: 'art/live/wildfire.json?v=6e8ccdd2' },
+  "windborne-sage": { src: 'art/live/windborne-sage.webp?v=bfa129f7', live: 'art/live/windborne-sage.json?v=c647166d' },
   "worldtree-stag": { src: 'art/live/worldtree-stag.webp?v=f78036e2', live: 'art/live/worldtree-stag.json?v=34ca97fd' },
 };

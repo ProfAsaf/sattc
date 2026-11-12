@@ -21,6 +21,58 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // stand together: the wall of knights cut into ten slices, one to a knight (each rising from his
+  // feet in a wave as the light reaches him), the two banks of storm cloud (drawn apart from their
+  // far edges) and the gap between them; `emit`: the heart of the light in the gap, `hit`: the
+  // middle of the wall, `gems`: the glowing boss on each knight's shield, `feet`: where each
+  // knight stands (nearest first), `gap`: the break in the cloud
+  'stand-together': {
+    role: 'support', element: 'light', facing: 'front', emit: [170, 14], hit: [137, 150],
+    gap: [170, 12], gems: [[68, 140], [103.0, 139.0], [132.7, 138.2], [157.4, 137.4], [177.9, 137.4], [195.4, 137.9], [209.8, 138.3], [222.1, 139.1], [232.3, 139.8], [241.6, 141.1]], feet: [[74, 196], [108, 186], [137, 178], [161, 171], [181, 166], [198, 162], [212, 159], [224, 157], [234, 155.5], [243, 154.5]], scales: [1, 0.84, 0.71, 0.6, 0.51, 0.43, 0.37, 0.32, 0.28, 0.24],
+    parts: [
+      { name: 'cloudL', of: 'fig:0', pivot: [150, 10] },
+      { name: 'cloudR', of: 'fig:1', pivot: [190, 10] },
+      { name: 'k0', of: 'fig:2', pivot: [74, 196], poly: [[-10, -10], [91, -10], [91, 220], [-10, 220]] },
+      { name: 'k1', of: 'fig:2', pivot: [108, 186], poly: [[91, -10], [122.5, -10], [122.5, 220], [91, 220]] },
+      { name: 'k2', of: 'fig:2', pivot: [137, 178], poly: [[122.5, -10], [149, -10], [149, 220], [122.5, 220]] },
+      { name: 'k3', of: 'fig:2', pivot: [161, 171], poly: [[149, -10], [171, -10], [171, 220], [149, 220]] },
+      { name: 'k4', of: 'fig:2', pivot: [181, 166], poly: [[171, -10], [189.5, -10], [189.5, 220], [171, 220]] },
+      { name: 'k5', of: 'fig:2', pivot: [198, 162], poly: [[189.5, -10], [205, -10], [205, 220], [189.5, 220]] },
+      { name: 'k6', of: 'fig:2', pivot: [212, 159], poly: [[205, -10], [218, -10], [218, 220], [205, 220]] },
+      { name: 'k7', of: 'fig:2', pivot: [224, 157], poly: [[218, -10], [229, -10], [229, 220], [218, 220]] },
+      { name: 'k8', of: 'fig:2', pivot: [234, 155.5], poly: [[229, -10], [238.5, -10], [238.5, 220], [229, 220]] },
+      { name: 'k9', of: 'fig:2', pivot: [243, 154.5], poly: [[238.5, -10], [310, -10], [310, 220], [238.5, 220]] },
+    ],
+  },
+  // standard keeper: the keeper with his pole (leaning into the wind from his feet), the standard
+  // streaming from the pole's head (turning from where it is tied on), his cloak streaming from
+  // his shoulders (turning from its root); `emit`: the standard's tail, where the gust leaves
+  // carrying his light downwind, `hit`: his chest, `feet`: where he stands, `flagRoot`/`cloakRoot`:
+  // where the standard and the cloak turn, `finial`: the pole's head
+  'standard-keeper': {
+    role: 'support', element: 'wind', facing: 'left', emit: [250, 52], hit: [104, 128],
+    feet: [112, 182], flagRoot: [75, 45], cloakRoot: [108, 100], finial: [73, 14], field: [236, 150],
+    parts: [
+      { name: 'flag', of: '[data-part=flag]', pivot: [75, 45] },
+      { name: 'keeper', of: 'fig:0', pivot: [112, 182], poly: [[-10, -10], [112, -10], [112, 84], [112, 120], [124, 128], [148, 129], [168, 121], [174, 128], [193, 122], [196, 114], [212, 113], [212, 108], [206, 94], [174, 89], [140, 83], [112, 84], [112, -10], [310, -10], [310, 215], [-10, 215]] },
+      { name: 'cloak', of: 'fig:0', pivot: [108, 100], poly: [[104, 86], [140, 83], [174, 89], [206, 94], [212, 108], [212, 113], [196, 114], [193, 122], [174, 128], [168, 121], [148, 129], [124, 128], [104, 122]] },
+    ],
+  },
+  // rally: the captain's sword arm (turning from her shoulder, cut out of her figure), the gonfalon
+  // hung from the crossbar (turning from its top), the rest of the captain with her pole and crossbar (cut so that the gonfalon
+  // lies behind them as drawn) and the army below with its spears; `emit`: the sword's tip, where
+  // her rallying light leaves from, `hit`: her chest, `crowd`: the middle of the army, where the
+  // light lands when she is alone
+  'rally': {
+    role: 'support', element: 'light', facing: 'right', emit: [192, 17], hit: [161, 100],
+    shoulder: [168, 92], crown: [144, 33], crowd: [150, 182],
+    parts: [
+      { name: 'banner', of: '[data-part=banner]', pivot: [144, 33] },
+      { name: 'body', of: 'fig:0', pivot: [144, 152], poly: [[100, 5], [191, 5], [191, 12], [189, 36], [188, 54], [177, 55], [174, 60], [177, 72], [173, 84], [167, 86], [167, 98], [174, 99], [183, 88], [187, 74], [191, 72], [195, 66], [194, 54], [195, 36], [197, 12], [197, 5], [260, 5], [260, 170], [100, 170]] },
+      { name: 'sword', of: 'fig:0', pivot: [168, 92], poly: [[162, 86], [173, 84], [177, 72], [174, 60], [177, 55], [188, 54], [189, 36], [191, 12], [197, 12], [195, 36], [194, 54], [195, 66], [191, 72], [187, 74], [183, 88], [174, 99], [162, 98]] },
+      { name: 'army', of: 'fig:1', pivot: [150, 214] },
+    ],
+  },
   // twin souls: the two spirits at the helix's tips (each with its glow, from where it is), and the
   // helix of light they rise on (about its foot, in the field); `heads`: where each spirit is, `pool`: where they were born
   'twin-souls': {

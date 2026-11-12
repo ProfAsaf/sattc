@@ -294,11 +294,13 @@ export const radiant = faction('radiant', {
     s.path(poly([[112, 214], ...spline([[118, 186], [128, 166], [146, 155], [168, 151], [192, 148], [212, 152], [228, 164], [240, 186]], 6), [246, 214]]), s.lin([[0, '#45362a'], [1, '#2a2017']]));
     // the gonfalon, lit through by the sun
     const gon = poly([[122, 33], [166, 33], [165.5, 58], [162, 84], [158, 103], [155, 112], [146, 98], [137, 123], [129, 98], [114, 113], [118, 88], [120.5, 60]]);
+    s.add('<g data-part="banner">');
     s.path(gon, s.rad([[0, '#fff4d0'], [0.55, '#f5c766'], [1, '#d48d3c']], { cx: 0.5, cy: 0.4, r: 0.65 }), 'opacity=".96"');
     s.add(`<path d="${taper([[133, 35], [132, 62], [130, 96]], [5, 8, 4])}" fill="#a86424" opacity=".18"/>` +
       `<path d="${taper([[154, 35], [154, 62], [151, 96]], [5, 8, 4])}" fill="#a86424" opacity=".18"/>`);
     s.add(`<g stroke="#a3652a" stroke-width="1.5" fill="none" opacity=".6"><circle cx="144" cy="52" r="6.5"/><path d="${
       Array.from({ length: 8 }, (_, i) => { const a = (i * Math.PI) / 4; return `M${f1(144 + Math.cos(a) * 9)},${f1(52 + Math.sin(a) * 9)}L${f1(144 + Math.cos(a) * 12.5)},${f1(52 + Math.sin(a) * 12.5)}`; }).join('')}"/></g>`);
+    s.add('</g>');
     // the captain
     const cap = U(
       taper([[155, 118], [151, 134], [147, 148]], [8.4, 6.8, 5.4]),
@@ -339,7 +341,7 @@ export const radiant = faction('radiant', {
         crowd.push(taper([[bx, 216], [tx, ty]], [2.2, 1.8]), poly([[tx - 2.2, ty + 1], [tx, ty - 9], [tx + 2.2, ty + 1]]));
       }
     }
-    s.figure(`<path d="${U(crowd)}"/>`, { fill: '#1d150e', rim: '#f0d9a0', offsets: [[0, -1.1]], rimOp: 0.55 });
+    s.figure(`<g data-part="army"><path d="${U(crowd)}"/></g>`, { fill: '#1d150e', rim: '#f0d9a0', offsets: [[0, -1.1]], rimOp: 0.55 });
     s.motes({ seed: 525, n: 18, x: [40, 260], y: [20, 170], r: [0.4, 1], fill: '#ffe9b0', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 0.9] });
     return s.svg();
   },
@@ -363,11 +365,13 @@ export const radiant = faction('radiant', {
     const topE = spline([[73, 24], [100, 18], [130, 28], [160, 20], [190, 30], [216, 24], [238, 33]], 5);
     const botE = spline([[75, 66], [102, 62], [132, 74], [162, 66], [190, 78], [214, 72]], 5);
     const flag = poly([...topE, [258, 37], [233, 46], [254, 57], [227, 59], [246, 74], ...botE.reverse()]);
+    s.add('<g data-part="flag">');
     s.path(flag, s.lin([[0, '#dfa04a'], [0.55, '#f6cb74'], [1, '#fff3d0']], { x1: 0, y1: 0, x2: 1, y2: 0 }), 'opacity=".9"');
     s.add(`<path d="${taper([[131, 29], [131, 51], [132, 73]], [7, 10, 7])}" fill="#9b5c22" opacity=".2"/>` +
       `<path d="${taper([[191, 31], [190, 54], [190, 77]], [7, 10, 7])}" fill="#9b5c22" opacity=".14"/>`);
     s.add(`<g stroke="#9a6326" stroke-width="1.5" fill="none" opacity=".55"><circle cx="106" cy="43" r="6.5"/><path d="${
       Array.from({ length: 8 }, (_, i) => { const a = (i * Math.PI) / 4; return `M${f1(106 + Math.cos(a) * 9)},${f1(43 + Math.sin(a) * 9)}L${f1(106 + Math.cos(a) * 12.5)},${f1(43 + Math.sin(a) * 12.5)}`; }).join('')}"/></g>`);
+    s.add('</g>');
     // the hill, its grass flattened by the wind
     const hill = spline([[-10, 198], [30, 190], [70, 181], [102, 178], [136, 179], [176, 186], [226, 196], [310, 206]], 6);
     s.path(poly([...hill, [310, 214], [-10, 214]]), '#2a2016');
@@ -417,8 +421,8 @@ export const radiant = faction('radiant', {
     const puffs = (list) => U(list.map(([x, y, r]) => ell(x, y, r * 1.25, r)));
     const left = puffs([[40, -20, 64], [-4, 52, 22], [24, 60, 17], [50, 54, 19], [78, 58, 16], [104, 46, 17], [126, 30, 15], [140, 12, 13]]);
     const right = puffs([[262, -20, 64], [198, 12, 13], [212, 32, 15], [236, 46, 18], [262, 56, 19], [290, 50, 21], [308, 62, 17]]);
-    s.figure(`<path d="${left}"/>`, { fill: '#4d5565', rim: '#ffe2a6', offsets: [[1.8, 0.6], [0.6, 1.8]], rimOp: 0.85 });
-    s.figure(`<path d="${right}"/>`, { fill: '#4d5565', rim: '#ffe2a6', offsets: [[-1.8, 0.6], [-0.6, 1.8]], rimOp: 0.85 });
+    s.figure(`<g data-part="cloudL"><path d="${left}"/></g>`, { fill: '#4d5565', rim: '#ffe2a6', offsets: [[1.8, 0.6], [0.6, 1.8]], rimOp: 0.85 });
+    s.figure(`<g data-part="cloudR"><path d="${right}"/></g>`, { fill: '#4d5565', rim: '#ffe2a6', offsets: [[-1.8, 0.6], [-0.6, 1.8]], rimOp: 0.85 });
     s.glow(170, 10, 34, '#fffaf0', 0.9, 'breathe');
     s.layer(ridge({ seed: 542, base: 154, amp: 10, freq: 2.4 }), '#8d887c', { blur: 0.6 });
     s.haze(134, 156, '#fff0c8', 0.3, 4);

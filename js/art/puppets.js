@@ -21,6 +21,24 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // the curious wisp (a creature, a support: it peeks at your top card and may send it to the bottom,
+  // and draws a card): the tail, the head (body), the eyes, the pool's far lip (cut so it stays in
+  // front of the head as the wisp rises over it) and the two little hands on the lip; `emit`: just
+  // above its brow, where the card it peeks at appears and leaves from, `hit`: the middle of its
+  // head, `eyes`: the two eyes as drawn, `head`: the centre of the head, `tailRoot`: where the
+  // tail joins, `pool`: the still pool beneath it (where its card sinks when it is alone)
+  'curious-wisp': {
+    role: 'support', element: 'spirit', facing: 'front', emit: [166, 111], hit: [169, 131],
+    eyes: [[161, 136], [178, 133]], head: [169, 131], tailRoot: [171, 118], pool: [170, 182],
+    parts: [
+      { name: 'tail', of: '[data-part=tail]', pivot: [171, 120] },
+      { name: 'body', of: '[data-part=body]', pivot: [169, 140] },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [169, 134] },
+      { name: 'lip', of: '[data-part=lip]', pivot: [170, 150] },
+      { name: 'handL', of: '[data-part=handL]', pivot: [150, 151.5] },
+      { name: 'handR', of: '[data-part=handR]', pivot: [189, 150.6] },
+    ],
+  },
   // mossback (a creature, a support: it grows itself and gains life): its head and neck,
   // lifting from the shoulder, and the little tree on its shell, swaying from its foot;
   // `emit`: the tree's crown, where its gift gathers and leaves from, `hit`: the middle of
@@ -294,6 +312,39 @@ export const PUPPETS = {
       { name: 'hair', of: 'fig:0 [data-part=hair]', pivot: [187.9, 99.7] },
       { name: 'head', of: 'fig:0 [data-part=head]', pivot: [180, 102] },
       { name: 'page', of: '[data-part=page]', pivot: [224, 147] },
+    ],
+  },
+  // not yet (a Trick spell, a defender: the wave sweeps the attacker back): the whole wave (rearing up
+  // about its foot at the lower left, so it never uncovers the beach), the goblin it tips over
+  // (with his eye) and his tumbling spear; `hit`: the wave's face, `guard`: where it takes blows:
+  // the crest's tip, the crest's top, the hollow's far wall and its floor, `goblin`: where the
+  // goblin lies in the hollow, `sea`: where the wave sweeps him to, `spear`: its middle as drawn
+  'not-yet': {
+    role: 'defender', element: 'water', facing: 'right', hit: [150, 100],
+    guard: [[226, 92], [196, 45], [118, 120], [178, 183]], goblin: [160, 118], sea: [262, 102], spear: [256, 62],
+    parts: [
+      { name: 'wave', of: '[data-part=wave]', pivot: [20, 200] },
+      { name: 'goblin', of: ['fig:1 [data-part=goblin]', '[data-part=gobeye]'], pivot: [160, 118] },
+      { name: 'spear', of: '[data-part=spear]', pivot: [256, 62] },
+    ],
+  },
+  // second thought (a spell, a support: draw two cards, then discard one): the scholar in three pieces
+  // (body, head, and the arm she reaches out with, each about its joint), her pale reflection
+  // (shimmering about the waterline) and the two pages in it, each its own sprite; `emit`: where
+  // she holds the pages to read, where the boon leaves from, `hit`: her middle, `shoulder`,
+  // `neck`, `hand`: the arm's joint and its end as drawn, `pages`: where the two pages float as
+  // drawn, `read`: where she holds them to read, `reach`: where her hand takes them, `water`: the
+  // waterline, `knee`: where she kneels
+  'second-thought': {
+    role: 'support', element: 'water', facing: 'right', emit: [143, 72], hit: [116, 84],
+    shoulder: [122, 65], neck: [130, 55], hand: [135, 88], pages: [151, 130], read: [143, 72], reach: [148, 106], water: 121, knee: [112, 110],
+    parts: [
+      { name: 'reflection', of: '[data-part=reflection]', pivot: [130, 121] },
+      { name: 'body', of: 'fig:0 [data-part=body]', pivot: [112, 110] },
+      { name: 'head', of: 'fig:0 [data-part=head]', pivot: [130, 55] },
+      { name: 'arm', of: 'fig:0 [data-part=arm]', pivot: [122, 65] },
+      { name: 'pageA', of: '[data-part=pageA]', pivot: [151, 130] },
+      { name: 'pageB', of: '[data-part=pageB]', pivot: [151, 130] },
     ],
   },
   // ── end of lane A ──

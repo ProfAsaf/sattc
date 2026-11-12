@@ -101,15 +101,17 @@ export const tide = faction('tide', {
     const body = s.rad([[0, '#ffffff'], [0.55, '#dcf8f7'], [1, '#90d3dc']], { cx: 0.42, cy: 0.36, r: 0.64 });
     const tail = s.lin([[0, '#c6f4f6', 0.08], [0.55, '#d6f8f7', 0.7], [1, '#eafdfc', 0.95]]);
     s.bloom('<g transform="rotate(-10 172 150)">' +
-      `<path d="${taper([[178, 116], [190, 99], [194, 81], [187, 64], [175, 58], [167, 65]], [22, 15, 10, 6.5, 3.4, 0.6], { per: 10 })}" fill="${tail}"/>` +
-      `<circle cx="172" cy="131" r="20.5" fill="${body}"/>` +
-      '<ellipse cx="163.5" cy="134.5" rx="5.8" ry="7.6" fill="#06151b"/><ellipse cx="181" cy="134.5" rx="5.8" ry="7.6" fill="#06151b"/>' +
-      '<circle cx="161.7" cy="131.4" r="2" fill="#fff"/><circle cx="179.2" cy="131.4" r="2" fill="#fff"/></g>', { sd: 2.4, k: 1.1, box: [120, 30, 110, 140] });
+      `<g data-part="tail"><path d="${taper([[178, 116], [190, 99], [194, 81], [187, 64], [175, 58], [167, 65]], [22, 15, 10, 6.5, 3.4, 0.6], { per: 10 })}" fill="${tail}"/></g>` +
+      `<g data-part="body"><circle cx="172" cy="131" r="20.5" fill="${body}"/></g>` +
+      '<g data-part="eyes"><ellipse cx="163.5" cy="134.5" rx="5.8" ry="7.6" fill="#06151b"/><ellipse cx="181" cy="134.5" rx="5.8" ry="7.6" fill="#06151b"/>' +
+      '<circle cx="161.7" cy="131.4" r="2" fill="#fff"/><circle cx="179.2" cy="131.4" r="2" fill="#fff"/></g></g>', { sd: 2.4, k: 1.1, box: [120, 30, 110, 140] });
     // the far lip of the pool hides the rest of it
     const lip = ledge([[-10, 114], [8, 109], [28, 114], [46, 129], [70, 143], [100, 149], [130, 151], [160, 150.5], [186, 150], [212, 150.5], [240, 146], [262, 139], [286, 136], [310, 140]], 182);
+    s.add('<g data-part="lip">');
     s.figure(P(lip), { fill: '#0a222b', rim: p.rim, offsets: [[0, -1.3], [-0.9, -0.7]], rimOp: 0.75, shade: 0.5, edge: 0.3 });
     s.glow(170, 151, 44, '#c6f4f6', 0.28);
-    s.add('<ellipse cx="150" cy="151.5" rx="5.8" ry="3.3" fill="#d4f6f6" transform="rotate(-16 150 151.5)"/><ellipse cx="189" cy="150.6" rx="5.8" ry="3.3" fill="#d4f6f6" transform="rotate(12 189 150.6)"/>');
+    s.add('</g>');
+    s.add('<ellipse data-part="handL" cx="150" cy="151.5" rx="5.8" ry="3.3" fill="#d4f6f6" transform="rotate(-16 150 151.5)"/><ellipse data-part="handR" cx="189" cy="150.6" rx="5.8" ry="3.3" fill="#d4f6f6" transform="rotate(12 189 150.6)"/>');
     // the pool, holding its reflection
     s.path(`M-10,174H${W + 10}V${H + 10}H-10Z`, s.lin([[0, '#3b737b'], [0.45, '#1c4a55'], [1, '#0b2830']]));
     s.add('<path d="M-10,174.6H310" stroke="#8cc7c9" stroke-width=".8" opacity=".5"/>');
@@ -147,6 +149,7 @@ export const tide = faction('tide', {
     const outer = [[-10, 132], [18, 104], [52, 70], [92, 44], [138, 30], [180, 32], [210, 46], [227, 66], [230, 86], [224, 100], [214, 106]];
     const inner = [[214, 106], [206, 103], [203, 94], [205, 84], [198, 71], [183, 61], [160, 59], [137, 67], [119, 85], [111, 109], [113, 135], [125, 157], [147, 173], [178, 183], [216, 189], [262, 195], [312, 199]];
     const wave = poly([[-10, 214], ...spline([...outer, ...inner.slice(1)], 6), [312, 214]]);
+    s.add('<g data-part="wave">');
     s.figure(P(wave), { fill: s.lin([[0, '#63adb0'], [0.4, '#2e7682'], [1, '#0d3842']]), rim: '#effaf3', offsets: [[0, -1.5], [-1, -1]], rimOp: 0.9, edge: 0.3 });
     const hollow = poly([...spline(inner.slice(0, 15).concat([[214, 188]]), 6), ...spline([[214, 188], [224, 158], [225, 128], [219, 110], [214, 106]], 6)]);
     s.path(hollow, s.lin([[0, '#d2f1ea', 0.95], [0.72, '#a9dcd5', 0.75], [1, '#a9dcd5', 0.2]], { x1: 0, y1: 0, x2: 1, y2: 0 }));
@@ -154,6 +157,7 @@ export const tide = faction('tide', {
       `<path d="${line([[125, 158], [147, 174], [178, 184], [216, 190], [262, 196], [312, 200]])}" fill="none" stroke="#eef9f2" stroke-width="1.6" opacity=".7"/>` +
       `<g fill="#f8fdf9">${[[226, 97, 3], [230, 87, 2.6], [219, 104, 2.4], [211, 108, 2], [200, 41, 2.2], [186, 34, 2.4], [166, 30, 2], [228, 76, 2]].map(([x, y, r]) =>
         `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`, { sd: 1.6, k: 1.2 });
+    s.add('</g>');
     // the goblin: tipped over backwards, ears and arms flung up
     const gob = parts([
       taper([[0, -16], [0, -6], [-1, 4]], [9, 11.5, 10]),
@@ -166,10 +170,10 @@ export const tide = faction('tide', {
       taper([[5, -23], [11, -21], [14, -17]], [4, 3, 1]),
     ]) + '<circle cx="0" cy="-24" r="7"/><path d="M-7.6,-27A7.6,6 0 0 1 7.6,-27Z"/><path d="M-1,-32.5L0,-38L1.4,-32.5Z"/>' +
       '<circle cx="-15.5" cy="-35" r="2.6"/><circle cx="22" cy="-25" r="2.6"/><ellipse cx="-6" cy="26" rx="4" ry="2"/><ellipse cx="22.5" cy="6" rx="2" ry="3.8"/>';
-    s.figure(`<g transform="translate(160 122) rotate(-28)">${gob}</g>`, { fill: p.fig, rim: '#effaf3', offsets: [[-1, -1], [1, -1], [1, 0.6]], rimOp: 0.9, shade: 0.5, edge: 0.3, halo: 0.35 });
-    s.add('<g transform="translate(160 122) rotate(-28)"><circle cx="3.2" cy="-25" r="2" fill="#f4fbf2"/><circle cx="3.8" cy="-25" r=".9" fill="#06151b"/></g>');
+    s.figure(`<g data-part="goblin" transform="translate(160 122) rotate(-28)">${gob}</g>`, { fill: p.fig, rim: '#effaf3', offsets: [[-1, -1], [1, -1], [1, 0.6]], rimOp: 0.9, shade: 0.5, edge: 0.3, halo: 0.35 });
+    s.add('<g data-part="gobeye" transform="translate(160 122) rotate(-28)"><circle cx="3.2" cy="-25" r="2" fill="#f4fbf2"/><circle cx="3.8" cy="-25" r=".9" fill="#06151b"/></g>');
     // his spear, tumbling away
-    s.add('<g transform="translate(256 62) rotate(-50)"><path d="M-22,0H18" stroke="#0b2a31" stroke-width="1.8"/><path d="M18,-3L27,0L18,3Z" fill="#0b2a31"/></g>');
+    s.add('<g data-part="spear" transform="translate(256 62) rotate(-50)"><path d="M-22,0H18" stroke="#0b2a31" stroke-width="1.8"/><path d="M18,-3L27,0L18,3Z" fill="#0b2a31"/></g>');
     s.add([[214, 116], [219, 126], [212, 134], [221, 143]].map(([x, y], i) =>
       `<ellipse class="fall" style="--d:${(-i * 0.4).toFixed(1)}s" cx="${x}" cy="${y}" rx="1.3" ry="1.9" fill="#f4fcf6"/>`).join(''));
     s.motes({ seed: 312, n: 18, x: [120, 252], y: [18, 110], r: [0.5, 1.2], fill: '#e4fbf6', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.5, 1] });
@@ -196,7 +200,7 @@ export const tide = faction('tide', {
     // the scholar, kneeling on the lip and looking down (drawn for a lip at
     // y=121, then lifted into place)
     const g = 121;
-    const kneel = parts([
+    const kneelA = parts([
       taper([[114, 74], [106, 88], [100, 104], [92, g - 2]], [6, 9, 11, 8]),
       taper([[110, 98], [116, 82], [124, 70]], [16, 14, 11]),
       taper([[124, 70], [130.5, 64]], [5.5, 4.4]),
@@ -204,18 +208,21 @@ export const tide = faction('tide', {
       taper([[134, 98], [136, g - 3]], [7, 5]),
       taper([[110, 101], [114, g - 3]], [12, 8]),
       taper([[114, g - 3], [100, g - 1.5], [88, g - 1]], [8, 6, 4]),
-    ]) + `<circle cx="134" cy="55" r="7.5"/><circle cx="127.5" cy="48" r="4.3"/><ellipse cx="140" cy="${g - 1.5}" rx="5" ry="2"/><ellipse cx="86" cy="${g - 1}" rx="3.4" ry="1.8"/>`;
+    ]);
+    const kneelH = '<circle cx="134" cy="55" r="7.5"/><circle cx="127.5" cy="48" r="4.3"/>';
+    const kneelF = `<ellipse cx="140" cy="${g - 1.5}" rx="5" ry="2"/><ellipse cx="86" cy="${g - 1}" rx="3.4" ry="1.8"/>`;
+    const kneel = kneelA + kneelH + kneelF;
     const restArm = P(taper([[122, 74], [128, 88], [134, 96]], [5, 4.4, 3.6])) + '<circle cx="135" cy="97" r="2.4"/>';
     const reachArm = P(taper([[122, 74], [136, 92], [147, 112]], [5, 4.4, 3.6])) + '<circle cx="148" cy="114.5" r="2.4"/>';
     // her reflection: pale, and reaching up with two pages she is not holding
     const flip = 2 * w + (g - k); // reflect the lifted figure about the waterline
     s.glow(130, 166, 56, '#c6f4f6', 0.32, 'breathe');
     s.glow(151, 130, 22, '#f4f3d6', 0.75, 'breathe');
-    s.bloom(`<g transform="matrix(1 0 0 -1 0 ${flip})" fill="#a9e2e6" stroke="#a9e2e6" stroke-width=".6" opacity=".55">${kneel}${reachArm}</g>` +
+    s.bloom(`<g data-part="reflection" transform="matrix(1 0 0 -1 0 ${flip})" fill="#a9e2e6" stroke="#a9e2e6" stroke-width=".6" opacity=".55">${kneel}${reachArm}</g>` +
       '<g stroke="#bfe9ea" stroke-width=".8" opacity=".22"><path d="M80,150H184M94,174H172"/></g>' +
-      '<g transform="translate(151 130)"><rect x="-7" y="-5.5" width="9" height="11.5" rx=".6" fill="#f8f6e0" transform="rotate(-14)"/><rect x="-2" y="-6" width="9" height="11.5" rx=".6" fill="#fdfbea" transform="rotate(12)"/></g>',
+      '<g transform="translate(151 130)"><rect data-part="pageA" x="-7" y="-5.5" width="9" height="11.5" rx=".6" fill="#f8f6e0" transform="rotate(-14)"/><rect data-part="pageB" x="-2" y="-6" width="9" height="11.5" rx=".6" fill="#fdfbea" transform="rotate(12)"/></g>',
       { sd: 2, k: 1.1, box: [60, 100, 140, 110] });
-    s.figure(`<g transform="translate(0 ${k - g})">${kneel}${restArm}</g>`, { fill: p.fig, rim: p.rim, offsets: [[-1, -1], [1.1, -0.8], [1.2, 0.4]], rimOp: 0.9, shade: 0.5, edge: 0.3, halo: 0.3 });
+    s.figure(`<g transform="translate(0 ${k - g})"><g data-part="body">${kneelA}</g><g data-part="head">${kneelH}</g><g data-part="body">${kneelF}</g><g data-part="arm">${restArm}</g></g>`, { fill: p.fig, rim: p.rim, offsets: [[-1, -1], [1.1, -0.8], [1.2, 0.4]], rimOp: 0.9, shade: 0.5, edge: 0.3, halo: 0.3 });
     // candles on the lip, and their doubles in the water
     const candles = [[74, 16], [200, 11], [213, 19]];
     for (const [x, h] of candles) {

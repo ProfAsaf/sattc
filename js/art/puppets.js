@@ -85,6 +85,78 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Lumen, Mother of Moths: her two wings (split down the middle, each beating about its root;
+  // her body stays), and each of the fourteen little moths that spiral
+  // out from under her wings (with the glow behind it), each about its own middle.
+  // `moths`: where each sits as drawn (x, y, size); `emit`: under her wings, where the swarm
+  // leaves; `alone`: the meadow on her right, where her light goes when nothing is aimed at
+  'legend-lumen': {
+    role: 'support', element: 'light', facing: 'front', emit: [150, 128], hit: [150, 96],
+    roots: [[146, 90], [154, 90]], alone: [232, 152], moths: [[157.4, 145, 0.52], [175.8, 155, 0.57], [198.8, 157.4, 0.62], [224.2, 147.9, 0.67], [252.3, 133.7, 0.72], [266.3, 110.2, 0.76], [259.8, 82.8, 0.81], [142, 148.6, 0.52], [124.8, 151.8, 0.57], [103.6, 160.6, 0.62], [67.2, 148.3, 0.67], [58.3, 137.4, 0.72], [44.1, 116.8, 0.76], [45.5, 85.3, 0.81]],
+    parts: [
+      { name: 'wingL', of: '[data-part=wings]', pivot: [146, 90], poly: [[-20, -20], [150, -20], [150, 230], [-20, 230]] },
+      { name: 'wingR', of: '[data-part=wings]', pivot: [154, 90], poly: [[150, -20], [320, -20], [320, 230], [150, 230]] },
+      { name: 'moth0', of: '[data-part=moth0]', pivot: [157.4, 145] },
+      { name: 'moth1', of: '[data-part=moth1]', pivot: [175.8, 155] },
+      { name: 'moth2', of: '[data-part=moth2]', pivot: [198.8, 157.4] },
+      { name: 'moth3', of: '[data-part=moth3]', pivot: [224.2, 147.9] },
+      { name: 'moth4', of: '[data-part=moth4]', pivot: [252.3, 133.7] },
+      { name: 'moth5', of: '[data-part=moth5]', pivot: [266.3, 110.2] },
+      { name: 'moth6', of: '[data-part=moth6]', pivot: [259.8, 82.8] },
+      { name: 'moth7', of: '[data-part=moth7]', pivot: [142, 148.6] },
+      { name: 'moth8', of: '[data-part=moth8]', pivot: [124.8, 151.8] },
+      { name: 'moth9', of: '[data-part=moth9]', pivot: [103.6, 160.6] },
+      { name: 'moth10', of: '[data-part=moth10]', pivot: [67.2, 148.3] },
+      { name: 'moth11', of: '[data-part=moth11]', pivot: [58.3, 137.4] },
+      { name: 'moth12', of: '[data-part=moth12]', pivot: [44.1, 116.8] },
+      { name: 'moth13', of: '[data-part=moth13]', pivot: [45.5, 85.3] },
+    ],
+  },
+  // Ymra, Heart of the Mountain: each arm braced on the slopes (cut from the stone about its
+  // shoulder), her head (cut at the neck) with its face and eyes, the woods on her shoulders
+  // and arms, and the fire in her chest (its veins, and the heart). The rest of her is the
+  // mountain and does not move. `guard`: the left forearm, the right forearm, her chest, the
+  // woods on her left and right shoulders; `heart`: the fire; `alone`: where her own blows come from
+  'legend-ymra': {
+    role: 'defender', element: 'earth', facing: 'front', hit: [150, 118], guard: [[64, 138], [236, 138], [150, 118], [108, 92], [192, 92]],
+    heart: [150, 120], shoulders: [[96, 104], [204, 104]], neck: [150, 80], feet: [150, 190],
+    parts: [
+      { name: 'armL', of: 'fig:0', pivot: [96, 104], poly: [[-20, 82], [100, 82], [100, 98], [93, 112], [90, 130], [91, 152], [94, 166], [-20, 166]], cut: true, joint: 5 },
+      { name: 'armR', of: 'fig:0', pivot: [204, 104], poly: [[320, 82], [200, 82], [200, 98], [207, 112], [210, 130], [209, 152], [206, 166], [320, 166]], cut: true, joint: 5 },
+      { name: 'head', of: 'fig:0', pivot: [150, 80], poly: [[124, 18], [176, 18], [176, 72], [168, 80], [132, 80], [124, 72]], cut: true, joint: 5 },
+      { name: 'face', of: '[data-part=face]', pivot: [150, 80] },
+      { name: 'pinesL', of: 'fig:1 [data-part=pinesL]', pivot: [112, 94] },
+      { name: 'pinesR', of: 'fig:1 [data-part=pinesR]', pivot: [188, 94] },
+      { name: 'treesL', of: 'fig:1 [data-part=treesL]', pivot: [96, 104] },
+      { name: 'treesR', of: 'fig:1 [data-part=treesR]', pivot: [204, 104] },
+      { name: 'veins', of: '[data-part=veins]', pivot: [150, 120] },
+      { name: 'heart', of: '[data-part=heart]', pivot: [150, 120] },
+      { name: 'eyes', of: '[data-part=eyes]', pivot: [150, 80] },
+    ],
+  },
+  // Vesh, the Red Widow: each arm (the sleeve cut from her gown about the shoulder; the pale
+  // hand and the crimson drops over its palm turn with it), the veil in three lengths (the
+  // drape and head, then two stretches of its streaming tail, each about where it joins the
+  // last), and the three ravens on the graves, each about its feet. `shoulders`, `palms`: as
+  // drawn; `emit`: the right palm's drops; `alone`: where her blood goes when nothing is aimed at
+  'legend-vesh': {
+    role: 'attacker', element: 'blood', facing: 'front', emit: [188, 128], hit: [150, 120],
+    shoulders: [[139.6, 99.4], [160.4, 99.4]], palms: [[112.1, 132.6], [187.9, 132.6]], alone: [244, 132], ravens: [[80, 149], [266, 154], [39, 156]],
+    parts: [
+      { name: 'veil0', of: '[data-part=veil]', pivot: [152, 72], poly: [[-20, -20], [196, -20], [196, 230], [-20, 230]] },
+      { name: 'veil1', of: '[data-part=veil]', pivot: [196, 98], poly: [[196, -20], [244, -20], [244, 230], [196, 230]] },
+      { name: 'veil2', of: '[data-part=veil]', pivot: [244, 94], poly: [[244, -20], [330, -20], [330, 230], [244, 230]] },
+      { name: 'armL', of: 'fig:1', pivot: [139.6, 99.4], poly: [[96, 92], [139, 92], [139.5, 100], [137, 110], [134.5, 120], [133, 130], [134, 140], [135, 152], [96, 152]], cut: true, joint: 4 },
+      { name: 'armR', of: 'fig:1', pivot: [160.4, 99.4], poly: [[204, 92], [161, 92], [160.5, 100], [163, 110], [165.5, 120], [167, 130], [166, 140], [165, 152], [204, 152]], cut: true, joint: 4 },
+      { name: 'handL', of: '[data-part=handL]', pivot: [139.6, 99.4] },
+      { name: 'handR', of: '[data-part=handR]', pivot: [160.4, 99.4] },
+      { name: 'dropsL', of: '[data-part=dropsL]', pivot: [112, 130] },
+      { name: 'dropsR', of: '[data-part=dropsR]', pivot: [188, 130] },
+      { name: 'rv0', of: 'fig:0 [data-part=rv0]', pivot: [80, 149] },
+      { name: 'rv1', of: 'fig:0 [data-part=rv1]', pivot: [266, 154] },
+      { name: 'rv2', of: 'fig:0 [data-part=rv2]', pivot: [39, 156] },
+    ],
+  },
   // Aeris, Queen of the Winds: her cloak of wind (the loop of pale air, with its streaks), the glow behind
   // her wings, the two great wings (split at her middle, each from its shoulder), the queen (all but her
   // raised arm, with her face: the arm is what lies left of x=142.5 between y=30 and y=86; it turns from the

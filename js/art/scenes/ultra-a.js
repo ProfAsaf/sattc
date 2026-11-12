@@ -474,20 +474,23 @@ export const ultra_a = {
     const fly = (x0, x1, h, t) => [x0 + (x1 - x0) * t, 232 + (156 - 232) * t - 4 * h * t * (1 - t)];
     const shots = [[-30, 226, 150, 0.74, 1.7], [-6, 252, 146, 0.76, 1.55], [-56, 270, 156, 0.7, 1.6], [-20, 290, 140, 0.8, 1],
       [10, 214, 130, 0.8, 1], [-70, 240, 160, 0.66, 1.05], [16, 300, 150, 0.7, 0.9], [-44, 200, 124, 0.82, 0.85], [-90, 284, 166, 0.62, 0.8]];
-    let trails = '', cores = '', heads = '', shafts = '';
+    let trails = '', cores = '', heads = '', shafts = '', ia = 0;
     for (const [x0, x1, h, t, k] of shots) {
       const pts = [];
       for (let i = 0; i <= 8; i++) pts.push(fly(x0, x1, h, t - 0.16 * Math.sqrt(k) * (1 - i / 8)));
       const [hx, hy] = pts[8], [qx, qy] = fly(x0, x1, h, t - 0.01), a = Math.atan2(hy - qy, hx - qx), deg = (a * 180) / Math.PI;
       trails += taper(pts, [0.2, 0.6 * k, 1.2 * k, 2 * k, 2.6 * k, 3.4 * k, 4.4 * k, 5.4 * k, 6 * k], { per: 3 });
       cores += taper(pts.slice(3), [0.2, 0.5 * k, 0.8 * k, 1.1 * k, 1.4 * k, 1.8 * k], { per: 3 });
-      heads += lick(hx + Math.cos(a) * 2 * k, hy + Math.sin(a) * 2 * k, deg + 180, 12 * k, 5.4 * k, 0.4) + lick(hx, hy, deg + 168, 8 * k, 3.2 * k, -0.4);
-      shafts += taper([[hx - Math.cos(a) * 9 * k, hy - Math.sin(a) * 9 * k], [hx + Math.cos(a) * 4 * k, hy + Math.sin(a) * 4 * k]], [1 * k, 1 * k], { per: 2 }) +
-        poly([[hx + Math.cos(a) * 7.5 * k, hy + Math.sin(a) * 7.5 * k], [hx + Math.cos(a + 1.9) * 2.6 * k, hy + Math.sin(a + 1.9) * 2.6 * k], [hx + Math.cos(a - 1.9) * 2.6 * k, hy + Math.sin(a - 1.9) * 2.6 * k]]);
+      heads += `<path data-part="h${ia}" d="${lick(hx + Math.cos(a) * 2 * k, hy + Math.sin(a) * 2 * k, deg + 180, 12 * k, 5.4 * k, 0.4) + lick(hx, hy, deg + 168, 8 * k, 3.2 * k, -0.4)}"/>`;
+      shafts += `<path data-part="s${ia}" d="${taper([[hx - Math.cos(a) * 9 * k, hy - Math.sin(a) * 9 * k], [hx + Math.cos(a) * 4 * k, hy + Math.sin(a) * 4 * k]], [1 * k, 1 * k], { per: 2 }) +
+        poly([[hx + Math.cos(a) * 7.5 * k, hy + Math.sin(a) * 7.5 * k], [hx + Math.cos(a + 1.9) * 2.6 * k, hy + Math.sin(a + 1.9) * 2.6 * k], [hx + Math.cos(a - 1.9) * 2.6 * k, hy + Math.sin(a - 1.9) * 2.6 * k]])}"/>`;
+      s.add(`<g data-part="g${ia}">`);
       s.glow(hx, hy, 16 * k, '#ffb04a', 0.6);
+      s.add('</g>');
+      ia++;
     }
-    s.bloom(`<path d="${trails}" fill="#ff8a3a" opacity=".45"/><path d="${cores}" fill="#ffd27a" opacity=".75"/>` +
-      `<path d="${heads}" fill="${s.linU(0, 20, 0, 140, [[0, '#fff6d8'], [1, '#ffd27a']])}"/><path d="${shafts}" fill="#2a0a06"/>`, { sd: 1.8, k: 1.35 });
+    s.bloom(`<path data-part="trails" d="${trails}" fill="#ff8a3a" opacity=".45"/><path data-part="cores" d="${cores}" fill="#ffd27a" opacity=".75"/>` +
+      `<g fill="${s.linU(0, 20, 0, 140, [[0, '#fff6d8'], [1, '#ffd27a']])}">${heads}</g><g fill="#2a0a06">${shafts}</g>`, { sd: 1.8, k: 1.35 });
     s.motes({ seed: 10404, n: 26, x: [100, 290], y: [20, 150], r: [0.4, 1.1], fill: '#ffb04a', hot: '#fff0c0', cls: 'fall', op: [0.5, 1] });
     // the near slope, black
     s.path(ledge([[-10, 196], [40, 194], [90, 198], [130, 206], [160, 216]]), '#0b0302');
@@ -513,20 +516,22 @@ export const ultra_a = {
       taper([[gx - 80, 84], [gx - 92, 116], [gx - 96, 150]], [36, 31, 28]),
       taper([[gx + 80, 84], [gx + 92, 116], [gx + 96, 150]], [36, 31, 28]),
     );
-    s.figure(`<path d="${body}"/>`, { fill: '#2a120a', rim: '#ff9a4a', offsets: [[0, -1.4], [-1, -0.8], [1, -0.8]], rimOp: 0.85, shade: 0.5, light: [0, -1] });
+    s.figure(`<g data-part="body"><path d="${body}"/></g>`, { fill: '#2a120a', rim: '#ff9a4a', offsets: [[0, -1.4], [-1, -0.8], [1, -0.8]], rimOp: 0.85, shade: 0.5, light: [0, -1] });
     // the orb's light thrown up across the stone
+    s.add('<g data-part="giantfx">');
     s.path(body, s.radU(ox, oy - 16, 100, [[0, '#ff8a3a', 0.7], [0.45, '#c2481c', 0.3], [1, '#c2481c', 0]]));
     s.add(`<path d="M${gx - 56},62L${gx - 42},92L${gx - 52},126L${gx - 44},166M${gx + 56},62L${gx + 42},92L${gx + 52},126L${gx + 44},166M${gx - 42},92L${gx - 26},96M${gx + 42},92L${gx + 26},96` +
       `M${gx - 52},126L${gx - 34},128M${gx + 52},126L${gx + 34},128M${gx - 90},112l10,4M${gx + 90},112l-10,4M${gx - 9},32l4,3M${gx + 9},32l-4,3M${gx - 30},190L${gx - 20},214M${gx + 30},190L${gx + 20},214" fill="none" stroke="#140604" stroke-width="1.6" opacity=".8"/>`);
     // the socket: a ragged hole in the stone, a dull ember deep inside it,
     // cracks running out from it as if they knew what was coming
     const hole = stone(sx, sy, 15, 13.5, 10507, 11, 0.32);
-    s.glow(sx, sy, 40, '#ff9a3a', 0.35, 'breathe');
+    s.glow(sx, sy, 40, '#ff9a3a', 0.35);
     s.path(hole, s.radU(sx, sy + 2, 16, [[0, '#7a240c'], [0.35, '#2e0c05'], [0.8, '#0a0302'], [1, '#050101']]));
     s.bloom(`<path d="${[crack(10508, sx - 13, sy - 4, 200, 22, 1.8, 4, 1), crack(10509, sx + 12, sy - 6, -20, 20, 1.8, 4, 1), crack(10510, sx - 6, sy - 13, -110, 18, 1.6, 4, 1),
       crack(10511, sx + 7, sy + 12, 60, 16, 1.6, 4, 1), crack(10512, sx - 9, sy + 11, 130, 14, 1.4, 4, 1)].join('')}" fill="#ffb04a"/>`, { sd: 1.4, k: 1.4, box: [100, 60, 100, 80] });
     // its eyes, on the orb
     s.glow(gx - 7, 42, 7, '#ffb04a', 0.9).glow(gx + 7, 42, 7, '#ffb04a', 0.9);
+    s.add('</g>');
     // its forearms come in from the elbows to the great stone hands, cupped
     // together into a bowl under the orb, fingers curled up round it
     const arm = (side) => taper([[gx + side * 96, 150], [gx + side * 72, 164], [gx + side * 44, 168]], [28, 25, 22]);
@@ -534,15 +539,17 @@ export const ultra_a = {
       taper([[gx + side * x, y0], [gx + side * (x - 0.5), y1 + 5], [gx + side * (x - 3.5), y1]], [7, 6.4, 5.2], { per: 3 })));
     const hands = U(arm(-1), arm(1), fingers,
       blob([[gx - 48, 158], [gx - 40, 180], [gx - 18, 188], [gx, 185], [gx + 18, 188], [gx + 40, 180], [gx + 48, 158], [gx + 30, 162], [gx, 166], [gx - 30, 162]], 4));
-    s.figure(`<path d="${hands}"/>`, { fill: '#1a0805', rim: '#ffc25a', offsets: [[0, -1.5], [-1, -0.9], [1, -0.9]], rimOp: 1, shade: 0.45, light: [0, -1] });
-    s.add(`<path d="M${gx},168V186M${gx - 26},170l-4,12M${gx + 26},170l4,12" fill="none" stroke="#3e1a0c" stroke-width="1.2"/>`);
+    s.figure(`<g data-part="hands"><path d="${hands}"/></g>`, { fill: '#1a0805', rim: '#ffc25a', offsets: [[0, -1.5], [-1, -0.9], [1, -0.9]], rimOp: 1, shade: 0.45, light: [0, -1] });
+    s.add(`<g data-part="handlines"><path d="M${gx},168V186M${gx - 26},170l-4,12M${gx + 26},170l4,12" fill="none" stroke="#3e1a0c" stroke-width="1.2"/></g>`);
     // the orb: liquid rock, white at the heart, banded darker where it cools
-    s.glow(ox, oy, 64, '#ffb04a', 0.55, 'breathe');
+    s.add('<g data-part="orb">');
+    s.glow(ox, oy, 64, '#ffb04a', 0.55);
     const bands = U(taper([[ox - 12, oy - 2], [ox - 5, oy - 6], [ox + 3, oy - 4], [ox + 11, oy - 8]], [0.5, 2.6, 2.2, 0.5]),
       taper([[ox - 10, oy + 6], [ox - 2, oy + 3], [ox + 6, oy + 6], [ox + 12, oy + 3]], [0.5, 2.4, 2, 0.5]),
       taper([[ox - 7, oy - 10], [ox, oy - 11.6], [ox + 7, oy - 10]], [0.4, 1.6, 0.4]), taper([[ox - 8, oy + 10.5], [ox + 1, oy + 12], [ox + 8, oy + 10]], [0.4, 1.8, 0.4]));
     s.bloom(`<circle cx="${ox}" cy="${oy}" r="13" fill="${s.radU(ox - 3, oy - 4, 16, [[0, '#ffffff'], [0.3, '#fff0b0'], [0.68, '#ffb04a'], [1, '#e2501a']])}"/>` +
       `<path d="${bands}" fill="#d2501a" opacity=".55"/>`, { sd: 2.4, k: 1.5, box: [100, 92, 100, 100] });
+    s.add('</g>');
     s.motes({ seed: 10506, n: 22, x: [116, 184], y: [70, 160], r: [0.4, 1.1], fill: '#ffb04a', hot: '#fff0c0', cls: 'rise', t: [2.5, 5] });
     return s.svg();
   },
@@ -553,8 +560,10 @@ export const ultra_a = {
     fin(s, 'ember');
     s.rect(s.lin([[0, '#3a1209'], [0.3, '#7a2e12'], [0.52, '#c2622a'], [0.62, '#e38a44'], [0.68, '#d2783a']]));
     // the sun, a dim disc in the haze
+    s.add('<g data-part="sun">');
     s.glow(204, 76, 150, '#ffb05a', 0.5);
     s.add(`<circle cx="204" cy="76" r="15" fill="#ffd9a0" opacity=".75"/>`);
+    s.add('</g>');
     s.add(smoke('#3a1408', [[60, 30, 110, 8, 0.4], [240, 18, 90, 6, 0.35], [150, 56, 120, 5, 0.25], [250, 100, 80, 4, 0.25]]));
     // the far edge of the plain, a few dead trunks along it
     const R = rng(10601);
@@ -572,14 +581,14 @@ export const ultra_a = {
     s.path(ledge([[-10, 134], [60, 133], [140, 135], [220, 133], [310, 135]]), s.lin([[0, '#3a160c'], [0.25, '#1e0a06'], [1, '#080302']]));
     const cracks = [crack(10610, 150, 150, 120, 60, 2.2), crack(10611, 150, 150, 70, 70, 2.4), crack(10612, 200, 160, 20, 90, 2.2), crack(10613, 60, 170, 160, 70, 2.4),
       crack(10614, 190, 188, 100, 40, 3), crack(10615, 30, 196, 10, 60, 2.6), crack(10616, 240, 146, -10, 50, 1.4), crack(10617, 80, 148, 170, 60, 1.4)].join('');
-    s.path(cracks, '#ff8a3a', 'opacity=".7"');
+    s.path(cracks, '#ff8a3a', 'opacity=".7" data-part="cracks"');
     // stumps across the middle distance
     const stump = (x, y, h, w, seed) => {
       const r = rng(seed);
       return poly([[x - w * 0.6, y], [x - w * 0.45, y - h * 0.55], [x - w * 0.5, y - h * 0.9], [x - w * 0.2, y - h * (0.8 + r() * 0.3)], [x, y - h * (1 + r() * 0.2)],
         [x + w * 0.2, y - h * (0.75 + r() * 0.2)], [x + w * 0.5, y - h * (0.9 + r() * 0.2)], [x + w * 0.45, y - h * 0.5], [x + w * 0.65, y]]);
     };
-    s.path(stump(196, 150, 16, 7, 10603) + stump(250, 158, 22, 9, 10604) + stump(30, 154, 18, 8, 10605) + stump(160, 142, 9, 4, 10606) + stump(226, 143, 8, 4, 10607), '#1a0805');
+    s.path(stump(196, 150, 16, 7, 10603) + stump(250, 158, 22, 9, 10604) + stump(30, 154, 18, 8, 10605) + stump(160, 142, 9, 4, 10606) + stump(226, 143, 8, 4, 10607), '#1a0805', 'data-part="stumps"');
     s.add(smokeCol(s, 250, 140, 40, 4, 0.7, '#4a2014', 0.45, 8));
     // the near trunk: snapped off and splintered, one limb broken short, its
     // roots clawing the ash; still smouldering inside
@@ -590,10 +599,10 @@ export const ultra_a = {
       taper([[116, 112], [128, 106], [134, 101]], [6, 4.5, 2]),
       taper([[90, 206], [74, 211], [58, 216]], [10, 6, 2]), taper([[122, 206], [140, 210], [156, 216]], [10, 6, 2]),
     );
-    s.figure(`<path d="${trunk}"/>`, { fill: '#120604', rim: '#ffa04a', offsets: [[1, -0.8], [-0.6, -0.9]], rimOp: 0.8, shade: 0.5, edge: 0.25, light: [0.6, -1] });
-    s.bloom(`<path d="${U(taper([[104, 198], [100, 184], [104, 170]], [1, 2.4, 0.6]), taper([[110, 160], [113, 147], [109, 134]], [0.8, 2.2, 0.5]),
+    s.figure(`<g data-part="trunk"><path d="${trunk}"/></g>`, { fill: '#120604', rim: '#ffa04a', offsets: [[1, -0.8], [-0.6, -0.9]], rimOp: 0.8, shade: 0.5, edge: 0.25, light: [0.6, -1] });
+    s.bloom(`<g data-part="innerfire"><path d="${U(taper([[104, 198], [100, 184], [104, 170]], [1, 2.4, 0.6]), taper([[110, 160], [113, 147], [109, 134]], [0.8, 2.2, 0.5]),
       taper([[100, 122], [104, 112]], [1.6, 0.4]), taper([[104, 100], [103, 90]], [1.4, 0.3]))}" fill="#ffb04a"/>` +
-      `<path d="M99,94L103,76L107,70L109,86" fill="none" stroke="#ffd27a" stroke-width="1.2"/>`, { sd: 1.6, k: 1.5, box: [50, 50, 100, 160] });
+      `<path d="M99,94L103,76L107,70L109,86" fill="none" stroke="#ffd27a" stroke-width="1.2"/></g>`, { sd: 1.6, k: 1.5, box: [50, 50, 100, 160] });
     s.add(smokeCol(s, 104, 72, 80, 8, 0.8, '#4a2014', 0.55, 12));
     // ash on the ground, embers on the wind
     s.add(particles({ seed: 10608, n: 8, x: [0, W], y: [150, 210], r: [0.6, 1.4], fill: '#3a1a10', cls: 'float', op: [0.4, 0.8] }));

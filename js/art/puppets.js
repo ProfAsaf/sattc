@@ -85,6 +85,56 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Scorched Earth: the sun in the haze (from its heart), the glowing cracks in the ground (from the
+  // middle of the plain), the stumps in the middle distance, the snapped trunk (from its roots) and the
+  // fire smouldering inside it. `base`: the trunk's roots, where the wave of heat starts;
+  // `top`: its splintered crown; `cracks`: where the cracks start, for the wave to flare as it passes;
+  // `sun`: the sun's heart; `horizon`: the far edge of the plain
+  'scorched-earth': {
+    role: 'aura', element: 'fire', facing: 'front', hit: [150, 150],
+    base: [105, 205], top: [104, 72], sun: [204, 76], horizon: 134,
+    cracks: [[150, 150], [200, 160], [60, 170], [190, 188], [30, 196], [240, 146], [80, 148]],
+    parts: [
+      { name: 'sun', of: '[data-part=sun]', pivot: [204, 76] },
+      { name: 'cracks', of: '[data-part=cracks]', pivot: [150, 165] },
+      { name: 'stumps', of: '[data-part=stumps]', pivot: [150, 150] },
+      { name: 'trunk', of: 'fig:0 [data-part=trunk]', pivot: [105, 214] },
+      { name: 'fire', of: '[data-part=innerfire]', pivot: [105, 160] },
+    ],
+  },
+  // Molten Core: the giant (his stone, the light of the orb on it, his cracks, socket and eyes), from
+  // his feet; the cupped hands (with the lines on them) from between them; the molten orb from its heart.
+  // `socket`: the hole in his chest the core is pressed into, where the fire leaves (`emit`);
+  // `orb`: the orb at rest; `eyes`: his eyes; `alone`: the far right, where the fire goes when nothing is aimed at
+  'molten-core': {
+    role: 'attacker', element: 'earth', facing: 'front', emit: [150, 96], hit: [150, 125],
+    socket: [150, 96], orb: [150, 138], eyes: [[143, 42], [157, 42]], feet: [150, 214], alone: [268, 118],
+    parts: [
+      { name: 'giant', of: ['fig:0 [data-part=body]', '[data-part=giantfx]'], pivot: [150, 214] },
+      { name: 'hands', of: ['fig:1 [data-part=hands]', '[data-part=handlines]'], pivot: [150, 176] },
+      { name: 'orb', of: '[data-part=orb]', pivot: [150, 138] },
+    ],
+  },
+  // Ember Volley: the nine flaming arrows, each (its head, shaft and glow) turning about its own
+  // head, and the one sheet of their fiery trails (from the middle of the flight).
+  // `heads`: each head at rest; `angles`: the way each points (degrees, 0 = right, 90 = down);
+  // `size`: each one's scale; `emit`: the middle of the volley; `alone`: the far line of spearmen
+  'ember-volley': {
+    role: 'attacker', element: 'fire', facing: 'right', emit: [172, 60],
+    heads: [[159.4, 60.3], [190.1, 67.7], [172.2, 47.8], [228.0, 81.6], [173.2, 88.0], [134.6, 38.2], [214.8, 52.8], [156.1, 96.5], [141.9, 28.4]], angles: [38.8, 40.7, 27.2, 39.4, 48.5, 21.5, 29.1, 44.1, 11.6], size: [1.7, 1.55, 1.6, 1, 1, 1.05, 0.9, 0.85, 0.8], alone: [232, 152],
+    parts: [
+      { name: 'trails', of: ['[data-part=trails]', '[data-part=cores]'], pivot: [165, 58] },
+      { name: 'a0', of: ['[data-part=g0]', '[data-part=h0]', '[data-part=s0]'], pivot: [159.4, 60.3] },
+      { name: 'a1', of: ['[data-part=g1]', '[data-part=h1]', '[data-part=s1]'], pivot: [190.1, 67.7] },
+      { name: 'a2', of: ['[data-part=g2]', '[data-part=h2]', '[data-part=s2]'], pivot: [172.2, 47.8] },
+      { name: 'a3', of: ['[data-part=g3]', '[data-part=h3]', '[data-part=s3]'], pivot: [228.0, 81.6] },
+      { name: 'a4', of: ['[data-part=g4]', '[data-part=h4]', '[data-part=s4]'], pivot: [173.2, 88.0] },
+      { name: 'a5', of: ['[data-part=g5]', '[data-part=h5]', '[data-part=s5]'], pivot: [134.6, 38.2] },
+      { name: 'a6', of: ['[data-part=g6]', '[data-part=h6]', '[data-part=s6]'], pivot: [214.8, 52.8] },
+      { name: 'a7', of: ['[data-part=g7]', '[data-part=h7]', '[data-part=s7]'], pivot: [156.1, 96.5] },
+      { name: 'a8', of: ['[data-part=g8]', '[data-part=h8]', '[data-part=s8]'], pivot: [141.9, 28.4] },
+    ],
+  },
   // Stoke the Furnace: the smith (from his feet) with the white-hot tip of his poker, the furnace's
   // mouth (from its heart) and the fire roaring from the chimney (from its base).
   // `emit`: the chimney's top, where the fire leaves; `mouth`: the furnace's white-hot mouth;

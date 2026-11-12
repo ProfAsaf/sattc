@@ -21,6 +21,59 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // the deepwater leviathan (a creature, an attacker: it rises beside the tiny ship and drowns it in
+  // a wave): its head (hide, brow and jaw line), the spines along it, the fangs hanging from the
+  // jaw, the great eye, the water pouring off the jaw, the ship (with its lantern) and the
+  // lightning in the sky; every part of the beast turns about `neck`, where it rears and
+  // lunges from; `emit`: the jaw, where the wave leaves, `hit`: the cheek, `ship`: where the
+  // ship sits (the target when alone), `eye`: the eye's centre
+  'deepwater-leviathan': {
+    role: 'attacker', element: 'water', facing: 'left', emit: [148, 106], hit: [250, 122],
+    neck: [300, 150], eye: [205, 87], ship: [66, 148], shipFoot: [66, 152], bolt: [48, 58],
+    parts: [
+      { name: 'head', of: 'fig:0 [data-part=head]', pivot: [300, 150] },
+      { name: 'spines', of: 'fig:0 [data-part=spines]', pivot: [300, 150] },
+      { name: 'fangs', of: 'fig:0 [data-part=fangs]', pivot: [300, 150] },
+      { name: 'eye', of: '[data-part=eye]', pivot: [300, 150] },
+      { name: 'pour', of: '[data-part=pour]', pivot: [300, 150] },
+      { name: 'ship', of: ['fig:1', '[data-part=lantern]'], pivot: [66, 152] },
+      { name: 'bolt', of: '[data-part=bolt]', pivot: [48, 58] },
+    ],
+  },
+  // countercurrent (a Trap, a defender: it swallows the next spell cast): the whirlpool's rings,
+  // the fireball caught in the spout, the spout itself (column and its three fingers), the foam
+  // and flames at its crest, and the calm mage's head; `hit`: the spout's middle, `guard`: where
+  // spells strike it (the two fingers' outer faces and the crest's mouth), `base`: where the
+  // spout rises from the pool, `heart`: the fireball's centre
+  'countercurrent': {
+    role: 'defender', element: 'water', facing: 'front', hit: [196, 104],
+    guard: [[158, 64], [236, 64], [196, 44]], base: [196, 151], heart: [196, 62], head: [76, 108],
+    parts: [
+      { name: 'pool', of: '[data-part=pool]', pivot: [196, 150] },
+      { name: 'fire', of: '[data-part=fire]', pivot: [196, 151] },
+      { name: 'spout', of: '[data-part=spout]', pivot: [196, 151] },
+      { name: 'crest', of: '[data-part=crest]', pivot: [196, 151] },
+      { name: 'head', of: 'fig:1 [data-part=head]', pivot: [76, 112] },
+    ],
+  },
+  // the mirror mage (a creature, an attacker: his spell goes into the mirror of water and comes
+  // out doubled): his casting arm (with the hand), the orb of light in his hand, his hat, his
+  // cloak, the mirror, the beam into it and the two beams out of it; `emit`: the mirror's heart,
+  // where the doubled bolts leave, `hand`: his casting hand, where the spell is gathered,
+  // `shoulder`: where the arm turns, `hit`: his chest, `mirror`: the mirror's centre and size
+  'mirror-mage': {
+    role: 'attacker', element: 'water', facing: 'right', emit: [206, 88], hit: [92, 118],
+    hand: [130, 91], shoulder: [98, 101], mirror: [206, 88], feet: [94, 168],
+    parts: [
+      { name: 'arm', of: 'fig:1 [data-part=arm]', pivot: [98, 101] },
+      { name: 'hat', of: 'fig:1 [data-part=hat]', pivot: [96, 82] },
+      { name: 'cloak', of: 'fig:1 [data-part=cloak]', pivot: [90, 100] },
+      { name: 'orb', of: '[data-part=orb]', pivot: [98, 101] },
+      { name: 'mirror', of: '[data-part=mirror]', pivot: [206, 88] },
+      { name: 'beamIn', of: '[data-part=beamIn]', pivot: [128, 91] },
+      { name: 'beamsOut', of: '[data-part=beamsOut]', pivot: [212, 88] },
+    ],
+  },
   // the curious wisp (a creature, a support: it peeks at your top card and may send it to the bottom,
   // and draws a card): the tail, the head (body), the eyes, the pool's far lip (cut so it stays in
   // front of the head as the wisp rises over it) and the two little hands on the lip; `emit`: just

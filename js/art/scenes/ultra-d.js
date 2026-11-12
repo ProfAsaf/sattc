@@ -476,10 +476,10 @@ export const ultra_d = {
       }
     }
     for (let i = 0; i < 34; i++) { const t = 0.03 + (i / 33) * 0.95, [x, y] = helix(t + 0.012), r = 3.2 - 1.5 * t; coins.push([x + (R() - 0.5) * 9, y + (R() - 0.5) * 7, r, r * (0.3 + R() * 0.7), (R() - 0.5) * 50]); }
-    s.bloom(`<path d="${line}" fill="none" stroke="#c6f4f6" stroke-width="5" opacity=".14"/><path d="${line}" fill="none" stroke="#effffa" stroke-width=".8" opacity=".55"/>` +
-      `<path d="${leaf(-1) + leaf(1)}" fill="#f6fff6"/><path d="M${cx},${by + 1}L${cx + 1},${by - 9.6}" stroke="#9ab8b0" stroke-width=".6"/>` +
-      `<path d="${U(pages)}" fill="#effff6" opacity=".92"/>` +
-      `<path d="${coins.map(([x, y, rx, ry, a]) => oval(x, y, rx, ry, a)).join('')}" fill="#ffd77a"/>`, { sd: 1.6, k: 1.4, box: [80, 0, 190, 170] });
+    s.bloom(`<g data-part="stream"><path d="${line}" fill="none" stroke="#c6f4f6" stroke-width="5" opacity=".14"/><path d="${line}" fill="none" stroke="#effffa" stroke-width=".8" opacity=".55"/></g>` +
+      `<g data-part="book"><path d="${leaf(-1) + leaf(1)}" fill="#f6fff6"/><path d="M${cx},${by + 1}L${cx + 1},${by - 9.6}" stroke="#9ab8b0" stroke-width=".6"/></g>` +
+      `<g data-part="pages"><path d="${U(pages)}" fill="#effff6" opacity=".92"/></g>` +
+      `<g data-part="coins"><path d="${coins.map(([x, y, rx, ry, a]) => oval(x, y, rx, ry, a)).join('')}" fill="#ffd77a"/></g>`, { sd: 1.6, k: 1.4, box: [80, 0, 190, 170] });
     s.path(U(quad(212, 155.6, 8, 3.2), quad(212, 152.4, 8, 3.2), quad(212.6, 149.2, 8, 3.2), quad(222, 155.6, 8, 3.2), quad(221.4, 152.4, 8, 3.2)), '#c89a3a');
     s.add(`<path d="${[155.6, 152.4, 149.2].map((y) => `M208,${y - 1.6}h8`).join('')}M218,154h8M217.4,150.8h8" stroke="#ffe8a0" stroke-width=".5" opacity=".8"/>`);
     s.motes({ seed: 14403, n: 16, x: [110, 250], y: [10, 150], r: [0.4, 1], fill: '#c6f4f6', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
@@ -522,16 +522,20 @@ export const ultra_d = {
       taper([[248, 146], [258, 150], [264, 157]], [8, 5, 1]),
     );
     s.figure(`<path d="${body}"/>`, { fill: '#2a3220', rim: '#fff2c4', offsets: [[0.8, -1.1], [0, -1.2], [-0.8, -0.6]], rimOp: 0.9, shade: 0.45, edge: 0.3, light: [0.5, -1] });
+    s.add('<g data-part="shellfx">');
     s.path(shell, s.radU(204, 100, 96, [[0, '#d6d29a', 0.32], [0.6, '#a8a878', 0.1], [1, '#a8a878', 0]]));
     // the plates of its shell, the folds of its neck, its old eye
     let plates = 'M92,146Q166,72 242,146M108,151Q166,100 226,151';
     for (const x of [100, 122, 144, 166, 188, 210, 232]) plates += `M${x},${f1(rimY(x) - 3)}L${f1(x + (x - 166) * 0.08)},${f1(domeY(x) + 22 + Math.abs(x - 166) * 0.1)}`;
-    s.add(`<path d="${plates}" fill="none" stroke="#6a6e44" stroke-width="1.2" opacity=".75"/>` +
-      '<path d="M64,112Q70,118 66,127M74,117Q80,124 76,133M85,123Q91,130 87,139M30.6,115.2Q38,116.2 46.4,119.6M36.4,105.6Q40,103.4 44.6,105" fill="none" stroke="#0e140a" stroke-width="1" opacity=".85"/>');
+    s.add(`<path d="${plates}" fill="none" stroke="#6a6e44" stroke-width="1.2" opacity=".75"/>`);
+    s.add('</g><g data-part="face">');
+    s.add('<path d="M64,112Q70,118 66,127M74,117Q80,124 76,133M85,123Q91,130 87,139M30.6,115.2Q38,116.2 46.4,119.6M36.4,105.6Q40,103.4 44.6,105" fill="none" stroke="#0e140a" stroke-width="1" opacity=".85"/>');
+    s.add('</g><g data-part="shellfx">');
     // moss and creepers hanging from the rim
     const M = rng(14503), moss = [];
     for (let x = 92; x < 244; x += 6 + M() * 7) { const y = rimY(x) + 2, h = 4 + M() * 10; moss.push(taper([[x, y], [x + 0.6, y + h * 0.6], [x - 0.4, y + h]], [2.4, 1.6, 0.4], { per: 3 })); }
     s.path(U(moss), '#3e5a2a');
+    s.add('</g>');
     // the town on its back
     const town = [], lit = [], tops = [];
     const tower = (x, w, h, cap = 'cone') => {
@@ -554,10 +558,12 @@ export const ultra_d = {
     const [[ax, ay], [mx2, my2], [bx2, by2]] = tops;
     const sag = (x0, y0, x1, y1, d) => { const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8; pts.push([x0 + (x1 - x0) * t, y0 + (y1 - y0) * t + d * 4 * t * (1 - t)]); } return pts; };
     const strings = [sag(ax, ay - 4, mx2, my2 - 8, 6), sag(mx2, my2 - 8, bx2, by2 - 4, 6)];
+    s.add('<g data-part="bunting">');
     s.add(`<path d="${strings.map((p) => 'M' + p.map(pt).join('L')).join('')}" fill="none" stroke="#2e2a1c" stroke-width=".6"/>`);
     s.path(strings.flatMap((p) => p.slice(1, -1).map(([x, y]) => poly([[x - 1.6, y], [x + 1.6, y], [x, y + 3]]))).join(''), '#c86a4a');
+    s.add('</g>');
     // lit windows and the lamps at the tower tops
-    s.bloom(`<path d="${dots(lit)}" fill="#ffd77a"/><circle cx="40.6" cy="108.6" r="1.6" fill="#ffe08a"/>`, { sd: 1.2, k: 1.6, box: [26, 20, 234, 110] });
+    s.bloom(`<g data-part="windows"><path d="${dots(lit)}" fill="#ffd77a"/></g><g data-part="eye"><circle cx="40.6" cy="108.6" r="1.6" fill="#ffe08a"/></g>`, { sd: 1.2, k: 1.6, box: [26, 20, 234, 110] });
     s.add('</g>');
     // the near water over its legs, the ripples round them, the boats
     s.path('M-10,172.6H310V214H-10Z', s.lin([[0, '#3a7c7e', 0.82], [1, '#123c46', 0.95]]));
@@ -626,14 +632,16 @@ export const ultra_d = {
     }
     // the longest of them still run back into the grave
     roots.push(taper([[142, 147], [149, 160], [157, 174]], [1.3, 0.9, 0.3], { per: 5 }), taper([[154, 155], [158, 165], [165, 174]], [1.1, 0.8, 0.3], { per: 5 }));
+    s.add('<g data-part="roots">');
     s.path(U(roots), '#d6c6ee', 'opacity=".85"');
+    s.add('</g>');
     s.glow(139, 145, 38, '#b07cff', 0.6, 'breathe');
     s.glow(160, 174, 22, '#a46bff', 0.55, 'breathe');
     s.glow(lamp.c[0], lamp.c[1], 26, '#b98cff', 0.55, 'breathe');
     const bulbFill = s.radU(138, 141, 18, [[0, '#ffffff'], [0.3, '#f0e0ff'], [0.65, '#c08cff'], [1, '#7a44d0']]);
-    s.bloom(`<path d="${U(bulbs.map(onion))}" fill="${bulbFill}"/>` +
-      `<path d="${bulbs.map(([x, y, r]) => `M${f1(x - r * 0.4)},${f1(y - r * 0.5)}Q${f1(x - r * 0.1)},${f1(y + r * 0.3)} ${f1(x - r * 0.3)},${f1(y + r * 0.7)}`).join('')}" fill="none" stroke="#ffffff" stroke-width=".7" opacity=".7"/>` +
-      `<path d="${oval(160, 175, 7.4, 1.8)}" fill="#c9a6ff" opacity=".8"/><path d="${lamp.glass}" fill="#f2e6ff"/>`, { sd: 1.5, k: 1.45, box: [110, 90, 180, 100] });
+    s.bloom(`<g data-part="bulbs"><path d="${U(bulbs.map(onion))}" fill="${bulbFill}"/>` +
+      `<path d="${bulbs.map(([x, y, r]) => `M${f1(x - r * 0.4)},${f1(y - r * 0.5)}Q${f1(x - r * 0.1)},${f1(y + r * 0.3)} ${f1(x - r * 0.3)},${f1(y + r * 0.7)}`).join('')}" fill="none" stroke="#ffffff" stroke-width=".7" opacity=".7"/></g>` +
+      `<g data-part="graveglow"><path d="${oval(160, 175, 7.4, 1.8)}" fill="#c9a6ff" opacity=".8"/></g><path d="${lamp.glass}" fill="#f2e6ff"/>`, { sd: 1.5, k: 1.45, box: [110, 90, 180, 100] });
     // mist on the ground, motes rising out of the open grave
     s.fog(188, '#8f7fc8', 0.28);
     s.path(U([[-10, 216, 30, 18], [306, 216, 40, 22]].map(([x, y, w, h]) => blob([[x - w, y], [x - w * 0.5, y - h * 0.6], [x, y - h], [x + w * 0.5, y - h * 0.6], [x + w, y]], 3))), '#07050b');

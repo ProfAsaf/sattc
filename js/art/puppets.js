@@ -85,6 +85,60 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Grave Harvest: the gravedigger (cut from his figure in two: his arms, fists and the leaves in them, right of
+  // x=96 between y=96 and y=134; and the rest of him from his feet), the pale roots trailing from the bulbs, the
+  // three glowing bulbs and the glow on the grave's mouth. `hands`: his fists, where the bulbs hang from;
+  // `shoulder`: the arms' joint; `feet`: his feet, about which he leans; `bulbs`: each bulb's heart and radius;
+  // `emit`: the bulbs' middle, where his gift leaves; `hit`: his chest; `grave`: the open grave's mouth; `alone`: the
+  // lantern on its post, where the gift goes when nothing is aimed at
+  'grave-harvest': {
+    role: 'support', element: 'nature', facing: 'right', emit: [140, 144], hit: [92, 150], alone: [266, 112],
+    hands: [128.6, 121], shoulder: [96, 114], feet: [96, 190], grave: [160, 175], lamp: [271, 103],
+    bulbs: [[140, 140, 7.8], [127, 147.6, 6.2], [152.6, 149.4, 5.8]],
+    parts: [
+      { name: 'body', of: 'fig:1', pivot: [96, 190], poly: [[-20, -20], [320, -20], [320, 96], [96, 96], [96, 134], [320, 134], [320, 230], [-20, 230]] },
+      { name: 'arms', of: 'fig:1', pivot: [96, 114], poly: [[96, 96], [320, 96], [320, 134], [96, 134]] },
+      { name: 'roots', of: '[data-part=roots]', pivot: [128.6, 121] },
+      { name: 'bulbs', of: '[data-part=bulbs]', pivot: [128.6, 121] },
+      { name: 'graveglow', of: '[data-part=graveglow]', pivot: [160, 175] },
+    ],
+  },
+  // The Merchant Tortoise: its head and neck (cut from the body at x=100, with the creases and the glowing eye),
+  // its shell and legs above the waterline (the rest of the figure, cut at y=172.5 so the legs stay in the water,
+  // with the moss and plates that ride it), the town on its back (towers, tents, bunting, lit windows) and the
+  // three boats, each on its own. `neck`: the head's joint; `mouth`: its snout; `foot`: its near fore foot at the
+  // waterline, where the stomp lands and its attack leaves; `emit`: the same; `hit`: the shell's face; `axis`:
+  // the body's middle, about which it turns to face a target on its right; `alone`: the open water ahead of it,
+  // where the surge goes when nothing is aimed at
+  'the-merchant-tortoise': {
+    role: 'attacker', element: 'nature', facing: 'left', emit: [98, 170], hit: [150, 122], alone: [16, 160],
+    neck: [100, 140], mouth: [46, 117], foot: [98, 170], axis: 172, waterline: 172.5, boats: [[54, 190], [152, 198], [270, 184]],
+    parts: [
+      { name: 'shell', of: 'fig:0', pivot: [172, 172], poly: [[100.5, -20], [320, -20], [320, 172.5], [100.5, 172.5]], cut: true },
+      { name: 'shellfx', of: '[data-part=shellfx]', pivot: [172, 172] },
+      { name: 'head', of: 'fig:0', pivot: [100, 140], poly: [[-20, -20], [100.5, -20], [100.5, 172.5], [-20, 172.5]], cut: true },
+      { name: 'face', of: '[data-part=face]', pivot: [100, 140] },
+      { name: 'eye', of: '[data-part=eye]', pivot: [100, 140] },
+      { name: 'town', of: ['fig:1', '[data-part=bunting]', '[data-part=windows]'], pivot: [172, 172] },
+      { name: 'boatL', of: 'fig:2', pivot: [54, 190], poly: [[-20, 150], [100, 150], [100, 230], [-20, 230]] },
+      { name: 'boatM', of: 'fig:2', pivot: [152, 198], poly: [[100, 150], [210, 150], [210, 230], [100, 230]] },
+      { name: 'boatR', of: 'fig:2', pivot: [270, 184], poly: [[210, 150], [320, 150], [320, 230], [210, 230]] },
+    ],
+  },
+  // Compound Interest: the stream of light winding up out of the open ledger, the pages riding it and the coins
+  // between them (each cut whole, turning together about the book), and the book's two leaves. `emit`: the heart
+  // of the spiral, where its gift leaves (pages and coins peel off all along it); `book`: the ledger's spine;
+  // `hit`: the desk's front; `alone`: the sea outside the cave mouth, where the gift goes when nothing is aimed at
+  'compound-interest': {
+    role: 'support', element: 'water', facing: 'front', emit: [172, 100], hit: [172, 165], alone: [46, 120],
+    book: [172, 150], top: [172, 44],
+    parts: [
+      { name: 'stream', of: '[data-part=stream]', pivot: [172, 146] },
+      { name: 'pages', of: '[data-part=pages]', pivot: [172, 146] },
+      { name: 'coins', of: '[data-part=coins]', pivot: [172, 146] },
+      { name: 'book', of: '[data-part=book]', pivot: [172, 152] },
+    ],
+  },
   // Pearl Diver: her pearl arm (cut from her at the shoulder: what lies right of x=160 between y=92 and y=130),
   // her legs (cut from her below the hip: everything below the line through the hip), and the pearl itself
   // (cut from its bloom). `emit`: the pearl as drawn, where her gift leaves; `hit`: her chest; `shoulder`: the

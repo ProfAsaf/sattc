@@ -28,6 +28,7 @@ export const LIVE = {
   "field-medic": { src: 'art/live/field-medic.webp?v=fe5bbd09', live: 'art/live/field-medic.json?v=ae22a7d4' },
   "flood-rite": { src: 'art/live/flood-rite.webp?v=af230d2b', live: 'art/live/flood-rite.json?v=02dadb21' },
   "fog-bank": { src: 'art/live/fog-bank.webp?v=d407985c', live: 'art/live/fog-bank.json?v=2610cfb2' },
+  "gale-winds": { src: 'art/live/gale-winds.webp?v=317711ef', live: 'art/live/gale-winds.json?v=b570b7cb' },
   "gloom-stalker": { src: 'art/live/gloom-stalker.webp?v=273ad279', live: 'art/live/gloom-stalker.json?v=f860a1eb' },
   "gloomweb-spider": { src: 'art/live/gloomweb-spider.webp?v=780296b2', live: 'art/live/gloomweb-spider.json?v=03f74ef2' },
   "grand-illusion": { src: 'art/live/grand-illusion.webp?v=1dec70ec', live: 'art/live/grand-illusion.json?v=53dafe7e' },
@@ -71,6 +72,7 @@ export const LIVE = {
   "sproutling": { src: 'art/live/sproutling.webp?v=eed772bf', live: 'art/live/sproutling.json?v=5ff3ddac' },
   "static-spark": { src: 'art/live/static-spark.webp?v=7b98f37e', live: 'art/live/static-spark.json?v=c3feb2de' },
   "stoke-the-furnace": { src: 'art/live/stoke-the-furnace.webp?v=b98ce78a', live: 'art/live/stoke-the-furnace.json?v=496e6771' },
+  "storm-shepherd": { src: 'art/live/storm-shepherd.webp?v=57b714c6', live: 'art/live/storm-shepherd.json?v=4fbdd11f' },
   "sunglass-lancer": { src: 'art/live/sunglass-lancer.webp?v=508832b3', live: 'art/live/sunglass-lancer.json?v=ba28318a' },
   "the-arcane-well": { src: 'art/live/the-arcane-well.webp?v=e5a4ad48', live: 'art/live/the-arcane-well.json?v=a60a572d' },
   "the-barrow-queen": { src: 'art/live/the-barrow-queen.webp?v=6a8bcf18', live: 'art/live/the-barrow-queen.json?v=ac4ce372' },
@@ -87,5 +89,6 @@ export const LIVE = {
   "venom-shard": { src: 'art/live/venom-shard.webp?v=b676165f', live: 'art/live/venom-shard.json?v=401560d3' },
   "ward-of-dawn": { src: 'art/live/ward-of-dawn.webp?v=8819d9be', live: 'art/live/ward-of-dawn.json?v=3f3acf05' },
   "wavewarden": { src: 'art/live/wavewarden.webp?v=ee173b96', live: 'art/live/wavewarden.json?v=32fadb6f' },
+  "weatherwitch": { src: 'art/live/weatherwitch.webp?v=f896bc6c', live: 'art/live/weatherwitch.json?v=3b70e950' },
   "wing-graft": { src: 'art/live/wing-graft.webp?v=91267e32', live: 'art/live/wing-graft.json?v=8fa55d1c' },
 };

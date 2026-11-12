@@ -340,6 +340,7 @@ export const ultra_f = {
     s.figure(`<path d="${her}"/>`, { fill: p.fig, rim: '#e6fdfc', offsets: [[0.8, -1.1], [1.2, -0.3], [-0.5, -1]], rimOp: 0.95, shade: 0.45, edge: 0.3, light: [0.5, -1] });
     // the jar: a little storm cloud inside, rain, a spark of lightning
     const jar = blob([[jx - 9, jb], [jx - 11.5, jb - 4], [jx - 12, jb - 13], [jx - 11, jb - 20], [jx - 7, jb - 23.5], [jx + 7, jb - 23.5], [jx + 11, jb - 20], [jx + 12, jb - 13], [jx + 11.5, jb - 4], [jx + 9, jb]], 5);
+    s.add('<g data-part="jar">');
     s.path(jar, radE(s, jx, jb - 12, 13, 13, [[0, '#e6fffc', 0.28], [0.6, '#bfeef2', 0.32], [1, '#e8fffd', 0.62]]));
     s.path(puffs([[jx - 4.4, jb - 15, 3.4], [jx + 2.4, jb - 16.4, 4], [jx - 0.6, jb - 19.2, 3.2], [jx + 6.4, jb - 14, 2.4], [jx - 7.6, jb - 13.4, 2.2]], 1.3), '#22404c');
     s.add(`<path d="${oval(jx, jb - 13, 9.4, 3, -8)}" fill="none" stroke="#e8fffd" stroke-width=".7" stroke-dasharray="5 3" opacity=".65"/>` +
@@ -347,12 +348,13 @@ export const ultra_f = {
     s.path(`M${f1(jx - 7.4)},${f1(jb - 23)}V${f1(jb - 27)}H${f1(jx + 7.4)}V${f1(jb - 23)}Z`, '#1a3640');
     s.path(`M${f1(jx - 9)},${f1(jb - 26.6)}Q${f1(jx - 9)},${f1(jb - 31)} ${f1(jx - 6)},${f1(jb - 31)}H${f1(jx + 6)}Q${f1(jx + 9)},${f1(jb - 31)} ${f1(jx + 9)},${f1(jb - 26.6)}Z`, '#0e2028');
     s.path(U(ell(jx, jb + 0.6, 5.6, 2.6), taper([[jx - 5, jb + 0.6], [jx - 7, jb - 4.4]], [2.2, 1.2], { per: 2 }), taper([[jx + 5, jb + 0.6], [jx + 6.8, jb - 4.4]], [2.2, 1.2], { per: 2 })), p.fig);
-    s.glow(jx, jb - 13, 22, '#f4fffd', 0.5, 'breathe');
+    s.glow(jx, jb - 13, 22, '#f4fffd', 0.5);
     const zig = polyline([[jx + 1.4, jb - 12], [jx - 1.8, jb - 7.6], [jx + 1.6, jb - 6.6], [jx - 1.4, jb - 1.4]]);
     s.bloom(`<path d="${zig}" fill="none" stroke="#c6f4f6" stroke-width="2.4" stroke-linejoin="bevel" opacity=".7"/><path d="${zig}" fill="none" stroke="#ffffff" stroke-width="1.1" stroke-linejoin="bevel"/>` +
       `<path d="${jar}" fill="none" stroke="#dcfbff" stroke-width="1"/>` +
       `<path d="M${f1(jx - 8.4)},${f1(jb - 19)}Q${f1(jx - 11)},${f1(jb - 12)} ${f1(jx - 8.6)},${f1(jb - 4)}" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round"/>`,
     { sd: 1.4, k: 1.5, box: [jx - 30, jb - 50, 60, 60] });
+    s.add('</g>');
     s.add([[60, 70], [92, 44], [204, 84], [184, 30], [30, 104], [252, 62], [160, 96]].map(([x, y], i) =>
       `<ellipse class="fall" style="--d:${(-i * 0.23).toFixed(2)}s" cx="${x}" cy="${y}" rx=".7" ry="1.7" fill="#d8f4f2" opacity=".6"/>`).join(''));
     s.motes({ seed: 16103, n: 14, x: [110, 186], y: [16, 86], r: [0.35, 0.9], fill: p.glow, hot: '#ffffff', cls: 'float', t: [3, 6], op: [0.4, 0.9] });
@@ -407,14 +409,17 @@ export const ultra_f = {
     };
     const far = wingOf([[16, -12], [14, -34], [8, -56], [-4, -74], [-18, -88], [-32, -98]], 16, 22, 40, 140, 194, 9, 11);
     const near = wingOf([[8, -10], [2, -30], [-8, -50], [-22, -66], [-38, -80], [-56, -90]], 18, 26, 46, 150, 200, 10, 12);
+    s.add('<g data-part="wingfar">');
     s.path(place(far.d), s.radU(sx, sy, 240, [[0, '#fffdf6'], [0.4, '#efe4cc'], [1, '#b8a486']]));
     s.path(place(far.d), 'none', 'stroke="#8a7a62" stroke-width=".7" opacity=".6"');
     s.add(`<path d="${place(far.q)}" fill="none" stroke="#a8977c" stroke-width=".6" opacity=".5"/>`);
+    s.add('</g><g data-part="wingnear">');
     const wingFill = s.radU(sx, sy, 240, [[0, '#ffffff'], [0.35, '#fbf5e8'], [0.75, '#e2d4ba'], [1, '#c0ae92']]);
     s.path(place(near.d), wingFill);
     s.path(place(near.d), 'none', 'stroke="#7a6a52" stroke-width=".7" opacity=".6"');
     s.add(`<path d="${place(near.q)}" fill="none" stroke="#9a8a70" stroke-width=".6" opacity=".55"/>`);
     s.path(place(near.c), wingFill, 'stroke="#b4a488" stroke-width=".6"');
+    s.add('</g>');
     const body = place(U(
       blob([[-36, 0], [-28, -8], [-12, -13], [8, -14], [24, -11], [36, -4], [42, 4], [36, 13], [20, 18], [0, 17], [-20, 12]], 4),
       taper([[32, -6], [48, -14], [64, -21], [80, -27], [92, -31]], [14, 10, 7.6, 6.4, 6]),
@@ -443,8 +448,10 @@ export const ultra_f = {
       taper(hookPts, [1.8, 1.8, 1.8, 1.7, 1.6, 1.4, 1.1], { per: 4 }),
     ));
     s.figure(`<path d="${rider}"/>`, { fill: p.fig, rim: '#fff0c2', offsets: [[1.2, -0.8], [0.4, -1.3]], rimOp: 0.95, shade: 0.4, edge: 0.3, light: [0.8, -1] });
-    s.glow(rx + 30 * 1.2, ry - 85 * 1.2, 18, '#ffe08a', 0.55, 'breathe');
+    s.add('<g data-part="glint">');
+    s.glow(rx + 30 * 1.2, ry - 85 * 1.2, 18, '#ffe08a', 0.55);
     s.bloom(`<path d="${rp(polyline(hookPts))}" fill="none" stroke="#ffe7a0" stroke-width="1.3" stroke-linecap="round"/>`, { sd: 1.3, k: 1.5, box: [rx + 14, ry - 124, 50, 44] });
+    s.add('</g>');
     s.motes({ seed: 16203, n: 18, x: [60, 280], y: [20, 170], r: [0.4, 1], fill: '#ffe39a', hot: '#ffffff', cls: 'float', t: [5, 9], op: [0.4, 0.9] });
     return s.svg();
   },
@@ -504,14 +511,16 @@ export const ultra_f = {
     const main = [[318, 126], [272, 123], [226, 120], [190, 116], [166, 106], [154, 88], [150, 68], [138, 50], [118, 42], [100, 48], [94, 62], [102, 74], [116, 72], [118, 60], [108, 54]];
     const sb = spline(main, 6);
     const twin = along(spline(main.slice(0, 11), 6), 12).filter((_, i) => i % 6 === 0);
+    s.add('<g data-part="curl">');
     s.path(gust(main, 14) + gust(twin, 5), s.linU(318, 0, 94, 0, [[0, '#f4fffd', 0.25], [0.5, '#f4fffd', 0.55], [1, '#ffffff', 0.72]]));
     const streak = (d, a, b) => 'M' + along(sb, d).slice(a, b).map(pt).join('L');
     s.add(`<path d="${streak(-4.5, 4, 70) + streak(3.5, 10, 80) + streak(0, 30, 84) + streak(-1.5, 6, 50)}" fill="none" stroke="#ffffff" stroke-width=".8" opacity=".6" stroke-dasharray="14 4 6 3" stroke-linecap="round"/>`);
     s.bloom(`<path d="${'M' + sb.slice(24, 85).map(pt).join('L')}" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity=".9"/>`, { sd: 1.6, k: 1.4, box: [80, 20, 110, 110] });
+    s.add('</g>');
     // gulls and kites riding it
-    const birds = U(gull(206, 112, 1.25, -6), gull(254, 95, 0.95, -4), gull(182, 66, 1.05, -18), gull(64, 70, 0.8, 4), gull(276, 46, 0.8, -4), gull(30, 34, 0.7, 6), gull(228, 30, 0.6, -6));
-    const kites = U(kite(108, 60, 1.3, 196), kite(150, 28, 0.85, 186));
-    s.figure(`<path d="${birds}"/><path d="${kites}"/>`, { fill: '#123a40', rim: '#ffffff', offsets: [[0, -0.8]], rimOp: 0.7 });
+    const gulls = [gull(206, 112, 1.25, -6), gull(254, 95, 0.95, -4), gull(182, 66, 1.05, -18), gull(64, 70, 0.8, 4), gull(276, 46, 0.8, -4), gull(30, 34, 0.7, 6), gull(228, 30, 0.6, -6)];
+    const kites = [kite(108, 60, 1.3, 196), kite(150, 28, 0.85, 186)];
+    s.figure(gulls.map((g, i) => `<g data-part="gull${i}"><path d="${U(g)}"/></g>`).join('') + kites.map((g, i) => `<g data-part="kite${i}"><path d="${U(g)}"/></g>`).join(''), { fill: '#123a40', rim: '#ffffff', offsets: [[0, -0.8]], rimOp: 0.7 });
     s.motes({ seed: 16303, n: 16, x: [150, 300], y: [110, 210], r: [0.4, 1], fill: '#effcf8', hot: '#ffffff', cls: 'float', t: [3, 6], op: [0.4, 0.9] });
     return s.svg();
   },

@@ -89,6 +89,61 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Gale Winds: the lone tree grown flat on the cliff top (from its foot), the great curl of wind rolling up off
+  // the cliff edge and over (from the edge), the seven gulls and the two kites riding it (each from its centre).
+  // role: aura (a Field: the place itself acts), element: wind (the suggestion was water; what the place is made of
+  // is the gale); `edge`: where the wind meets the cliff; `eye`: the middle of the curl; `foot`: the tree's joint;
+  // `gulls`/`kites`: where each flies, as drawn; `hit`: the middle of the picture, over the cliff's top
+  'gale-winds': {
+    role: 'aura', element: 'wind', facing: 'left', hit: [150, 100], edge: [150, 120], eye: [112, 56], foot: [66, 113],
+    gulls: [[206, 112], [254, 95], [182, 66], [64, 70], [276, 46], [30, 34], [228, 30]], kites: [[108, 60], [150, 28]],
+    parts: [
+      { name: 'tree', of: 'fig:1', pivot: [66, 113] },
+      { name: 'curl', of: '[data-part=curl]', pivot: [160, 118] },
+      { name: 'gull0', of: 'fig:2 [data-part=gull0]', pivot: [206, 112] },
+      { name: 'gull1', of: 'fig:2 [data-part=gull1]', pivot: [254, 95] },
+      { name: 'gull2', of: 'fig:2 [data-part=gull2]', pivot: [182, 66] },
+      { name: 'gull3', of: 'fig:2 [data-part=gull3]', pivot: [64, 70] },
+      { name: 'gull4', of: 'fig:2 [data-part=gull4]', pivot: [276, 46] },
+      { name: 'gull5', of: 'fig:2 [data-part=gull5]', pivot: [30, 34] },
+      { name: 'gull6', of: 'fig:2 [data-part=gull6]', pivot: [228, 30] },
+      { name: 'kite0', of: 'fig:2 [data-part=kite0]', pivot: [108, 60] },
+      { name: 'kite1', of: 'fig:2 [data-part=kite1]', pivot: [150, 28] },
+    ],
+  },
+  // Storm Shepherd: the swan's two wings (each from where it joins the body), the swan herself (neck and tail),
+  // the shepherdess (from her seat, without the crook), the crook with its golden hook (from her raised hand)
+  // and the glint of light round the hook (with it), the flock of three small birds. role: support (she lifts
+  // her Field: +2/+1), element: wind (the golden gale off the wings); `emit`: the hook's tip, where the gift
+  // leaves; `hit`: the swan's chest; `seat`, `hand`, `wing`: the joints; `alone`: out over the sunlit sea of
+  // cloud at the right, where the gale goes when nothing is aimed at
+  'storm-shepherd': {
+    role: 'support', element: 'wind', facing: 'right', emit: [172, 30], hit: [122, 146], seat: [132, 134], hand: [154.3, 78.8], wing: [128, 135], alone: [250, 118],
+    parts: [
+      { name: 'flock', of: 'fig:2', pivot: [55, 120] },
+      { name: 'wingfar', of: '[data-part=wingfar]', pivot: [128, 135] },
+      { name: 'wingnear', of: '[data-part=wingnear]', pivot: [128, 135] },
+      { name: 'swan', of: 'fig:3', pivot: [120, 148] },
+      { name: 'rider', of: 'fig:4', pivot: [132, 134], poly: [[88.0, 10.0], [88.0, 165.0], [175.0, 165.0], [175.0, 40.3], [173.0, 42.1], [173.0, 42.1], [173.0, 42.1], [173.0, 42.1], [172.9, 42.1], [172.9, 42.1], [172.9, 42.1], [171.2, 42.4], [171.2, 42.4], [171.1, 42.4], [171.1, 42.4], [171.1, 42.4], [171.1, 42.4], [171.1, 42.3], [169.5, 41.6], [169.5, 41.6], [169.5, 41.6], [169.4, 41.6], [169.4, 41.5], [169.4, 41.5], [168.6, 40.3], [168.6, 40.3], [168.6, 40.3], [168.6, 40.3], [168.6, 40.3], [168.6, 40.2], [168.6, 40.2], [168.5, 38.5], [168.5, 38.5], [168.5, 38.4], [168.5, 38.4], [168.5, 38.4], [168.5, 38.4], [168.5, 38.4], [168.5, 38.3], [168.5, 38.3], [171.7, 34.8], [172.3, 31.2], [170.3, 28.4], [167.1, 28.1], [166.0, 29.7], [166.0, 30.0], [165.8, 30.0], [164.4, 31.9], [164.3, 38.9], [164.3, 38.9], [152.3, 111.6], [152.2, 111.6], [152.2, 111.6], [152.2, 111.6], [152.2, 111.6], [152.2, 111.7], [152.2, 111.7], [152.2, 111.7], [152.2, 111.7], [152.2, 111.7], [152.1, 111.7], [152.1, 111.7], [152.1, 111.7], [152.1, 111.7], [152.1, 111.7], [152.0, 111.7], [152.0, 111.7], [145.5, 110.7], [145.5, 110.7], [145.5, 110.6], [145.5, 110.6], [145.4, 110.6], [145.4, 110.6], [145.4, 110.6], [145.4, 110.6], [145.4, 110.6], [145.4, 110.6], [145.4, 110.5], [145.4, 110.5], [145.3, 110.5], [145.3, 110.5], [145.3, 110.5], [145.3, 110.4], [145.3, 110.4], [157.8, 35.7], [158.3, 29.8], [158.3, 29.8], [158.3, 29.7], [158.3, 29.7], [158.3, 29.7], [158.3, 29.7], [158.3, 29.7], [160.0, 27.5], [160.0, 10.0]] },
+      { name: 'crook', of: 'fig:4', pivot: [154.3, 78.8], poly: [[164.1, 38.9], [164.2, 31.8], [167.1, 27.9], [170.4, 28.2], [172.5, 31.1], [171.9, 34.9], [168.7, 38.5], [168.8, 40.2], [169.6, 41.4], [171.2, 42.2], [172.9, 41.9], [177.3, 38.0], [178.6, 29.7], [173.6, 22.8], [164.3, 22.1], [158.5, 29.8], [158.0, 35.8], [145.5, 110.5], [152.1, 111.5]] },
+      { name: 'glint', of: '[data-part=glint]', pivot: [154.3, 78.8] },
+    ],
+  },
+  // Weatherwitch: her cloak (from her shoulder), she herself (hair, hat and robes, from her feet, without the arm
+  // that holds the jar up), that arm (from the shoulder), and the jar with the little storm in it (from its foot,
+  // which rests on her hand). role: support (her Fields cost less, she brings one back), element: wind (the
+  // jar's storm, let out); `emit`: the jar's heart, where the gift leaves; `hit`: her middle; `shoulder`: the
+  // arm's joint; `hand`: where the jar sits; `feet`: her joint; `alone`: out over the sunlit sea at the
+  // right, where her storm goes when nothing is aimed at
+  weatherwitch: {
+    role: 'support', element: 'wind', facing: 'right', emit: [143.9, 46.3], hit: [123, 135], shoulder: [127.2, 98.8], hand: [143.85, 58.3], feet: [121, 177], alone: [250, 134],
+    parts: [
+      { name: 'cloak', of: 'fig:2', pivot: [122, 97] },
+      { name: 'her', of: 'fig:3', pivot: [121, 177], poly: [[60.0, 40.0], [60.0, 205.0], [180.0, 205.0], [180.0, 40.0], [157.5, 40.0], [133.8, 95.1], [125.3, 91.5], [147.5, 40.0]] },
+      { name: 'arm', of: 'fig:3', pivot: [127.2, 98.8], poly: [[131.4, 100.6], [151.2, 54.7], [142.7, 51.1], [123.0, 97.0]] },
+      { name: 'jar', of: '[data-part=jar]', pivot: [143.85, 58.3] },
+    ],
+  },
   // Seren, the Storm-Scholar: she herself (robes, scarf and all, from her feet), the staff (from her grip), the
   // coil of lightning and fire wound up it into the gap, and the open book in her other hand (from its middle).
   // role: support (she counts Spells and draws), element: lightning; `emit`: the staff's tip, where the gift

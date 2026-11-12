@@ -21,6 +21,66 @@ const GHOST_POLYS = [
 
 export const PUPPETS = {
   // ── lane A's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // the one who came back (a creature, an attacker: a towering revenant striding out of its barrow,
+  // chains trailing): its body (legs, torso, helm and crown), the ragged cloak streaming behind
+  // it, the two long arms (each with its claws, turning from its shoulder), the two chains that
+  // hang from its wrists and the glints (the glow and seam of light on its chest); `emit`: its left
+  // hand, where the lash of its chain leaves from (`handR`: the right hand, used when the target
+  // lies to the right), `hit`: its chest, `shoulderL`/`shoulderR`: where the arms turn, `neck`:
+  // where its helm sits, `feet`: where it stands, `cloakRoot`: where the cloak hangs from,
+  // `bolt`: the lightning behind it, `barrow`: its open door
+  'the-one-who-came-back': {
+    role: 'attacker', element: 'shadow', facing: 'front', emit: [107, 138], hit: [146, 110],
+    handR: [185, 138], shoulderL: [126, 80], shoulderR: [168, 80], neck: [147, 74], feet: [143, 186], cloakRoot: [166, 68], bolt: [226, 56], barrow: [248, 178],
+    parts: [
+      { name: 'body', of: '[data-part=rbody]', pivot: [143, 186] },
+      { name: 'cloak', of: '[data-part=rcloak]', pivot: [166, 68] },
+      { name: 'larm', of: '[data-part=rlarm]', pivot: [126, 80] },
+      { name: 'rarm', of: '[data-part=rrarm]', pivot: [168, 80] },
+      { name: 'chainL', of: '[data-part=rchainL]', pivot: [106, 142] },
+      { name: 'chainR', of: '[data-part=rchainR]', pivot: [186, 142] },
+      { name: 'glints', of: '[data-part=rglints]', pivot: [146, 90] },
+    ],
+  },
+  // death is a door (a spell, an attacker: the stone door swings wide and takes a creature or a
+  // relic through): the door's slab (swung back inside the frame, turning from its hinge), the
+  // stone frame (two posts, lintel and step), the bright edge line of the right post and the
+  // small wanderer standing in the light, who flinches from it; `emit`: the lit gap, where the
+  // cold light gathers and the beam leaves from, `hit`: the stone frame, where blows land,
+  // `hinge`: where the slab swings from, `wanderer`: his feet (the foe it takes when alone),
+  // `lintel`: the frame's top
+  'death-is-a-door': {
+    role: 'attacker', element: 'spirit', facing: 'right', emit: [162, 112], hit: [150, 112],
+    hinge: [135, 112], wanderer: [196, 200], lintel: [150, 40],
+    parts: [
+      { name: 'slab', of: '[data-part=slab]', pivot: [135, 112] },
+      { name: 'frame', of: 'fig:0', pivot: [150, 176] },
+      { name: 'edge', of: '[data-part=edge]', pivot: [166, 112] },
+      { name: 'walker', of: 'fig:1', pivot: [196, 200] },
+    ],
+  },
+  // borrowed time (a spell, a support: a creature returns from the discard pile for one turn: the
+  // gift is the spirit that steps out of the hourglass): the ghostly knight's body (with the
+  // resting arm), his raised arm (turning from the shoulder, with the hand under the hourglass), his
+  // helm, the visor's glow, the cracked hourglass (turning about its middle) and the tomb in front
+  // of him (the tomb, its panels and its shoved-aside lid), which he sinks behind and rises from;
+  // `emit`: the hourglass, where the returning spirit gathers and leaves from, `hit`: his chest,
+  // where the boon lands when alone, `shoulder`: where the raised arm turns, `neck`: where the
+  // helm nods, `glass`: the hourglass's middle, `rim`: the tomb's lip
+  'borrowed-time': {
+    role: 'support', element: 'spirit', facing: 'front', emit: [194, 44], hit: [142, 124],
+    shoulder: [160, 108], neck: [142, 98], glass: [194, 44], rim: 148,
+    parts: [
+      { name: 'body', of: '[data-part=kbody]', pivot: [142, 150] },
+      { name: 'arm', of: '[data-part=karm]', pivot: [160, 108] },
+      { name: 'head', of: '[data-part=khead]', pivot: [142, 98] },
+      { name: 'visor', of: '[data-part=kvisor]', pivot: [142, 80] },
+      { name: 'glass', of: '[data-part=glass]', pivot: [194, 44] },
+      { name: 'tomb', of: 'fig:1', pivot: [150, 150] },
+      { name: 'panels', of: '[data-part=panels]', pivot: [150, 175] },
+      { name: 'lid', of: 'fig:2', pivot: [250, 165] },
+    ],
+  },
   // the bonepicker (a creature, an attacker with Soar: a gaunt vulture-horror on a broken wall): its
   // body (with the stubby extra legs), the ragged tail-wing, the great raised wing, its head (ruff,
   // long neck, beak and bald skull), its three long legs (each about its hip) and the cluster of

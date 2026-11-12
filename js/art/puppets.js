@@ -85,6 +85,59 @@ export const PUPPETS = {
   },
 
   // ── lane B's puppets (bakeoff/recipe.md): new entries go just below this line ──
+  // Gloomweb Spider: its eight legs (each from its root on the body), its fangs, the body
+  // (abdomen and head, with the violet marks and its eyes), the silk it hangs by and the
+  // web behind it. `thread`: where the silk is fixed (the spider swings about its lower
+  // end, `hang`); `roots`: each leg's root, front pair first (left; the right mirrors them)
+  'gloomweb-spider': {
+    role: 'attacker', element: 'venom', facing: 'front', emit: [150, 123], hit: [150, 80],
+    thread: [150, 0], hang: [150, 48], eyes: [150, 107], roots: [[145, 108], [143, 104], [143, 99], [145, 94]], web: [150, 94], alone: [208, 168],
+    parts: [
+      { name: 'legL0', of: 'fig:1 [data-part=legL0]', pivot: [145, 108] },
+      { name: 'legR0', of: 'fig:1 [data-part=legR0]', pivot: [155, 108] },
+      { name: 'legL1', of: 'fig:1 [data-part=legL1]', pivot: [143, 104] },
+      { name: 'legR1', of: 'fig:1 [data-part=legR1]', pivot: [157, 104] },
+      { name: 'legL2', of: 'fig:1 [data-part=legL2]', pivot: [143, 99] },
+      { name: 'legR2', of: 'fig:1 [data-part=legR2]', pivot: [157, 99] },
+      { name: 'legL3', of: 'fig:1 [data-part=legL3]', pivot: [145, 94] },
+      { name: 'legR3', of: 'fig:1 [data-part=legR3]', pivot: [155, 94] },
+      { name: 'fangs', of: 'fig:1 [data-part=fangs]', pivot: [150, 112] },
+      { name: 'body', of: ['fig:1 [data-part=body]', '[data-part=marks]'], pivot: [150, 80] },
+      { name: 'thread', of: '[data-part=thread]', pivot: [150, 0] },
+      { name: 'web', of: '[data-part=web]', pivot: [150, 94] },
+    ],
+  },
+  // Sky Warden: the net of light (from his hand), the far wing and the near wing (each from
+  // the shoulder), the griffin (with its beak and eye and the feather at the wing's root),
+  // the knight (from his seat) and his casting arm (from the shoulder). `hand`: where the
+  // arm ends and the net springs from; `reach`: how far the drawn net reaches from it;
+  // `heading`: the way (deg, down is 90) the drawn net points; `alone`: the net's own target
+  'sky-warden': {
+    role: 'attacker', element: 'light', facing: 'right', emit: [145, 111], hit: [112, 100],
+    hand: [145, 111.5], shoulder: [145, 78], seat: [126, 90], wing: [117, 88], centre: [120, 98], reach: 122, heading: 49, alone: [248, 172],
+    parts: [
+      { name: 'net', of: '[data-part=net]', pivot: [145, 111] },
+      { name: 'wingF', of: '[data-part=wingF]', pivot: [117, 88] },
+      { name: 'body', of: ['fig:1 [data-part=body]', '[data-part=beak]'], pivot: [120, 98] },
+      { name: 'wingN', of: 'fig:1 [data-part=wingN]', pivot: [117, 88] },
+      { name: 'rider', of: 'fig:2 [data-part=rider]', pivot: [126, 90] },
+      { name: 'arm', of: 'fig:2 [data-part=arm]', pivot: [145, 78] },
+    ],
+  },
+  // The Pale Abbess: she herself (habit, veil, wimple and face, rosary, and the lavender
+  // edge behind her; from her feet), her raised arm (from the shoulder) and the lantern
+  // (hanging from its hook, so it can swing). `emit`: the lantern's flame, where the souls
+  // gather and leave from; `lamp`: its middle; `alone`: where its souls fly when nothing
+  // is aimed at; `graves`: the far graves the dead rise from
+  'the-pale-abbess': {
+    role: 'attacker', element: 'spirit', facing: 'right', emit: [151, 70], hit: [116, 140],
+    feet: [125, 197], shoulder: [124, 92], hook: [151, 52], lamp: [151, 70], alone: [236, 104], graves: [[24, 150], [178, 150], [236, 150], [266, 152], [204, 152]],
+    parts: [
+      { name: 'body', of: ['[data-part=shadow]', 'fig:3 [data-part=body]', '[data-part=face]'], pivot: [125, 197] },
+      { name: 'arm', of: ['[data-part=armShadow]', 'fig:3 [data-part=arm]'], pivot: [124, 92] },
+      { name: 'lantern', of: '[data-part=lantern]', pivot: [151, 52] },
+    ],
+  },
   // Ambush at Dawn: the three spirit soldiers (each its body and its glow, from its
   // feet), the mist they rise from, and the three dark riders (each from its hooves).
   // `guard`: where blows land on the soldiers (their spear points, then their chests),

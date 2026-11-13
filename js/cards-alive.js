@@ -26,6 +26,7 @@ import { livenArt } from './render.js';
 import { drop, fetchSprites, release, still } from './sprites.js';
 import { getSpeed, isReduced } from './fx.js';
 import { calm } from './steady.js';
+import { radialStops, softPicSoon } from './fx-tex.js';
 
 const HOME_ONLY = new Set(['seraphine', 'the-barrow-queen']); // (they act in Home's own scene, js/home-alive.js)
 export const canAct = (id) => !!(LIVE[id] && PUPPETS[id] && !HOME_ONLY.has(id)) && !still() && calm() < 3; // (3: Moving cards set to still)
@@ -98,8 +99,44 @@ async function build(id, card, over, { aim = null, blows = null } = {}) {
   const m = makeKit({ id, mod, art, box, face, over, aim, blows, lenient: true });
   try { mod.build(m.k); } catch (e) { console.warn(`${id}: its move didn't build`, e); note('last', `${id}: its move broke: ${e?.message || e}`); dropMove(m); return null; }
   for (const a of m.anims) a.cancel();
+  await asPictures(m);
   await Promise.all(m.made.filter((el) => el.tagName === 'IMG').map(loaded));
   return { id, END: m.END, BEATS: mod.BEATS || null, anims: m.anims, made: m.made };
+}
+// A built move's soft lights (CSS radial gradients) as small pictures the
+// graphics chip stretches (js/fx-tex.js): each painted gradient needed a layer
+// as big as it shows, at 3x; a picture doesn't. Read from the light as built
+// (its classes and its own colours), swapped in its place, its motion moved
+// onto the picture; any light that isn't a plain soft gradient stays as it is.
+// (Read all first, then swap: reading between swaps would lay the page out again each time. A light
+// up to 60 px across gets a 128 px picture, a bigger one 192.)
+async function asPictures(m) {
+  if (window.__ppNoTex) return; // (a test comparing the two)
+  const todo = [];
+  for (const el of m.made) {
+    if (el.tagName !== 'I' || !el.classList.contains('fx') || !el.isConnected) continue;
+    const cs = getComputedStyle(el), bg = cs.backgroundImage, st = radialStops(bg);
+    // (a circle stretched to a box that isn't square would be an ellipse: as CSS; and only a box cut round, or not at all)
+    const r = cs.borderTopLeftRadius, round = r === '50%', w = el.offsetWidth, h = el.offsetHeight;
+    if (!st || (st.circle && Math.abs(w - h) > 0.5) || !(round || r === '0px')) { if (bg !== 'none') window.__ppTexMiss?.push(bg); continue; }
+    todo.push({ el, st, round, size: Math.max(w, h) <= 60 ? 128 : 192 });
+  }
+  if (!todo.length) return;
+  const urls = await Promise.all(todo.map((t) => softPicSoon(t.st.stops, t.size, t.round, t.st.side)));
+  const swaps = new Map();
+  todo.forEach(({ el }, i) => {
+    if (!el.isConnected) return;
+    const im = document.createElement('img');
+    im.alt = '';
+    im.src = urls[i];
+    im.className = `${el.className} tex`;
+    im.style.cssText = el.style.cssText;
+    el.replaceWith(im);
+    swaps.set(el, im);
+  });
+  if (!swaps.size) return;
+  for (const a of m.anims) { const t = a.effect?.target; if (swaps.has(t)) a.effect.target = swaps.get(t); }
+  m.made = m.made.map((el) => swaps.get(el) || el);
 }
 const play = (m) => { for (const a of m.anims) { a.cancel(); a.play(); } };
 const halt = (m) => { for (const a of m?.anims || []) a.cancel(); };
@@ -460,15 +497,20 @@ function letGo(over) {
 const impactOf = (m) => m.BEATS?.impact ?? Math.round(m.END * 0.4);
 
 // A card's picture in sprites, laid over the picture it has, its pictures
-// loaded first so it shows whole at once; undo() takes it off again.
+// loaded first so it shows whole at once; undo() takes it off again. A card
+// shown at most 100 px wide (the table, a small fight card) gets the 320 px
+// copy of its picture (tools/small-art.py): the same there, under a third of
+// the memory (the moving parts are small already).
 function inSprites(card, id) {
+  const w = card.querySelector(ART)?.getBoundingClientRect().width || 999;
+  const base = w <= 100 && /^art\/live\/[\w-]+\.webp/.test(LIVE[id].src) ? LIVE[id].src.replace(/^art\/live\//, 'art/live/s/') : LIVE[id].src;
   const pp = document.createElement('div');
   pp.className = 'pp-art';
-  pp.innerHTML = `<img class="art-img" src="${LIVE[id].src}" alt="" decoding="async"><div class="sp-art" data-live="${id}"></div>`;
+  pp.innerHTML = `<img class="art-img" src="${base}" alt="" decoding="async"><div class="sp-art" data-live="${id}"></div>`;
   let undone = false;
   const ready = (async () => {
     const L = await fetchSprites(LIVE[id].live);
-    const srcs = [LIVE[id].src, ...(L?.sprites || []).filter((s) => s.img).map((s) => s.img)];
+    const srcs = [base, ...(L?.sprites || []).filter((s) => s.img).map((s) => s.img)];
     await Promise.all(srcs.map((src) => { const im = new Image(); im.src = src; return im.decode().catch(() => {}); }));
     const art = card.querySelector(ART);
     if (undone || !card.isConnected || !art) return;

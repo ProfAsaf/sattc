@@ -15,6 +15,7 @@
 
 import { BY_ID, KEYWORDS } from './cards.js';
 import { artTag, cardBackHTML, esc, factionVars, glyph } from './render.js';
+import { rgbaOf, softPic } from './fx-tex.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const noop = () => {};
@@ -298,7 +299,9 @@ export function tcardHTML(card, state = {}) {
   const cost = s.cost ?? card.cost;
   const costCls = cost < card.cost ? ' cheaper' : cost > card.cost ? ' pricier' : '';
   const badges = kws.map(keywordBadge).join('') + (s.leaving ? keywordBadge('leaving') : '');
-  const art = artTag(card.id) || `<div class="tc-ph">${glyph((card.factions || [])[0] || 'neutral')}</div>`;
+  // (on the table, a choice screen, a small fight card: art at most ~100 px even lifted, so the small picture;
+  // a hand card grows to ~115 px raised and keeps the full one)
+  const art = artTag(card.id, false, !hand && (!s.w || s.w <= 100)) || `<div class="tc-ph">${glyph((card.factions || [])[0] || 'neutral')}</div>`;
   const readiness = cls.includes('exhausted') ? ', spent until its next turn' : cls.includes('sick') ? ', just arrived: cannot attack yet' : cls.includes('ready') ? ', ready' : '';
   const label = (creature ? `${card.name}, ${p} power, ${v} vitality` : `${card.name}, ${typeText(card)}`) + readiness;
   let style = factionVars(card) + (s.w ? `;--w:${s.w}px` : '');
@@ -1540,6 +1543,13 @@ const GHOST = new WeakMap();
 let LIVE = 0;
 const CAP = 90;    // never more particles than this at once
 
+// a spark's look (css/table.css .fx-p) and a fleck of ash's, as small pictures (js/fx-tex.js)
+function dotPic(color) {
+  const [r, g, b, a] = rgbaOf(color) || [255, 207, 122, 1];
+  return softPic([[0, [255, 255, 255, 1]], [0.18, [255, 255, 255, 1]], [0.42, [r, g, b, a]], [0.72, [r, g, b, 0]]], 32, true);
+}
+const ASH = () => softPic([[0, [109, 97, 87, 1]], [0.3, [109, 97, 87, 1]], [0.55, [60, 50, 44, 0.7]], [0.72, [60, 50, 44, 0]]], 32, true);
+
 function particles(x, y, o = {}) {
   if (isReduced()) return Promise.resolve();
   const n = Math.min(Math.round(o.n ?? 12), Math.max(0, CAP - LIVE));
@@ -1550,9 +1560,12 @@ function particles(x, y, o = {}) {
   const jit = Array.isArray(o.jitter) ? o.jitter : [o.jitter || 0, o.jitter || 0];
   const spread = o.spread ?? 360, dir = o.dir ?? 0;
   for (let i = 0; i < n; i++) {
-    const p = document.createElement('i');
-    p.className = kind === 'dot' ? 'fx-p' : `fx-p ${kind}`;
     const col = Array.isArray(o.color) ? o.color[i % o.color.length] : o.color || '#ffcf7a';
+    // (a dot or a fleck of ash: its look as a small picture, js/fx-tex.js; streaks and shards as drawn)
+    const pic = kind === 'dot' ? dotPic(col) : kind === 'ash' ? ASH : null;
+    const p = document.createElement(pic ? 'img' : 'i');
+    p.className = (kind === 'dot' ? 'fx-p' : `fx-p ${kind}`) + (pic ? ' tex' : '');
+    if (pic) { p.alt = ''; p.src = typeof pic === 'function' ? pic() : pic; }
     p.style.cssText = `left:${(x + rand(-jit[0], jit[0])).toFixed(1)}px;top:${(y + rand(-jit[1], jit[1])).toFixed(1)}px;--s:${rand(s0, s1).toFixed(1)}px;--c:${col}`;
     const ang = ((dir + rand(-spread / 2, spread / 2)) * Math.PI) / 180;
     const v = rand(o.vmin ?? 70, o.vmax ?? 190);
@@ -1585,10 +1598,23 @@ function ring(x, y, o = {}) {
     { duration: o.duration ?? 450, delay: o.delay || 0, easing: 'cubic-bezier(.15,.7,.3,1)' }).then(() => { el.remove(); RINGS--; });
 }
 
+// A glow's look (css/table.css .fx-glow) painted once per colour into a small
+// picture (js/fx-tex.js): a moving picture needs no layer painted at its full
+// size, as the gradient did (~8 MB for the biggest, grown 1.5x, at 3x).
+function glowPic(color, white) {
+  if (white) return softPic([[0, [255, 255, 255, 1]], [0.22, [255, 246, 220, 0.7]], [0.45, [255, 220, 160, 0.25]], [0.68, [255, 220, 160, 0]]]);
+  const [r, g, b, a] = rgbaOf(color) || [255, 210, 122, 1];
+  return softPic([[0, [r, g, b, a]], [0.3, [r, g, b, a * 0.45]], [0.68, [r, g, b, 0]]]);
+}
 function glow(x, y, o = {}) {
   if (isReduced() || GLOWS >= GLOW_CAP) return Promise.resolve();
   const size = Math.min(o.size ?? 120, 320);
-  const el = add(`fx-glow${o.white ? ' white' : ''}`, `left:${(x - size / 2).toFixed(1)}px;top:${(y - size / 2).toFixed(1)}px;width:${size}px;height:${size}px;--c:${o.color || '#ffd27a'}`);
+  const el = document.createElement('img');
+  el.className = `fx-glow tex${o.white ? ' white' : ''}`;
+  el.alt = '';
+  el.src = glowPic(o.color || '#ffd27a', o.white);
+  el.style.cssText = `left:${(x - size / 2).toFixed(1)}px;top:${(y - size / 2).toFixed(1)}px;width:${size}px;height:${size}px`;
+  layer().appendChild(el);
   GLOWS++;
   return play(el, [
     { transform: 'scale(.3)', opacity: 0 },
@@ -1984,7 +2010,9 @@ async function crumble(g, o) {
   try {
     const grid = shatter(w, h, cols, rows, split);
     // (taken from the room now, before the cracks: deaths that start together all see it)
-    made = grid.cells.length * w * h;
+    // (each shard is held in a frame cut to its piece's box: that box is what it costs)
+    const boxOf = (poly) => { const xs = poly.map((p) => p[0]), ys = poly.map((p) => p[1]); return [Math.max(0, Math.floor(Math.min(...xs))), Math.max(0, Math.floor(Math.min(...ys))), Math.min(w, Math.ceil(Math.max(...xs))), Math.min(h, Math.ceil(Math.max(...ys)))]; };
+    made = grid.cells.reduce((t, poly) => { const [x0, y0, x1, y1] = boxOf(poly); return t + (x1 - x0) * (y1 - y0); }, 0);
     SHARDS += made;
     // 1. struck: cracks of light run through it
     const svg = document.createElementNS(NS, 'svg');
@@ -2020,7 +2048,13 @@ async function crumble(g, o) {
     const rad = (gi.ang * Math.PI) / 180, cos = Math.cos(rad) * gi.sc, sin = Math.sin(rad) * gi.sc;
     const L = layer();
     svg.remove();                       // each shard carries only its own glowing edge
+    // Each shard: a copy of the card, cut to its piece (clip-path), held in a
+    // frame cut to the piece's box. The frame is what moves, so on a phone its
+    // layer is that box, not a whole card's (a death broke a card into up to 9
+    // whole-card layers); every point stays where it was, so it looks the same.
+    const gx = parseFloat(g.style.left) || 0, gy = parseFloat(g.style.top) || 0;
     const shards = grid.cells.map((poly) => {
+      const [bx, by, bx1, by1] = boxOf(poly);
       const s = g.cloneNode(true);
       s.classList.add('fx-shard');
       const d = `M${poly.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('L')}Z`;
@@ -2035,10 +2069,16 @@ async function crumble(g, o) {
       const ox = w / 2 - cx, oy = h / 2 - cy;
       const tx = ox - (cos * ox - sin * oy), ty = oy - (sin * ox + cos * oy);
       s.style.clipPath = `polygon(${poly.map((p) => `${p[0].toFixed(1)}px ${p[1].toFixed(1)}px`).join(',')})`;
-      s.style.transformOrigin = `${cx.toFixed(1)}px ${cy.toFixed(1)}px`;
-      s.style.transform = `translate(${tx.toFixed(2)}px,${ty.toFixed(2)}px) rotate(${gi.ang.toFixed(2)}deg) scale(${gi.sc.toFixed(4)})`;
-      L.appendChild(s);
-      return { s, cx, cy };
+      s.style.left = `${-bx}px`;
+      s.style.top = `${-by}px`;
+      s.style.transform = 'none';
+      const f = document.createElement('div');
+      f.className = 'fx-shard-box';
+      f.style.cssText = `position:absolute;left:${(gx + bx).toFixed(1)}px;top:${(gy + by).toFixed(1)}px;width:${bx1 - bx}px;height:${by1 - by}px;overflow:hidden;pointer-events:none;`
+        + `transform-origin:${(cx - bx).toFixed(1)}px ${(cy - by).toFixed(1)}px;transform:translate(${tx.toFixed(2)}px,${ty.toFixed(2)}px) rotate(${gi.ang.toFixed(2)}deg) scale(${gi.sc.toFixed(4)})`;
+      f.appendChild(s);
+      L.appendChild(f);
+      return { s: f, cx, cy };
     });
     g.style.visibility = 'hidden';
     const jobs = shards.map(({ s, cx, cy }) => {

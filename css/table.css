@@ -798,6 +798,8 @@
   background: radial-gradient(circle, var(--c, #ffd27a) 0%, color-mix(in srgb, var(--c, #ffd27a) 45%, transparent) 30%, transparent 68%);
 }
 .fx-glow.white { background: radial-gradient(circle, #fff 0%, rgba(255, 246, 220, .7) 22%, rgba(255, 220, 160, .25) 45%, transparent 68%); }
+/* the same glow as a small picture stretched (js/fx-tex.js): no layer painted at its size */
+img.tex { background: none !important; border-radius: 0 !important; box-shadow: none !important; display: block; max-width: none; }
 .fx-pillar {
   border-radius: 50% 50% 8px 8px / 30% 30% 8px 8px;
   background: linear-gradient(0deg, rgba(255, 248, 225, .95), rgba(255, 228, 160, .55) 45%, rgba(255, 220, 150, 0));

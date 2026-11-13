@@ -81,9 +81,16 @@ export function artURL(card) {
 
 // Small views show the baked picture (art/<id>.webp, see tools/bake-art.mjs);
 // the big view draws the live SVG, where the light and air move.
-export function artTag(id, live = false) {
+// `small`: a card shown small (the table, a choice screen): on a phone its
+// picture comes from the 320 px copy (tools/small-art.py), the same there and
+// under half the memory; the browser picks it (srcset), the full one on wider
+// screens.
+export function artTag(id, live = false, small = false) {
   if (live) return artSVG(id) || '';
   const src = ART[id] || artImage(id);
+  if (src && small && /^art\/[\w-]+\.webp/.test(src)) {
+    return `<img class="art-img" src="${src}" srcset="${src.replace(/^art\//, 'art/s/')} 320w, ${src} 480w" sizes="(max-width: 600px) 106px, 160px" alt="" loading="lazy" decoding="async">`;
+  }
   return src ? `<img class="art-img" src="${src}" alt="" loading="lazy" decoding="async">` : (artSVG(id) || '');
 }
 

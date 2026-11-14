@@ -1,17 +1,9 @@
-// SATTC Ultra: a switch on Home for trying bigger changes to the rules beside
-// the standard game. This phone remembers it. New practice games and new rooms
-// take it from here; a room keeps its own (its host can flip it in the lobby),
-// so everyone at a table plays the same rules. The engine sees `setup.ultra`.
-const KEY = 'collective.ultra';
-let on = (() => { try { return localStorage.getItem(KEY) === '1'; } catch { return false; } })();
+// SATTC Ultra: since 14 November 2026 the only version of the game. (From 7
+// November a switch on the PvP page, and one in each room's lobby, chose it or
+// the standard rules.) Every new game, room, draft and deck plays it; a game
+// saved under the standard rules still replays as it was (its own setup says
+// so), and the guided lesson keeps to the basics. The engine sees `setup.ultra`.
+export const ultra = () => true;
 
-export const ultra = () => on;
-
-export function setUltra(v) {
-  on = !!v;
-  try { localStorage.setItem(KEY, on ? '1' : '0'); } catch { /* private browsing: this visit only */ }
-  paint();
-}
-
-// The whole app wears it (body.ultra), so you can tell at a glance.
-export const paint = () => document.body.classList.toggle('ultra', on);
+// The whole app wears it (body.ultra).
+export const paint = () => document.body.classList.add('ultra');

@@ -212,10 +212,7 @@ body[data-page="home"] main { display: flex; flex-direction: column; min-height:
 .home-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } /* the two ways to play, side by side */
 .home-actions .btn.ghost { min-height: 46px; font-size: 16px; }
 
-/* SATTC Ultra: its switch (on the PvP page), and what the app wears while it's on */
-.pp-ultra { display: flex; width: max-content; max-width: 100%; margin: 0 auto 12px; }
-.home-ultra { justify-self: center; padding: 6px 4px 0; }
-.home-ultra .dr-switch-text small { font-size: 12px; }
+/* SATTC Ultra (the only version): what the app wears */
 .ultra-tag {
   display: none; width: max-content; margin: 2px auto 6px; padding: 3px 14px 4px; border-radius: 999px;
   font: 700 13px/1 'EB Garamond', Georgia, serif; letter-spacing: .42em; text-indent: .42em; text-transform: uppercase;
@@ -224,13 +221,6 @@ body[data-page="home"] main { display: flex; flex-direction: column; min-height:
 }
 body.ultra .ultra-tag { display: block; }
 body.ultra .hero h1 { text-shadow: 0 0 22px rgba(160, 120, 255, .55); }
-body.ultra .home-ultra input:checked + .dr-knob { background: linear-gradient(90deg, #6aa9ff, #a477ff); }
-.ultra-pill {
-  display: inline-block; vertical-align: middle; margin-left: 6px; padding: 2px 8px 3px; border-radius: 999px;
-  font: 700 11px/1.1 system-ui, sans-serif; font-style: normal; letter-spacing: .08em; text-transform: uppercase;
-  color: #120a24; background: linear-gradient(90deg, #8fd3ff, #c59bff 55%, #ff9bd2);
-}
-.ultra-note b { color: #c9a8ff; }
 .home-actions .btn { min-height: 52px; font-size: 17px; border-radius: 14px; }
 @media (max-height: 600px) { /* Safari's toolbars on a small iPhone: still one screen */
   .home-show { padding: 10px 0 0; }

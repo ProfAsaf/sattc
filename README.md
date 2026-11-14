@@ -418,8 +418,9 @@ from its Home Screen icon.
 
 ## SATTC Ultra (2026-11-07)
 
-A switch on Home (`js/mode.js`) for trying bigger changes beside the standard
-game. Its design notes are in `ultra-plan.md`. The aims:
+Bigger changes to the rules, tried beside the standard game from 2026-11-07
+(a switch, `js/mode.js`) and the only version since 2026-11-14. Its design
+notes are in `ultra-plan.md`. The aims:
 
 - Strategies you steer into as the game goes, from your deck, your early draws
   and what the others do, with no tracks.
@@ -428,11 +429,18 @@ game. Its design notes are in `ultra-plan.md`. The aims:
 - Many different powers, none beaten for free, like the web serial Worm.
 - Party-style combos, as in an RPG.
 
-**The switch.** This phone remembers it. New practice games and new rooms take
-it, and a room keeps its own (`info.ultra`, which the host can flip in the
-lobby), so a table always plays one set of rules. Engine: `setup.ultra` →
-`s.ultra`. A setup without it plays the standard rules: every saved game, and
-the lesson.
+**The only version (2026-11-14).** "We can have ultra be the only version and
+always have the legendary creatures? That way there is less to select." The
+switches are gone: SATTC Ultra on the PvP page and in a room's lobby (the draft
+room's too), and Champions for bot games and rooms (Ultra has Legends, so every
+game has its legendary creatures). `Mode.ultra()` is always true: every new
+practice game, room, draft and deck plays Ultra, and only Ultra's starter decks
+are offered; a saved deck that doesn't fit says "Needs a fix". A room made
+before then is turned to Ultra by its host's phone in the lobby
+(`Net.setUltra`). Engine: `setup.ultra` → `s.ultra`. A setup without it plays
+the standard rules: games saved before, a draft dealt before (it keeps its
+rules), and the lesson, which teaches the basics; the first Ultra game on a
+phone then says what's different.
 
 **Rules** (engine.js, all behind `s.ultra`):
 
@@ -831,6 +839,9 @@ that levels up from its plan. `ultra-plan.md` ("Version 4") has the table.
   `collective.ultraIntro4`, shown once more to every phone).
 
 ## Champions, a prototype (2026-11-07)
+
+Retired on 2026-11-14 with the standard game: SATTC Ultra's Legends took their
+place. The engine keeps them, so saved games replay.
 
 "Starting everybody with one defender or something… what I like about Dominion
 is you are always building and growing… and on a phone it could automatically

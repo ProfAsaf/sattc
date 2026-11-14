@@ -88,7 +88,7 @@ function deckChoices(ultra = Mode.ultra()) {
 let L = null; // { code, info, unsub } while in a room
 let playView = null;
 // The Play page's switches and its "Decks" list, kept while the page redraws.
-const PF = { draftNight: false, botDraft: false, decksOpen: false, champions: (() => { try { return localStorage.getItem('collective.champions') !== '0'; } catch { return true; } })(),
+const PF = { draftNight: false, botDraft: false, decksOpen: false,
   level: (() => { try { return levelOf(localStorage.getItem('collective.botLevel')).id; } catch { return 'practice'; } })() };
 const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 
@@ -130,14 +130,7 @@ function inviteHTML() {
 function onlinePanelHTML(choices, chosen) {
   if (!Net.isConfigured()) return '<div class="pp-in"><h3>Friends</h3><p class="muted small" style="margin:0">Online play is not set up yet.</p></div>';
   if (L && L.info) {
-    if (L.info.draft) { // Draft night has its own lobby; until the draft starts, the host can still switch the rules
-      const host = L.info.host === Net.clientId(), drafted = !!L.info.draft.id, ultra = drafted ? !!L.info.draft.ultra : !!L.info.ultra;
-      // (the host's switch goes with the draft's own switch; everyone else sees which rules it is)
-      const note = ultra ? '<p class="muted small ultra-note">This room plays <b>SATTC Ultra</b>.</p>' : '';
-      const rules = host && L.info.status === 'lobby' && !drafted
-        ? `<label class="dr-switch mini"><input type="checkbox" id="room-ultra"${ultra ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>SATTC Ultra</b>: the draft deals Ultra’s cards</span></label>` : '';
-      return Draft.roomPanelHTML(L.code, L.info, (rules ? '' : note) + inviteHTML() + tonightHTML(), rules);
-    }
+    if (L.info.draft) return Draft.roomPanelHTML(L.code, L.info, inviteHTML() + tonightHTML()); // (Draft night has its own lobby)
     const info = L.info;
     const meSeat = (info.players || []).findIndex((p) => p && p.id === Net.clientId());
     const host = info.host === Net.clientId();
@@ -165,14 +158,12 @@ function onlinePanelHTML(choices, chosen) {
         : host ? `<button class="btn primary" data-act="start" ${full ? '' : 'disabled'}>${full ? `Start game ${(info.round || 0) + 1}` : 'Waiting for everyone to join'}</button>`
           : `<p class="muted small pp-wait">${esc(hostName)} starts the game.</p>`;
     return `<div class="pp-in">
-      <div class="pp-title"><h3>Game <b>${esc(L.code)}</b>${info.ultra ? ' <i class="ultra-pill">Ultra</i>' : ''}</h3><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
+      <div class="pp-title"><h3>Game <b>${esc(L.code)}</b></h3><button class="btn small" data-act="copy-link" data-link="${esc(link)}">Copy invite link</button></div>
       ${inviteHTML()}
       ${tonightHTML()}
       <div class="deck-cards">${seats}</div>
       ${Draft.versionNoteHTML(info)}
       ${host && info.status === 'lobby' ? Draft.modeSwitchHTML(false) : ''}
-      ${info.status === 'lobby' ? `<label class="dr-switch mini"><input type="checkbox" id="room-champions"${info.champions ? ' checked' : ''}${host ? '' : ' disabled'}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>Champions</b> (new)${host ? '' : ': the host decides'}</span></label>` : ''}
-      ${info.status === 'lobby' ? `<label class="dr-switch mini"><input type="checkbox" id="room-ultra"${info.ultra ? ' checked' : ''}${host ? '' : ' disabled'}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>SATTC Ultra</b>${host ? '' : ': the host decides'}</span></label>` : ''}
       <div class="pp-group"><label class="pp-row"><span>Deck</span>${deckSelect('room-deck', choices, current)}</label></div>
       ${mineMisfit ? `<p class="small pp-misfit">Your deck doesn’t fit ${info.ultra ? 'SATTC Ultra' : 'the standard game'}: pick one above.</p>` : ''}
       ${next}
@@ -219,7 +210,6 @@ function botsPanelHTML(choices, chosen) {
     </div>
     <div class="pp-opts">
       <label class="dr-switch mini"><input type="checkbox" id="bot-draft"${PF.botDraft ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>Draft my deck</b></span></label>
-      ${Mode.ultra() ? '' : `<label class="dr-switch mini"><input type="checkbox" id="champions-practice"${PF.champions ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>Champions</b> (new)</span></label>`}
       <button class="pp-more" data-act="decks" aria-expanded="${PF.decksOpen}" aria-controls="bot-decks"${PF.botDraft ? ' hidden' : ''}>Decks<i>${PF.decksOpen ? '▴' : '▾'}</i></button>
     </div>
     <div class="pp-group" id="bot-decks"${PF.decksOpen && !PF.botDraft ? '' : ' hidden'}>
@@ -267,6 +257,8 @@ async function enterRoom(code) {
     Draft.onRoomInfo(code, info, () => { if (playView && location.hash === '#/play' && !G) playPage(playView); });
     if (!info) { flash('That game no longer exists.'); Net.setLastRoom(''); exitRoom(); return; }
     watchTonight(info);
+    // a room made before Ultra became the only version (14 November 2026): its host's phone turns it to Ultra in the lobby
+    if (info.status === 'lobby' && !info.ultra && info.host === Net.clientId() && !L.toUltra) { L.toUltra = true; Net.setUltra(code, true).catch(() => { if (L) L.toUltra = false; }); }
     if (info.status === 'lobby' && !L.invitees && Push.enabled()) {
       L.invitees = [];
       Net.invitees(code).then((who) => { if (L?.code !== code) return; L.invitees = who; if (playView && location.hash === '#/play' && !G) playPage(playView); }, () => {});
@@ -357,8 +349,7 @@ export function playPage(view) {
   const active = Decks.getActiveId();
   const chosen = choices.find((d) => d.id === active) ? active : choices[0].id;
   view.innerHTML = `
-    <header class="pagehead"><a class="back" href="#/" aria-label="Home">${BACK}</a><h2>PvP${Mode.ultra() ? ' <i class="ultra-pill">Ultra</i>' : ''}</h2></header>
-    ${L?.info ? '' : `<label class="dr-switch mini home-ultra pp-ultra"><input type="checkbox" id="ultra-switch"${Mode.ultra() ? ' checked' : ''}><span class="dr-knob" aria-hidden="true"></span><span class="dr-switch-text"><b>SATTC Ultra</b><small>Bigger rule changes to try</small></span></label>`}
+    <header class="pagehead"><a class="back" href="#/" aria-label="Home">${BACK}</a><h2>PvP</h2></header>
     <section class="panel pp">${onlinePanelHTML(choices, chosen)}</section>
     <section class="panel pp">${botsPanelHTML(choices, chosen)}</section>`;
   // "Draft my deck" brings no deck, so it hides the deck choice
@@ -371,13 +362,9 @@ export function playPage(view) {
   };
   view.onchange = (e) => {
     const t = e.target;
-    if (t.id === 'ultra-switch') { Mode.setUltra(t.checked); playPage(view); return; } // (new games and rooms, the decks offered: all follow it)
     if (t.id === 'draft-new') { PF.draftNight = t.checked; document.getElementById('net-deck-row').hidden = t.checked; return; }
     if (t.id === 'bot-draft') { PF.botDraft = t.checked; showDecks(); return; }
-    if (t.id === 'champions-practice') { PF.champions = t.checked; try { localStorage.setItem('collective.champions', t.checked ? '1' : '0'); } catch { /* fine */ } return; }
     if (t.id === 'bot-level') { PF.level = levelOf(t.value).id; try { localStorage.setItem('collective.botLevel', PF.level); } catch { /* fine */ } return; }
-    if (t.id === 'room-champions') { if (L) Net.setChampions(L.code, t.checked).catch((err) => flash(err.message)); return; }
-    if (t.id === 'room-ultra') { if (L) Net.setUltra(L.code, t.checked).catch((err) => flash(err.message)); return; }
     if (t.id !== 'room-deck' || !L) return;
     const d = deckChoices(!!L.info?.ultra).find((x) => x.id === t.value);
     Net.setDeck(L.code, Decks.encode(d.counts)).then(() => flash(`${d.name.replace(/ \(starter\)$/, '')} is your deck for the next game.`), (err) => flash(err.message));
@@ -435,13 +422,13 @@ export function startCampaign(world, stage, diff) {
   begin({ mode: 'practice', setup, actions: [], me: 0, bots: [1], level: D.level, campaign: { world, stage, diff } });
 }
 
-// `ultra`: the rules a drafted deck was dealt under (otherwise Home's switch; an
-// Ultra deck always plays Ultra). Ultra games go without Champions for now.
-function startPractice(mine, bots, { ultra } = {}) {
-  ultra = ultra ?? (Mode.ultra() || [mine, ...bots].some((d) => Decks.isUltraDeck(d.counts)));
+// `ultra`: the rules a drafted deck was dealt under (a draft from before 14
+// November 2026 may have been dealt the standard game's); otherwise SATTC Ultra,
+// the only version now. No Champions: Ultra has Legends.
+function startPractice(mine, bots, { ultra = true } = {}) {
   const players = [{ name: 'You', deck: Decks.cardList(mine.counts) },
     ...bots.map((d) => ({ name: `Bot · ${d.name}`, deck: Decks.cardList(d.counts) }))];
-  const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, deckClock: true, champions: PF.champions && !ultra, ultra: ultra ? ULTRA_V : false };
+  const setup = { seed: (Math.random() * 2 ** 31) | 0, players, startEnergy: RULES.startEnergy, deckClock: true, champions: false, ultra: ultra ? ULTRA_V : false };
   begin({ mode: 'practice', setup, actions: [], me: 0, bots: bots.map((_, i) => i + 1), level: PF.level });
 }
 
@@ -3458,7 +3445,7 @@ function cardsModeLabel() {
 }
 
 function menuSheet() {
-  return `<h3>Menu</h3>${S().ultra ? '<p class="sheet-note ultra-note">This game plays <b>SATTC Ultra</b>.</p>' : ''}<div class="btn-col">
+  return `<h3>Menu</h3><div class="btn-col">
     ${tutStep() ? '<button class="btn" data-act="coach-skip">Skip the lesson (play on against the bot)</button>' : ''}
     ${G.mode === 'practice' ? '<button class="btn" data-act="undo">↶ Take back my last move</button>' : ''}
     <button class="btn" data-act="help">How the table works</button>

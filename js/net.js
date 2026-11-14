@@ -282,18 +282,8 @@ export async function watchResults(code, created, onResults) {
 // never sees old picks.
 const picksRef = (code, id) => fb.ref(db, `rooms/${code}/draft/${id}/picks`);
 
-// Host, before the draft starts: switch the room between bring-your-deck and draft.
-// Host, in the lobby: Champions on or off for the room's games.
-export async function setChampions(code, on) {
-  await connect();
-  await fb.runTransaction(infoRef(code), (room) => {
-    if (!room || room.host !== clientId() || room.status !== 'lobby') return room;
-    room.champions = !!on;
-    return room;
-  });
-}
-
-// Host, in the lobby: SATTC Ultra on or off for the room's games.
+// Host, in the lobby: a room made before SATTC Ultra became the only version
+// (14 November 2026) turned to Ultra (game-ui.js enterRoom does it).
 export async function setUltra(code, on) {
   await connect();
   await fb.runTransaction(infoRef(code), (room) => {
@@ -303,6 +293,7 @@ export async function setUltra(code, on) {
   });
 }
 
+// Host, before the draft starts: switch the room between bring-your-deck and draft.
 export async function setDraftMode(code, on) {
   await connect();
   await fb.runTransaction(infoRef(code), (room) => {

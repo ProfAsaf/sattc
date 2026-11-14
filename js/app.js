@@ -1,7 +1,7 @@
 // The Collective — app shell: hash router and the non-game views
 // (home, card gallery, deck list, deckbuilder, rules; Insights is in insights.js).
 
-import { BY_ID, CARDS, CHAMPIONS, FACTIONS, FACTION_ORDER, KEYWORDS, LEGENDS, RULES, SET, STARTERS, TOKENS, ULTRA, ULTRA_OUT, ULTRA_POOL, ULTRA_RULES, ULTRA_STARTERS, ULTRA_V2, isTrick } from './cards.js';
+import { BY_ID, CARDS, FACTIONS, FACTION_ORDER, KEYWORDS, LEGENDS, RULES, SET, TOKENS, ULTRA, ULTRA_OUT, ULTRA_POOL, ULTRA_RULES, ULTRA_STARTERS, ULTRA_V2, isTrick } from './cards.js';
 import { cardBackHTML, cardHTML, cardRowHTML, esc, factionCoin, livenArt } from './render.js';
 import { hold, release, sweep } from './sprites.js';
 import { gatherAlive } from './art/alive.js';
@@ -161,8 +161,8 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeZoo
 // ── home ────────────────────────────────────────────────────────────
 // One screen: the title, three cards, and the two ways to play within thumb
 // reach, PvP and the campaign, with the lesson under them. Cards, Decks,
-// Rules and Insights sit behind the quiet ☰ in the corner. (SATTC Ultra's
-// switch is on the PvP page: the campaign always plays Ultra.)
+// Rules and Insights sit behind the quiet ☰ in the corner. (Every game plays
+// SATTC Ultra: js/mode.js.)
 const ICONS = {
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   cards: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="7" y="3" width="12" height="16" rx="1.6"/><path d="M5 6.5v12.2A1.8 1.8 0 0 0 6.8 20.5H15"/></svg>',
@@ -202,7 +202,7 @@ function home() {
     </div>
     <div class="menu" id="home-menu" hidden>
       <nav class="menu-in" aria-label="More">
-        <a href="#/cards">${ICONS.cards}${Mode.ultra() ? 'All the Ultra cards' : 'All 90 cards'}</a>
+        <a href="#/cards">${ICONS.cards}All the cards</a>
         <a href="#/decks">${ICONS.decks}Decks</a>
         <a href="#/rules">${ICONS.rules}Rules</a>
         <a href="#/insights">${ICONS.insights}Insights</a>
@@ -246,17 +246,17 @@ function gallery() {
   };
 }
 
-// The cards on show: the base set, or with SATTC Ultra on, the Ultra pool.
-const poolNow = () => (Mode.ultra() ? ULTRA_POOL : CARDS);
+// The cards on show: SATTC Ultra's (the only version since 14 November 2026).
+const poolNow = () => ULTRA_POOL;
 
 // ── deck list ───────────────────────────────────────────────────────
 function deckCardHTML(d, activeId) {
   const fs = [...Decks.factionsOf(d.counts)];
-  const ultraDeck = Decks.isUltraDeck(d.counts);
-  const v = Decks.validate(d.counts, { ultra: ultraDeck });
+  const v = Decks.validate(d.counts, { ultra: true }), n = Decks.total(d.counts);
   const sp = Decks.split(d.counts);
-  const badge = d.id === activeId ? '<span class="badge">In use</span>'
-    : !v.ok ? `<span class="badge bad">${Decks.total(d.counts)}/30</span>` : ultraDeck ? '<i class="ultra-pill">Ultra</i>' : '';
+  // (a deck that can't be played says so: its count, or with 30 cards, that its page has something to fix)
+  const badge = !v.ok ? `<span class="badge bad">${n === RULES.deckSize ? 'Needs a fix' : `${n}/${RULES.deckSize}`}</span>`
+    : d.id === activeId ? '<span class="badge">In use</span>' : '';
   return `<a class="deck-card${d.id === activeId ? ' active' : ''}" href="#/deck/${encodeURIComponent(d.id)}">
       <div class="deck-coins">${fs.map(factionCoin).join('') || '<span class="fac-slot-empty"></span>'}</div>
       <div><div class="deck-name">${esc(d.name)}</div>
@@ -273,11 +273,8 @@ function deckList() {
     ${mine.length ? `<div class="deck-cards">${mine.map((d) => deckCardHTML(d, active)).join('')}</div>`
       : '<p class="muted">No decks yet. Start from scratch, or open a starter deck and change it.</p>'}
     <div class="sect-title"><h2>Starter decks</h2></div>
-    <p class="muted small" style="margin-top:-6px">Ready to play. Changing one saves your own copy.</p>
-    <div class="deck-cards">${STARTERS.map((s) => deckCardHTML(s, active)).join('')}</div>
-    ${Mode.ultra() ? `<div class="sect-title"><h2>Ultra starter decks</h2></div>
-    <p class="muted small" style="margin-top:-6px">For SATTC Ultra games: each can go two or three ways.</p>
-    <div class="deck-cards">${ULTRA_STARTERS.map((s) => deckCardHTML(s, active)).join('')}</div>` : ''}
+    <p class="muted small" style="margin-top:-6px">Ready to play, and each can go two or three ways. Changing one saves your own copy.</p>
+    <div class="deck-cards">${ULTRA_STARTERS.map((s) => deckCardHTML(s, active)).join('')}</div>
     <div class="sect-title"><h3>Got a deck code?</h3></div>
     <div class="btn-row">
       <input class="name-input" style="flex:1;min-width:0;font-size:18px" id="code-in" placeholder="W1-…" autocapitalize="off" autocomplete="off" spellcheck="false">
@@ -332,11 +329,11 @@ function builder(id) {
     const counts = deck.counts;
     const n = Decks.total(counts);
     const fs = Decks.factionsOf(counts);
-    const v = Decks.validate(counts, { ultra: Decks.isUltraDeck(counts) });
+    const v = Decks.validate(counts, { ultra: true });
     const isActive = Decks.getActiveId() === deck.id;
     let body = '';
     if (builderState.mode === 'pool') {
-      const list = (Mode.ultra() || Decks.isUltraDeck(counts) ? ULTRA_POOL : CARDS).filter((c) => matches(c, builderState));
+      const list = ULTRA_POOL.filter((c) => matches(c, builderState));
       body = chipsHTML(builderState) + `<div class="rows">${list.map((c) => {
         const can = Decks.canAdd(counts, c.id);
         const factionBlocked = !can.ok && /factions/.test(can.reason);
@@ -413,7 +410,7 @@ function rules() {
   view.innerHTML = `${pageHead('Rules')}<article class="rules-page">
     <div class="notice" style="margin-bottom:8px"><div>▶</div><div>Rather learn by doing? <button class="btn small primary" data-act="tutorial" style="margin-left:6px">Play the guided lesson</button></div></div>
     <h2>The idea</h2>
-    <p>Every player owns the <b>same ${CARDS.filter((c) => !c.token).length} cards</b>, two of each (one of a Legendary). Before you play, you build a deck of exactly <b>30</b>. Everyone is solving the same puzzle. The fun is finding combinations nobody else spotted, and guessing what your friends will bring.</p>
+    <p>Every player owns the <b>same ${ULTRA_POOL.filter((c) => !c.token).length} cards</b>, two of each (one of a Legendary). Before you play, you build a deck of exactly <b>30</b>. Everyone is solving the same puzzle. The fun is finding combinations nobody else spotted, and guessing what your friends will bring.</p>
 
     <h2>Winning</h2>
     <p>Everyone starts with <b>${RULES.startLife} Life</b>. Bring a player to 0 and they are out. Last player standing wins.</p>
@@ -442,7 +439,7 @@ function rules() {
     </ul>
 
     <h2>SATTC Ultra</h2>
-    <p>The switch on Home tries out bigger changes to the rules. A room plays the way its host set it, so everyone at the table plays the same game. In Ultra:</p>
+    <p>Every game plays SATTC Ultra, which changes the basics above (the guided lesson keeps to the basics):</p>
     <ul>
       <li><b>30 Life</b>, so there's time to build something.</li>
       <li><b>Wounds stay.</b> Damage stays on a creature and heals by half (rounded up) at the start of its owner's turn. Healers heal more, and a Field can stop it.</li>
@@ -472,10 +469,6 @@ function rules() {
       <li><b>Toned down</b>, after every evolved Tide deck kept them: Spellwright Apprentice grows with your first Spell each turn, and the Rolling Fog lifts at the start of its owner's third turn.</li>
     </ul>
     <ul>${Object.values(LEGENDS).map((c) => `<li><b>${esc(c.name)}</b> (${c.cost} Energy, ${esc(c.factions.map((f) => FACTIONS[f].name).join('/'))}) levels up with ${esc(c.xp.unit)}: at ${c.xp.at[0]}, ${esc(c.l2)} At ${c.xp.at[1]}, ${esc(c.l3)}</li>`).join('')}</ul>
-
-    <h2>★ Champions (new)</h2>
-    <p>With Champions on (a switch on the PvP page, and in a game's room), every deck starts with a <b>Champion</b> on the table: the one of the faction the deck has most cards of. It can block from the start but can't attack until <b>Level 2</b>. It levels up as you do what its faction does, and each level makes it bigger and changes how your other cards work. Its powers work only while it's on the table; if it leaves, it goes back to your hand and costs 2 more each time.</p>
-    <ul>${Object.values(CHAMPIONS).map((c) => `<li><b>${esc(c.name)}</b> (${esc(FACTIONS[c.factions[0]].name)}) levels up with ${esc(c.xp.unit)}: at ${c.xp.at[0]}, ${esc(c.l2)} At ${c.xp.at[1]}, ${esc(c.l3)}</li>`).join('')}</ul>
 
     <h2>⚡ Abilities</h2>
     <p>Some creatures say <b>“Pay 2 Energy: …”</b>. Pay the Energy and it happens. Each ability works <b>once each turn</b>, whenever you could play a Trick: on your own turn, or during a fight you are in. On the table, tap the ⚡ chip on the creature, which shows the Energy it takes; it glows gold when you can use it.</p>
@@ -507,7 +500,7 @@ function rules() {
     <ul>
       <li>Exactly <b>${RULES.deckSize} cards</b>, with at most <b>two of any card</b> (one of a Legendary). Two of the cards your deck is built around make its combos turn up far more often.</li>
       <li>At most <b>${RULES.maxFactions} factions</b>. Two-faction cards count as both.</li>
-      <li>Between games, you may swap cards with the 60 you left out.</li>
+      <li>Between games, you may swap cards with the ones you left out.</li>
       <li>Not sure? Use a <a href="#/decks">starter deck</a> and change it later.</li>
     </ul>
 

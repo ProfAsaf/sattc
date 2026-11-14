@@ -776,7 +776,7 @@ export function modeSwitchHTML(on) {
 }
 
 // The lobby of a draft room: seats with draft progress, then the next step.
-// `rules`: the room's rules (the SATTC Ultra switch, or a note), shown with the draft's own switch.
+// `rules`: anything to show beside the draft's own switch (until 14 November 2026, the SATTC Ultra switch).
 export function roomPanelHTML(code, info, tonight = '', rules = '') {
   const me = Net.clientId();
   const players = info.players || [];

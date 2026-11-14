@@ -282,15 +282,24 @@ export async function watchResults(code, created, onResults) {
 // never sees old picks.
 const picksRef = (code, id) => fb.ref(db, `rooms/${code}/draft/${id}/picks`);
 
-// Host, in the lobby: a room made before SATTC Ultra became the only version
-// (14 November 2026) turned to Ultra (game-ui.js enterRoom does it).
-export async function setUltra(code, on) {
+// SATTC Ultra is the only version since 14 November 2026, and the user asked to
+// "end all old games": a room still on the standard rules turns to Ultra, from
+// any seated phone that opens it (game-ui.js enterRoom). A game under way by the
+// standard rules ends (back to the lobby), and a draft dealt the standard
+// game's cards is cleared, so the next one deals Ultra's. `ultraRoom` gives the
+// room as it should be, or undefined if it's right already (or `me` has no seat).
+export function ultraRoom(room, me) {
+  if (!room) return room; // (a first guess from an empty cache: the server's room comes next)
+  if (!(room.players || []).some((p) => p && p.id === me)) return undefined;
+  const oldDraft = !!room.draft?.id && !room.draft.ultra;
+  if (room.ultra && !oldDraft) return undefined;
+  const oldGame = room.status === 'playing' && (room.draft?.id ? oldDraft : !room.ultra);
+  return { ...room, ultra: true, champions: false, ...(oldDraft ? { draft: { on: true } } : {}), ...(oldGame ? { status: 'lobby' } : {}) };
+}
+
+export async function toUltra(code) {
   await connect();
-  await fb.runTransaction(infoRef(code), (room) => {
-    if (!room || room.host !== clientId() || room.status !== 'lobby') return room;
-    room.ultra = !!on;
-    return room;
-  });
+  await fb.runTransaction(infoRef(code), (room) => ultraRoom(room, clientId()), { applyLocally: false });
 }
 
 // Host, before the draft starts: switch the room between bring-your-deck and draft.

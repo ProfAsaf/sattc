@@ -34,6 +34,9 @@ const store = {
   set(v) { try { localStorage.setItem(SAVE, JSON.stringify(v)); } catch { /* fine without */ } },
   clear() { try { localStorage.removeItem(SAVE); } catch { /* fine */ } },
 };
+// SATTC Ultra is the only version since 14 November 2026 ("end all old games"):
+// a bot game saved under the standard rules is over.
+if (store.get() && !store.get().setup?.ultra) store.clear();
 const SPEED_KEY = 'collective.fast';
 const fastOn = () => { try { return localStorage.getItem(SPEED_KEY) === '1'; } catch { return false; } };
 // The first SATTC Ultra game on this phone starts with what's different (ultraIntroHTML).
@@ -257,15 +260,20 @@ async function enterRoom(code) {
     Draft.onRoomInfo(code, info, () => { if (playView && location.hash === '#/play' && !G) playPage(playView); });
     if (!info) { flash('That game no longer exists.'); Net.setLastRoom(''); exitRoom(); return; }
     watchTonight(info);
-    // a room made before Ultra became the only version (14 November 2026): its host's phone turns it to Ultra in the lobby
-    if (info.status === 'lobby' && !info.ultra && info.host === Net.clientId() && !L.toUltra) { L.toUltra = true; Net.setUltra(code, true).catch(() => { if (L) L.toUltra = false; }); }
     if (info.status === 'lobby' && !L.invitees && Push.enabled()) {
       L.invitees = [];
       Net.invitees(code).then((who) => { if (L?.code !== code) return; L.invitees = who; if (playView && location.hash === '#/play' && !G) playPage(playView); }, () => {});
     }
     const seat = (info.players || []).findIndex((p) => p && p.id === Net.clientId());
     if (seat < 0 && info.status !== 'lobby') { Net.setLastRoom(''); exitRoom(); return; }
-    if (info.status === 'playing' && seat >= 0 && !(G && G.mode === 'online' && G.round === info.round)) beginOnline(info, seat);
+    // SATTC Ultra is the only version since 14 November 2026 ("end all old games"): a room still on the
+    // standard rules turns to Ultra, and a game under way by them ends instead of opening (Net.ultraRoom)
+    const oldGame = info.status === 'playing' && (info.draft?.id ? !info.draft.ultra : !info.ultra);
+    if (seat >= 0 && !L.toUltra && Net.ultraRoom(info, Net.clientId())) {
+      L.toUltra = true;
+      Net.toUltra(code).then(() => { if (oldGame) flash('That game was by the old rules, so it has ended. Every game is SATTC Ultra now.'); }, () => {}).finally(() => { if (L) L.toUltra = false; });
+    }
+    if (info.status === 'playing' && seat >= 0 && !oldGame && !(G && G.mode === 'online' && G.round === info.round)) beginOnline(info, seat);
     if (info.status === 'lobby' && G && G.mode === 'online') { leave(); }
     if (playView && location.hash === '#/play' && !G) playPage(playView);
   });

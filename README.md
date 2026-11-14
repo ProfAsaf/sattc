@@ -435,12 +435,16 @@ switches are gone: SATTC Ultra on the PvP page and in a room's lobby (the draft
 room's too), and Champions for bot games and rooms (Ultra has Legends, so every
 game has its legendary creatures). `Mode.ultra()` is always true: every new
 practice game, room, draft and deck plays Ultra, and only Ultra's starter decks
-are offered; a saved deck that doesn't fit says "Needs a fix". A room made
-before then is turned to Ultra by its host's phone in the lobby
-(`Net.setUltra`). Engine: `setup.ultra` → `s.ultra`. A setup without it plays
-the standard rules: games saved before, a draft dealt before (it keeps its
-rules), and the lesson, which teaches the basics; the first Ultra game on a
-phone then says what's different.
+are offered; a saved deck that doesn't fit says "Needs a fix". Old games end
+("Push it live and also for rooms with friends (end all old games)"): a room
+still on the standard rules turns to Ultra as soon as any phone with a seat
+opens it, a game under way there by the standard rules goes back to the lobby
+(that phone says why), and a draft it dealt from the standard cards is cleared
+(`Net.ultraRoom`, `Net.toUltra`); a bot game or a practice draft saved under the
+standard rules is thrown away when the app starts. Ultra games under way carry
+on. Engine: `setup.ultra` → `s.ultra`. A setup without it plays the standard
+rules: replays of old games, and the lesson, which teaches the basics; the
+first Ultra game on a phone then says what's different.
 
 **Rules** (engine.js, all behind `s.ultra`):
 

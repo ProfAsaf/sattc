@@ -39,6 +39,9 @@ const kept = (key) => ({
 });
 const store = kept('collective.draft.snake.v1');
 const campStore = kept('collective.draft.campaign.v1'); // the campaign's draft, apart from the Play page's
+// SATTC Ultra is the only version since 14 November 2026 ("end all old games"):
+// a practice draft dealt the standard game's cards is thrown away.
+if (store.get() && !store.get().ultra) store.clear();
 const boxOf = (d) => (d.campaign ? campStore : store);
 const BOT_MS = 700; // practice bots pick after this long, so you see what they took
 

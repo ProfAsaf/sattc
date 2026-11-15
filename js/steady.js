@@ -29,7 +29,8 @@
 //  - Those notes, with the phone's screen and browser (no names), are kept
 //    after a closing and sent to the game's database the next time the phone
 //    is in an online room (pending(), sent()), so what closes the game on real
-//    phones can be looked at.
+//    phones can be looked at. The menus can also pass them on by hand
+//    (shareClosings()).
 
 const OPEN = 'collective.open'; // { id, at }: the page last seen open and in sight
 const CALM = 'collective.calm'; // { level, n, steady, at }: this phone's level, its closings, games ended since the last
@@ -191,6 +192,46 @@ export function note() {
 // The closings not yet sent, and forgetting them once they are.
 export const pending = () => read(CRASHES) || [];
 export function sent(n) { write(CRASHES, pending().slice(n)); }
+
+// ── passing them on by hand ─────────────────────────────────────────
+// "Share crash notes" in Home's menu and the game's, there while any wait
+// (Asaf, 2026-11-15: "Will I be able to generate a report from a bot game
+// that crashes if I don't finish the game?"): a closing in a bot game or the
+// campaign has no room to go to, so its notes waited for the next online
+// game. The phone's share sheet gets them as text, a line on each and then
+// all of it as data, as a room gets it; without one the clipboard does, and
+// failing both, a box to copy from. Shared or copied, they leave the phone,
+// as if sent. Call it straight from the tap: a share sheet opens only on one.
+export function closingsText(list = pending()) {
+  const when = (t) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const lines = list.map((c, i) => {
+    const n = c.notes?.[c.notes.length - 1];
+    return `${i + 1}. ${when(c.at)}${n ? `: ${n.where}${n.doing ? `, ${n.doing}` : ''}, ${n.mb} MB` : ''}`;
+  });
+  return [`The Collective: crash notes (${list.length === 1 ? 'the game closed once' : `the game closed ${list.length} times`} on this phone)`, ...lines, JSON.stringify(list)].join('\n');
+}
+// Resolves { how: 'shared' | 'copied' | 'cancelled' | 'none' }, or { how: 'show', text } (still on the phone).
+export async function shareClosings() {
+  const list = pending();
+  if (!list.length) return { how: 'none' };
+  const text = closingsText(list);
+  const done = (how) => { sent(list.length); return { how }; };
+  if (navigator.share) {
+    try { await navigator.share({ title: 'The Collective: crash notes', text }); return done('shared'); } catch (e) { if (e?.name === 'AbortError') return { how: 'cancelled' }; }
+  }
+  try { await navigator.clipboard.writeText(text); return done('copied'); } catch { /* (no clipboard either) */ }
+  return { how: 'show', text };
+}
+export function showClosingsText(text) {
+  document.querySelector('.notes-box')?.remove();
+  const box = document.createElement('div');
+  box.className = 'notes-box';
+  box.innerHTML = '<p>Copy these crash notes to pass them on:</p><textarea readonly></textarea><button class="btn">Close</button>';
+  box.querySelector('textarea').value = text;
+  box.querySelector('button').onclick = () => box.remove();
+  document.body.appendChild(box);
+  box.querySelector('textarea').select();
+}
 
 // Start fresh: the copy of the game's files kept on the phone (sw.js) and the
 // worker that keeps it go, and the page loads anew from the network, where it

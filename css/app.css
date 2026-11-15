@@ -423,6 +423,23 @@ body.ultra .hero h1 { text-shadow: 0 0 22px rgba(160, 120, 255, .55); }
   box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
   animation: fade .15s ease-out;
 }
+/* the crash notes to copy by hand, on a phone that can neither share nor copy them (js/steady.js showClosingsText) */
+.notes-box {
+  position: fixed;
+  inset: auto 10px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  z-index: 95;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #3a2c1c;
+  border: 1px solid var(--gold);
+  color: #fff3d6;
+  font-size: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+}
+.notes-box p { margin: 0; }
+.notes-box textarea { height: 40vh; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: #1d150c; color: inherit; font: 12px/1.35 ui-monospace, Menlo, monospace; }
 
 .rows { display: flex; flex-direction: column; gap: 6px; }
 .row {

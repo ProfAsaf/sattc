@@ -7,7 +7,7 @@ import { hold, release, sweep } from './sprites.js';
 import { gatherAlive } from './art/alive.js';
 import { startHomeAlive, stopHomeAlive } from './home-alive.js';
 import { actInZoom, canAct, startScreenAlive } from './cards-alive.js';
-import { calm, startFresh, startSteady } from './steady.js';
+import { calm, pending, shareClosings, showClosingsText, startFresh, startSteady } from './steady.js';
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, autoResume, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
@@ -164,6 +164,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeZoo
 // Rules and Insights sit behind the quiet ☰ in the corner. (Every game plays
 // SATTC Ultra: js/mode.js.)
 const ICONS = {
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7.5 7.5 4.5-4.5 4.5 4.5"/><path d="M5.5 11.5v8A1.5 1.5 0 0 0 7 21h10a1.5 1.5 0 0 0 1.5-1.5v-8"/></svg>',
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   cards: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="7" y="3" width="12" height="16" rx="1.6"/><path d="M5 6.5v12.2A1.8 1.8 0 0 0 6.8 20.5H15"/></svg>',
   decks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 3.5 7.5 12 12l8.5-4.5z"/><path d="m3.5 12 8.5 4.5 8.5-4.5"/><path d="m3.5 16.5 8.5 4.5 8.5-4.5"/></svg>',
@@ -174,8 +175,26 @@ const ICONS = {
 function homeMenu(open) {
   const menu = document.getElementById('home-menu');
   if (!menu) return;
+  if (open) crashNotesItem(menu);
   menu.hidden = !open;
   document.querySelector('.menu-btn')?.setAttribute('aria-expanded', String(open));
+}
+
+// "Share crash notes", there while the game has closed on this phone and no
+// room has had its notes yet (js/steady.js shareClosings). Made as the menu
+// opens: the closing is found a moment after Home is drawn.
+function crashNotesItem(menu) {
+  menu.querySelector('[data-act="crash-notes"]')?.remove();
+  const n = pending().length;
+  if (n) menu.querySelector('[data-act="fresh"]')?.insertAdjacentHTML('beforebegin', `<a href="#/" data-act="crash-notes">${ICONS.share}Share crash notes (${n})</a>`);
+}
+function shareCrashNotes() {
+  shareClosings().then((r) => {
+    if (r.how === 'cancelled' || r.how === 'none') return;
+    homeMenu(false);
+    if (r.how === 'show') showClosingsText(r.text);
+    else toast(r.how === 'copied' ? 'Crash notes copied. Paste them wherever you like.' : 'Crash notes shared.');
+  });
 }
 
 function home() {
@@ -213,6 +232,7 @@ function home() {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'menu') { homeMenu(document.getElementById('home-menu').hidden); return; }
     if (act === 'fresh') { e.preventDefault(); startFresh(); return; }
+    if (act === 'crash-notes') { e.preventDefault(); shareCrashNotes(); return; }
     if (e.target.closest('#home-menu')) { if (!e.target.closest('a')) homeMenu(false); return; } // a tap beside the menu closes it
     if (act === 'tutorial') { startTutorial(); return; }
     const c = e.target.closest('.card[data-id]');

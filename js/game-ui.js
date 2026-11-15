@@ -22,7 +22,7 @@ import * as Rating from './rating.js';
 import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
 import { actBig, endFights, fight, hushTable, readyToFight, startTableAlive, stopTableAlive } from './cards-alive.js';
-import { CHOICES, checked, choose, chosen, doing, gameDone, pending, phoneLevel, sent, startFresh } from './steady.js';
+import { CHOICES, checked, choose, chosen, doing, gameDone, pending, phoneLevel, sent, shareClosings, showClosingsText, startFresh } from './steady.js';
 import { release, rest } from './sprites.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
@@ -3541,6 +3541,23 @@ function cardsModeLabel() {
   return `Moving cards: ${c}${phoneLevel() > 0 && c !== 'still' ? ' (calmer on this phone for now: it closed the game)' : ''} (tap for ${next})`;
 }
 
+// The times the game closed on this phone that no room has had yet (a bot
+// game's, the campaign's), to pass on by hand (js/steady.js shareClosings).
+function crashNotesButton() {
+  const n = pending().length;
+  return n ? `<button class="btn" data-act="crash-notes">Share crash notes (${n === 1 ? 'the game closed once' : `the game closed ${n} times`} on this phone)</button>` : '';
+}
+function shareCrashNotes() {
+  shareClosings().then((r) => {
+    if (r.how === 'shared' || r.how === 'copied') flash(r.how === 'copied' ? 'Crash notes copied. Paste them wherever you like.' : 'Crash notes shared.');
+    if (r.how === 'show') showClosingsText(r.text);
+    if (!G?.sheet?.startsWith('<h3>Menu</h3>')) return;
+    G.sheet = menuSheet();
+    if (!pending().length) document.querySelector('.g-sheet [data-act="crash-notes"]')?.remove(); // (at once: a bot's move playing holds the redraw)
+    redraw();
+  });
+}
+
 function menuSheet() {
   return `<h3>Menu</h3><div class="btn-col">
     ${tutStep() ? '<button class="btn" data-act="coach-skip">Skip the lesson (play on against the bot)</button>' : ''}
@@ -3550,6 +3567,7 @@ function menuSheet() {
     <button class="btn" data-act="speed">${fastOn() ? 'Animations: fast (tap for normal)' : 'Animations: normal (tap for fast)'}</button>
     <button class="btn" data-act="pace">${tapThrough() ? 'Others’ moves: wait for your tap (tap for automatic)' : 'Others’ moves: automatic (tap to wait for your tap)'}</button>
     <button class="btn" data-act="cards-mode">${cardsModeLabel()}</button>
+    ${crashNotesButton()}
     <button class="btn" data-act="fresh">Start fresh (reloads the game's files; this game comes back)</button>
     ${G.mode === 'online' && ['on', 'off'].includes(Push.status()) ? `<button class="btn" data-act="alerts">${Push.status() === 'on' ? '🔔 Turn alerts: on (tap to turn off)' : '🔔 Turn alerts: off (tap to turn on)'}</button>` : ''}
     <button class="btn" data-act="fixes">Fix something</button>
@@ -3900,7 +3918,7 @@ function onClick(e) {
 
 function onAct(act, el) {
   const uid = Number(el.dataset.uid);
-  const busyOk = ['menu', 'help', 'close', 'log', 'leave', 'speed', 'pace', 'alerts', 'rules', 'coach-skip', 'crown-info', 'reload'].includes(act);
+  const busyOk = ['menu', 'help', 'close', 'log', 'leave', 'speed', 'pace', 'alerts', 'rules', 'coach-skip', 'crown-info', 'reload', 'crash-notes'].includes(act);
   if (G.busy && !busyOk) return;
   // While choosing a target, the small chips on cards and bars are part of what you tap.
   const choosing = G.flow || G.atk || (G.blk && G.blk.sel != null);
@@ -4016,6 +4034,7 @@ function onAct(act, el) {
     case 'discards': G.sheet = discardSheet(Number(el.dataset.of)); redraw(); break;
     case 'menu': G.sheet = menuSheet(); redraw(); break;
     case 'fresh': if (G.mode === 'practice') save(); startFresh(); break;
+    case 'crash-notes': shareCrashNotes(); break;
     case 'cards-mode': {
       choose(CHOICES[(CHOICES.indexOf(chosen()) + 1) % CHOICES.length]);
       hushTable(); // (what's acting stops now; the stage keeps to the new choice)

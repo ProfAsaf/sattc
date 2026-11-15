@@ -61,9 +61,9 @@ export function startSteady() {
   document.addEventListener('visibilitychange', mark);
   addEventListener('pageshow', mark);
   addEventListener('pagehide', () => { if (read(OPEN)?.id === me) { try { localStorage.removeItem(OPEN); } catch { /* (as above) */ } } });
-  if (!was || was.id === me || Date.now() - was.at > 120e3) return Promise.resolve(false);
+  if (!was || was.id === me || Date.now() - was.at > 120e3) return checking;
   // a page still open (another tab) answers for its mark; none: it was closed under us
-  return new Promise((resolve) => {
+  return (checking = new Promise((resolve) => {
     let open = false;
     const hear = (e) => { if (e.data === 'here') open = true; };
     chan?.addEventListener('message', hear);
@@ -74,8 +74,15 @@ export function startSteady() {
       closed(was, before.filter((x) => x.page === was.id));
       resolve(true);
     }, chan ? 400 : 0);
-  });
+  }));
 }
+
+// The check above, done (a closing it found is among pending() by then). The
+// last room is rejoined straight after start-up, before the check is through,
+// so its notes wait for this (game-ui.js enterRoom); without it the closing
+// just found went only the time after.
+let checking = Promise.resolve(false);
+export const checked = () => checking;
 
 // The page was closed under us: a step calmer, a budget under what it held, and a note to send.
 function closed(was, notes) {

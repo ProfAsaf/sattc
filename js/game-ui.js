@@ -22,7 +22,7 @@ import * as Rating from './rating.js';
 import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
 import { actBig, endFights, fight, hushTable, readyToFight, startTableAlive, stopTableAlive } from './cards-alive.js';
-import { CHOICES, choose, chosen, doing, gameDone, pending, phoneLevel, sent, startFresh } from './steady.js';
+import { CHOICES, checked, choose, chosen, doing, gameDone, pending, phoneLevel, sent, startFresh } from './steady.js';
 import { release, rest } from './sprites.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
@@ -251,9 +251,7 @@ async function enterRoom(code) {
   L = { code, info: null, unsub: null };
   keepAwake('room', true);
   Push.joinRoom(code);
-  // the times the game was closed under this phone, not sent yet, go to this room (js/steady.js; no names)
-  const closings = pending();
-  if (closings.length) Net.sendCrashes(code, closings).then(() => sent(closings.length), () => {});
+  sendClosings(code);
   L.unsub = await Net.watchRoom(code, (info) => {
     if (!L || L.code !== code) return;
     L.info = info;
@@ -279,6 +277,20 @@ async function enterRoom(code) {
     if (info.status === 'playing' && seat >= 0 && !oldGame && !(G && G.mode === 'online' && G.round === info.round)) beginOnline(info, seat);
     if (info.status === 'lobby' && G && G.mode === 'online') { leave(); }
     if (playView && location.hash === '#/play' && !G) playPage(playView);
+  });
+}
+
+// The times the game was closed under this phone, not sent yet, go to the
+// room it's in (js/steady.js; no names). Once the check at start-up is done:
+// the room is rejoined before it is, and the closing it finds goes now, not
+// the next time. One sending at a time (a quick second rejoin sends no copies).
+let sendingClosings = false;
+function sendClosings(code) {
+  checked().then(() => {
+    const list = pending();
+    if (!list.length || sendingClosings) return;
+    sendingClosings = true;
+    Net.sendCrashes(code, list).then(() => sent(list.length), () => {}).finally(() => { sendingClosings = false; });
   });
 }
 

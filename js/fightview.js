@@ -348,6 +348,7 @@ export function playStory(story, { stage = null, tap = false } = {}) {
       res.classList.remove('on');
       res.innerHTML = b.result;
       const stageEl = $('.bf-stage');
+      release(stageEl); // (the last step's pictures let go at once: step after step, they piled up)
       stageEl.innerHTML = '';
       room = stageEl.clientHeight || innerHeight - 250;
       stageEl.innerHTML = stageHTML(b);

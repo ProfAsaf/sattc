@@ -25,7 +25,7 @@ import { H, W, loaded, makeKit, paint, sleep } from './puppet-kit.js';
 import { livenArt } from './render.js';
 import { drop, fetchSprites, release, still } from './sprites.js';
 import { getSpeed, isReduced } from './fx.js';
-import { calm } from './steady.js';
+import { calm, left, screenMB } from './steady.js';
 import { radialStops, softPicSoon } from './fx-tex.js';
 
 const HOME_ONLY = new Set(['seraphine', 'the-barrow-queen']); // (they act in Home's own scene, js/home-alive.js)
@@ -225,15 +225,19 @@ export function actBig(host, card, id) {
 // plays. A scene that can't fit even so doesn't play; a fight that can't
 // charges as it used to. There's less room after the phone has closed the game
 // today (calm(), js/steady.js), and at the calmest nothing acts by itself.
-const ROOM = { // by calm level: [screens, elements]
-  scenes: [[1, 150], [0.6, 90], [0, 0]], // the scenes together
-  fight: [[1.2, 140], [0.7, 80], [0, 0]], // a fight's moves (no scene plays meanwhile; they end as the deaths start: endFights())
-  big: [[1.6, 180], [1, 110], [0.7, 80]], // a card opened big (nothing else acts meanwhile)
+const ROOM = { // by calm level: [screens, elements] (lively lowered a fifth 2026-11-14, after a game night of closings)
+  scenes: [[0.8, 120], [0.6, 90], [0, 0]], // the scenes together
+  fight: [[1, 110], [0.7, 80], [0, 0]], // a fight's moves (no scene plays meanwhile; they end as the deaths start: endFights())
+  big: [[1.3, 150], [1, 110], [0.7, 80]], // a card opened big (nothing else acts meanwhile)
 };
 const used = { area: 0, n: 0 }; // what scenes and fights keep moving now
 function roomFor(kind) {
   const [a, n0] = ROOM[kind][Math.min(2, calm())] || [0, 0], k = strained() ? 0.5 : 1, area = a * k, n = Math.round(n0 * k);
-  return kind === 'scenes' ? { area: area - used.area, n: n - used.n } : { area, n };
+  const room = kind === 'scenes' ? { area: area - used.area, n: n - used.n } : { area, n };
+  // and no more than what's left of this phone's budget, once it has learned one (js/steady.js;
+  // what moves now is counted there already)
+  room.area = Math.min(room.area, left() / screenMB());
+  return room;
 }
 
 // ── frames: a phone straining shows it in its frames first ───────────

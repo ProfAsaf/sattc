@@ -4,6 +4,7 @@
 // rooms/{code}/rounds/{n}/actions      the move list for game n (append-only)
 // rooms/{code}/results/{created}/{n}   how game n went (for tonight's scoreboard)
 // rooms/{code}/push, rooms/{code}/seen  turn alerts: the phones that want them, and who is looking
+// rooms/{code}/crashes                 notes from a phone the game was closed under (sendCrashes)
 // rooms/{code}/shared                  not a room: a saved game someone shared (shareGame)
 //
 // The engine is deterministic, so a game is just its seed, decks and move
@@ -201,24 +202,31 @@ export async function watchRoom(code, onInfo) {
   return fb.onValue(infoRef(code), (snap) => onInfo(snap.val()));
 }
 
-// Moves arrive in key order; a late arrival that sorts earlier (two phones
-// acting at once during the opening) is flagged so the caller replays.
-export async function watchActions(code, round, onActions) {
+// The move list in key order, each time it changes: [{ key, a }]. The first
+// call has every move made so far, all at once, so a phone opening a game
+// (again) can go straight to where it stands. A late arrival that sorts
+// earlier (two phones acting at once during the opening) gives a list that
+// isn't the last one plus more, and the caller replays.
+export async function watchActions(code, round, onList) {
   await connect();
-  const list = [];
-  const q = fb.query(actionsRef(code, round), fb.orderByKey());
-  return fb.onChildAdded(q, (snap) => {
-    const key = snap.key;
-    let i = list.length;
-    while (i > 0 && list[i - 1].key > key) i--;
-    list.splice(i, 0, { key, a: snap.val() });
-    onActions(list.map((x) => x.a), i === list.length - 1);
+  return fb.onValue(fb.query(actionsRef(code, round), fb.orderByKey()), (snap) => {
+    const list = [];
+    snap.forEach((c) => { list.push({ key: c.key, a: c.val() }); }); // (in braces: a truthy return stops forEach)
+    onList(list);
   });
 }
 
 export async function sendAction(code, round, a) {
   await connect();
   await fb.push(actionsRef(code, round), JSON.parse(JSON.stringify(a)));
+}
+
+// A phone's notes on the times the game was closed under it (js/steady.js:
+// what it held and was doing, its screen and browser; no names), for a look
+// at what closes the game on real phones.
+export async function sendCrashes(code, list) {
+  await connect();
+  for (const c of list) await fb.push(fb.ref(db, `rooms/${code}/crashes`), JSON.parse(JSON.stringify(c)));
 }
 
 // ── turn alerts (js/push.js, push/worker.js) ────────────────────────

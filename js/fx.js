@@ -16,6 +16,7 @@
 import { BY_ID, KEYWORDS } from './cards.js';
 import { artTag, cardBackHTML, esc, factionVars, glyph } from './render.js';
 import { rgbaOf, softPic } from './fx-tex.js';
+import { calm } from './steady.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const noop = () => {};
@@ -1164,6 +1165,7 @@ export function capture(root = document) {
  *       exclude: elements or keys to leave alone, drawFrom: DOMRect where drawn cards come from.
  * Elements with .fx-hidden (e.g. waiting for showCard) are skipped.
  */
+const GLIDES = [16, 10, 6]; // the most that glide at once, by how calm the phone is
 export function flip(root, before, o = {}) {
   if (!root || !before) return Promise.resolve();
   const excl = new Set((o.exclude || []).map((x) => (x && typeof x === 'object' ? x : String(x))));
@@ -1186,7 +1188,16 @@ export function flip(root, before, o = {}) {
   }
   const jobs = [];
   let drawn = 0;
+  // A phone holds each element that glides as a layer of its own. When many would glide at once (30
+  // cards and parts after a big fight, measured 2026-11-14), only the ones that moved most do, and
+  // the rest are where they go at once: fewer still on a phone that has closed the game (js/steady.js).
+  const cap = GLIDES[Math.min(2, calm())], moving = items.filter((it) => it.a && !it.parked);
+  if (moving.length > cap) {
+    const far = (it) => Math.hypot(it.a.cx - it.m.cx, it.a.cy - it.m.cy) + Math.abs(it.a.w * (it.a.sc || 1) - it.m.w * (it.m.sc || 1));
+    for (const it of moving.sort((p, q) => far(q) - far(p)).slice(cap)) it.jump = true;
+  }
   for (const it of items) {
+    if (it.jump) { popChanges(it.el, it.a); continue; }
     if (it.a) {
       jobs.push(moveFrom(it, o));
       if (it.parked) it.parked.el.remove();   // the real card now shows where its stand-in was

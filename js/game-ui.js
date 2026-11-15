@@ -22,8 +22,8 @@ import * as Rating from './rating.js';
 import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
 import { actBig, endFights, fight, hushTable, readyToFight, startTableAlive, stopTableAlive } from './cards-alive.js';
-import { CHOICES, choose, chosen, dayLevel, startFresh } from './steady.js';
-import { release } from './sprites.js';
+import { CHOICES, choose, chosen, doing, gameDone, pending, phoneLevel, sent, startFresh } from './steady.js';
+import { release, rest } from './sprites.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
 import * as Camp from './campaign.js';
@@ -251,6 +251,9 @@ async function enterRoom(code) {
   L = { code, info: null, unsub: null };
   keepAwake('room', true);
   Push.joinRoom(code);
+  // the times the game was closed under this phone, not sent yet, go to this room (js/steady.js; no names)
+  const closings = pending();
+  if (closings.length) Net.sendCrashes(code, closings).then(() => sent(closings.length), () => {});
   L.unsub = await Net.watchRoom(code, (info) => {
     if (!L || L.code !== code) return;
     L.info = info;
@@ -525,7 +528,9 @@ function placeCoach(root) {
 }
 
 // ?demo=<seed>&moves=<n>&bots=<1|2>: bots play every seat for n moves, then
-// hand you the position. For screenshots and quick checks.
+// hand you the position. For screenshots and quick checks. &watch=1: a bot
+// plays your seat too, so the whole game plays out by itself, every move
+// shown as usual (the memory checks run games this way).
 export function demo(params) {
   const seed = Number(params.get('demo')) || 1;
   const nBots = Number(params.get('bots')) || 1;
@@ -544,7 +549,7 @@ export function demo(params) {
     s = apply(s, a).state;
     actions.push(a);
   }
-  begin({ mode: 'practice', setup, actions, me: 0, bots: players.slice(1).map((_, i) => i + 1) });
+  begin({ mode: 'practice', setup, actions, me: 0, bots: players.map((_, i) => i).filter((i) => i > 0 || params.get('watch') === '1') });
 }
 
 function resume() {
@@ -592,6 +597,7 @@ function mount() {
   }
   document.body.classList.add('in-game');
   window.dispatchEvent(new Event('collective:game')); // (a page under the game may let go of what it holds: the campaign's pictures)
+  rest(true, document.getElementById('view')); // (and the pictures on the page under it stop moving till it closes: js/sprites.js)
   keepAwake('game', true);
   startTableAlive(root, () => !restWhy(), restWhy); // (left be, the cards in sight act now and then)
   return root;
@@ -643,23 +649,79 @@ function beginOnline(info, seat) {
   endGate?.(false);
   const state = newGame(setup);
   state.events = [];
-  G = { mode: 'online', code: L.code, created: info.created || 0, round, setup, actions: [], me: seat, bots: new Set(), state, view: state, lastShown: state, flow: null, atk: null, blk: null, sheet: null, timer: null, busy: false, chain: Promise.resolve(), sched: 0 };
+  G = { mode: 'online', code: L.code, created: info.created || 0, round, setup, actions: [], keys: [], me: seat, bots: new Set(), state, view: state, lastShown: state, flow: null, atk: null, blk: null, sheet: null, timer: null, busy: false, chain: Promise.resolve(), sched: 0 };
   // a game remembers the version it started with: on another one this phone would not see the same game
   G.stale = !!info.v && info.v !== Net.version();
   mount();
   redraw();
   watchSeen(true);
-  Net.watchActions(L.code, round, (actions, atEnd) => {
-    if (!G || G.mode !== 'online' || G.round !== round) return;
-    if (atEnd && actions.length === G.actions.length + 1) {
-      const r = apply(G.state, actions[actions.length - 1]);
-      if (!r.error) { G.state = r.state; G.actions = actions; show(r.state.events, actions[actions.length - 1]); return; }
+  const g = G;
+  let first = true;
+  Net.watchActions(L.code, round, (list) => {
+    if (G !== g) return;
+    const actions = list.map((x) => x.a), keys = list.map((x) => x.key);
+    if (first) {
+      // Opening the game, or opening it again (after iOS closed the app, say):
+      // the moves this phone already showed go straight to where they led, with
+      // nothing played, and only what happened since plays as it would have. A
+      // phone that never had this game open goes straight to the end. (It used to
+      // play the whole game again from its first move, waiting for a tap at every
+      // other player's move. Asaf, 2026-11-14: "It kept crashing and then slowly
+      // had to replay the pvp game from the beginning for me which took forever.")
+      first = false;
+      // (and at most the last 30 play: what a turn or two of the others' comes to; any before go by too)
+      const seen = shownUpTo(g), n = seen < 0 ? actions.length : Math.max(Math.min(seen, actions.length), actions.length - 30);
+      if (n) {
+        quietTo(actions.slice(0, n), keys.slice(0, n));
+        G.view = G.lastShown = G.state;
+        if (seen < 0) G.skipped = true; // (so "Since your last turn" sums up what this phone didn't see)
+        keepShown(g, n);
+        noteGameOver();
+        redraw();
+      }
+    } else if (!(G.keys.length <= keys.length && G.keys.every((k, i) => k === keys[i]))) {
+      // a move that sorts earlier arrived late: the game as the list now has it, at once
+      quietTo(actions, keys);
+      show([]);
+      return;
     }
-    G.state = replay(setup, actions);
-    G.state.events = [];
-    G.actions = actions;
-    show([]);
-  }).then((unsub) => { if (G && G.round === round) G.unsubActions = unsub; else unsub(); });
+    for (let i = G.actions.length; i < actions.length; i++) {
+      const r = apply(G.state, actions[i]);
+      G.actions = actions.slice(0, i + 1);
+      G.keys = keys.slice(0, i + 1);
+      if (r.error) continue; // (as in a replay: a move that doesn't fit changes nothing)
+      G.state = r.state;
+      show(r.state.events, actions[i]);
+    }
+  }).then((unsub) => { if (G === g) G.unsubActions = unsub; else unsub(); });
+}
+
+// Straight to where the moves lead, with nothing played (an online game opened
+// again; a move list that changed under us). "Since your last turn" still has
+// the table as your last turn ended.
+function quietTo(actions, keys) {
+  let s = newGame(G.setup);
+  for (const a of actions) {
+    const r = apply(s, a);
+    if (!r.error) { noteMark(s, r.state); s = r.state; }
+  }
+  s.events = [];
+  Object.assign(G, { state: s, actions, keys });
+}
+
+// How far into an online game this phone has shown it (localStorage), so that
+// opening it again goes straight back there. A move counts as soon as it starts
+// to play, so one the app closed in the middle of (quite likely the very move
+// that ran the phone out of memory) isn't played again.
+const SHOWN = 'collective.onlineShown'; // { code, created, round, n }
+function shownUpTo(g) {
+  try {
+    const x = JSON.parse(localStorage.getItem(SHOWN) || 'null');
+    return x && x.code === g.code && x.created === g.created && x.round === g.round && Number.isInteger(x.n) ? x.n : -1;
+  } catch { return -1; }
+}
+function keepShown(g, n) {
+  try { localStorage.setItem(SHOWN, JSON.stringify({ code: g.code, created: g.created, round: g.round, n })); } catch { /* fine without */ }
 }
 
 // Leave the table (a practice game stays saved and can be resumed;
@@ -680,6 +742,7 @@ function leave(goTo = '#/play') {
   document.getElementById('game')?.remove();
   document.getElementById('fx-layer')?.replaceChildren();
   document.body.classList.remove('in-game');
+  rest(false);
   if (location.hash === goTo) window.dispatchEvent(new HashChangeEvent('hashchange'));
   else location.hash = goTo;
 }
@@ -736,6 +799,7 @@ function noteGameOver() {
     ...(G.campaign ? { campaign: { ...G.campaign } } : {}),
   });
   G.rec = rec;
+  gameDone(rec.id); // (three in a row without the phone closing the game: the cards liven up a step, js/steady.js)
   if (G.campaign) G.campaignResult = Camp.record(G.campaign, G.state.winner === G.me);
   St.saveGame(rec);
   if (G.mode === 'online' && L && L.code === G.code) L.lastRec = rec;
@@ -957,23 +1021,26 @@ function suggestHTML() {
 // shows them when it's back; otherwise a hidden page or a pile of moves
 // catching up skips straight to the result.
 function show(events, a = null) {
-  const after = G.state;
+  const after = G.state, n = G.actions.length;
   noteGameOver();
-  // Remember the table as your turn ended, for "Since your last turn".
-  const prev = G.lastShown;
-  if (prev && prev.active === G.me && prev.phase !== 'mulligan' && (after.active !== G.me || after.turn !== prev.turn)) {
-    G.mark = { turn: prev.turn, life: prev.players.map((P) => P.life), board: prev.players[G.me].board.map((u) => ({ uid: u, name: BY_ID[prev.cards[u].cid].name })) };
-  }
+  noteMark(G.lastShown, after);
   G.lastShown = after;
   G.backlog = (G.backlog || 0) + 1;
   const g = G;
   G.chain = G.chain.then(async () => {
     if (tapThrough() && document.hidden && !g.skipping) await whenVisible();
     if (G !== g) return;
+    if (g.mode === 'online') keepShown(g, n); // (shown from the moment it starts: see shownUpTo)
     const quick = document.hidden || (!tapThrough() && G.backlog > 2);
     try { await present(quick ? [] : events || [], after, quick, a); } finally { if (G) G.backlog--; }
   }).catch((e) => console.error(e));
   return G.chain;
+}
+// Remember the table as your turn ended, for "Since your last turn".
+function noteMark(prev, after) {
+  if (prev && prev.active === G.me && prev.phase !== 'mulligan' && (after.active !== G.me || after.turn !== prev.turn)) {
+    G.mark = { turn: prev.turn, life: prev.players.map((P) => P.life), board: prev.players[G.me].board.map((u) => ({ uid: u, name: BY_ID[prev.cards[u].cid].name })) };
+  }
 }
 const whenVisible = () => new Promise((r) => {
   const f = () => { if (!document.hidden) { document.removeEventListener('visibilitychange', f); r(); } };
@@ -2399,7 +2466,9 @@ function syncChildren(from, to) {
     }
     i++;
   }
-  while (from.childNodes.length > i) from.removeChild(from.lastChild);
+  // (what leaves lets its pictures go at once, js/sprites.js release(): a card gone from the table
+  // or the hand kept its decoded picture until collected, and a long game piles them up)
+  while (from.childNodes.length > i) { const n = from.lastChild; from.removeChild(n); if (n.nodeType === 1) release(n); }
 }
 
 // A node added fresh: remember which of its style properties came from the
@@ -2551,6 +2620,9 @@ async function present(events, after, quick = false, a = null) {
   }
   const tap = tapThrough();
   const line = tap ? moveLine(S(), a, events) : '';
+  // what's playing, for the phone's notes (js/steady.js): a fight or deaths noted at once
+  const blows = events.filter((e) => e.k === 'strike' || e.k === 'clash').length, deaths = events.filter((e) => e.k === 'die').length;
+  doing(`${a?.t || 'move'}${story ? `, a fight: ${blows} blows${bigFights() && (story.mine || tap) ? ', shown big' : ''}` : ''}${deaths ? `, ${deaths} die` : ''}`, !!(story || deaths));
   G.busy = true;
   root.classList.add('busy');
   // three players: whoever moved comes up, and the sides the move touches open first
@@ -2584,6 +2656,7 @@ async function present(events, after, quick = false, a = null) {
   } catch (e) { console.error(e); }
   // another player's move waits on the new table for your tap (an attack between the other two, say)
   if (line && G && !G.skipping) await tapToGoOn(line);
+  doing('');
   if (!G) return;
   G.busy = false;
   root.classList.remove('busy');
@@ -3446,10 +3519,11 @@ function playerSheet(pi) {
 
 // The cards moving on their own (js/cards-alive.js, Home's fan): lively, calm
 // (one at a time, less moving) or still (none, and fights charge as they used
-// to). A phone that closed the game today is kept calmer whatever's chosen.
+// to). A phone that has closed the game is kept calmer whatever's chosen,
+// until it has been steady for a few games (js/steady.js).
 function cardsModeLabel() {
   const c = chosen(), next = CHOICES[(CHOICES.indexOf(c) + 1) % CHOICES.length];
-  return `Moving cards: ${c}${dayLevel() > 0 && c !== 'still' ? ' (calmer today: the phone closed the game)' : ''} (tap for ${next})`;
+  return `Moving cards: ${c}${phoneLevel() > 0 && c !== 'still' ? ' (calmer on this phone for now: it closed the game)' : ''} (tap for ${next})`;
 }
 
 function menuSheet() {

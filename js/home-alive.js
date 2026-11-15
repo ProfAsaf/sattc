@@ -88,7 +88,8 @@ export function stopHomeAlive() {
 function tick(st) {
   if (!st.fan.isConnected) { stopHomeAlive(); return; }
   if (window.__sceneHold) return; // (a test recording the scene frame by frame: leave it be)
-  if (document.hidden || document.body.classList.contains('zoom-open')) { endScene(st); hold(st, true); return; }
+  // (hidden, under a card opened big, or under a game: it rests; under a game it played on unseen)
+  if (document.hidden || document.body.classList.contains('zoom-open') || document.body.classList.contains('in-game')) { endScene(st); hold(st, true); return; }
   if (Date.now() - st.last < IDLE) return;
   if (!st.idle.length && !st.scene) stir(st); // (between scenes: the idle motion picks up when one ends)
   hold(st, false);

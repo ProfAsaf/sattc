@@ -623,7 +623,7 @@ body:has(#game .g-sheet) .g-beat { display: none; }
   padding: 2px 12px calc(env(safe-area-inset-bottom, 0px) + 8px);
   background: radial-gradient(120% 70% at 50% 45%, #2e1b0f, #0c0907); /* solid: the table must not show through */
   color: var(--ink);
-  animation: fade .15s ease-out;
+  /* (no fade in: fading, the screen-sized panel was a layer of its own on a phone) */
 }
 .dec-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 10px; flex: none; }
 .dec-title { font-family: 'EB Garamond', Georgia, serif; font-size: 22px; font-weight: 600; color: #f4e2b0; line-height: 1.15; min-width: 0; }

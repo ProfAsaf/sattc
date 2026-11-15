@@ -17,6 +17,7 @@ import { BY_ID, KEYWORDS } from './cards.js';
 import { artTag, cardBackHTML, esc, factionVars, glyph } from './render.js';
 import { rgbaOf, softPic } from './fx-tex.js';
 import { calm } from './steady.js';
+import { release } from './sprites.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const noop = () => {};
@@ -1083,7 +1084,8 @@ export function arrow(fromEl, toEl, o = {}) {
     if (gone) return svg.finished;
     gone = true;
     if (toEl.isConnected) toEl.classList.remove('aim');
-    play(svg, [{ opacity: 1 }, { opacity: 0 }], { duration: 260 }).then(() => { svg.remove(); resolve(); });
+    svg.remove(); // (at once: fading, each arrow was a layer of its own, six at once after a big attack)
+    resolve();
     return svg.finished;
   };
   const t0 = performance.now(), dur = D(o.drawIn ?? 300);
@@ -1599,7 +1601,7 @@ function particles(x, y, o = {}) {
 }
 
 let RINGS = 0, GLOWS = 0;
-const RING_CAP = 6, GLOW_CAP = 4;  // rings and soft lights at once (a glow is a big layer)
+const RING_CAP = 6, GLOW_CAP = 3;  // rings and soft lights at once (a glow is a big layer; 4 till 2026-11-15)
 function ring(x, y, o = {}) {
   if (isReduced() || RINGS >= RING_CAP) return Promise.resolve();
   const size = Math.min(o.size ?? 80, 200);
@@ -1619,7 +1621,7 @@ function glowPic(color, white) {
 }
 function glow(x, y, o = {}) {
   if (isReduced() || GLOWS >= GLOW_CAP) return Promise.resolve();
-  const size = Math.min(o.size ?? 120, 320);
+  const size = Math.min(o.size ?? 120, 240); // (320 till 2026-11-15: at 3x, scaled up as it grows, 8 MB at a peak)
   const el = document.createElement('img');
   el.className = `fx-glow tex${o.white ? ' white' : ''}`;
   el.alt = '';
@@ -1666,9 +1668,13 @@ function jolt(el, strength = 2) {
 }
 
 let SHAKE = null;
+const SHAKES = false;
 /** Shake the stage: amplitude grows with strength (about damage) and is capped. */
 export function shake(strength = 2, el = stage()) {
-  if (!el || isReduced() || strength <= 0) return Promise.resolve();
+  // Off since 2026-11-15: a shake moved the whole stage (the table, or a fight shown big), a layer as
+  // big as the screen on a phone (~12 MB at 3x) at the very moment the most else moves. In a fight
+  // shown big it was the biggest thing at every peak measured; the card that's hit still jolts.
+  if (!SHAKES || !el || isReduced() || strength <= 0) return Promise.resolve();
   const amp = clamp(1 + strength * 1.5, 1, 11);
   const n = 8, frames = [];
   for (let i = 0; i <= n; i++) {
@@ -2391,17 +2397,27 @@ export async function showCard(html, o = {}) {
       { translate: '0px -8px', scale: 1.05, rotate: '1.2deg', opacity: 1, offset: 0.72, easing: 'ease-in-out' },
       { translate: '0px 0px', scale: 1, rotate: '0deg', opacity: 1 },
     ], { duration: 540, fill: 'forwards' });
-    if (flipper) run(flipper, [{ transform: 'rotateY(180deg)' }, { transform: 'rotateY(180deg)', offset: 0.2 }, { transform: 'rotateY(0deg)' }], { duration: 600, easing: 'cubic-bezier(.3,.6,.3,1)', fill: 'forwards' });
-    const dimIn = dim ? run(dim, [{ opacity: 0 }, { opacity: 1 }], { duration: 380, fill: 'forwards' }) : null;
-    await done(flyIn);
+    const turn = flipper ? run(flipper, [{ transform: 'rotateY(180deg)' }, { transform: 'rotateY(180deg)', offset: 0.2 }, { transform: 'rotateY(0deg)' }], { duration: 600, easing: 'cubic-bezier(.3,.6,.3,1)', fill: 'forwards' }) : null;
+    // (the dimmed screen comes and goes at once: fading, it was a layer as big as the screen)
+    if (dim) dim.style.opacity = '1';
+    await Promise.all([done(flyIn), done(turn)]);
+    // Up, it holds still (often till a tap): a motion held at its end, a mark that it will move,
+    // a card turned in 3D, each keeps its element a layer of its own on a phone for as long as it's
+    // up (the card ~6 MB at 3x, its back as much again). So the motions let go where they ended,
+    // the mark goes, and the turned card lies flat with its back gone.
+    flyIn?.cancel(); // (it ended where the card is anyway)
+    wrap.style.willChange = 'auto';
+    if (flipper) { turn?.cancel(); flipper.style.transformStyle = 'flat'; flipper.querySelector(':scope > .card-back')?.remove(); inner.style.perspective = 'none'; }
     if (!isReduced()) {
       const shine = document.createElement('div');
       shine.className = 'fx-shine';
       inner.appendChild(shine);
+      setTimeout(() => shine.remove(), 1500); // (its sweep is over: held at its end, it stayed a layer)
       glow(cx, cy, { white: true, size: W * 1.5, duration: 700, peak: 0.35 });
     }
     const holdMs = HOLD(o.hold ?? 1100);
-    const float = isReduced() ? null : run(inner, [{ translate: '0px 0px' }, { translate: '0px -4px', offset: 0.5 }, { translate: '0px 0px' }], { duration: o.until ? 1800 : Math.max(600, holdMs), iterations: o.until ? Infinity : 1, easing: 'ease-in-out', fill: 'none' });
+    // (a gentle float while it's up for a moment; not while it waits for a tap: that would keep it a layer)
+    const float = isReduced() || o.until ? null : run(inner, [{ translate: '0px 0px' }, { translate: '0px -4px', offset: 0.5 }, { translate: '0px 0px' }], { duration: Math.max(600, holdMs), iterations: 1, easing: 'ease-in-out', fill: 'none' });
     const during = o.during ? Promise.resolve().then(o.during).catch((err) => console.error(err)) : null;
     // `until`: it stays up until that says so (another player's card waits for your tap)
     const hold = o.until ? Promise.resolve().then(o.until).catch((err) => console.error(err)) : holdFor(holdMs, wrap, o.skippable !== false);
@@ -2413,8 +2429,7 @@ export async function showCard(html, o = {}) {
       toEl = document.querySelector(`[data-uid="${CSS.escape(uid)}"]:not(.fx-ghost)`);
       toEl?.classList.add('fx-hidden');
     }
-    const dimOut = dim ? run(dim, [{ opacity: 1 }, { opacity: 0 }], { duration: 520, fill: 'forwards' }) : null;
-    dimIn?.cancel();
+    dim?.remove();
     const lay = { cx, cy, w: W };
     if (o.toPile) {
       await pileDrop(wrap, lay, { cx, cy, w: W, ang: 0 }, o.toPile, { cid: card?.id, base: flyIn, shadowW: W });
@@ -2454,10 +2469,10 @@ export async function showCard(html, o = {}) {
       flyIn?.cancel();
       await done(out);
     }
-    await done(dimOut);
   } catch (err) {
     console.warn('fx: showCard', err);
   } finally {
+    release(wrap); // (its big picture's memory goes now, not when it's collected)
     wrap.remove();
     dim?.remove();
     if (toEl) toEl.classList.remove('fx-hidden');

@@ -613,6 +613,9 @@ function mount() {
 function restWhy() {
   if (!G) return 'no game';
   if (G.busy && !gates) return 'a move playing out';
+  // (a card shown big waiting for your tap: the cards on the table wait too, rather than add their
+  // moves to the big card and the dimmed screen on a phone's memory, the moment phones closed the game)
+  if (document.querySelector('#fx-layer .fx-show')) return 'a card shown big';
   if (G.flow) return 'choosing a target';
   if (G.viewer) return 'a card open big';
   if (G.skipping) return 'skipping to your move';

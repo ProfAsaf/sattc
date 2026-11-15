@@ -281,6 +281,22 @@ function costOf(el, anim = null) {
   }
   return Math.min(4, (r.width * r.height * k * k) / (innerWidth * innerHeight));
 }
+// Each motion's element at its biggest (px² of its box on the screen), the motions (made, not yet
+// playing) set to six moments through them and read at once, then let go again. (Read in one go per
+// moment: the page lays itself out once for each.)
+function biggest(list) {
+  const most = new Map();
+  if (!list.length) return most;
+  const end = Math.max(...list.map((x) => x.a.effect?.getComputedTiming?.().endTime || 0));
+  try {
+    for (const f of [0, 0.2, 0.4, 0.6, 0.8, 1]) {
+      for (const x of list) { x.a.currentTime = f * end; x.a.pause(); }
+      for (const x of list) { const r = x.el.getBoundingClientRect(); most.set(x, Math.max(most.get(x) || 0, r.width * r.height)); }
+    }
+  } catch { /* (a motion that can't be set: counted by its keyframes) */ }
+  for (const x of list) x.a.cancel();
+  return most;
+}
 // The motions a card's picture has of its own while it's in sprites (its drawn
 // lights and motes: js/sprites.js), on the cards given.
 const idleOf = (...cards) => cards.flatMap((c) => (c?.querySelector('.sp-art')?.anims || []).filter((a) => a?.effect?.target));
@@ -289,7 +305,12 @@ const idleOf = (...cards) => cards.flatMap((c) => (c?.querySelector('.sp-art')?.
 // lights stay, still). Gives what they keep moving after ({ area, n }) and
 // whether that fits. (A test may set window.__ppCosts = [] to note each fit.)
 function fit(moves, room, { more = [], idle = [], what = '' } = {}) {
-  const list = moves.flatMap((m) => m.anims.map((a) => ({ m, a, el: a.effect?.target })).filter((x) => x.el)).map((x) => ({ ...x, c: costOf(x.el, x.a) }));
+  const list = moves.flatMap((m) => m.anims.map((a) => ({ m, a, el: a.effect?.target })).filter((x) => x.el));
+  // each counted as big as it gets in the move: its box on the screen at six moments through it, or
+  // its size scaled by its keyframes, whichever is more (a part a move turned or stretched a long way,
+  // to a far target, covered four screens in a game measured 2026-11-15, past what its keyframes said)
+  const most = biggest(list), screen = innerWidth * innerHeight;
+  for (const x of list) x.c = Math.min(4, Math.max(costOf(x.el, x.a), (most.get(x) || 0) / screen));
   const still = idle.map((a) => ({ a, el: a.effect.target, c: costOf(a.effect.target, a), idle: true }));
   let area = [...list, ...still].reduce((s, x) => s + x.c, more.reduce((s, el) => s + costOf(el), 0)), n = list.length + still.length + more.length, cut = 0;
   const was = { area, n };

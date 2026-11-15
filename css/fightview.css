@@ -10,9 +10,9 @@
   background: radial-gradient(120% 70% at 50% 42%, rgba(46, 27, 15, .97), rgba(9, 7, 5, .98));
   color: var(--ink);
   user-select: none; -webkit-user-select: none; touch-action: none;
-  animation: fade .18s ease-out;
+  /* (no fade in: fading, the whole screen was a layer of its own on a phone) */
 }
-.bf.closing { opacity: 0; transition: opacity .15s; }
+.bf.closing { opacity: 0; } /* (at once: a fade made the whole screen a layer of its own) */
 
 /* one bar per step, filling as it goes */
 .bf-bars { display: flex; gap: 4px; }

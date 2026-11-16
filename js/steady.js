@@ -5,9 +5,10 @@
 // again at its first page. Nothing on the page hears it coming, so this
 // notices it afterwards. While the page is open and in sight, a mark says so
 // (localStorage, which a restart keeps), refreshed every few seconds; hiding
-// or leaving the page clears it. A fresh mark found at start-up that no page
-// still open answers for (BroadcastChannel) means the last page was closed
-// under us.
+// or leaving the page clears it. A mark found at start-up, under half an hour
+// old, that no page still open answers for (BroadcastChannel) means the last
+// page was closed under us. (Two minutes until 2026-11-16: the app on the home
+// screen may not start again by itself, and a closing found late still counts.)
 //
 // Each phone learns what it can hold from its own closings (Asaf, 2026-11-14:
 // "Is there a way for you to have it be able to assess what level of graphics
@@ -28,15 +29,15 @@
 //    (left(), js/cards-alive.js). Each easing back gives it a little more.
 //  - Those notes, with the phone's screen and browser (no names), are kept
 //    after a closing and sent to the game's database the next time the phone
-//    is in an online room (pending(), sent()), so what closes the game on real
-//    phones can be looked at. The menus can also pass them on by hand
-//    (shareClosings()).
+//    is in an online room (unsent(), sentTo()), so what closes the game on real
+//    phones can be looked at. The menus pass them on by hand too, sent to a
+//    room or not (toShare(), shareClosings()).
 
 const OPEN = 'collective.open'; // { id, at }: the page last seen open and in sight
 const CALM = 'collective.calm'; // { level, n, steady, at }: this phone's level, its closings, games ended since the last
 const BUDGET = 'collective.budget'; // { mb, at }: how much this phone has shown it can hold
 const NOTES = 'collective.notes'; // [{ at, where, doing, mb, ... }]: the last few notes on what the page held
-const CRASHES = 'collective.crashes'; // [{ at, ... }]: closings not yet sent
+const CRASHES = 'collective.crashes'; // [{ at, found, ..., room?, shared? }]: the last few closings (room: the online game they went to; shared: passed on by hand)
 const FLOOR_MB = 60; // (a budget never goes under this: under it, something else closed the page)
 const me = Math.random().toString(36).slice(2);
 let level = 0, closings = 0, steady = 0, doingNow = '';
@@ -62,7 +63,7 @@ export function startSteady() {
   document.addEventListener('visibilitychange', mark);
   addEventListener('pageshow', mark);
   addEventListener('pagehide', () => { if (read(OPEN)?.id === me) { try { localStorage.removeItem(OPEN); } catch { /* (as above) */ } } });
-  if (!was || was.id === me || Date.now() - was.at > 120e3) return checking;
+  if (!was || was.id === me || Date.now() - was.at > 30 * 60e3) return checking;
   // a page still open (another tab) answers for its mark; none: it was closed under us
   return (checking = new Promise((resolve) => {
     let open = false;
@@ -78,7 +79,7 @@ export function startSteady() {
   }));
 }
 
-// The check above, done (a closing it found is among pending() by then). The
+// The check above, done (a closing it found is among unsent() by then). The
 // last room is rejoined straight after start-up, before the check is through,
 // so its notes wait for this (game-ui.js enterRoom); without it the closing
 // just found went only the time after.
@@ -107,7 +108,7 @@ function closed(was, notes) {
     ua: navigator.userAgent, app: matchMedia?.('(display-mode: standalone)').matches || !!navigator.standalone,
     notes: notes.slice(-6).map(({ page, ...x }) => x),
   });
-  write(CRASHES, list.slice(-5));
+  write(CRASHES, list.slice(-8));
 }
 
 // A game ended (any kind but the lesson; `id` its id, counted once). Three in
@@ -189,33 +190,45 @@ export function note() {
   write(NOTES, list.slice(-8));
 }
 
-// The closings not yet sent, and forgetting them once they are.
-export const pending = () => read(CRASHES) || [];
-export function sent(n) { write(CRASHES, pending().slice(n)); }
+// The closings kept on the phone, each marked as it goes on: to an online
+// room (unsent(): not yet, nor passed on by hand), and by hand (toShare(): not
+// yet, from the last three days). Until 2026-11-16 a closing sent to a room
+// left the phone, so after one in an online game the menus had nothing to
+// share (Asaf: "Just crashed but don't see share crash notes").
+const crashes = () => read(CRASHES) || [];
+const SHARE_FOR = 3 * 864e5;
+function markCrashes(list, what) {
+  const was = (c) => list.some((x) => x.at === c.at && x.found === c.found);
+  write(CRASHES, crashes().map((c) => (was(c) ? { ...c, ...what } : c)));
+}
+export const unsent = () => crashes().filter((c) => !c.room && !c.shared);
+export function sentTo(code, list) { markCrashes(list, { room: code }); }
+export const toShare = () => crashes().filter((c) => !c.shared && Date.now() - (c.found || c.at) < SHARE_FOR);
 
 // ── passing them on by hand ─────────────────────────────────────────
 // "Share crash notes" in Home's menu and the game's, there while any wait
 // (Asaf, 2026-11-15: "Will I be able to generate a report from a bot game
 // that crashes if I don't finish the game?"): a closing in a bot game or the
-// campaign has no room to go to, so its notes waited for the next online
-// game. The phone's share sheet gets them as text, a line on each and then
-// all of it as data, as a room gets it; without one the clipboard does, and
-// failing both, a box to copy from. Shared or copied, they leave the phone,
-// as if sent. Call it straight from the tap: a share sheet opens only on one.
-export function closingsText(list = pending()) {
+// campaign has no room to go to, and one in an online game went to a room
+// whose code is soon forgotten. The phone's share sheet gets them as text, a
+// line on each (and the game it went to) and then all of it as data, as a
+// room gets it; without one the clipboard does, and failing both, a box to
+// copy from. Shared or copied, the button goes until the next closing. Call
+// it straight from the tap: a share sheet opens only on one.
+export function closingsText(list = toShare()) {
   const when = (t) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   const lines = list.map((c, i) => {
     const n = c.notes?.[c.notes.length - 1];
-    return `${i + 1}. ${when(c.at)}${n ? `: ${n.where}${n.doing ? `, ${n.doing}` : ''}, ${n.mb} MB` : ''}`;
+    return `${i + 1}. ${when(c.at)}${n ? `: ${n.where}${n.doing ? `, ${n.doing}` : ''}, ${n.mb} MB` : ''}${c.room ? ` (sent to game ${c.room})` : ''}`;
   });
   return [`The Collective: crash notes (${list.length === 1 ? 'the game closed once' : `the game closed ${list.length} times`} on this phone)`, ...lines, JSON.stringify(list)].join('\n');
 }
 // Resolves { how: 'shared' | 'copied' | 'cancelled' | 'none' }, or { how: 'show', text } (still on the phone).
 export async function shareClosings() {
-  const list = pending();
+  const list = toShare();
   if (!list.length) return { how: 'none' };
   const text = closingsText(list);
-  const done = (how) => { sent(list.length); return { how }; };
+  const done = (how) => { markCrashes(list, { shared: true }); return { how }; };
   if (navigator.share) {
     try { await navigator.share({ title: 'The Collective: crash notes', text }); return done('shared'); } catch (e) { if (e?.name === 'AbortError') return { how: 'cancelled' }; }
   }

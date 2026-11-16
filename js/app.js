@@ -7,7 +7,7 @@ import { hold, release, sweep } from './sprites.js';
 import { gatherAlive } from './art/alive.js';
 import { startHomeAlive, stopHomeAlive } from './home-alive.js';
 import { actInZoom, canAct, startScreenAlive } from './cards-alive.js';
-import { calm, pending, shareClosings, showClosingsText, startFresh, startSteady } from './steady.js';
+import { calm, shareClosings, showClosingsText, startFresh, startSteady, toShare } from './steady.js';
 import * as Decks from './decks.js';
 import { acceptInvite, autoRejoin, autoResume, demo, playPage, startTutorial } from './game-ui.js';
 import { closeSheet, insightsPage } from './insights.js';
@@ -180,12 +180,12 @@ function homeMenu(open) {
   document.querySelector('.menu-btn')?.setAttribute('aria-expanded', String(open));
 }
 
-// "Share crash notes", there while the game has closed on this phone and no
-// room has had its notes yet (js/steady.js shareClosings). Made as the menu
-// opens: the closing is found a moment after Home is drawn.
+// "Share crash notes", there while the game has closed on this phone lately
+// and its notes haven't been passed on by hand (js/steady.js shareClosings).
+// Made as the menu opens: the closing is found a moment after Home is drawn.
 function crashNotesItem(menu) {
   menu.querySelector('[data-act="crash-notes"]')?.remove();
-  const n = pending().length;
+  const n = toShare().length;
   if (n) menu.querySelector('[data-act="fresh"]')?.insertAdjacentHTML('beforebegin', `<a href="#/" data-act="crash-notes">${ICONS.share}Share crash notes (${n})</a>`);
 }
 function shareCrashNotes() {
@@ -615,7 +615,7 @@ route();
 keepPlace({ ...readPlace(), hash: location.hash, at: Date.now() });
 if (backTo > 0 && !location.hash.startsWith('#/campaign')) requestAnimationFrame(() => window.scrollTo(0, backTo)); // (the campaign's map places itself)
 startScreenAlive(); // (any page's cards act now and then while you leave them be: js/cards-alive.js)
-reopened.then((closed) => { if (closed) setTimeout(() => toast('Your phone closed the game (low on memory?). The cards will move less on this phone until it has been steady for a few games.', 6000), 500); });
+reopened.then((closed) => { if (closed) setTimeout(() => toast('Your phone closed the game (low on memory?). The cards will move less on this phone until it has been steady for a few games. Share crash notes is in the menu (☰).', 8000), 500); });
 const params = new URLSearchParams(location.search);
 // The game's files kept on the phone, so it comes back at once (sw.js).
 // ?fresh=1 lets go of them all, and of the worker that keeps them.

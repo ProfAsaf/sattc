@@ -22,7 +22,7 @@ import * as Rating from './rating.js';
 import * as Ins from './insights.js';
 import * as Fight from './fightview.js';
 import { actBig, endFights, fight, hushTable, readyToFight, startTableAlive, stopTableAlive } from './cards-alive.js';
-import { CHOICES, checked, choose, chosen, doing, gameDone, pending, phoneLevel, sent, shareClosings, showClosingsText, startFresh } from './steady.js';
+import { CHOICES, checked, choose, chosen, doing, gameDone, phoneLevel, sentTo, shareClosings, showClosingsText, startFresh, toShare, unsent } from './steady.js';
 import { release, rest } from './sprites.js';
 import * as Push from './push.js';
 import * as Mode from './mode.js';
@@ -284,13 +284,14 @@ async function enterRoom(code) {
 // room it's in (js/steady.js; no names). Once the check at start-up is done:
 // the room is rejoined before it is, and the closing it finds goes now, not
 // the next time. One sending at a time (a quick second rejoin sends no copies).
+// They stay on the phone to share by hand as well (the menus' Share crash notes).
 let sendingClosings = false;
 function sendClosings(code) {
   checked().then(() => {
-    const list = pending();
+    const list = unsent();
     if (!list.length || sendingClosings) return;
     sendingClosings = true;
-    Net.sendCrashes(code, list).then(() => sent(list.length), () => {}).finally(() => { sendingClosings = false; });
+    Net.sendCrashes(code, list).then(() => sentTo(code, list), () => {}).finally(() => { sendingClosings = false; });
   });
 }
 
@@ -3541,10 +3542,10 @@ function cardsModeLabel() {
   return `Moving cards: ${c}${phoneLevel() > 0 && c !== 'still' ? ' (calmer on this phone for now: it closed the game)' : ''} (tap for ${next})`;
 }
 
-// The times the game closed on this phone that no room has had yet (a bot
-// game's, the campaign's), to pass on by hand (js/steady.js shareClosings).
+// The times the game closed on this phone lately, not passed on by hand yet
+// (any game's, sent to its room or not: js/steady.js shareClosings).
 function crashNotesButton() {
-  const n = pending().length;
+  const n = toShare().length;
   return n ? `<button class="btn" data-act="crash-notes">Share crash notes (${n === 1 ? 'the game closed once' : `the game closed ${n} times`} on this phone)</button>` : '';
 }
 function shareCrashNotes() {
@@ -3553,7 +3554,7 @@ function shareCrashNotes() {
     if (r.how === 'show') showClosingsText(r.text);
     if (!G?.sheet?.startsWith('<h3>Menu</h3>')) return;
     G.sheet = menuSheet();
-    if (!pending().length) document.querySelector('.g-sheet [data-act="crash-notes"]')?.remove(); // (at once: a bot's move playing holds the redraw)
+    if (!toShare().length) document.querySelector('.g-sheet [data-act="crash-notes"]')?.remove(); // (at once: a bot's move playing holds the redraw)
     redraw();
   });
 }
